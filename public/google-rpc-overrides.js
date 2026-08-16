@@ -87,18 +87,40 @@
       'criarArquivoTextoDriveHub','salvarAnexoDrive','deletarArquivoDrive'
     ].forEach(method => { h[method] = (...args) => google(method,args) })
 
+    function openCalendarSettings() {
+      const open = () => {
+        if (window.Sys?.promoteModuleModals) window.Sys.promoteModuleModals('agenda')
+        if (window.AppAgenda?.abrirConfiguracoes) window.AppAgenda.abrirConfiguracoes()
+      }
+      if (window.Sys?.ensureModule) window.Sys.ensureModule('agenda', open)
+      else open()
+    }
+
     function showCalendarSettingsButton() {
-      const button = document.querySelector('button[onclick*="AppAgenda.abrirConfiguracoes"]')
-      if (!button || button.dataset.maiCalendarSettings === 'ready') return
-      button.dataset.maiCalendarSettings = 'ready'
+      const legacyButton = document.querySelector('button[onclick*="AppAgenda.abrirConfiguracoes"]')
+      if (legacyButton && legacyButton.dataset.maiCalendarSettings !== 'ready') {
+        legacyButton.dataset.maiCalendarSettings = 'ready'
+        legacyButton.title = 'Escolher calendários do Google'
+        legacyButton.setAttribute('aria-label', 'Configurar calendários do Google')
+        legacyButton.style.setProperty('display', 'inline-flex', 'important')
+        legacyButton.style.setProperty('width', 'auto', 'important')
+        legacyButton.style.setProperty('min-width', 'auto', 'important')
+        legacyButton.style.setProperty('gap', '6px', 'important')
+        legacyButton.style.setProperty('padding', '0 12px', 'important')
+        legacyButton.innerHTML = '<span class="material-symbols-rounded">settings</span><span style="font-size:12px;font-weight:700">Calendários</span>'
+      }
+
+      const actions = document.querySelector('#mod-em-breve .mai-upcoming-pane-switches')
+      if (!actions || document.getElementById('upcoming-google-calendars-btn')) return
+      const button = document.createElement('button')
+      button.id = 'upcoming-google-calendars-btn'
+      button.type = 'button'
+      button.className = 'mai-upcoming-pane-toggle'
       button.title = 'Escolher calendários do Google'
       button.setAttribute('aria-label', 'Configurar calendários do Google')
-      button.style.setProperty('display', 'inline-flex', 'important')
-      button.style.setProperty('width', 'auto', 'important')
-      button.style.setProperty('min-width', 'auto', 'important')
-      button.style.setProperty('gap', '6px', 'important')
-      button.style.setProperty('padding', '0 12px', 'important')
-      button.innerHTML = '<span class="material-symbols-rounded">settings</span><span style="font-size:12px;font-weight:700">Calendários</span>'
+      button.innerHTML = '<span class="material-symbols-rounded">calendar_month</span><span>Calendários</span>'
+      button.addEventListener('click', openCalendarSettings)
+      actions.appendChild(button)
     }
 
     showCalendarSettingsButton()
