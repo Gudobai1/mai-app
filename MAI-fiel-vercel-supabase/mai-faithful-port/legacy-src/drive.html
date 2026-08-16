@@ -1,0 +1,507 @@
+<style>
+  /* =========================================
+     ESTRUTURA DRIVE HUB
+  ========================================= */
+  #d-container { width: 100%; height: 100vh; display: flex; flex-direction: column; overflow: hidden; padding-bottom: 20px;}
+  
+  /* CABEÇALHO E ABAS */
+  .d-header-row { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--divider); gap: 12px; }
+  
+  .t-tabs { display: flex; gap: 20px; align-items: center; margin-bottom: 0; border: none; overflow: visible; }
+  .t-tab { padding: 16px 0; cursor: pointer; color: var(--text-secondary); font-weight: 600; font-size: 14px; border-bottom: 2px solid transparent; transition: 0.2s; white-space: nowrap; display: flex; align-items: center; gap: 6px; margin-bottom: -1px; }
+  .t-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .t-tab .material-symbols-rounded { font-size: 18px; }
+
+  .d-controls { display:flex; gap:12px; align-items: center; padding-bottom: 8px;}
+
+  /* BREADCRUMB */
+  .d-breadcrumb { 
+    display: flex; 
+    align-items: center; 
+    padding: 16px 0; 
+    margin-bottom: 8px;
+    border-bottom: 1px solid var(--divider);
+    flex-wrap: wrap;
+  }
+  .d-crumb { cursor: pointer; font-size: 15px; font-weight: 700; transition: 0.2s; color: var(--text-primary); }
+  .d-crumb:hover { color: var(--accent); }
+  .d-crumb-sep { color: var(--text-secondary); opacity: 0.4; font-size: 18px !important; margin: 0 10px; display: inline-flex; align-items: center; }
+
+  /* CONTEÚDO E GRID */
+  .d-content { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 24px; padding-top: 16px;}
+  .d-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; }
+  
+  .d-card { background: var(--bg-card); border: 1px solid var(--divider); border-radius: 12px; padding: 16px; display: flex; align-items: center; gap: 12px; transition: 0.2s; cursor: pointer; position: relative;}
+  .d-card:hover { border-color: var(--text-secondary); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+  .d-card-icon { width: 42px; height: 42px; border-radius: 10px; background: var(--bg-hover); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .d-card-name { font-size: 13px; font-weight: 700; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  @media (max-width: 768px) {
+    .d-header-row { flex-direction: column; align-items: stretch; }
+    .t-tabs { overflow-x: auto; padding-bottom: 4px; }
+  }
+</style>
+
+<div id="d-container" class="sys-container">
+  
+  <div class="sys-header n-header-flex">
+    <h1 style="display:flex; align-items:center; gap:8px;">
+      <span class="material-symbols-rounded" style="color: var(--accent); font-size: 28px;">hard_drive</span>
+      <span style="font-weight: 800;">Hub Drive</span>
+    </h1>
+    
+    <div style="display: flex; gap: 16px; align-items: center;">
+      <div id="d-quota-info" style="text-align: right;">
+        <div id="d-quota-text" style="font-size: 10px; font-weight: 800; color: var(--text-secondary); margin-bottom: 4px;">...</div>
+        <div style="width: 100px; height: 4px; background: var(--bg-hover); border-radius: 4px; overflow: hidden;">
+          <div id="d-quota-fill" style="width: 0%; height: 100%; background: var(--accent); transition: width 0.5s ease;"></div>
+        </div>
+      </div>
+      <button class="sys-icon-btn" onclick="Sys.toggleTheme()"><span class="material-symbols-rounded">lightbulb</span></button>
+    </div>
+  </div>
+
+  <div class="d-header-row">
+    <div class="t-tabs">
+      <div class="t-tab active" id="nav-meudrive" onclick="AppDrive.mudarView('meudrive')"><span class="material-symbols-rounded">folder</span> Meu Drive</div>
+      <div class="t-tab" id="nav-computadores" onclick="AppDrive.mudarView('computadores')"><span class="material-symbols-rounded">computer</span> Computadores</div>
+      <div class="t-tab" id="nav-compartilhados" onclick="AppDrive.mudarView('compartilhados')"><span class="material-symbols-rounded">group</span> Compartilhados</div>
+      <div class="t-tab" id="nav-estrelas" onclick="AppDrive.mudarView('estrelas')"><span class="material-symbols-rounded">star</span> Estrela</div>
+      <div class="t-tab" id="nav-lixeira" onclick="AppDrive.mudarView('lixeira')"><span class="material-symbols-rounded">delete</span> Lixeira</div>
+    </div>
+
+    <div class="d-controls">
+      <input type="text" class="sys-input" id="d-search" placeholder="Pesquisar..." style="height: 38px; width: 180px; font-size: 13px;" oninput="AppDrive.filtrar()">
+      
+      <div class="has-dropdown" style="position:relative;">
+        <button class="sys-btn-primary" style="height: 38px; width: auto; padding: 0 16px; border-radius: 8px; font-size: 13px; display: flex; align-items: center;" onclick="AppDrive.toggleDrop(event, 'drop-novo')" id="btn-novo-drive">
+          <span class="material-symbols-rounded" style="font-size:18px; margin-right:6px;">add</span> Novo
+        </button>
+        <div id="drop-novo" class="sys-dropdown" style="top:100%; right:0; margin-top:4px; min-width: 200px; z-index: 1000;">
+          <div class="sys-drop-item" onclick="AppDrive.novaPasta()"><span class="material-symbols-rounded">create_new_folder</span> Nova Pasta</div>
+          <div class="sys-drop-item" onclick="AppDrive.novoArquivo()"><span class="material-symbols-rounded">post_add</span> Novo Arquivo de Texto</div>
+          <div style="height:1px; background:var(--divider); margin:4px 0;"></div>
+          <div class="sys-drop-item" onclick="AppDrive.triggerUpload()"><span class="material-symbols-rounded">upload_file</span> Upload de Arquivo</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="d-breadcrumb" id="d-breadcrumb" style="display: none;"></div>
+
+  <div id="d-loading" style="text-align: center; padding: 40px; color: var(--text-secondary);">
+    <span class="material-symbols-rounded" style="font-size: 32px; animation: spin 1s linear infinite;">sync</span>
+  </div>
+
+  <div class="d-content" id="d-content" style="display:none;">
+    <div id="d-folders-area">
+       <div style="font-size:11px; font-weight:800; color:var(--text-secondary); text-transform:uppercase; margin-bottom:12px;">Pastas</div>
+       <div class="d-grid" id="d-folders-grid"></div>
+    </div>
+    <div id="d-files-area" style="margin-top: 24px;">
+       <div style="font-size:11px; font-weight:800; color:var(--text-secondary); text-transform:uppercase; margin-bottom:12px;">Arquivos</div>
+       <div class="d-grid" id="d-files-grid"></div>
+    </div>
+  </div>
+
+  <input type="file" id="d-file-input" multiple style="display: none;" onchange="AppDrive.uploadFiles(this.files)">
+</div>
+
+<script>
+  // Fecha o dropdown se clicar fora
+  document.addEventListener('click', function(e) {
+    if (!e.target.closest('.has-dropdown')) {
+      document.querySelectorAll('.sys-dropdown').forEach(d => d.classList.remove('active'));
+    }
+  });
+
+  const AppDrive = {
+    state: { view: 'meudrive', folderId: 'root', files: [], folders: [], path: [] },
+
+    init: function() { this.carregar(); },
+
+    toggleDrop: function(e, id) {
+      if(e) e.stopPropagation();
+      const drop = document.getElementById(id);
+      if(!drop) return;
+      const isActive = drop.classList.contains('active');
+      document.querySelectorAll('.sys-dropdown').forEach(d => d.classList.remove('active'));
+      if (!isActive) drop.classList.add('active');
+    },
+
+    mudarView: function(viewId) {
+      this.state.view = viewId;
+      this.state.folderId = (viewId === 'meudrive') ? 'root' : null;
+      document.querySelectorAll('.t-tab').forEach(n => n.classList.remove('active'));
+      document.getElementById('nav-' + viewId).classList.add('active');
+      this.carregar();
+    },
+
+    navegarPasta: function(id) {
+      this.state.folderId = id;
+      this.carregar();
+    },
+
+    carregar: function() {
+      document.getElementById('d-content').style.display = 'none';
+      document.getElementById('d-loading').style.display = 'block';
+      
+      MAIRun
+        .withSuccessHandler(resRaw => {
+          const res = JSON.parse(resRaw);
+          if (res.ok) {
+            this.state.files = res.files || [];
+            this.state.folders = res.folders || [];
+            this.state.path = res.path || [];
+            this.renderizar();
+            this.renderizarBreadcrumb();
+            this.renderizarStorage(res.storage);
+            document.getElementById('d-loading').style.display = 'none';
+            document.getElementById('d-content').style.display = 'block';
+          }
+        }).getDriveContent(this.state.folderId, this.state.view);
+    },
+
+    renderizarBreadcrumb: function() {
+      const container = document.getElementById('d-breadcrumb');
+      if (this.state.path.length <= 1 && (this.state.view === 'meudrive' || this.state.view === 'computadores')) {
+        container.style.display = 'none'; return;
+      }
+      container.style.display = 'flex';
+      container.innerHTML = this.state.path.map((p, i) => {
+        const isLast = i === this.state.path.length - 1;
+        return `<span class="d-crumb" style="${isLast ? 'color:var(--accent)' : ''}" onclick="AppDrive.navegarPasta('${p.id}')">${p.name}</span>` + 
+               (!isLast ? `<span class="material-symbols-rounded d-crumb-sep">chevron_right</span>` : '');
+      }).join('');
+    },
+
+    renderizarStorage: function(s) {
+      if (!s) return;
+      const pct = (s.used / s.limit) * 100;
+      document.getElementById('d-quota-fill').style.width = pct + '%';
+      document.getElementById('d-quota-text').innerText = (s.used / 1e9).toFixed(1) + ' GB de ' + (s.limit / 1e9).toFixed(0) + ' GB';
+    },
+
+    renderizar: function() {
+      const foldersGrid = document.getElementById('d-folders-grid');
+      const filesGrid = document.getElementById('d-files-grid');
+
+      document.getElementById('d-folders-area').style.display = this.state.folders.length ? 'block' : 'none';
+      foldersGrid.innerHTML = this.state.folders.map(f => `
+        <div class="d-card" onclick="AppDrive.navegarPasta('${f.id}')">
+          <div class="d-card-icon"><span class="material-symbols-rounded" style="color:var(--text-secondary);">folder</span></div>
+          <div class="d-card-name">${f.name}</div>
+        </div>`).join('');
+
+      filesGrid.innerHTML = this.state.files.map(f => `
+        <div class="d-card" onclick="window.open('${f.url}', '_blank')">
+          <div class="d-card-icon"><span class="material-symbols-rounded" style="color:var(--accent);">description</span></div>
+          <div style="flex:1; overflow:hidden;">
+            <div class="d-card-name">${f.name}</div>
+            <div style="font-size:10px; opacity:0.6;">${(f.tamanho/1024).toFixed(1)} KB</div>
+          </div>
+        </div>`).join('');
+    },
+
+    // ==========================================
+    // FUNÇÕES DO MENU "NOVO"
+    // ==========================================
+    novaPasta: function() {
+      this.toggleDrop(null, ''); // Fecha o dropdown
+      if (this.state.view !== 'meudrive' && this.state.view !== 'computadores') return alert("Navegue até uma pasta para criar.");
+      
+      const nome = prompt("Nome da nova pasta:");
+      if (nome && nome.trim() !== "") {
+        const btn = document.getElementById('btn-novo-drive'); 
+        const originalHtml = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<span class="material-symbols-rounded" style="font-size:18px; margin-right:6px; animation: spin 1s linear infinite;">sync</span> ...';
+        
+        MAIRun.withSuccessHandler(r => {
+          btn.innerHTML = originalHtml;
+          btn.disabled = false;
+          if (r.ok) this.carregar();
+          else alert("Erro: " + r.erro);
+        }).criarPastaDriveHub(nome.trim(), this.state.folderId);
+      }
+    },
+
+    novoArquivo: function() {
+      this.toggleDrop(null, '');
+      if (this.state.view !== 'meudrive' && this.state.view !== 'computadores') return alert("Navegue até uma pasta para criar.");
+      
+      const nome = prompt("Nome do novo arquivo de texto:");
+      if (nome && nome.trim() !== "") {
+        const btn = document.getElementById('btn-novo-drive'); 
+        const originalHtml = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<span class="material-symbols-rounded" style="font-size:18px; margin-right:6px; animation: spin 1s linear infinite;">sync</span> ...';
+        
+        MAIRun.withSuccessHandler(r => {
+          btn.innerHTML = originalHtml;
+          btn.disabled = false;
+          if (r.ok) this.carregar();
+          else alert("Erro: " + r.erro);
+        }).criarArquivoTextoDriveHub(nome.trim(), this.state.folderId);
+      }
+    },
+
+    triggerUpload: function() {
+      this.toggleDrop(null, '');
+      if (this.state.view !== 'meudrive' && this.state.view !== 'computadores') return alert("Navegue até uma pasta para fazer upload.");
+      document.getElementById('d-file-input').click();
+    },
+
+    uploadFiles: async function(filesArray) {
+      const files = Array.from(filesArray);
+      if(!files.length) return;
+      
+      const btn = document.getElementById('btn-novo-drive'); 
+      const originalHtml = btn.innerHTML;
+      btn.disabled = true;
+
+      for (let file of files) {
+        btn.innerHTML = '<span class="material-symbols-rounded" style="font-size:18px; margin-right:6px; animation: spin 1s linear infinite;">sync</span> Enviando...';
+        await new Promise(res => {
+          const reader = new FileReader();
+          reader.onload = ev => {
+            MAIRun.withSuccessHandler(() => res()).uploadToDriveHub(ev.target.result, file.name, file.type, this.state.folderId);
+          };
+          reader.readAsDataURL(file);
+        });
+      }
+      
+      btn.innerHTML = originalHtml; 
+      btn.disabled = false;
+      this.carregar();
+    }
+  };
+  
+  setTimeout(() => AppDrive.init(), 100);
+</script>
+
+<script id="mai-v91-drive-instant">
+(() => {
+  if (typeof AppDrive === 'undefined') return;
+
+  AppDrive.carregar = function() {
+    const hasContent = this.state.files.length || this.state.folders.length;
+
+    if (!hasContent) {
+      document.getElementById('d-content').style.display = 'none';
+      document.getElementById('d-loading').style.display = 'block';
+    }
+
+    MAIRun
+      .withSuccessHandler(resRaw => {
+        const res = typeof resRaw === 'string' ? JSON.parse(resRaw) : resRaw;
+        if (res && res.ok) {
+          this.state.files = res.files || [];
+          this.state.folders = res.folders || [];
+          this.state.path = res.path || [];
+          this.renderizar();
+          this.renderizarBreadcrumb();
+          this.renderizarStorage(res.storage);
+          document.getElementById('d-loading').style.display = 'none';
+          document.getElementById('d-content').style.display = 'block';
+        }
+      })
+      .withFailureHandler(() => {
+        document.getElementById('d-loading').style.display = 'none';
+        document.getElementById('d-content').style.display = 'block';
+      })
+      .getDriveContent(this.state.folderId, this.state.view);
+  };
+
+  AppDrive.novaPasta = function() {
+    this.toggleDrop(null, '');
+    if (this.state.view !== 'meudrive' && this.state.view !== 'computadores') {
+      alert('Navegue até uma pasta para criar.');
+      return;
+    }
+
+    const nome = prompt('Nome da nova pasta:');
+    if (!nome || !nome.trim()) return;
+
+    const localId = `pending-folder-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
+    const placeholder = { id: localId, name: nome.trim(), tipo: 'folder', pending: true };
+
+    this.state.folders.push(placeholder);
+    this.state.folders.sort((a, b) => a.name.localeCompare(b.name));
+    this.renderizar();
+    MAIInstant.changed('drive:pasta');
+
+    const rollback = () => {
+      this.state.folders = this.state.folders.filter(f => String(f.id) !== localId);
+      this.renderizar();
+      MAIInstant.error('Não foi possível criar a pasta.');
+    };
+
+    MAIRun
+      .withSuccessHandler(r => {
+        if (!r || !r.ok) {
+          rollback();
+          return;
+        }
+        const idx = this.state.folders.findIndex(f => String(f.id) === localId);
+        if (idx >= 0 && r.item) this.state.folders[idx] = r.item;
+        this.renderizar();
+      })
+      .withFailureHandler(rollback)
+      .criarPastaDriveHub(nome.trim(), this.state.folderId);
+  };
+
+  AppDrive.novoArquivo = function() {
+    this.toggleDrop(null, '');
+    if (this.state.view !== 'meudrive' && this.state.view !== 'computadores') {
+      alert('Navegue até uma pasta para criar.');
+      return;
+    }
+
+    const nome = prompt('Nome do novo arquivo de texto:');
+    if (!nome || !nome.trim()) return;
+
+    const finalName = nome.trim().endsWith('.txt') ? nome.trim() : `${nome.trim()}.txt`;
+    const localId = `pending-file-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
+    const placeholder = {
+      id: localId,
+      name: finalName,
+      tipo: 'text/plain',
+      tamanho: 0,
+      modificado: new Date().toISOString(),
+      url: '#',
+      pending: true
+    };
+
+    this.state.files.unshift(placeholder);
+    this.renderizar();
+    MAIInstant.changed('drive:arquivo');
+
+    const rollback = () => {
+      this.state.files = this.state.files.filter(f => String(f.id) !== localId);
+      this.renderizar();
+      MAIInstant.error('Não foi possível criar o arquivo.');
+    };
+
+    MAIRun
+      .withSuccessHandler(r => {
+        if (!r || !r.ok) {
+          rollback();
+          return;
+        }
+        const idx = this.state.files.findIndex(f => String(f.id) === localId);
+        if (idx >= 0 && r.item) this.state.files[idx] = r.item;
+        this.renderizar();
+      })
+      .withFailureHandler(rollback)
+      .criarArquivoTextoDriveHub(nome.trim(), this.state.folderId);
+  };
+
+  AppDrive.uploadFiles = function(filesArray) {
+    const files = Array.from(filesArray || []);
+    if (!files.length) return;
+
+    files.forEach(file => {
+      const localId = `pending-upload-${Date.now()}-${Math.floor(Math.random() * 100000)}`;
+      const placeholder = {
+        id: localId,
+        name: file.name,
+        tipo: file.type || 'application/octet-stream',
+        tamanho: file.size || 0,
+        modificado: new Date().toISOString(),
+        url: '#',
+        pending: true
+      };
+
+      this.state.files.unshift(placeholder);
+      this.renderizar();
+      MAIInstant.changed('drive:upload');
+
+      const rollback = () => {
+        this.state.files = this.state.files.filter(f => String(f.id) !== localId);
+        this.renderizar();
+        MAIInstant.error(`Não foi possível enviar ${file.name}.`);
+      };
+
+      const reader = new FileReader();
+
+      reader.onerror = rollback;
+      reader.onload = ev => {
+        MAIRun
+          .withSuccessHandler(r => {
+            if (!r || !r.ok) {
+              rollback();
+              return;
+            }
+
+            const idx = this.state.files.findIndex(f => String(f.id) === localId);
+            if (idx >= 0 && r.item) this.state.files[idx] = r.item;
+            this.renderizar();
+          })
+          .withFailureHandler(rollback)
+          .uploadToDriveHub(ev.target.result, file.name, file.type, this.state.folderId);
+      };
+
+      reader.readAsDataURL(file);
+    });
+
+    const input = document.getElementById('d-file-input');
+    if (input) input.value = '';
+  };
+})();
+</script>
+
+<style id="mai-v111-drive-color-contract">
+#d-container {
+  background: var(--mai-bg-primary) !important;
+  color: var(--mai-text-primary) !important;
+}
+
+#d-container .d-header-row,
+#d-container .d-breadcrumb {
+  border-color: var(--mai-divider) !important;
+}
+
+#d-container .t-tab {
+  color: var(--mai-text-secondary) !important;
+}
+
+#d-container .t-tab.active {
+  color: var(--mai-accent) !important;
+  border-bottom-color: var(--mai-accent) !important;
+}
+
+#d-container .d-card {
+  background: var(--mai-bg-card) !important;
+  border-color: var(--mai-divider) !important;
+  color: var(--mai-text-primary) !important;
+  box-shadow: none !important;
+}
+
+#d-container .d-card:hover {
+  background: var(--mai-bg-hover) !important;
+  border-color: var(--mai-divider-strong) !important;
+  box-shadow: var(--mai-shadow-panel) !important;
+}
+
+#d-container .d-card-icon {
+  background: var(--mai-bg-hover) !important;
+}
+
+#d-container .sys-input {
+  background: var(--mai-bg-hover) !important;
+  color: var(--mai-text-primary) !important;
+  border-color: var(--mai-divider) !important;
+}
+
+#d-container .sys-dropdown {
+  background: var(--mai-bg-elevated) !important;
+  border-color: var(--mai-divider) !important;
+  color: var(--mai-text-primary) !important;
+}
+
+#d-container .sys-drop-item:hover {
+  background: var(--mai-bg-hover) !important;
+}
+</style>

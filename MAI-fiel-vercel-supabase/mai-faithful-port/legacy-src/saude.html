@@ -1,0 +1,1456 @@
+<link href="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.snow.css" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js"></script>
+
+<style>
+  /* ==========================================
+     BASE & LAYOUT (ISOLADOS)
+  ========================================== */
+  * { box-sizing: border-box; }
+  
+  #sau-container { 
+    width: 100%; height: 100vh; display: flex; flex-direction: column; 
+    overflow: hidden; position: relative; padding-bottom: 12px;
+  }
+  
+  #sau-container ::-webkit-scrollbar { width: 6px; height: 6px; }
+  #sau-container ::-webkit-scrollbar-track { background: transparent; }
+  #sau-container ::-webkit-scrollbar-thumb { background: var(--divider); border-radius: 10px; }
+  
+  #sau-container .sys-header { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--divider); margin-bottom: 12px; flex-wrap: wrap; gap: 12px; flex-shrink: 0; }
+  #sau-container .sys-header h1 { display:flex; align-items:center; gap:8px; margin:0; font-size: 18px; color: var(--text-primary); }
+
+  /* NAVEGAÇÃO DE DATA */
+  #sau-container .f-month-nav { display: flex; align-items: center; gap: 2px; background: var(--bg-hover); border: 1px solid var(--divider); padding: 4px; border-radius: 8px; }
+  #sau-container .f-nav-arrow { background: transparent; border: none; color: var(--text-secondary); cursor: pointer; display: flex; align-items: center; padding: 4px 8px; border-radius: 6px; transition: 0.2s; }
+  #sau-container .f-nav-arrow:hover { background: var(--bg-card); color: var(--accent); }
+  #sau-container .f-month-display { cursor: pointer; padding: 4px 12px; border-radius: 6px; text-align: center; min-width: 120px; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
+  #sau-container .f-month-display:hover { background: var(--bg-card); }
+  
+  /* FILTROS FLUTUANTES */
+  #sau-container .filter-wrapper { position: relative; z-index: 50; }
+  #sau-container .filter-btn { display: flex; align-items: center; gap: 6px; padding: 0 16px; height: 36px; border-radius: 8px; font-size: 12px; font-weight: 700; background: var(--bg-hover); color: var(--text-primary); border: 1px solid var(--divider); cursor: pointer; transition: 0.2s; }
+  #sau-container .filter-btn:hover { background: var(--bg-card); border-color: var(--accent); }
+  #sau-container .filter-content { display: none; position: absolute; right: 0; top: 100%; margin-top: 8px; background: var(--bg-card); border: 1px solid var(--divider); border-radius: 12px; padding: 16px; min-width: 200px; box-shadow: 0 8px 24px rgba(0,0,0,0.5); flex-direction: column; gap: 12px; }
+  #sau-container .filter-wrapper:hover .filter-content { display: flex; }
+
+  /* DASHBOARD E WIDGETS */
+  #sau-container .m-dash-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 16px; flex-shrink: 0; padding-top: 4px; }
+  #sau-container .m-dash-widget { background: var(--bg-card); border: 1px solid var(--divider); border-radius: 12px; padding: 20px; display: flex; flex-direction: column; gap: 4px; transition: 0.2s; cursor: pointer; }
+  #sau-container .m-dash-widget:hover { border-color: var(--text-secondary); transform: translateY(-2px); }
+  #sau-container .active-widget { border-color: var(--accent) !important; background: var(--mai-accent-soft) !important; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+  #sau-container .m-dash-title { font-size: 11px; font-weight: 800; color: var(--text-secondary); text-transform: uppercase; display: flex; justify-content: space-between; align-items: center; }
+  #sau-container .m-dash-value { font-size: 24px; font-weight: 900; letter-spacing: -0.5px; color: var(--text-primary); margin-top: 4px; }
+  #sau-container .m-dash-footer { font-size: 11px; color: var(--text-secondary); margin-top: 8px; border-top: 1px solid var(--divider); padding-top: 8px; display: flex; justify-content: space-between; }
+
+  /* SCROLL ISOLADO & LISTAS */
+ #sau-main-view { display: flex; flex: 1; min-height: 0; overflow: hidden; flex-direction: column; animation: fadeIn 0.2s ease; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+  #sau-container .m-card { background: var(--bg-card); border: 1px solid var(--divider); border-radius: 16px; padding: 16px; margin-bottom: 16px; overflow: hidden; }
+  #sau-container .m-card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; border-bottom: 1px solid var(--divider); padding-bottom: 12px; }
+  #sau-container .m-title { font-size: 14px; font-weight: 800; color: var(--text-primary); display: flex; align-items: center; gap: 8px; }
+
+  #sau-container .s-list-item { display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-bottom: 1px solid color-mix(in srgb, var(--mai-text-primary) 5%, transparent); transition: 0.2s; cursor: pointer; }
+  #sau-container .s-list-item:hover { background: var(--bg-hover); border-radius: 8px; }
+  #sau-container .s-item-title { font-size: 13px; font-weight: 700; color: var(--text-primary); margin-bottom: 4px; }
+  #sau-container .s-item-meta { font-size: 11px; color: var(--text-secondary); font-weight: 500; }
+
+  /* MICRO ITEMS (Usados na criação de planos/composições) */
+  #sau-container .s-micro-item { display:flex; justify-content:space-between; align-items:center; background:var(--bg-card); padding:8px 12px; border-radius:8px; border:1px solid var(--divider); margin-bottom:6px; font-size:12px; font-weight:600;}
+
+  /* MICRO ITEMS (Usados na criação de planos/composições) */
+  #sau-container .s-micro-item { display:flex; justify-content:space-between; align-items:center; background:var(--bg-card); padding:8px 12px; border-radius:6px; border:1px solid var(--divider); margin-bottom:6px; font-size:12px; font-weight:600;}
+
+  /* FORMULÁRIOS & MODAIS */
+  #sau-container .m-form-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; width: 100%;}
+  #sau-container .m-form-group label { font-size: 11px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; }
+  #sau-container .sys-input { background: var(--bg-hover); border: 1px solid transparent; color: var(--text-primary); padding: 12px; border-radius: 8px; font-size: 14px; outline: none; transition: 0.2s; width: 100%; }
+  #sau-container .sys-input:focus { border-color: var(--accent); }
+  #sau-container .m-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+  #sau-container .s-toggle-container { display:flex; background: var(--bg-hover); border-radius: 8px; padding: 4px; margin-bottom: 16px; width: fit-content; }
+  #sau-container .s-toggle-btn { padding: 6px 16px; border-radius: 6px; font-size: 11px; font-weight: 700; color: var(--text-secondary); cursor: pointer; transition: 0.2s; background: transparent; border: none; text-transform: uppercase; }
+  #sau-container .s-toggle-btn.active { background: var(--bg-card); color: var(--text-primary); box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+
+  /* ALERTAS E DANOS */
+  #sau-container .s-alert-box { padding: 12px 16px; background: color-mix(in srgb, var(--mai-danger) 5%, transparent); border: 1px dashed var(--mai-danger); border-left: 4px solid var(--mai-danger); margin-bottom: 8px; font-size: 12px; color: var(--text-primary); border-radius: 8px;}
+  #sau-container .s-switch-dano { padding: 12px; border-radius: 8px; font-size: 12px; font-weight: 700; color: var(--text-secondary); cursor: pointer; transition: 0.2s; border: 1px solid var(--divider); display: flex; align-items: center; gap: 8px; margin-top: 12px; }
+  #sau-container .s-switch-dano.active { border-color: var(--mai-danger); background: color-mix(in srgb, var(--mai-danger) 10%, transparent); color: var(--mai-danger); }
+  #sau-container .s-dano-area { display: none; margin-top: 8px; }
+  #sau-container .s-dano-area.active { display: block; animation: fadeIn 0.2s ease; }
+
+  /* MODAIS OVERLAY */
+  #sau-container .sys-modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); display: flex; justify-content: center; align-items: center; z-index: 200; opacity: 0; pointer-events: none; backdrop-filter: blur(4px); transition: 0.2s; }
+  #sau-container .sys-modal-overlay.active { opacity: 1; pointer-events: all; }
+  #sau-container .sys-modal-surface { background: var(--bg-card); border: 1px solid var(--divider); border-radius: 12px; width: 95%; max-width: 550px; max-height: 90vh; display: flex; flex-direction: column; }
+  #sau-container .sys-modal-header { padding: 16px 20px; border-bottom: 1px solid var(--divider); display:flex; justify-content:space-between; align-items:center; background: var(--bg-hover); border-radius: 12px 12px 0 0; }
+  #sau-container .sys-modal-body { padding: 20px; overflow-y: auto; flex: 1; }
+  
+  #sau-container .sys-btn-fab { position: fixed; bottom: 24px; right: 24px; width: 56px; height: 56px; border-radius: 28px; background: var(--accent); color: #FFF; border: none; display: flex; justify-content: center; align-items: center; box-shadow: 0 4px 12px rgba(0,0,0,0.3); cursor: pointer; z-index: 100; transition: 0.2s; }
+  #sau-container .sys-btn-fab:hover { transform: scale(1.05); background: var(--text-primary); }
+
+  @media (max-width: 768px) {
+      #sau-container .sys-header h1 { font-size: 16px; }
+      #sau-container .m-dash-row { grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 12px; }
+      #sau-container .m-dash-widget { padding: 16px; border-radius: 10px; }
+      #sau-container .m-dash-value { font-size: 20px; }
+      #sau-container .m-dash-title { font-size: 10px; }
+      #sau-container .s-list-item { padding: 12px 16px; }
+      #sau-container .sys-modal-surface { width: 100%; height: 100%; max-height: 100vh; border-radius: 0; }
+  }
+</style>
+
+<div class="sys-container" id="sau-container">
+
+  <div class="sys-header">
+    <h1>
+      <span class="material-symbols-rounded" style="color: var(--accent); font-size: 24px;">monitor_heart</span>
+      <span>Saúde Sistêmica</span>
+    </h1>
+    
+    <div style="display:flex; align-items:center; gap:12px;">
+      <div class="f-month-nav">
+        <button class="f-nav-arrow" onclick="AppSaude.diaAnterior()"><span class="material-symbols-rounded" style="font-size: 18px;">chevron_left</span></button>
+        <div class="f-month-display" onclick="AppSaude.irParaHoje()" title="Ir para o dia de Hoje">
+            <span id="sau-data-display" style="font-weight: 800; color: var(--text-primary); font-size: 12px; text-transform: uppercase;"></span>
+        </div>
+        <button class="f-nav-arrow" onclick="AppSaude.proximoDia()"><span class="material-symbols-rounded" style="font-size: 18px;">chevron_right</span></button>
+        <input type="date" id="sau-data-atual" style="width:0; height:0; opacity:0; position:absolute;" onchange="AppSaude.mudarDataPeloPicker()">
+      </div>
+
+      <div class="filter-wrapper">
+         <button class="filter-btn">
+             <span class="material-symbols-rounded" style="font-size:16px;">analytics</span> Dashboard
+         </button>
+         <div class="filter-content">
+            <div class="m-form-group" style="margin:0;">
+                <label>Período de Análise</label>
+                <select id="sau-filtro-periodo" class="sys-input" onchange="AppSaude.aplicarFiltrosGlobais()">
+                    <option value="diaria">Dia Selecionado</option>
+                    <option value="semanal">Últimos 7 Dias</option>
+                    <option value="mensal">Mês Atual</option>
+                    <option value="anual">Ano Atual</option>
+                    <option value="total">Histórico Completo</option>
+                </select>
+            </div>
+         </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="sau-main-view">
+    
+    <div id="sau-dash-widgets" class="m-dash-row"></div>
+    
+    <div id="sau-acoes-lista" style="display:flex; justify-content:flex-start; margin-bottom:8px; flex-shrink: 0;"></div>
+    
+    <div style="flex: 1; overflow-y: auto; overflow-x: hidden; padding-right: 4px; padding-bottom: 20px;">
+      
+      <div id="sau-view-geral" style="display:none;">
+         <div class="m-card" style="border-color: color-mix(in srgb, var(--mai-danger) 30%, transparent); background: rgba(255,82,82,0.02); margin-top:8px;">
+            <div class="m-card-header" style="border-bottom:none; margin-bottom:0; padding-bottom:0;">
+                <div class="m-title" style="color: var(--mai-danger); font-size:14px; text-transform:uppercase;"><span class="material-symbols-rounded" style="font-size:18px;">warning</span> Dívida Biológica no Período</div>
+            </div>
+            <div id="sau-lista-danos-hoje" style="margin-top: 12px;"></div>
+         </div>
+      </div>
+
+      <div id="sau-view-sono" style="display:none;">
+        <div class="s-toggle-container">
+          <button class="s-toggle-btn active" id="sau-btn-sub-o-diario" onclick="AppSaude.switchSub('sono','diario','o')">Registros</button>
+          <button class="s-toggle-btn" id="sau-btn-sub-o-metas" onclick="AppSaude.switchSub('sono','metas','o')">Metas de Qualidade</button>
+        </div>
+        <div id="sau-sub-o-diario">
+           <div class="m-card">
+             <div class="m-card-header"><div class="m-title" style="font-size:14px;">Histórico de Descanso</div></div>
+             <div id="sau-lista-sono-diario"></div>
+           </div>
+        </div>
+        <div id="sau-sub-o-metas" style="display:none;">
+           <div class="m-card">
+             <div class="m-card-header"><div class="m-title" style="font-size:14px;">Arquitetura de Qualidade de Sono</div></div>
+             <div class="m-row-2">
+               <div class="m-form-group"><label>Horário Ideal (Deitar)</label><input type="time" id="sau-meta-o-deitar" class="sys-input"></div>
+               <div class="m-form-group"><label>Tempo Ideal (Horas)</label><input type="number" id="sau-meta-o-horas" class="sys-input" step="0.5"></div>
+             </div>
+             <div class="m-row-2" style="margin-top: 12px;">
+               <div class="m-form-group"><label>Meta REM (Min)</label><input type="number" id="sau-meta-o-rem" class="sys-input"></div>
+               <div class="m-form-group"><label>Sono Profundo (Min)</label><input type="number" id="sau-meta-o-profundo" class="sys-input"></div>
+             </div>
+             <button class="sys-btn-primary" style="height:44px; margin-top: 24px; border-radius: 8px;" onclick="AppSaude.salvarMetasSono(this)">Gravar Metas de Sono</button>
+           </div>
+        </div>
+      </div>
+
+      <div id="sau-view-treino" style="display:none;">
+        <div class="s-toggle-container">
+          <button class="s-toggle-btn active" id="sau-btn-sub-t-diario" onclick="AppSaude.switchSub('treino','diario','t')">Sessões</button>
+          <button class="s-toggle-btn" id="sau-btn-sub-t-planos" onclick="AppSaude.switchSub('treino','planos','t')">Planos de Treino</button>
+          <button class="s-toggle-btn" id="sau-btn-sub-t-biblio" onclick="AppSaude.switchSub('treino','biblio','t')">Banco Muscular</button>
+        </div>
+        <div id="sau-sub-t-diario"><div class="m-card"><div class="m-card-header"><div class="m-title" style="font-size:14px;">Sessões Executadas</div></div><div id="sau-lista-treino-diario"></div></div></div>
+        <div id="sau-sub-t-planos" style="display:none;">
+           <div class="m-card" style="margin-bottom: 16px;"><div class="m-card-header"><div class="m-title" style="font-size:14px;">Análise de Prescrição</div></div><div id="sau-lista-analise-planos"></div></div>
+           <div class="m-card"><div class="m-card-header"><div class="m-title" style="font-size:14px;">Rotinas Cadastradas</div><button class="sys-btn-primary" style="height:32px; font-size:11px; padding:0 12px; border-radius:6px; width:auto;" onclick="AppSaude.abrirModalCriacaoPlano()">+ Novo Plano</button></div><div id="sau-lista-planos-treino"></div></div>
+        </div>
+        <div id="sau-sub-t-biblio" style="display:none;">
+           <div class="m-card" style="margin-bottom: 16px;"><div class="m-card-header"><div class="m-title" style="font-size:14px;">Camada 1: Alvos Musculares</div></div><div id="sau-lista-rast-m"></div></div>
+           <div class="m-card"><div class="m-card-header"><div class="m-title" style="font-size:14px;">Camada 2: Biblioteca de Movimentos</div></div><div id="sau-lista-biblio-treino"></div></div>
+        </div>
+      </div>
+
+      <div id="sau-view-nutricao" style="display:none;">
+        <div class="s-toggle-container">
+          <button class="s-toggle-btn active" id="sau-btn-sub-n-diario" onclick="AppSaude.switchSub('nutricao','diario','n')">Refeições</button>
+          <button class="s-toggle-btn" id="sau-btn-sub-n-metas" onclick="AppSaude.switchSub('nutricao','metas','n')">Diretrizes Macros</button>
+          <button class="s-toggle-btn" id="sau-btn-sub-n-biblio" onclick="AppSaude.switchSub('nutricao','biblio','n')">Banco Calórico</button>
+        </div>
+        <div id="sau-sub-n-diario"><div class="m-card"><div class="m-card-header"><div class="m-title" style="font-size:14px;">Diário Nutricional</div></div><div id="sau-lista-nutri-diario"></div></div></div>
+        <div id="sau-sub-n-metas" style="display:none;">
+           <div class="m-card">
+             <div class="m-card-header"><div class="m-title" style="font-size:14px;">Metabolismo Base (Macros Diários)</div></div>
+             <div class="m-row-2">
+               <div class="m-form-group"><label>Kcal Alvo (Teto)</label><input type="number" id="sau-meta-kcal" class="sys-input"></div>
+               <div class="m-form-group"><label>Água Limpa (ml Min)</label><input type="number" id="sau-meta-agua" class="sys-input"></div>
+             </div>
+             <div class="m-row-2" style="margin-top: 12px;">
+               <div class="m-form-group"><label>Proteína (g)</label><input type="number" id="sau-meta-p" class="sys-input"></div>
+               <div class="m-form-group"><label>Carboidrato (g)</label><input type="number" id="sau-meta-c" class="sys-input"></div>
+             </div>
+             <div class="m-row-2" style="margin-top: 12px;">
+               <div class="m-form-group"><label>Gordura (g)</label><input type="number" id="sau-meta-g" class="sys-input"></div>
+               <div class="m-form-group"><label>Fibra Mín. (g)</label><input type="number" id="sau-meta-fibra" class="sys-input"></div>
+             </div>
+             <div class="m-row-2" style="margin-top: 12px;">
+               <div class="m-form-group"><label>Sódio Máx. (mg)</label><input type="number" id="sau-meta-sodio" class="sys-input"></div>
+               <div class="m-form-group"><label>Açúcar Máx. (g)</label><input type="number" id="sau-meta-acucar" class="sys-input"></div>
+             </div>
+             <button class="sys-btn-primary" style="height:44px; margin-top:20px; border-radius: 8px;" onclick="AppSaude.salvarMetasBasicas(this)">Salvar Diretrizes</button>
+           </div>
+        </div>
+        <div id="sau-sub-n-biblio" style="display:none;"><div class="m-card"><div class="m-card-header"><div class="m-title" style="font-size:14px;">Base de Dados Alimentar</div></div><div id="sau-lista-biblio-nutricao"></div></div></div>
+      </div>
+
+      <div id="sau-view-suplementos" style="display:none;">
+        <div class="s-toggle-container">
+          <button class="s-toggle-btn active" id="sau-btn-sub-s-diario" onclick="AppSaude.switchSub('suplementos','diario','s')">Tomas Registradas</button>
+          <button class="s-toggle-btn" id="sau-btn-sub-s-biblio" onclick="AppSaude.switchSub('suplementos','biblio','s')">Química e Produtos</button>
+        </div>
+        <div id="sau-sub-s-diario"><div class="m-card"><div class="m-card-header"><div class="m-title" style="font-size:14px;">Histórico de Suplementação</div></div><div id="sau-lista-sup-diario"></div></div></div>
+        <div id="sau-sub-s-biblio" style="display:none;">
+           <div class="m-card" style="margin-bottom: 16px;"><div class="m-card-header"><div class="m-title" style="font-size:14px;">Camada 1: Ativos Isolados</div></div><div id="sau-lista-rast-q"></div></div>
+           <div class="m-card"><div class="m-card-header"><div class="m-title" style="font-size:14px;">Camada 2: Produtos em Estoque</div></div><div id="sau-lista-biblio-suplemento"></div></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <button class="sys-btn-fab" id="sau-fab-main" onclick="AppSaude.abrirModalContextual()" style="display:none;">
+    <span class="material-symbols-rounded">add</span>
+  </button>
+
+  <div class="sys-modal-overlay" id="sau-modal-add-rastreador">
+    <div class="sys-modal-surface">
+      <div class="sys-modal-header"><h2 id="sau-lbl-modal-rast">Configuração Genética</h2><button class="sys-icon-btn" onclick="AppSaude.fecharModalAtivo()"><span class="material-symbols-rounded">close</span></button></div>
+      <div class="sys-modal-body">
+        <input type="hidden" id="sau-edit-id-rast"><input type="hidden" id="sau-dir-r-cat">
+        <div class="m-form-group"><label>Nome (Único)</label><input type="text" id="sau-dir-r-nome" class="sys-input" placeholder="Ex: Cafeína ou Peitoral"></div>
+        <div class="m-row-2">
+          <div class="m-form-group"><label>Lim Mínimo</label><input type="number" id="sau-dir-r-min" class="sys-input" placeholder="Carência"></div>
+          <div class="m-form-group"><label>Lim Máximo</label><input type="number" id="sau-dir-r-max" class="sys-input" placeholder="Toxicidade"></div>
+        </div>
+        <div class="m-form-group"><label>Unidade de Medida</label><input type="text" id="sau-dir-r-und" class="sys-input" placeholder="Ex: mg, séries"></div>
+        
+        <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--divider);">
+          <label style="display:flex; align-items:center; gap:8px; cursor:pointer; margin-bottom:12px;">
+             <input type="checkbox" id="sau-dir-r-temregra" style="width:16px; height:16px; accent-color:var(--accent);" onchange="document.getElementById('sau-dir-r-regra-area').style.display = this.checked ? 'block' : 'none'">
+             <span style="font-size:12px; font-weight:700; color:var(--text-primary);">Acoplar Lei Biológica Temporal</span>
+          </label>
+          <div id="sau-dir-r-regra-area" style="display:none; padding:16px; background:var(--bg-hover); border-radius:10px; border:1px solid var(--divider);">
+            <div class="m-row-2">
+              <div class="m-form-group"><label>Se verificado</label><select id="sau-dir-r-cond" class="sys-input"><option value="apos">Após as</option><option value="antes">Antes das</option></select></div>
+              <div class="m-form-group"><label>Hora</label><input type="time" id="sau-dir-r-hora" class="sys-input"></div>
+            </div>
+            <div class="m-row-2">
+              <div class="m-form-group"><label>Impacta O</label><select id="sau-dir-r-dest" class="sys-input"><option value="Sono">Sono</option><option value="Treino">Treino</option><option value="Sistêmico">Sistêmico</option></select></div>
+              <div class="m-form-group"><label>Natureza</label><select id="sau-dir-r-tipo" class="sys-input"><option value="dano">Dano</option><option value="sinergia">Sinergia</option></select></div>
+            </div>
+            <div class="m-form-group"><label>Efeito Resultante</label><input type="text" id="sau-dir-r-desc" class="sys-input" placeholder="Ex: Insônia profunda"></div>
+          </div>
+        </div>
+        <button class="sys-btn-primary" style="height:44px; margin-top:24px; width:100%; border-radius:10px;" onclick="AppSaude.salvarRastreador()">Gravar Variável</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="sys-modal-overlay" id="sau-modal-add-biblio">
+    <div class="sys-modal-surface">
+      <div class="sys-modal-header"><h2 id="sau-lbl-modal-biblio">Configurar Item</h2><button class="sys-icon-btn" onclick="AppSaude.fecharModalAtivo()"><span class="material-symbols-rounded">close</span></button></div>
+      <div class="sys-modal-body">
+        <input type="hidden" id="sau-edit-id-bib"><input type="hidden" id="sau-dir-b-mod" value=""> 
+        <div class="m-form-group"><label>Nome do Item</label><input type="text" id="sau-dir-b-nome" class="sys-input"></div>
+        
+        <div id="sau-dir-b-ext-n" style="display:none; margin-bottom:16px;">
+          <div class="m-row-2">
+            <div class="m-form-group"><label>Estado</label><select id="sau-dir-b-tipo" class="sys-input"><option value="solido">Sólido</option><option value="liquido">Líquido</option></select></div>
+            <div class="m-form-group"><label>Medida Base</label><select id="sau-dir-b-base" class="sys-input"><option value="100">Por 100g/ml</option><option value="1">Por Unidade</option></select></div>
+          </div>
+          <div class="m-form-group" style="margin-top:12px;"><label>Kcal Base</label><input type="number" id="sau-dir-b-kcal" class="sys-input"></div>
+          <div class="m-row-2" style="margin-top:12px;">
+            <div class="m-form-group"><label>P(g)</label><input type="number" id="sau-dir-b-p" class="sys-input"></div>
+            <div class="m-form-group"><label>C(g)</label><input type="number" id="sau-dir-b-c" class="sys-input"></div>
+          </div>
+          <div class="m-row-2" style="margin-top:12px;">
+            <div class="m-form-group"><label>G(g)</label><input type="number" id="sau-dir-b-g" class="sys-input"></div>
+            <div class="m-form-group"><label>Fibra(g)</label><input type="number" id="sau-dir-b-fibra" class="sys-input"></div>
+          </div>
+          <div class="m-row-2" style="margin-top:12px;">
+            <div class="m-form-group"><label>Sódio(mg)</label><input type="number" id="sau-dir-b-sodio" class="sys-input"></div>
+            <div class="m-form-group"><label>Açúcar(g)</label><input type="number" id="sau-dir-b-acucar" class="sys-input"></div>
+          </div>
+        </div>
+        
+        <div id="sau-dir-b-ext-t" style="display:none; margin-bottom:16px;"><div class="m-form-group"><label>Gasto (Kcal/Hora)</label><input type="number" id="sau-dir-b-tkcal" class="sys-input"></div></div>
+        <div id="sau-dir-b-ext-s" style="display:none; margin-bottom:16px;"><div class="m-form-group"><label>Estoque Inicial (Doses)</label><input type="number" id="sau-dir-b-estoque" class="sys-input"></div></div>
+
+        <div style="background:var(--bg-hover); padding:16px; border-radius:10px; border:1px solid var(--divider); margin-top:20px;">
+           <label style="color:var(--text-primary); font-size:12px; font-weight:700; margin-bottom:12px; display:block;">Composição Genética (Camada 1)</label>
+           <div class="m-row-2" style="align-items:flex-end;">
+              <div class="m-form-group" style="margin-bottom:0;">
+                <div style="display:flex; gap:8px;">
+                  <select id="sau-dir-b-vinc-sel" class="sys-input" style="flex:1;"></select>
+                  <button class="sys-btn-primary" style="width:auto; padding:0 14px; border-radius:8px;" onclick="AppSaude.chamarCriacaoRastreador()"><span class="material-symbols-rounded">add</span></button>
+                </div>
+              </div>
+              <div class="m-form-group" style="margin-bottom:0;"><input type="number" id="sau-dir-b-vinc-qtd" class="sys-input" placeholder="Mult / Qtd"></div>
+           </div>
+           <button class="sys-btn-primary" style="height:44px; width:100%; margin-top:12px; border-radius:8px;" onclick="AppSaude.addVinc()">Adicionar Composição</button>
+           <div id="sau-lista-b-vinc" style="display:none; margin-top:12px; border-top:1px solid var(--divider); padding-top:12px;"></div>
+        </div>
+
+        <div class="m-form-group" style="margin-top:20px;">
+          <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+             <input type="checkbox" id="sau-dir-b-dano" style="width:16px; height:16px; accent-color:var(--mai-danger);" onchange="document.getElementById('sau-dir-b-perigo').style.display = this.checked ? 'block' : 'none'">
+             <span style="color:var(--mai-danger);">Nocividade Inerente (Sempre Tóxico)</span>
+          </label>
+          <input type="text" id="sau-dir-b-perigo" class="sys-input" style="display:none; border-color:color-mix(in srgb, var(--mai-danger) 50%, transparent); background:color-mix(in srgb, var(--mai-danger) 5%, transparent); margin-top:8px;" placeholder="Justifique...">
+        </div>
+
+        <div style="border-top: 1px solid var(--divider); padding-top: 16px; margin-top:16px;">
+          <label style="display:flex; align-items:center; gap:8px; cursor:pointer; margin-bottom:12px;">
+             <input type="checkbox" id="sau-dir-b-temregra" style="width:16px; height:16px; accent-color:var(--text-primary);" onchange="document.getElementById('sau-dir-b-regra-area').style.display = this.checked ? 'block' : 'none'">
+             <span style="color:var(--text-primary);">Acoplar Lei Temporal ao Item</span>
+          </label>
+          <div id="sau-dir-b-regra-area" style="display:none; padding:16px; background:var(--bg-hover); border-radius:10px; border:1px solid var(--divider);">
+            <div class="m-row-2">
+              <div class="m-form-group"><label>Condição</label><select id="sau-dir-b-regra-cond" class="sys-input"><option value="apos">Após as</option><option value="antes">Antes das</option></select></div>
+              <div class="m-form-group"><label>Hora</label><input type="time" id="sau-dir-b-regra-hora" class="sys-input"></div>
+            </div>
+            <div class="m-row-2">
+              <div class="m-form-group"><label>Gera Efeito Em</label><select id="sau-dir-b-regra-dest" class="sys-input"><option value="Sono">Sono</option><option value="Treino">Treino</option><option value="Sistêmico">Sistêmico</option></select></div>
+              <div class="m-form-group"><label>Natureza</label><select id="sau-dir-b-regra-tipo" class="sys-input"><option value="dano">Dano</option><option value="sinergia">Sinergia</option></select></div>
+            </div>
+            <div class="m-form-group"><label>Descrição</label><input type="text" id="sau-dir-b-regra-desc" class="sys-input" placeholder="Ex: Bloqueia adenosina"></div>
+          </div>
+        </div>
+        <button class="sys-btn-primary" style="height:46px; margin-top:24px; width:100%; border-radius:10px;" onclick="AppSaude.salvarBiblio()">Gravar Composto</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="sys-modal-overlay" id="sau-modal-plano-treino">
+    <div class="sys-modal-surface">
+      <div class="sys-modal-header"><h2>Configurar Plano de Treino</h2><button class="sys-icon-btn" onclick="AppSaude.fecharModalAtivo()"><span class="material-symbols-rounded">close</span></button></div>
+      <div class="sys-modal-body">
+        <input type="hidden" id="sau-edit-id-plano">
+        <div class="m-form-group"><label>Nome do Plano</label><input type="text" id="sau-plano-nome" class="sys-input"></div>
+        
+        <div style="background:var(--bg-hover); padding:16px; border-radius:10px; border:1px solid var(--divider); margin-top:16px;">
+           <label style="font-size:12px; font-weight:700; margin-bottom:12px; display:block; color:var(--text-primary);">Adicionar Exercício ao Plano</label>
+           <div class="m-form-group" style="margin-bottom: 12px;"><select id="sau-plano-ex-sel" class="sys-input"></select></div>
+           <div class="m-row-2">
+              <div class="m-form-group" style="margin-bottom:0;"><label>Séries</label><input type="number" id="sau-plano-ex-ser" class="sys-input"></div>
+              <div class="m-form-group" style="margin-bottom:0;"><label>Repetições</label><input type="text" id="sau-plano-ex-rep" class="sys-input" placeholder="Ex: 10-12"></div>
+           </div>
+           <button class="sys-btn-primary" style="height:44px; width:100%; margin-top:16px; border-radius:8px;" onclick="AppSaude.addExPlano()">Add Exercício</button>
+           <div id="sau-lista-plano-exs" style="display:none; margin-top:12px; border-top:1px solid var(--divider); padding-top:12px;"></div>
+        </div>
+        <button class="sys-btn-primary" style="height:46px; margin-top:24px; width:100%; border-radius:10px;" onclick="AppSaude.salvarPlanoTreino()">Gravar Plano</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="sys-modal-overlay" id="sau-modal-treino">
+    <div class="sys-modal-surface">
+      <div class="sys-modal-header"><h2>Execução de Treino</h2><button class="sys-icon-btn" onclick="AppSaude.fecharModalAtivo(true)"><span class="material-symbols-rounded">close</span></button></div>
+      <div class="sys-modal-body">
+        <div class="m-form-group" style="margin-bottom: 24px; border-bottom: 1px solid var(--divider); padding-bottom: 16px;">
+           <label style="color:var(--accent);">Preenchimento Rápido (Rotina)</label>
+           <div style="display:flex; gap:8px;">
+              <select id="sau-reg-t-plano-sel" class="sys-input" style="flex:1;"></select>
+              <button class="sys-btn-primary" style="width:auto; padding:0 16px; border-radius:8px;" onclick="AppSaude.carregarPlanoParaSessao()">Importar</button>
+           </div>
+        </div>
+        <div class="m-form-group">
+          <label>Adicionar Manual</label>
+          <div style="display:flex; gap:8px;">
+            <select id="sau-reg-t-item" class="sys-input" style="flex:1;"></select>
+            <button class="sys-btn-primary" style="width:auto; padding:0 14px; border-radius:8px;" onclick="AppSaude.chamarCriacaoBiblio('treino')"><span class="material-symbols-rounded">add</span></button>
+          </div>
+        </div>
+        <div class="m-row-2">
+          <div class="m-form-group"><label>Duração (min)</label><input type="number" id="sau-reg-t-dur" class="sys-input" value="15"></div>
+          <div class="m-form-group"><label>Séries Feitas</label><input type="number" id="sau-reg-t-ser" class="sys-input"></div>
+        </div>
+        <button class="sys-btn-primary" style="height:44px; width:100%; margin-bottom:12px; border-radius:8px;" onclick="AppSaude.addTreinoTemp()">Anexar na Sessão</button>
+        
+        <div id="sau-lista-t-temp" style="display:none; margin-bottom:12px;"></div>
+        
+        <div style="margin-top:24px; border-top: 1px solid var(--divider); padding-top: 16px;">
+          <div class="m-form-group"><label>Hora Finalização</label><input type="time" id="sau-reg-t-hora" class="sys-input"></div>
+          <div class="s-switch-dano" id="sau-reg-t-btndano" onclick="AppSaude.togglePainelDano('sau-reg-t-btndano', 'sau-reg-t-areadano', 'sau-reg-t-btnsalvar')"><span class="material-symbols-rounded">healing</span> Reportar Lesão ou Falha</div>
+          <div class="s-dano-area" id="sau-reg-t-areadano"><textarea id="sau-reg-t-perigo" class="sys-input" style="height:60px; border-color:color-mix(in srgb, var(--mai-danger) 50%, transparent);" placeholder="Descreva..."></textarea></div>
+          <button class="sys-btn-primary" id="sau-reg-t-btnsalvar" style="height:46px; margin-top:20px; width:100%; border-radius:10px;" onclick="AppSaude.salvarSessaoTreino()">Confirmar Sessão</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sys-modal-overlay" id="sau-modal-nutri">
+    <div class="sys-modal-surface">
+      <div class="sys-modal-header"><h2>Refeição / Ingestão</h2><button class="sys-icon-btn" onclick="AppSaude.fecharModalAtivo(true)"><span class="material-symbols-rounded">close</span></button></div>
+      <div class="sys-modal-body">
+        <div class="m-form-group">
+          <label>Adicionar Alimento</label>
+          <div style="display:flex; gap:8px;">
+            <select id="sau-reg-n-item" class="sys-input" style="flex:1;" onchange="AppSaude.checkDanoNativo('sau-reg-n-item','sau-reg-n-btndano','sau-reg-n-areadano','sau-reg-n-btnsalvar','sau-reg-n-perigo')"></select>
+            <button class="sys-btn-primary" style="width:auto; padding:0 14px; border-radius:8px;" onclick="AppSaude.chamarCriacaoBiblio('nutricao')"><span class="material-symbols-rounded">add</span></button>
+          </div>
+        </div>
+        <div class="m-form-group"><label id="sau-lbl-n-qtd">Quantidade</label><input type="number" id="sau-reg-n-qtd" class="sys-input"></div>
+        <button class="sys-btn-primary" style="height:44px; width:100%; margin-bottom:12px; border-radius:8px;" onclick="AppSaude.addNutriTemp()">Anexar à Refeição</button>
+        
+        <div id="sau-lista-n-temp" style="display:none; margin-bottom:12px;"></div>
+        
+        <div style="margin-top:24px; border-top: 1px solid var(--divider); padding-top: 16px;">
+          <div class="m-form-group"><label>Hora da Refeição</label><input type="time" id="sau-reg-n-hora" class="sys-input"></div>
+          <div class="s-switch-dano" id="sau-reg-n-btndano" onclick="AppSaude.togglePainelDano('sau-reg-n-btndano', 'sau-reg-n-areadano', 'sau-reg-n-btnsalvar')"><span class="material-symbols-rounded">warning</span> Marcar Refeição como Nociva</div>
+          <div class="s-dano-area" id="sau-reg-n-areadano"><textarea id="sau-reg-n-perigo" class="sys-input" style="height:60px; border-color:color-mix(in srgb, var(--mai-danger) 50%, transparent);" placeholder="Justificativa..."></textarea></div>
+          <button class="sys-btn-primary" id="sau-reg-n-btnsalvar" style="height:46px; margin-top:20px; width:100%; border-radius:10px;" onclick="AppSaude.salvarSessaoNutri()">Confirmar Refeição</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sys-modal-overlay" id="sau-modal-sup">
+    <div class="sys-modal-surface">
+      <div class="sys-modal-header"><h2>Administração Química</h2><button class="sys-icon-btn" onclick="AppSaude.fecharModalAtivo(true)"><span class="material-symbols-rounded">close</span></button></div>
+      <div class="sys-modal-body">
+        <div class="m-form-group">
+          <label>Produto / Composto</label>
+          <div style="display:flex; gap:8px;">
+            <select id="sau-reg-s-item" class="sys-input" style="flex:1;"></select>
+            <button class="sys-btn-primary" style="width:auto; padding:0 14px; border-radius:8px;" onclick="AppSaude.chamarCriacaoBiblio('suplemento')"><span class="material-symbols-rounded">add</span></button>
+          </div>
+        </div>
+        <div class="m-form-group"><label>Doses</label><input type="number" id="sau-reg-s-qtd" class="sys-input" value="1"></div>
+        <button class="sys-btn-primary" style="height:44px; width:100%; margin-bottom:12px; border-radius:8px;" onclick="AppSaude.addSupTemp()">Anexar Toma</button>
+        
+        <div id="sau-lista-s-temp" style="display:none; margin-bottom:12px;"></div>
+        <div style="margin-top:24px; border-top: 1px solid var(--divider); padding-top: 16px;">
+          <div class="m-form-group"><label>Hora da Toma</label><input type="time" id="sau-reg-s-hora" class="sys-input"></div>
+          <button class="sys-btn-primary" style="height:46px; margin-top:16px; width:100%; border-radius:10px;" onclick="AppSaude.salvarSessaoSup()">Confirmar e Baixar Estoque</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sys-modal-overlay" id="sau-modal-sono">
+    <div class="sys-modal-surface">
+      <div class="sys-modal-header"><h2>Dados de Descanso</h2><button class="sys-icon-btn" onclick="AppSaude.fecharModalAtivo(true)"><span class="material-symbols-rounded">close</span></button></div>
+      <div class="sys-modal-body">
+        <div class="m-row-2">
+          <div class="m-form-group"><label>Hora de Deitar</label><input type="time" id="sau-reg-o-deitar" class="sys-input"></div>
+          <div class="m-form-group"><label>Hora de Acordar</label><input type="time" id="sau-reg-o-acordar" class="sys-input"></div>
+        </div>
+        <div style="padding:16px; background:var(--bg-hover); border-radius:10px; margin-top:12px;">
+           <label style="color:var(--accent); font-weight:700; font-size:12px; display:block; margin-bottom:12px;">Métricas do Relógio (Opcional)</label>
+           <div class="m-row-2">
+              <div class="m-form-group" style="margin-bottom:0;"><label>Sono REM (Min)</label><input type="number" id="sau-reg-o-rem" class="sys-input" placeholder="0"></div>
+              <div class="m-form-group" style="margin-bottom:0;"><label>Profundo (Min)</label><input type="number" id="sau-reg-o-prof" class="sys-input" placeholder="0"></div>
+           </div>
+        </div>
+        <div class="s-switch-dano" id="sau-reg-o-btndano" onclick="AppSaude.togglePainelDano('sau-reg-o-btndano', 'sau-reg-o-areadano', 'sau-reg-o-btnsalvar')" style="margin-top:24px;"><span class="material-symbols-rounded">warning</span> Relatar Privação Grave</div>
+        <div class="s-dano-area" id="sau-reg-o-areadano"><textarea id="sau-reg-o-perigo" class="sys-input" style="height:60px; border-color:color-mix(in srgb, var(--mai-danger) 50%, transparent);" placeholder="Sintomas..."></textarea></div>
+        <button class="sys-btn-primary" id="sau-reg-o-btnsalvar" style="height:46px; margin-top:24px; width:100%; border-radius:10px;" onclick="AppSaude.salvarSono()">Calcular Score de Recuperação</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  const AppSaude = {
+    dataAtual: '', modoVisao: 'geral', periodoAtual: 'diaria',
+    subAbaAtual: { 'treino': 'diario', 'nutricao': 'diario', 'suplementos': 'diario', 'sono': 'diario' },
+    rastreadores: [], biblioteca: [], diarioDB: {}, 
+    metas: { kcal: 2000, agua: 2500, p: 160, c: 250, g: 60, fibra: 30, sodio: 2000, acucar: 40, deitar: '22:30', horasIdeais: 8, blocosIdeais: 5, rem: 90, profundo: 90 },
+    modalStack: [], ultimoIdCriado: null, vinculosTemp: [], sessaoTreinoTemp: [], sessaoNutriTemp: [], sessaoSupTemp: [], exsPlanoTemp: [],
+
+    init: function() {
+      this.irParaHoje();
+      
+      try {
+         const p = localStorage.getItem('azamoSaudePeriodo');
+         if (p && ['diaria','semanal','mensal','anual','total'].includes(p)) {
+             this.periodoAtual = p;
+             if(document.getElementById('sau-filtro-periodo')) document.getElementById('sau-filtro-periodo').value = p;
+         }
+      } catch(e) {}
+
+      // CORREÇÃO: Força o desenho da tela mesmo ao testar localmente
+      if (typeof google === 'undefined' || !google.script) {
+          console.warn("Fora do ambiente Google. Usando fallback local.");
+          this.loadFallback();
+          return;
+      }
+
+      MAIRun.withSuccessHandler(resRaw => {
+         try {
+             if(!resRaw) { this.loadFallback(); return; }
+             const res = JSON.parse(resRaw);
+             if(res.ok) {
+                 this.rastreadores = res.rastreadores || [];
+                 this.biblioteca = res.biblioteca || [];
+                 this.diarioDB = res.diarioDB || {};
+                 if(res.metas && Object.keys(res.metas).length > 0) this.metas = res.metas;
+                 
+                 this.verificarMassaInicial();
+                 this.carregarMetasBasicas(); 
+                 this.atualizarUIBase(); 
+                 this.setModo('geral');
+             } else { this.loadFallback(); }
+         } catch(e) { this.loadFallback(); }
+      }).withFailureHandler(() => { this.loadFallback(); }).getDadosSaude();
+    },
+
+    loadFallback: function() {
+        try { const ms = localStorage.getItem('saude_metas_fallback'); if(ms) this.metas = JSON.parse(ms); } catch(e){}
+        this.verificarMassaInicial(); 
+        this.carregarMetasBasicas(); 
+        this.atualizarUIBase(); 
+        this.setModo('geral'); // Garante que desenha o dashboard inicial
+    },
+
+    verificarMassaInicial: function() {
+      if(this.rastreadores.length === 0) {
+          this.rastreadores.push({ id: 1, categoria: 'Princípio Ativo', nome: 'Cafeína', min: null, max: 200, und: 'mg', temRegra: false });
+          this.rastreadores.push({ id: 2, categoria: 'Músculo', nome: 'Peitoral', min: 8, max: 16, und: 'séries/sem', temRegra: false });
+      }
+      if(this.biblioteca.length === 0) {
+          this.biblioteca.push({ id: 10, modulo: 'nutricao', nome: 'Café Expresso', tipo: 'liquido', base: 100, kcal: 0, p:0, c:0, g:0, fibra:0, sodio:2, acucar:0, isDano: false, perigo: '', estoque: 0, composicao: [{nome: 'Cafeína', qtd: 80, und:'mg'}], temRegra: false });
+          this.biblioteca.push({ id: 11, modulo: 'treino', nome: 'Supino Reto', tipo: '', base: 100, kcal: 300, p:0, c:0, g:0, fibra:0, sodio:0, acucar:0, isDano: false, perigo: '', estoque: 0, composicao: [{nome: 'Peitoral', qtd: 1, und:'séries/sem'}], temRegra: false });
+      }
+    },
+
+    atualizarDisplayData: function(dataStr) {
+      const display = document.getElementById('sau-data-display');
+      if(!display) return;
+      const [y, m, d] = dataStr.split('-');
+      const meses = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+      display.innerText = `${d} de ${meses[parseInt(m)-1]}, ${y}`;
+    },
+
+    irParaHoje: function() {
+      const hoje = new Date(); const tz = hoje.getTimezoneOffset() * 60000;
+      const dataFormatada = new Date(hoje.getTime() - tz).toISOString().split('T')[0];
+      document.getElementById('sau-data-atual').value = dataFormatada;
+      this.mudarData();
+    },
+
+    mudarDataPeloPicker: function() {
+        const v = document.getElementById('sau-data-atual').value;
+        if(v) this.mudarData();
+    },
+
+    mudarData: function() {
+      this.dataAtual = document.getElementById('sau-data-atual').value;
+      this.atualizarDisplayData(this.dataAtual);
+
+      if(!this.diarioDB[this.dataAtual]) this.diarioDB[this.dataAtual] = { sono: { deitar:'', acordar:'', min:0, rem:0, prof:0, blocos:0, isDano:false, perigo:'', score:0 }, treinos: [], nutricao: [], suplementos: [], alertas: [] };
+      const agora = new Date(); const hm = String(agora.getHours()).padStart(2, '0') + ':' + String(agora.getMinutes()).padStart(2, '0');
+      if(document.getElementById('sau-reg-t-hora')) document.getElementById('sau-reg-t-hora').value = hm;
+      if(document.getElementById('sau-reg-n-hora')) document.getElementById('sau-reg-n-hora').value = hm; 
+      if(document.getElementById('sau-reg-s-hora')) document.getElementById('sau-reg-s-hora').value = hm;
+      this.processarMotorConformidade();
+    },
+
+    diaAnterior: function() { 
+        let d = new Date(this.dataAtual + 'T12:00:00'); d.setDate(d.getDate() - 1); 
+        document.getElementById('sau-data-atual').value = d.toISOString().split('T')[0]; 
+        this.mudarData(); 
+    },
+    proximoDia: function() { 
+        let d = new Date(this.dataAtual + 'T12:00:00'); d.setDate(d.getDate() + 1); 
+        document.getElementById('sau-data-atual').value = d.toISOString().split('T')[0]; 
+        this.mudarData(); 
+    },
+
+    setModo: function(modo) {
+      this.modoVisao = modo;
+      
+      // CORREÇÃO: Esconde à força todas as views de conteúdo para não empilharem na tela
+      document.querySelectorAll('#sau-container div[id^="sau-view-"]').forEach(el => el.style.display = 'none');
+      
+      // Mostra apenas a aba em que clicou
+      const viewAtiva = document.getElementById('sau-view-' + modo);
+      if (viewAtiva) viewAtiva.style.display = 'block';
+      
+      const fab = document.getElementById('sau-fab-main');
+      if (fab) {
+          if (modo === 'geral') fab.style.display = 'none'; 
+          else fab.style.display = 'flex';
+      }
+      
+      this.processarMotorConformidade();
+    },
+
+    aplicarFiltrosGlobais: function() {
+        this.periodoAtual = document.getElementById('sau-filtro-periodo').value;
+        try { localStorage.setItem('azamoSaudePeriodo', this.periodoAtual); } catch(e) {}
+        this.processarMotorConformidade();
+    },
+
+    switchSub: function(modulo, v, letter) {
+      this.subAbaAtual[modulo] = v;
+      document.querySelectorAll(`#sau-container [id^="sau-btn-sub-${letter}-"]`).forEach(b => b.classList.remove('active'));
+      document.querySelectorAll(`#sau-container [id^="sau-sub-${letter}-"]`).forEach(d => d.style.display = 'none');
+      document.getElementById(`sau-btn-sub-${letter}-${v}`).classList.add('active'); 
+      document.getElementById(`sau-sub-${letter}-${v}`).style.display = 'block';
+      if(modulo === 'treino' && v === 'planos') this.renderizarPlanos();
+    },
+
+    carregarMetasBasicas: function() {
+       document.getElementById('sau-meta-kcal').value = this.metas.kcal; document.getElementById('sau-meta-agua').value = this.metas.agua;
+       document.getElementById('sau-meta-p').value = this.metas.p; document.getElementById('sau-meta-c').value = this.metas.c; document.getElementById('sau-meta-g').value = this.metas.g;
+       document.getElementById('sau-meta-fibra').value = this.metas.fibra || 30; document.getElementById('sau-meta-sodio').value = this.metas.sodio || 2000;
+       document.getElementById('sau-meta-acucar').value = this.metas.acucar || 40;
+       if(document.getElementById('sau-meta-o-deitar')) document.getElementById('sau-meta-o-deitar').value = this.metas.deitar; 
+       if(document.getElementById('sau-meta-o-horas')) document.getElementById('sau-meta-o-horas').value = this.metas.horasIdeais; 
+       if(document.getElementById('sau-meta-o-rem')) document.getElementById('sau-meta-o-rem').value = this.metas.rem || 90;
+       if(document.getElementById('sau-meta-o-profundo')) document.getElementById('sau-meta-o-profundo').value = this.metas.profundo || 90;
+    },
+
+    salvarMetasBasicas: function(btn) {
+       this.metas.kcal = parseInt(document.getElementById('sau-meta-kcal').value) || 0;
+       this.metas.agua = parseInt(document.getElementById('sau-meta-agua').value) || 0;
+       this.metas.p = parseInt(document.getElementById('sau-meta-p').value) || 0; this.metas.c = parseInt(document.getElementById('sau-meta-c').value) || 0; this.metas.g = parseInt(document.getElementById('sau-meta-g').value) || 0;
+       this.metas.fibra = parseInt(document.getElementById('sau-meta-fibra').value) || 0; this.metas.sodio = parseInt(document.getElementById('sau-meta-sodio').value) || 0; this.metas.acucar = parseInt(document.getElementById('sau-meta-acucar').value) || 0;
+       this.processarMotorConformidade(); 
+       try { localStorage.setItem('saude_metas_fallback', JSON.stringify(this.metas)); } catch(e){}
+       
+       const btnOriginalText = btn ? btn.innerText : 'Salvar';
+       if(btn) { btn.innerText = "A Enviar..."; btn.style.opacity = "0.7"; }
+       try { 
+           MAIRun
+           .withSuccessHandler(() => { if(btn) { btn.innerText = "Salvo com Sucesso!"; btn.style.background = "var(--mai-success)"; btn.style.opacity = "1"; setTimeout(() => { btn.innerText = btnOriginalText; btn.style.background = ""; }, 2000); } })
+           .withFailureHandler((err) => { if(btn) { btn.innerText = "Erro ao salvar"; btn.style.background = "var(--mai-danger)"; btn.style.opacity = "1"; setTimeout(() => { btn.innerText = btnOriginalText; btn.style.background = ""; }, 2000); } })
+           .salvarMetasSaude(this.metas); 
+       } catch(e){ if(btn) { btn.innerText = "Salvo Localmente"; setTimeout(() => { btn.innerText = btnOriginalText; }, 2000); } }
+    },
+
+    salvarMetasSono: function(btn) {
+       this.metas.deitar = document.getElementById('sau-meta-o-deitar').value;
+       this.metas.horasIdeais = parseFloat(document.getElementById('sau-meta-o-horas').value) || 8;
+       this.metas.rem = parseInt(document.getElementById('sau-meta-o-rem').value) || 90; this.metas.profundo = parseInt(document.getElementById('sau-meta-o-profundo').value) || 90;
+       this.processarMotorConformidade(); 
+       try { localStorage.setItem('saude_metas_fallback', JSON.stringify(this.metas)); } catch(e){}
+       
+       const btnOriginalText = btn ? btn.innerText : 'Gravar Metas';
+       if(btn) { btn.innerText = "A Enviar..."; btn.style.opacity = "0.7"; }
+       try { 
+           MAIRun
+           .withSuccessHandler(() => { if(btn) { btn.innerText = "Salvo com Sucesso!"; btn.style.background = "var(--mai-success)"; btn.style.opacity = "1"; setTimeout(() => { btn.innerText = btnOriginalText; btn.style.background = ""; }, 2000); } })
+           .withFailureHandler((err) => { if(btn) { btn.innerText = "Erro ao salvar"; btn.style.background = "var(--mai-danger)"; btn.style.opacity = "1"; setTimeout(() => { btn.innerText = btnOriginalText; btn.style.background = ""; }, 2000); } })
+           .salvarMetasSaude(this.metas); 
+       } catch(e){ if(btn) { btn.innerText = "Salvo Localmente"; setTimeout(() => { btn.innerText = btnOriginalText; }, 2000); } }
+    },
+
+    abrirModal: function(idModal) { 
+        const ativo = document.querySelector('#sau-container .sys-modal-overlay.active');
+        if (ativo) { this.modalStack.push(ativo.id); ativo.classList.remove('active'); } else { this.modalStack = []; } 
+        document.getElementById(idModal).classList.add('active');
+    },
+    fecharModalAtivo: function(forcarTudo = false) {
+       const ativo = document.querySelector('#sau-container .sys-modal-overlay.active');
+       if (ativo) ativo.classList.remove('active');
+       if (!forcarTudo && this.modalStack.length > 0) { 
+           const prev = this.modalStack.pop(); document.getElementById(prev).classList.add('active'); this.atualizarSelectsDiretrizes(); this.atualizarSelectsDiario(); if (this.ultimoIdCriado) this.atribuirIdRecemCriado(prev);
+       } 
+       else { 
+           this.modalStack = []; this.vinculosTemp = []; this.sessaoTreinoTemp = []; this.sessaoNutriTemp = []; this.sessaoSupTemp = []; this.exsPlanoTemp = []; this.renderizarVinc(); this.renderTreinoTemp(); this.renderNutriTemp(); this.renderSupTemp(); this.ultimoIdCriado = null;
+       }
+    },
+    fecharModais: function() { this.fecharModalAtivo(true); },
+
+    atribuirIdRecemCriado: function(modalId) {
+       if(!this.ultimoIdCriado) return;
+       setTimeout(() => {
+           if(modalId === 'sau-modal-treino') document.getElementById('sau-reg-t-item').value = this.ultimoIdCriado;
+           else if(modalId === 'sau-modal-plano-treino') document.getElementById('sau-plano-ex-sel').value = this.ultimoIdCriado;
+           else if(modalId === 'sau-modal-nutri') { document.getElementById('sau-reg-n-item').value = this.ultimoIdCriado; this.checkDanoNativo('sau-reg-n-item', 'sau-reg-n-btndano', 'sau-reg-n-areadano', 'sau-reg-n-btnsalvar', 'sau-reg-n-perigo'); }
+           else if(modalId === 'sau-modal-sup') document.getElementById('sau-reg-s-item').value = this.ultimoIdCriado;
+           else if(modalId === 'sau-modal-add-biblio') document.getElementById('sau-dir-b-vinc-sel').value = this.ultimoIdCriado;
+           this.ultimoIdCriado = null;
+       }, 50);
+    },
+
+    abrirModalContextual: function() {
+       this.fecharModalAtivo(true); const tab = this.modoVisao;
+       if (tab === 'sono') { this.abrirModal('sau-modal-sono'); } 
+       else if (tab === 'treino') {
+           if (this.subAbaAtual.treino === 'diario') { this.atualizarSelectsDiario(); this.abrirModal('sau-modal-treino'); }
+           else if (this.subAbaAtual.treino === 'planos') { this.abrirModalCriacaoPlano(); }
+           else { if(confirm("Criar Alvo Muscular (OK) ou Movimento (Cancelar)?")) this.abrirModalCriacaoRastreador('m'); else this.chamarCriacaoBiblio('treino'); }
+       } else if (tab === 'nutricao') {
+           if (this.subAbaAtual.nutricao === 'diario') { this.atualizarSelectsDiario(); this.abrirModal('sau-modal-nutri'); }
+           else if (this.subAbaAtual.nutricao === 'biblio') { this.chamarCriacaoBiblio('nutricao'); }
+       } else if (tab === 'suplementos') {
+           if (this.subAbaAtual.suplementos === 'diario') { this.atualizarSelectsDiario(); this.abrirModal('sau-modal-sup'); }
+           else { if(confirm("Criar Ativo Isolado (OK) ou Produto Físico (Cancelar)?")) this.abrirModalCriacaoRastreador('q'); else this.chamarCriacaoBiblio('suplemento'); }
+       }
+    },
+
+    chamarCriacaoBiblio: function(mod) {
+       document.getElementById('sau-edit-id-bib').value = '';
+       document.getElementById('sau-dir-b-mod').value = mod; document.getElementById('sau-lbl-modal-biblio').innerText = mod==='treino'?'Criar Exercício':(mod==='nutricao'?'Criar Alimento':'Criar Produto/Composto');
+       document.getElementById('sau-dir-b-nome').value = ''; if(document.getElementById('sau-dir-b-base')) document.getElementById('sau-dir-b-base').value = '100';
+       document.getElementById('sau-dir-b-kcal').value = '';
+       document.getElementById('sau-dir-b-p').value = ''; document.getElementById('sau-dir-b-c').value = ''; document.getElementById('sau-dir-b-g').value = ''; document.getElementById('sau-dir-b-fibra').value = ''; document.getElementById('sau-dir-b-sodio').value = ''; document.getElementById('sau-dir-b-acucar').value = '';
+       document.getElementById('sau-dir-b-tkcal').value = ''; document.getElementById('sau-dir-b-estoque').value = '';
+       document.getElementById('sau-dir-b-dano').checked = false; document.getElementById('sau-dir-b-perigo').style.display = 'none'; document.getElementById('sau-dir-b-perigo').value = '';
+       document.getElementById('sau-dir-b-temregra').checked = false;
+       document.getElementById('sau-dir-b-regra-area').style.display = 'none'; document.getElementById('sau-dir-b-regra-hora').value = ''; document.getElementById('sau-dir-b-regra-desc').value = '';
+       
+       this.vinculosTemp = []; this.renderizarVinc();
+       document.getElementById('sau-dir-b-ext-n').style.display = mod === 'nutricao' ? 'block' : 'none'; 
+       document.getElementById('sau-dir-b-ext-t').style.display = mod === 'treino' ? 'block' : 'none'; 
+       document.getElementById('sau-dir-b-ext-s').style.display = mod === 'suplemento' ? 'block' : 'none';
+       this.atualizarSelectsDiretrizes(); this.abrirModal('sau-modal-add-biblio');
+    },
+
+    chamarCriacaoRastreador: function() { 
+        const mod = document.getElementById('sau-dir-b-mod').value;
+        const tipo = (mod === 'treino' || mod === 'plano_treino') ? 'm' : 'q'; this.abrirModalCriacaoRastreador(tipo);
+    },
+
+    togglePainelDano: function(bId, aId, sId) {
+       const b = document.getElementById(bId); const a = document.getElementById(aId); const s = document.getElementById(sId);
+       b.classList.toggle('active'); 
+       if(b.classList.contains('active')) { a.classList.add('active'); s.style.background = 'var(--mai-danger)'; s.style.color = '#FFF'; s.innerText = 'Confirmar Nocivo'; } 
+       else { a.classList.remove('active'); s.style.background = 'var(--accent)'; s.style.color = '#FFF'; s.innerText = 'Confirmar'; }
+    },
+    limparFormDano: function(bId, aId, sId, iId) { if(document.getElementById(bId).classList.contains('active')) this.togglePainelDano(bId, aId, sId); document.getElementById(iId).value = ''; },
+    checkDanoNativo: function(selId, bId, aId, sId, iId) {
+      const id = parseInt(document.getElementById(selId).value); if(!id) return;
+      const item = this.biblioteca.find(b => b.id === id);
+      if (selId === 'sau-reg-n-item') { 
+          const inpQtd = document.getElementById('sau-reg-n-qtd');
+          if(item.base === 1) { inpQtd.placeholder = 'Unidades (Ex: 2)'; } else { inpQtd.placeholder = item.tipo === 'solido' ? 'Gramas (g)' : 'Mililitros (ml)'; } 
+      }
+      if(item.isDano) { if(!document.getElementById(bId).classList.contains('active')) this.togglePainelDano(bId, aId, sId); document.getElementById(iId).value = item.perigo; } 
+      else { this.limparFormDano(bId, aId, sId, iId); }
+    },
+
+   atualizarUIBase: function() { 
+        this.renderizarRastreadores(); 
+        this.renderizarBibliotecas(); 
+        this.atualizarSelectsDiretrizes(); 
+        this.renderizarPlanos(); 
+        this.atualizarSelectsDiario(); 
+    },
+
+    // RASTREADORES
+    abrirModalCriacaoRastreador: function(tipo) {
+       document.getElementById('sau-edit-id-rast').value = '';
+       document.getElementById('sau-dir-r-cat').value = tipo === 'm' ? 'Músculo' : 'Princípio Ativo';
+       document.getElementById('sau-lbl-modal-rast').innerText = tipo === 'm' ? 'Criar Músculo' : 'Criar Variável Biológica';
+       document.getElementById('sau-dir-r-nome').value = ''; document.getElementById('sau-dir-r-min').value = ''; document.getElementById('sau-dir-r-max').value = ''; document.getElementById('sau-dir-r-und').value = tipo==='m'?'séries/sem':'';
+       document.getElementById('sau-dir-r-temregra').checked = false; document.getElementById('sau-dir-r-regra-area').style.display = 'none'; document.getElementById('sau-dir-r-hora').value = ''; document.getElementById('sau-dir-r-desc').value = '';
+       this.abrirModal('sau-modal-add-rastreador');
+    },
+    editarRastreador: function(id) {
+       const r = this.rastreadores.find(x => x.id === id); if(!r) return;
+       document.getElementById('sau-edit-id-rast').value = r.id; document.getElementById('sau-dir-r-cat').value = r.categoria; document.getElementById('sau-lbl-modal-rast').innerText = 'Editar Variável';
+       document.getElementById('sau-dir-r-nome').value = r.nome;
+       document.getElementById('sau-dir-r-min').value = r.min !== null ? r.min : ''; document.getElementById('sau-dir-r-max').value = r.max !== null ? r.max : '';
+       document.getElementById('sau-dir-r-und').value = r.und;
+       document.getElementById('sau-dir-r-temregra').checked = r.temRegra; document.getElementById('sau-dir-r-regra-area').style.display = r.temRegra ? 'block' : 'none';
+       if(r.temRegra) { document.getElementById('sau-dir-r-cond').value = r.condicao; document.getElementById('sau-dir-r-hora').value = r.hora; document.getElementById('sau-dir-r-dest').value = r.destino; document.getElementById('sau-dir-r-tipo').value = r.tipo; document.getElementById('sau-dir-r-desc').value = r.descricao; } 
+       else { document.getElementById('sau-dir-r-hora').value = ''; document.getElementById('sau-dir-r-desc').value = ''; }
+       this.abrirModal('sau-modal-add-rastreador');
+    },
+    salvarRastreador: function() {
+       const idEdit = document.getElementById('sau-edit-id-rast').value;
+       const cat = document.getElementById('sau-dir-r-cat').value; const nome = document.getElementById('sau-dir-r-nome').value.trim();
+       const minStr = document.getElementById('sau-dir-r-min').value; const min = minStr ? parseFloat(minStr) : null;
+       const maxStr = document.getElementById('sau-dir-r-max').value; const max = maxStr ? parseFloat(maxStr) : null; const und = document.getElementById('sau-dir-r-und').value.trim();
+       if(!nome) return alert("Nome obrigatório.");
+       if(min === null && max === null) return alert("Defina pelo menos um limite.");
+       const temRegra = document.getElementById('sau-dir-r-temregra').checked;
+       let condicao='', hora='', destino='', tipo='', descricao='';
+       if(temRegra) { condicao = document.getElementById('sau-dir-r-cond').value; hora = document.getElementById('sau-dir-r-hora').value; destino = document.getElementById('sau-dir-r-dest').value; tipo = document.getElementById('sau-dir-r-tipo').value;
+       descricao = document.getElementById('sau-dir-r-desc').value.trim(); if(!hora || !descricao) return alert("Regra: Hora e Descrição são obrigatórios.");
+       }
+       const novoId = idEdit ? parseInt(idEdit) : Date.now();
+       const obj = { id: novoId, categoria: cat, nome, min, max, und, temRegra, condicao, hora, destino, tipo, descricao };
+       if(idEdit) { const idx = this.rastreadores.findIndex(x => x.id == idEdit); if(idx > -1) this.rastreadores[idx] = obj; } else { this.rastreadores.push(obj); }
+       this.ultimoIdCriado = novoId; this.atualizarUIBase(); this.fecharModalAtivo(); try { MAIRun.salvarRastreadorSaude(obj); } catch(e){}
+    },
+    removerRastreador: function(id, e) { e.stopPropagation(); this.rastreadores = this.rastreadores.filter(r => r.id !== id); this.atualizarUIBase(); try { MAIRun.excluirRastreadorSaude(id); } catch(e){} },
+    renderizarRastreadores: function() {
+      const rm = this.rastreadores.filter(r => r.categoria === 'Músculo');
+      const rq = this.rastreadores.filter(r => r.categoria !== 'Músculo');
+      const fmt = (r) => `<div class="m-card" style="margin-bottom:8px; cursor:pointer;" onclick="AppSaude.editarRastreador(${r.id})"><div class="m-card-header" style="margin-bottom:8px; padding-bottom:8px;"><span class="s-item-title">${r.nome} <span style="font-size:11px; font-weight:500; color:var(--text-secondary);">(${r.und})</span></span><button class="sys-icon-btn" style="padding:0;" onclick="AppSaude.removerRastreador(${r.id}, event)"><span class="material-symbols-rounded" style="font-size:16px; color:var(--mai-danger);">delete</span></button></div><div class="s-item-meta">${r.min!==null? `<span style="color:var(--mai-warning); font-weight:700;">Min: ${r.min}</span>` : ''} ${r.min!==null&&r.max!==null?' | ':''} ${r.max!==null? `<span style="color:var(--mai-danger); font-weight:700;">Max: ${r.max}</span>` : ''}</div>${r.temRegra ? `<div style="font-size:10px; color:var(--accent); margin-top:8px;">Regra: Se ${r.condicao} ${r.hora} -> ${r.tipo} no ${r.destino}</div>` : ''}</div>`;
+      document.getElementById('sau-lista-rast-m').innerHTML = rm.length ? rm.map(fmt).join('') : '<div style="font-size:12px; opacity:0.5;">Vazio.</div>';
+      document.getElementById('sau-lista-rast-q').innerHTML = rq.length ? rq.map(fmt).join('') : '<div style="font-size:12px; opacity:0.5;">Vazio.</div>';
+    },
+
+    // BIBLIOTECA
+    editarBiblio: function(id) {
+       const b = this.biblioteca.find(x => x.id === id); if(!b) return;
+       if(b.modulo === 'plano_treino') return this.editarPlanoTreino(id);
+       document.getElementById('sau-edit-id-bib').value = b.id; document.getElementById('sau-dir-b-mod').value = b.modulo; document.getElementById('sau-lbl-modal-biblio').innerText = 'Editar Item';
+       document.getElementById('sau-dir-b-nome').value = b.nome;
+       if(b.modulo === 'nutricao') { document.getElementById('sau-dir-b-tipo').value = b.tipo; document.getElementById('sau-dir-b-base').value = b.base || 100; document.getElementById('sau-dir-b-kcal').value = b.kcal; document.getElementById('sau-dir-b-p').value = b.p; document.getElementById('sau-dir-b-c').value = b.c; document.getElementById('sau-dir-b-g').value = b.g; document.getElementById('sau-dir-b-fibra').value = b.fibra || 0; document.getElementById('sau-dir-b-sodio').value = b.sodio || 0; document.getElementById('sau-dir-b-acucar').value = b.acucar || 0; }
+       if(b.modulo === 'treino') { document.getElementById('sau-dir-b-tkcal').value = b.kcal; }
+       if(b.modulo === 'suplemento') { document.getElementById('sau-dir-b-estoque').value = b.estoque; }
+       document.getElementById('sau-dir-b-dano').checked = b.isDano; document.getElementById('sau-dir-b-perigo').style.display = b.isDano ? 'block' : 'none'; document.getElementById('sau-dir-b-perigo').value = b.perigo;
+       this.vinculosTemp = [...b.composicao]; this.renderizarVinc();
+
+       if(b.temRegra) {
+          document.getElementById('sau-dir-b-temregra').checked = true; document.getElementById('sau-dir-b-regra-area').style.display = 'block';
+          document.getElementById('sau-dir-b-regra-cond').value = b.condicao; document.getElementById('sau-dir-b-regra-hora').value = b.hora; document.getElementById('sau-dir-b-regra-dest').value = b.destino; document.getElementById('sau-dir-b-regra-tipo').value = b.tipoR; document.getElementById('sau-dir-b-regra-desc').value = b.descricao;
+       } else { document.getElementById('sau-dir-b-temregra').checked = false; document.getElementById('sau-dir-b-regra-area').style.display = 'none'; document.getElementById('sau-dir-b-regra-hora').value = ''; document.getElementById('sau-dir-b-regra-desc').value = ''; }
+       document.getElementById('sau-dir-b-ext-n').style.display = b.modulo === 'nutricao' ? 'block' : 'none';
+       document.getElementById('sau-dir-b-ext-t').style.display = b.modulo === 'treino' ? 'block' : 'none'; document.getElementById('sau-dir-b-ext-s').style.display = b.modulo === 'suplemento' ? 'block' : 'none';
+       this.atualizarSelectsDiretrizes(); this.abrirModal('sau-modal-add-biblio');
+    },
+    atualizarSelectsDiretrizes: function() {
+       const mod = document.getElementById('sau-dir-b-mod').value;
+       let rasts = (mod === 'treino' || mod === 'plano_treino') ? this.rastreadores.filter(r => r.categoria === 'Músculo') : this.rastreadores.filter(r => r.categoria !== 'Músculo');
+       document.getElementById('sau-dir-b-vinc-sel').innerHTML = rasts.length ? '<option value="">Selecionar...</option>' + rasts.map(r => `<option value="${r.id}">${r.nome}</option>`).join('') : '<option value="">Crie Variável 1º</option>';
+       const bT = this.biblioteca.filter(b => b.modulo === 'treino');
+       if(document.getElementById('sau-plano-ex-sel')) document.getElementById('sau-plano-ex-sel').innerHTML = bT.length ? '<option value="">Selecione Exercício...</option>' + bT.map(b => `<option value="${b.id}">${b.nome}</option>`).join('') : '<option value="">Vazio</option>';
+    },
+    addVinc: function() {
+       const idRast = parseInt(document.getElementById('sau-dir-b-vinc-sel').value); if(!idRast) return;
+       const rast = this.rastreadores.find(r => r.id === idRast); const mod = document.getElementById('sau-dir-b-mod').value;
+       const qtd = mod === 'treino' ? 1 : parseFloat(document.getElementById('sau-dir-b-vinc-qtd').value) || 1;
+       const ex = this.vinculosTemp.find(v => v.nome === rast.nome);
+       if(ex) ex.qtd += qtd; else this.vinculosTemp.push({ nome: rast.nome, qtd: qtd, und: rast.und });
+       document.getElementById('sau-dir-b-vinc-sel').value = ''; document.getElementById('sau-dir-b-vinc-qtd').value = ''; this.renderizarVinc();
+    },
+    removerVinc: function(idx) { this.vinculosTemp.splice(idx, 1); this.renderizarVinc(); },
+    renderizarVinc: function() {
+       const a = document.getElementById('sau-lista-b-vinc');
+       a.style.display = this.vinculosTemp.length ? 'block' : 'none';
+       a.innerHTML = this.vinculosTemp.map((v, i) => `<div class="s-micro-item"><span>${v.nome} <span style="color:var(--accent);">${v.qtd}${v.und==='séries/sem'?'x':v.und}</span></span><button class="sys-icon-btn" style="padding:0; width:24px; height:24px;" onclick="AppSaude.removerVinc(${i})"><span class="material-symbols-rounded" style="font-size:16px;">close</span></button></div>`).join('');
+    },
+    salvarBiblio: function() {
+       const idEdit = document.getElementById('sau-edit-id-bib').value;
+       const mod = document.getElementById('sau-dir-b-mod').value; const nome = document.getElementById('sau-dir-b-nome').value.trim();
+       if(!nome) return alert("Nome obrigatório.");
+       let t='', baseN=100, k=0, p=0, c=0, g=0, s=0, f=0, so=0, a=0;
+       if(mod === 'nutricao') { t=document.getElementById('sau-dir-b-tipo').value; baseN = parseInt(document.getElementById('sau-dir-b-base').value) || 100; k=parseInt(document.getElementById('sau-dir-b-kcal').value)||0; p=parseInt(document.getElementById('sau-dir-b-p').value)||0; c=parseInt(document.getElementById('sau-dir-b-c').value)||0; g=parseInt(document.getElementById('sau-dir-b-g').value)||0; f=parseInt(document.getElementById('sau-dir-b-fibra').value)||0; so=parseInt(document.getElementById('sau-dir-b-sodio').value)||0; a=parseInt(document.getElementById('sau-dir-b-acucar').value)||0; }
+       else if(mod === 'treino') { k=parseInt(document.getElementById('sau-dir-b-tkcal').value)||0; } else if(mod === 'suplemento') { s=parseInt(document.getElementById('sau-dir-b-estoque').value)||0; }
+       
+       const isD = document.getElementById('sau-dir-b-dano').checked;
+       const per = document.getElementById('sau-dir-b-perigo').value.trim();
+       if(isD && !per) return alert("Justifique o dano inerente.");
+       const itemId = idEdit ? parseInt(idEdit) : Date.now();
+       const temRegra = document.getElementById('sau-dir-b-temregra').checked; let condicao='', hora='', destino='', tipo='', descricao='';
+       if(temRegra) { condicao = document.getElementById('sau-dir-b-regra-cond').value; hora = document.getElementById('sau-dir-b-regra-hora').value; destino = document.getElementById('sau-dir-b-regra-dest').value; tipo = document.getElementById('sau-dir-b-regra-tipo').value; descricao = document.getElementById('sau-dir-b-regra-desc').value.trim(); if(!hora || !descricao) return alert("Para a regra, a hora e a descrição são obrigatórias."); }
+
+       const obj = { id: itemId, modulo: mod, nome, tipo: t, base: baseN, kcal: k, p, c, g, fibra: f, sodio: so, acucar: a, isDano: isD, perigo: per, estoque: s, composicao: [...this.vinculosTemp], temRegra, condicao, hora, destino, tipoR: tipo, descricao };
+       if(idEdit) { const idx = this.biblioteca.findIndex(x => x.id === itemId); if(idx > -1) this.biblioteca[idx] = obj; } else { this.biblioteca.push(obj); }
+       this.ultimoIdCriado = itemId; this.atualizarUIBase(); this.fecharModalAtivo(); try { MAIRun.salvarBibliotecaSaude(obj); } catch(e){}
+    },
+    removerBiblio: function(id, e) { e.stopPropagation(); this.biblioteca = this.biblioteca.filter(b => b.id !== id); this.atualizarUIBase(); try { MAIRun.excluirBibliotecaSaude(id); } catch(e){} },
+    renderizarBibliotecas: function() {
+       const bT = this.biblioteca.filter(b => b.modulo === 'treino');
+       const bN = this.biblioteca.filter(b => b.modulo === 'nutricao'); const bS = this.biblioteca.filter(b => b.modulo === 'suplemento');
+       const fmt = (b) => {
+          let ruleHtml = b.temRegra ? `<div style="font-size:10px; color:var(--accent); margin-top:8px;">Regra: Se ${b.condicao} ${b.hora} -> ${b.tipoR} no ${b.destino}</div>` : '';
+          let lblBase = b.base === 1 ? '1 Und' : '100g/ml';
+          let infoHtml = b.modulo === 'nutricao' ? `Base: ${lblBase} | Kcal: ${b.kcal} | P:${b.p} C:${b.c} G:${b.g}` : `Kcal: ${b.kcal} | Links: ${b.composicao.map(x => x.nome).join(', ') || 'Nenhum'}`;
+          return `<div class="m-card" style="margin-bottom:8px; cursor:pointer;" onclick="AppSaude.editarBiblio(${b.id})"><div class="m-card-header" style="margin-bottom:8px; padding-bottom:8px;"><span class="s-item-title" style="color:${b.isDano?'var(--mai-danger)':'var(--text-primary)'};">${b.nome} ${b.isDano? '(Nocivo)' : ''}</span><button class="sys-icon-btn" style="padding:0;" onclick="AppSaude.removerBiblio(${b.id}, event)"><span class="material-symbols-rounded" style="font-size:16px; color:var(--mai-danger);">delete</span></button></div><div class="s-item-meta">${infoHtml}</div>${ruleHtml}</div>`;
+       };
+       document.getElementById('sau-lista-biblio-treino').innerHTML = bT.length ? bT.map(fmt).join('') : '<div style="font-size:12px; opacity:0.5;">Vazio.</div>';
+       document.getElementById('sau-lista-biblio-nutricao').innerHTML = bN.length ? bN.map(fmt).join('') : '<div style="font-size:12px; opacity:0.5;">Vazio.</div>';
+       document.getElementById('sau-lista-biblio-suplemento').innerHTML = bS.length ? bS.map(fmt).join('') : '<div style="font-size:12px; opacity:0.5;">Vazio.</div>';
+    },
+
+    // PLANOS DE TREINO
+    abrirModalCriacaoPlano: function() {
+       document.getElementById('sau-edit-id-plano').value = ''; document.getElementById('sau-plano-nome').value = ''; this.exsPlanoTemp = []; this.renderizarExsPlano();
+       document.getElementById('sau-dir-b-mod').value = 'plano_treino'; this.atualizarSelectsDiretrizes(); this.abrirModal('sau-modal-plano-treino');
+    },
+    editarPlanoTreino: function(id) {
+       const p = this.biblioteca.find(b => b.id === id); if(!p) return;
+       document.getElementById('sau-edit-id-plano').value = p.id; document.getElementById('sau-plano-nome').value = p.nome; this.exsPlanoTemp = [...p.composicao]; this.renderizarExsPlano();
+       document.getElementById('sau-dir-b-mod').value = 'plano_treino'; this.atualizarSelectsDiretrizes(); this.abrirModal('sau-modal-plano-treino');
+    },
+    addExPlano: function() {
+       const exId = parseInt(document.getElementById('sau-plano-ex-sel').value);
+       const series = parseInt(document.getElementById('sau-plano-ex-ser').value) || 0; const reps = document.getElementById('sau-plano-ex-rep').value.trim();
+       if(!exId || series <= 0) return alert("Selecione exercício e séries.");
+       const exObj = this.biblioteca.find(b => b.id === exId); this.exsPlanoTemp.push({ acaoId: exId, nome: exObj.nome, series: series, reps: reps });
+       document.getElementById('sau-plano-ex-sel').value = ''; document.getElementById('sau-plano-ex-ser').value = ''; document.getElementById('sau-plano-ex-rep').value = ''; this.renderizarExsPlano();
+    },
+    removerExPlano: function(idx) { this.exsPlanoTemp.splice(idx, 1); this.renderizarExsPlano(); },
+    renderizarExsPlano: function() {
+       const a = document.getElementById('sau-lista-plano-exs');
+       a.style.display = this.exsPlanoTemp.length ? 'block' : 'none';
+       a.innerHTML = this.exsPlanoTemp.map((ex, i) => `<div class="s-micro-item"><span><b style="color:var(--text-primary)">${ex.nome}</b> <span style="color:var(--text-secondary);">(${ex.series}s ${ex.reps})</span></span><button class="sys-icon-btn" style="padding:0; width:24px; height:24px;" onclick="AppSaude.removerExPlano(${i})"><span class="material-symbols-rounded" style="font-size:16px;">close</span></button></div>`).join('');
+    },
+    salvarPlanoTreino: function() {
+       const idEdit = document.getElementById('sau-edit-id-plano').value;
+       const nome = document.getElementById('sau-plano-nome').value.trim();
+       if(!nome || this.exsPlanoTemp.length === 0) return alert("Preencha o nome e adicione exercícios.");
+       const obj = { id: idEdit ? parseInt(idEdit) : Date.now(), modulo: 'plano_treino', nome, composicao: [...this.exsPlanoTemp] };
+       if(idEdit) { const idx = this.biblioteca.findIndex(x => x.id == idEdit); if(idx > -1) this.biblioteca[idx] = obj; } else { this.biblioteca.push(obj); }
+       this.fecharModalAtivo(); this.renderizarPlanos(); this.atualizarSelectsDiario(); try { MAIRun.salvarBibliotecaSaude(obj); } catch(e){}
+    },
+    renderizarPlanos: function() {
+       const p = this.biblioteca.filter(b => b.modulo === 'plano_treino');
+       document.getElementById('sau-lista-planos-treino').innerHTML = p.length ? p.map(plano => `<div class="s-list-item" onclick="AppSaude.editarPlanoTreino(${plano.id})"><div style="flex:1;"><div class="s-item-title">${plano.nome}</div><div>${plano.composicao.map(ex => `<div style="font-size:11px; color:var(--text-secondary); margin-bottom:4px;">• ${ex.nome} - ${ex.series} séries</div>`).join('')}</div></div><button class="sys-icon-btn" onclick="AppSaude.removerBiblio(${plano.id}, event)"><span class="material-symbols-rounded" style="font-size:16px; color:var(--mai-danger);">delete</span></button></div>`).join('') : '<div style="opacity:0.5; font-size:12px;">Nenhum plano criado.</div>';
+       let somaMusculosPlano = {};
+       p.forEach(plano => { plano.composicao.forEach(exPlano => { const exObj = this.biblioteca.find(b => b.id === exPlano.acaoId); if(exObj && exObj.composicao) { exObj.composicao.forEach(c => { const mNome = c.nome; if(!somaMusculosPlano[mNome]) somaMusculosPlano[mNome] = 0; somaMusculosPlano[mNome] += (c.qtd * exPlano.series); }); } }); });
+       const rm = this.rastreadores.filter(r => r.categoria === 'Músculo'); let analiseHtml = '';
+       rm.forEach(m => {
+           const soma = somaMusculosPlano[m.nome] || 0; let st = 'success'; let txt = 'Ok'; let vCol = 'var(--mai-success)';
+           if(m.min !== null && soma < m.min) { st = 'pending'; txt = 'Falta Volume'; vCol = 'var(--mai-warning)'; }
+           if(m.max !== null && soma > m.max) { st = 'fail'; txt = 'Excesso'; vCol = 'var(--mai-danger)'; }
+           if(soma === 0) { st = 'fail'; txt = 'Não Treinado'; vCol = 'var(--mai-danger)'; }
+           analiseHtml += `<div style="display:flex; justify-content:space-between; align-items:center; padding:8px; border-bottom:1px solid color-mix(in srgb, var(--mai-text-primary) 5%, transparent);"><div><div style="font-weight:700; font-size:12px;">${m.nome}</div><div style="font-size:10px; color:var(--text-secondary);">Séries: ${soma} | Min:${m.min||0} Max:${m.max||'∞'}</div></div><span style="font-size:10px; font-weight:800; padding:4px 8px; border-radius:4px; background:${vCol}; color:#FFF;">${txt}</span></div>`;
+       });
+       document.getElementById('sau-lista-analise-planos').innerHTML = analiseHtml || '<div style="font-size:12px; opacity:0.5;">Crie metas musculares.</div>';
+    },
+
+    carregarPlanoParaSessao: function() {
+       const pId = parseInt(document.getElementById('sau-reg-t-plano-sel').value); if(!pId) return;
+       const p = this.biblioteca.find(b => b.id === pId);
+       p.composicao.forEach(exP => {
+           const item = this.biblioteca.find(b => b.id === exP.acaoId);
+           if(item) {
+               this.sessaoTreinoTemp.push({ itemObj: item, duracao: 15, series: exP.series }); 
+               if(item.isDano) { if(!document.getElementById('sau-reg-t-btndano').classList.contains('active')) this.togglePainelDano('sau-reg-t-btndano', 'sau-reg-t-areadano', 'sau-reg-t-btnsalvar'); document.getElementById('sau-reg-t-perigo').value += (document.getElementById('sau-reg-t-perigo').value ? " | " : "") + item.perigo; }
+           }
+       });
+       document.getElementById('sau-reg-t-plano-sel').value = ''; this.renderTreinoTemp();
+    },
+
+    // CONSTRUTORES DIÁRIOS
+    atualizarSelectsDiario: function() {
+       const bT = this.biblioteca.filter(b => b.modulo === 'treino');
+       const bN = this.biblioteca.filter(b => b.modulo === 'nutricao'); const bS = this.biblioteca.filter(b => b.modulo === 'suplemento');
+       const pT = this.biblioteca.filter(b => b.modulo === 'plano_treino');
+       if(document.getElementById('sau-reg-t-item')) document.getElementById('sau-reg-t-item').innerHTML = bT.length ? '<option value="">Selecionar...</option>' + bT.map(b => `<option value="${b.id}">${b.nome}</option>`).join('') : '<option value="">Vazio.</option>';
+       if(document.getElementById('sau-reg-n-item')) document.getElementById('sau-reg-n-item').innerHTML = bN.length ? '<option value="">Selecionar...</option>' + bN.map(b => `<option value="${b.id}">${b.nome}</option>`).join('') : '<option value="">Vazio.</option>';
+       if(document.getElementById('sau-reg-s-item')) document.getElementById('sau-reg-s-item').innerHTML = bS.length ? '<option value="">Selecionar...</option>' + bS.map(b => `<option value="${b.id}">${b.nome} (Est: ${b.estoque})</option>`).join('') : '<option value="">Vazio.</option>';
+       if(document.getElementById('sau-reg-t-plano-sel')) document.getElementById('sau-reg-t-plano-sel').innerHTML = pT.length ? '<option value="">Importar Rotina...</option>' + pT.map(p => `<option value="${p.id}">${p.nome}</option>`).join('') : '<option value="">Nenhum Plano</option>';
+    },
+
+    addTreinoTemp: function() {
+      const id = parseInt(document.getElementById('sau-reg-t-item').value); const dur = parseInt(document.getElementById('sau-reg-t-dur').value)||0; const ser = parseInt(document.getElementById('sau-reg-t-ser').value)||0;
+      if(!id || dur<=0 || ser<=0) return alert("Preencha Exercício, Duração e Séries.");
+      const item = this.biblioteca.find(b => b.id === id); this.sessaoTreinoTemp.push({ itemObj: item, duracao: dur, series: ser });
+      if(item.isDano) { if(!document.getElementById('sau-reg-t-btndano').classList.contains('active')) this.togglePainelDano('sau-reg-t-btndano', 'sau-reg-t-areadano', 'sau-reg-t-btnsalvar'); document.getElementById('sau-reg-t-perigo').value += (document.getElementById('sau-reg-t-perigo').value ? " | " : "") + item.perigo; }
+      document.getElementById('sau-reg-t-item').value=''; document.getElementById('sau-reg-t-ser').value=''; this.renderTreinoTemp();
+    },
+    removerTreinoTemp: function(idx) { this.sessaoTreinoTemp.splice(idx, 1); this.renderTreinoTemp(); },
+    renderTreinoTemp: function() {
+      const a = document.getElementById('sau-lista-t-temp'); a.style.display = this.sessaoTreinoTemp.length ? 'block' : 'none';
+      a.innerHTML = this.sessaoTreinoTemp.map((t, i) => `<div class="s-micro-item"><span>${t.itemObj.nome} <span style="color:var(--accent);">${t.series} Séries (${t.duracao}m)</span></span><button class="sys-icon-btn" style="padding:0; width:24px; height:24px;" onclick="AppSaude.removerTreinoTemp(${i})"><span class="material-symbols-rounded" style="font-size:16px;">close</span></button></div>`).join('');
+    },
+    salvarSessaoTreino: function() {
+      if(this.sessaoTreinoTemp.length === 0) return alert("Adicione exercícios à sessão.");
+      const hora = document.getElementById('sau-reg-t-hora').value; if(!hora) return;
+      const isDano = document.getElementById('sau-reg-t-btndano').classList.contains('active'); const perigo = document.getElementById('sau-reg-t-perigo').value.trim();
+      if(isDano && !perigo) return alert("Descreva a lesão/falha da sessão.");
+      this.diarioDB[this.dataAtual].treinos.push({ idLog: Date.now(), hora, isDano, perigo: isDano?perigo:'', itens: [...this.sessaoTreinoTemp] });
+      this.fecharModalAtivo(true); this.processarMotorConformidade(); try { MAIRun.salvarDiarioSaude(this.dataAtual, this.diarioDB[this.dataAtual]); } catch(e){}
+    },
+
+    addNutriTemp: function() {
+      const id = parseInt(document.getElementById('sau-reg-n-item').value); const qtd = parseFloat(document.getElementById('sau-reg-n-qtd').value)||0;
+      if(!id || qtd<=0) return alert("Selecione o item e a quantidade.");
+      const item = this.biblioteca.find(b => b.id === id); const mult = (item.base === 1) ? qtd : (qtd/100);
+      this.sessaoNutriTemp.push({ itemObj: item, qtd: qtd, mult: mult });
+      if(item.isDano) { if(!document.getElementById('sau-reg-n-btndano').classList.contains('active')) this.togglePainelDano('sau-reg-n-btndano', 'sau-reg-n-areadano', 'sau-reg-n-btnsalvar'); document.getElementById('sau-reg-n-perigo').value += (document.getElementById('sau-reg-n-perigo').value ? " | " : "") + item.perigo; }
+      document.getElementById('sau-reg-n-item').value=''; document.getElementById('sau-reg-n-qtd').value=''; this.renderNutriTemp();
+    },
+    removerNutriTemp: function(idx) { this.sessaoNutriTemp.splice(idx, 1); this.renderNutriTemp(); },
+    renderNutriTemp: function() {
+      const a = document.getElementById('sau-lista-n-temp'); a.style.display = this.sessaoNutriTemp.length ? 'block' : 'none';
+      a.innerHTML = this.sessaoNutriTemp.map((n, i) => { const labelQtd = n.itemObj.base === 1 ? 'und' : (n.itemObj.tipo==='solido'?'g':'ml'); return `<div class="s-micro-item"><span>${n.itemObj.nome} <span style="color:var(--accent);">${n.qtd}${labelQtd}</span></span><button class="sys-icon-btn" style="padding:0; width:24px; height:24px;" onclick="AppSaude.removerNutriTemp(${i})"><span class="material-symbols-rounded" style="font-size:16px;">close</span></button></div>`; }).join('');
+    },
+    salvarSessaoNutri: function() {
+      if(this.sessaoNutriTemp.length === 0) return alert("Adicione itens à refeição.");
+      const hora = document.getElementById('sau-reg-n-hora').value; if(!hora) return;
+      const isDano = document.getElementById('sau-reg-n-btndano').classList.contains('active'); const perigo = document.getElementById('sau-reg-n-perigo').value.trim();
+      if(isDano && !perigo) return alert("Descreva a toxicidade da refeição.");
+      this.diarioDB[this.dataAtual].nutricao.push({ idLog: Date.now(), hora, isDano, perigo: isDano?perigo:'', itens: [...this.sessaoNutriTemp] });
+      this.fecharModalAtivo(true); this.processarMotorConformidade(); try { MAIRun.salvarDiarioSaude(this.dataAtual, this.diarioDB[this.dataAtual]); } catch(e){}
+    },
+
+    addSupTemp: function() {
+      const id = parseInt(document.getElementById('sau-reg-s-item').value); const qtd = parseFloat(document.getElementById('sau-reg-s-qtd').value)||0;
+      if(!id || qtd<=0) return alert("Selecione o suplemento e as doses.");
+      const item = this.biblioteca.find(b => b.id === id); this.sessaoSupTemp.push({ itemObj: item, qtd: qtd, mult: qtd });
+      document.getElementById('sau-reg-s-item').value=''; document.getElementById('sau-reg-s-qtd').value='1'; this.renderSupTemp();
+    },
+    removerSupTemp: function(idx) { this.sessaoSupTemp.splice(idx, 1); this.renderSupTemp(); },
+    renderSupTemp: function() {
+      const a = document.getElementById('sau-lista-s-temp'); a.style.display = this.sessaoSupTemp.length ? 'block' : 'none';
+      a.innerHTML = this.sessaoSupTemp.map((s, i) => `<div class="s-micro-item"><span>${s.itemObj.nome} <span style="color:var(--accent);">${s.qtd} doses</span></span><button class="sys-icon-btn" style="padding:0; width:24px; height:24px;" onclick="AppSaude.removerSupTemp(${i})"><span class="material-symbols-rounded" style="font-size:16px;">close</span></button></div>`).join('');
+    },
+    salvarSessaoSup: function() {
+      if(this.sessaoSupTemp.length === 0) return alert("Adicione itens à toma.");
+      const hora = document.getElementById('sau-reg-s-hora').value; if(!hora) return;
+      this.sessaoSupTemp.forEach(s => { 
+          s.itemObj.estoque = Math.max(0, s.itemObj.estoque - s.qtd); 
+          const bIdx = this.biblioteca.findIndex(b => b.id === s.itemObj.id); if(bIdx > -1) this.biblioteca[bIdx].estoque = s.itemObj.estoque;
+          try { MAIRun.salvarBibliotecaSaude(s.itemObj); } catch(e){}
+      });
+      this.diarioDB[this.dataAtual].suplementos.push({ idLog: Date.now(), hora, itens: [...this.sessaoSupTemp] });
+      this.fecharModalAtivo(true); this.atualizarSelectsDiario(); this.processarMotorConformidade(); try { MAIRun.salvarDiarioSaude(this.dataAtual, this.diarioDB[this.dataAtual]); } catch(e){}
+    },
+
+    salvarSono: function() {
+      const d = document.getElementById('sau-reg-o-deitar').value; const a = document.getElementById('sau-reg-o-acordar').value; if(!d || !a) return;
+      let d1 = new Date(`1970-01-01T${d}:00`); let a1 = new Date(`1970-01-01T${a}:00`);
+      if(a1 <= d1) a1 = new Date(`1970-01-02T${a}:00`);
+      const minTotais = Math.floor((a1 - d1) / 60000); const blocos = Math.floor(minTotais/90);
+      const valRem = parseInt(document.getElementById('sau-reg-o-rem').value) || 0; const valProf = parseInt(document.getElementById('sau-reg-o-prof').value) || 0;
+
+      const metaMin = (this.metas.horasIdeais * 60); const diffMin = Math.abs(minTotais - metaMin); let scoreBaseTempo = 100 - ((diffMin / 60) * 15);
+      let metaD = new Date(`1970-01-01T${this.metas.deitar}:00`);
+      if (d1.getHours() < 12 && metaD.getHours() > 12) { metaD = new Date(`1970-01-01T${this.metas.deitar}:00`); d1 = new Date(`1970-01-02T${d}:00`); }
+      else if (d1.getHours() > 12 && metaD.getHours() < 12) { metaD = new Date(`1970-01-02T${this.metas.deitar}:00`); }
+      const atraso = Math.max(0, Math.floor((d1 - metaD) / 60000));
+      if (atraso > 0) scoreBaseTempo -= ((atraso / 60) * 5);
+      
+      let finalScore = scoreBaseTempo;
+      if (valRem > 0 || valProf > 0) {
+          const mR = this.metas.rem || 90; const mP = this.metas.profundo || 90;
+          let scoreRem = Math.min((valRem / mR) * 100, 100); let scoreProf = Math.min((valProf / mP) * 100, 100);
+          finalScore = (Math.max(0, scoreBaseTempo) * 0.5) + (scoreRem * 0.25) + (scoreProf * 0.25);
+      }
+      finalScore = Math.max(0, Math.min(100, Math.round(finalScore)));
+
+      let isDano = document.getElementById('sau-reg-o-btndano').classList.contains('active');
+      if(finalScore < 70) isDano = true;
+      let perigo = document.getElementById('sau-reg-o-perigo').value.trim(); if(isDano && !perigo) perigo = `Qualidade degradada (${finalScore}%). Desvio da meta de tempo.`;
+
+      this.diarioDB[this.dataAtual].sono = { deitar: d, acordar: a, min: minTotais, rem: valRem, prof: valProf, blocos, isDano, perigo, score: finalScore };
+      this.fecharModalAtivo(true); document.getElementById('sau-reg-o-deitar').value=''; document.getElementById('sau-reg-o-acordar').value=''; document.getElementById('sau-reg-o-rem').value=''; document.getElementById('sau-reg-o-prof').value='';
+      this.processarMotorConformidade(); try { MAIRun.salvarDiarioSaude(this.dataAtual, this.diarioDB[this.dataAtual]); } catch(e){}
+    },
+
+    apagarLog: function(m, idLog) {
+      if(confirm("Apagar registro?")) { 
+          if(m==='sono') this.diarioDB[this.dataAtual].sono = { deitar:'', acordar:'', min:0, rem:0, prof:0, blocos:0, isDano:false, perigo:'', score:0 };
+          else this.diarioDB[this.dataAtual][m] = this.diarioDB[this.dataAtual][m].filter(l => l.idLog !== idLog); 
+          this.processarMotorConformidade(); try { MAIRun.salvarDiarioSaude(this.dataAtual, this.diarioDB[this.dataAtual]); } catch(e){}
+      }
+    },
+
+    // UX E MOTOR SPA
+    formatWidget: function(nome, val, minMeta, maxMeta, und) {
+        if(minMeta === null && maxMeta === null) return '';
+        let labelMeta = ''; let pct = 0; let color = 'var(--text-primary)'; let badge = '';
+        if (minMeta !== null && maxMeta !== null) {
+            labelMeta = `${minMeta} ~ ${maxMeta}`; pct = Math.min((val / maxMeta) * 100, 100);
+            if (val < minMeta) { color = 'var(--mai-warning)'; badge = '<span class="status-badge" style="background:color-mix(in srgb, var(--mai-warning) 10%, transparent); color:var(--mai-warning);">Déficit</span>'; } 
+            else if (val > maxMeta) { color = 'var(--mai-danger)'; badge = '<span class="status-badge" style="background:color-mix(in srgb, var(--mai-danger) 10%, transparent); color:var(--mai-danger);">Excesso</span>'; }
+            else { color = 'var(--mai-success)'; badge = '<span class="status-badge" style="background:color-mix(in srgb, var(--mai-success) 10%, transparent); color:var(--mai-success);">Ok</span>'; }
+        } else if (maxMeta !== null) {
+            labelMeta = `≤ ${maxMeta}`; pct = Math.min((val / maxMeta) * 100, 100);
+            if (val > maxMeta) { color = 'var(--mai-danger)'; badge = '<span class="status-badge" style="background:color-mix(in srgb, var(--mai-danger) 10%, transparent); color:var(--mai-danger);">Excesso</span>'; }
+            else { color = 'var(--mai-success)'; }
+        } else if (minMeta !== null) {
+            labelMeta = `≥ ${minMeta}`; pct = Math.min((val / minMeta) * 100, 100);
+            if (val < minMeta) { color = 'var(--mai-warning)'; badge = '<span class="status-badge" style="background:color-mix(in srgb, var(--mai-warning) 10%, transparent); color:var(--mai-warning);">Abaixo</span>'; }
+            else { color = 'var(--mai-success)'; }
+        }
+        return `<div class="m-dash-widget"><div class="m-dash-title"><span>${nome}</span>${badge}</div><span class="m-dash-value" style="color:${color}">${Math.round(val*10)/10} <span style="font-size:12px;color:var(--text-secondary)">${und}</span></span><div class="m-dash-footer">Meta: ${labelMeta}</div><div style="width:100%; height:4px; background:var(--bg-hover); border-radius:2px; margin-top:8px; overflow:hidden;"><div style="height:100%; width:${pct}%; background:${color};"></div></div></div>`;
+    },
+
+    processarMotorConformidade: function() {
+      const tipo = this.periodoAtual;
+      const dBase = new Date(this.dataAtual + 'T12:00:00'); 
+      const anoAtual = dBase.getFullYear(); const mesAtual = dBase.getMonth();
+      const seteDiasAtras = new Date(dBase.getTime() - (6 * 24 * 60 * 60 * 1000));
+
+      let diasValidos = [];
+      for (const [dataStr, dbDia] of Object.entries(this.diarioDB)) {
+          const d = new Date(dataStr + 'T12:00:00'); let fits = false;
+          if (tipo === 'diaria' && dataStr === this.dataAtual) fits = true;
+          else if (tipo === 'semanal' && d <= dBase && d >= seteDiasAtras) fits = true;
+          else if (tipo === 'mensal' && d.getFullYear() === anoAtual && d.getMonth() === mesAtual) fits = true;
+          else if (tipo === 'anual' && d.getFullYear() === anoAtual) fits = true;
+          else if (tipo === 'total') fits = true;
+          if (fits) diasValidos.push({ data: dataStr, db: dbDia });
+      }
+
+      let todosAlertasNutri = []; let todasFeridasGlobais = []; let acumuladores = {}; 
+      this.rastreadores.forEach(r => acumuladores[r.nome] = 0);
+      let totKcal = 0, totAgua = 0, totP = 0, totC = 0, totG = 0, totFibra = 0, totSodio = 0, totAcucar = 0;
+      let totSonoMin = 0, totSonoScore = 0, diasSonoValid = 0;
+
+      diasValidos.forEach(dia => {
+          if(dia.db.sono && dia.db.sono.min > 0) { totSonoMin += dia.db.sono.min; totSonoScore += dia.db.sono.score; diasSonoValid++; }
+          if (dia.db.nutricao) {
+              dia.db.nutricao.forEach(n => { n.itens.forEach(it => {
+                      totKcal += (it.itemObj.kcal || 0) * it.mult; totP += (it.itemObj.p || 0) * it.mult; 
+                      totC += (it.itemObj.c || 0) * it.mult; totG += (it.itemObj.g || 0) * it.mult;
+                      totFibra += (it.itemObj.fibra || 0) * it.mult; totSodio += (it.itemObj.sodio || 0) * it.mult; 
+                      totAcucar += (it.itemObj.acucar || 0) * it.mult;
+                      if(it.itemObj.tipo === 'liquido' && !it.itemObj.isDano) { if(it.itemObj.base !== 1) totAgua += it.qtd; }
+                  });
+              });
+          }
+          if (dia.db.treinos) { dia.db.treinos.forEach(t => { t.itens.forEach(it => { totKcal -= ((it.itemObj.kcal || 0) / 60) * it.duracao; }); }); }
+
+          this.rastreadores.forEach(r => {
+             if(r.categoria === 'Músculo') {
+                 if(dia.db.treinos) { dia.db.treinos.forEach(t => { t.itens.forEach(it => { if(it.itemObj.composicao) { it.itemObj.composicao.forEach(c => { if(c.nome === r.nome) acumuladores[r.nome] += (c.qtd * it.series); }); } }); }); }
+             } else {
+                 const listaGeral = [...(dia.db.nutricao || []), ...(dia.db.suplementos || [])];
+                 listaGeral.forEach(n => { n.itens.forEach(it => { if(it.itemObj.composicao) { it.itemObj.composicao.forEach(c => { if(c.nome === r.nome) acumuladores[r.nome] += (c.qtd * it.mult); }); } }); });
+                 if(dia.db.treinos) { dia.db.treinos.forEach(t => { t.itens.forEach(it => { if(it.itemObj.composicao) { it.itemObj.composicao.forEach(c => { if(c.nome === r.nome && c.und !== 'séries/sem') acumuladores[r.nome] += c.qtd; }); } }); }); }
+             }
+          });
+
+          this.rastreadores.filter(r => r.temRegra).forEach(regra => {
+             const listas = [...(dia.db.treinos || []), ...(dia.db.nutricao || []), ...(dia.db.suplementos || [])];
+             listas.forEach(sessao => { sessao.itens.forEach(it => {
+                   if(it.itemObj.composicao && it.itemObj.composicao.some(c => c.nome === regra.nome) && sessao.hora) {
+                       let ativou = false;
+                       if(regra.condicao === 'apos' && sessao.hora >= regra.hora) ativou = true;
+                       else if(regra.condicao === 'antes' && sessao.hora <= regra.hora) ativou = true;
+                       if(ativou) todosAlertasNutri.push({ causa: it.itemObj.nome, destino: regra.destino, tipo: regra.tipo, descricao: regra.descricao, data: dia.data });
+                   }
+                }); });
+          });
+          const listasGerais = [...(dia.db.treinos || []), ...(dia.db.nutricao || []), ...(dia.db.suplementos || [])];
+          listasGerais.forEach(sessao => { sessao.itens.forEach(it => {
+                 if(it.itemObj.temRegra && sessao.hora) {
+                     let ativou = false;
+                     if(it.itemObj.condicao === 'apos' && sessao.hora >= it.itemObj.hora) ativou = true;
+                     else if(it.itemObj.condicao === 'antes' && sessao.hora <= it.itemObj.hora) ativou = true;
+                     if(ativou) todosAlertasNutri.push({ causa: it.itemObj.nome, destino: it.itemObj.destino, tipo: it.itemObj.tipoR, descricao: it.itemObj.descricao, data: dia.data });
+                 }
+              }); });
+
+          if(dia.db.sono && dia.db.sono.isDano) todasFeridasGlobais.push(`[${dia.data}] Dano Privação: ${dia.db.sono.perigo}`);
+          if(dia.db.treinos) dia.db.treinos.forEach(t => { if(t.isDano) todasFeridasGlobais.push(`[${dia.data}] Dano Físico: ${t.perigo}`); });
+          if(dia.db.nutricao) dia.db.nutricao.forEach(n => { if(n.isDano) todasFeridasGlobais.push(`[${dia.data}] Toxicidade: ${n.perigo}`); });
+      });
+
+      const numDias = Math.max(1, diasValidos.length); const semanas = numDias / 7;
+
+      const mAgua = (this.metas.agua || 0) * numDias;
+      const pctAgua = mAgua > 0 ? Math.min(Math.round((totAgua / mAgua)*100), 100) : 0;
+      const mKcal = (this.metas.kcal || 0) * numDias;
+      const pctNutri = mKcal > 0 ? Math.min(Math.round((totKcal / mKcal)*100), 100) : 0;
+      
+      let ptAlvoTotal = 0; let ptRealTotal = 0;
+      this.rastreadores.filter(r => r.categoria === 'Músculo').forEach(r => {
+         const soma = parseFloat((acumuladores[r.nome]||0).toFixed(1)); let minP = r.min;
+         if (r.und.includes('sem')) { if (tipo === 'diaria') { minP = r.min!==null? r.min/7 : null; } else if (tipo !== 'semanal') { minP = r.min!==null? r.min*semanas : null; } } else { if(tipo !== 'diaria') { minP = r.min!==null? r.min*numDias : null; } }
+         if(minP !== null) { ptAlvoTotal += minP; ptRealTotal += soma; }
+      });
+      const pctTreino = ptAlvoTotal > 0 ? Math.min(Math.round((ptRealTotal / ptAlvoTotal)*100), 100) : 0;
+      const avgScore = diasSonoValid > 0 ? Math.round(totSonoScore / diasSonoValid) : 0;
+
+      const dashContainer = document.getElementById('sau-dash-widgets');
+      const acoesContainer = document.getElementById('sau-acoes-lista');
+      let htmlAcoes = '';
+      if (this.modoVisao !== 'geral') {
+          htmlAcoes = `<button class="sys-icon-btn" style="height:32px; background:var(--bg-card); border:1px solid var(--divider); font-size:11px; font-weight:700; padding:0 12px; border-radius:6px; margin-right:auto; display:flex; align-items:center; gap:6px; color:var(--text-secondary);" onclick="AppSaude.setModo('geral')"><span class="material-symbols-rounded" style="font-size:16px;">arrow_back</span> Voltar ao Resumo</button>`;
+      }
+
+      if (this.modoVisao === 'geral') {
+          dashContainer.innerHTML = `
+            <div class="m-dash-widget" onclick="AppSaude.setModo('nutricao')">
+               <div class="m-dash-title">Nutrição & Água <span class="material-symbols-rounded">restaurant</span></div>
+               <span class="m-dash-value" style="color:var(--mai-success)">${pctNutri}%</span>
+               <div style="width:100%; height:4px; background:var(--bg-hover); border-radius:2px; margin-top:auto; overflow:hidden;"><div style="height:100%; width:${pctNutri}%; background:var(--mai-success);"></div></div>
+            </div>
+            <div class="m-dash-widget" onclick="AppSaude.setModo('treino')">
+               <div class="m-dash-title">Físico <span class="material-symbols-rounded">fitness_center</span></div>
+               <span class="m-dash-value" style="color:var(--mai-warning)">${pctTreino}%</span>
+               <div style="width:100%; height:4px; background:var(--bg-hover); border-radius:2px; margin-top:auto; overflow:hidden;"><div style="height:100%; width:${pctTreino}%; background:var(--mai-warning);"></div></div>
+            </div>
+            <div class="m-dash-widget" onclick="AppSaude.setModo('sono')">
+               <div class="m-dash-title">Descanso <span class="material-symbols-rounded">bedtime</span></div>
+               <span class="m-dash-value" style="color:var(--mai-warning)">${avgScore}%</span>
+               <div style="width:100%; height:4px; background:var(--bg-hover); border-radius:2px; margin-top:auto; overflow:hidden;"><div style="height:100%; width:${avgScore}%; background:var(--mai-warning);"></div></div>
+            </div>
+            <div class="m-dash-widget" onclick="AppSaude.setModo('suplementos')" style="background: color-mix(in srgb, var(--mai-success) 5%, transparent); border-color: color-mix(in srgb, var(--mai-success) 30%, transparent);">
+               <div class="m-dash-title">Química</div>
+               <span class="m-dash-value" style="color:var(--mai-success)">Acessar</span>
+            </div>
+          `;
+          acoesContainer.innerHTML = '';
+          
+          const elDanos = document.getElementById('sau-lista-danos-hoje');
+          if (elDanos) {
+              elDanos.innerHTML = todasFeridasGlobais.length ? 
+                  todasFeridasGlobais.map(f => `<div class="s-alert-box" style="margin-bottom:8px; font-size:12px; font-weight:500;">${f}</div>`).join('') : 
+                  `<div style="opacity:0.5; font-size:13px; color:var(--text-secondary);">Corpo preservado no período selecionado.</div>`;
+          }
+      } 
+      else if (this.modoVisao === 'nutricao') {
+          let htmlNutri = this.formatWidget('Kcal Líquidas', totKcal, null, mKcal, 'kcal') + 
+                          this.formatWidget('Água Limpa', totAgua, mAgua, null, 'ml') +
+                          this.formatWidget('Proteína', totP, (this.metas.p||0) * numDias, null, 'g') + 
+                          this.formatWidget('Carboidrato', totC, null, (this.metas.c||0) * numDias, 'g');
+          dashContainer.innerHTML = htmlNutri;
+          acoesContainer.innerHTML = htmlAcoes;
+          this.renderizarRefeicoesDoDia();
+      }
+      else if (this.modoVisao === 'treino') {
+          let htmlTreino = '';
+          this.rastreadores.filter(r => r.categoria === 'Músculo').forEach(r => {
+             const soma = parseFloat((acumuladores[r.nome]||0).toFixed(1));
+             let minP = r.min; let maxP = r.max;
+             if (r.und.includes('sem')) { if (tipo === 'diaria') { minP = r.min!==null? r.min/7 : null; maxP = r.max!==null? r.max/7 : null; } else if (tipo !== 'semanal') { minP = r.min!==null? r.min*semanas : null; maxP = r.max!==null? r.max*semanas : null; } } else { if(tipo !== 'diaria') { minP = r.min!==null? r.min*numDias : null; maxP = r.max!==null? r.max*numDias : null; } }
+             if (minP !== null || maxP !== null) htmlTreino += this.formatWidget(r.nome, soma, minP!==null?parseFloat(minP.toFixed(1)):null, maxP!==null?parseFloat(maxP.toFixed(1)):null, r.und.replace('séries/sem','s'));
+          });
+          if(htmlTreino === '') htmlTreino = '<div style="opacity:0.5; font-size:12px; width:100%; text-align:center; padding:20px;">Sem alvos musculares.</div>';
+          dashContainer.innerHTML = htmlTreino;
+          acoesContainer.innerHTML = htmlAcoes;
+          this.renderizarSessoesDeTreino();
+      }
+      else if (this.modoVisao === 'sono') {
+          dashContainer.innerHTML = `
+            <div class="m-dash-widget"><div class="m-dash-title">Score Médio</div><span class="m-dash-value" style="color:var(--accent);">${avgScore}%</span><div class="m-dash-footer">Recuperação</div></div>
+            <div class="m-dash-widget"><div class="m-dash-title">Tempo Total</div><span class="m-dash-value">${Math.floor(totSonoMin/60)}h ${totSonoMin%60}m</span><div class="m-dash-footer">No período</div></div>
+            <div class="m-dash-widget"><div class="m-dash-title">Dias Rastreados</div><span class="m-dash-value">${diasSonoValid}</span><div class="m-dash-footer">Com Registros</div></div>
+          `;
+          acoesContainer.innerHTML = htmlAcoes;
+          this.renderizarLogsDeSono();
+      }
+      else if (this.modoVisao === 'suplementos') {
+          dashContainer.innerHTML = `
+            <div class="m-dash-widget"><div class="m-dash-title">Gestão de Química</div><span class="m-dash-value" style="color:var(--text-primary); font-size:14px; line-height:1.2; margin-top:8px;">Registo de ativos, medicações e suplementos.</span></div>
+          `;
+          acoesContainer.innerHTML = htmlAcoes;
+          this.renderizarTomasSuplementos();
+      }
+    },
+
+    // FUNÇÕES DE RENDERIZAÇÃO ESPECÍFICA PARA AS LISTAS DO DIA
+    renderizarRefeicoesDoDia: function() {
+      const db = this.diarioDB[this.dataAtual]; const cN = document.getElementById('sau-lista-nutri-diario');
+      if(!db) return;
+      cN.innerHTML = db.nutricao.length ? db.nutricao.map(n => {
+         let totalKcal = 0; let subList = n.itens.map(i => { totalKcal += (i.itemObj.kcal * i.mult); const labelQtd = i.itemObj.base === 1 ? 'und' : (i.itemObj.tipo==='solido'?'g':'ml'); return `<div style="font-size:12px; color:var(--text-secondary); margin-bottom:4px;">• ${i.itemObj.nome}: <span style="color:var(--text-primary)">${i.qtd}${labelQtd}</span></div>`; }).join('');
+         return `<div class="m-card" style="margin-bottom:8px;"><div class="m-card-header"><div class="m-title">Refeição das ${n.hora}</div><div style="font-weight:800; color:var(--accent); font-size:16px;">${Math.round(totalKcal)} Kcal</div></div><div>${subList}</div>${n.isDano?`<div class="s-alert-box" style="margin-top:12px;">Nocivo: ${n.perigo}</div>`:''}<button class="sys-btn-primary" style="margin-top:12px; background:color-mix(in srgb, var(--mai-text-primary) 5%, transparent); color:var(--text-secondary); width:100%; border-radius:8px;" onclick="AppSaude.apagarLog('nutricao', ${n.idLog})">Apagar Refeição</button></div>`;
+      }).join('') : '<div style="opacity:0.5; font-size:12px; text-align:center; padding:20px;">Nenhuma refeição registrada.</div>';
+    },
+
+    renderizarSessoesDeTreino: function() {
+      const db = this.diarioDB[this.dataAtual]; const cT = document.getElementById('sau-lista-treino-diario');
+      if(!db) return;
+      cT.innerHTML = db.treinos.length ? db.treinos.map(t => {
+         let subList = t.itens.map(i => `<div style="font-size:12px; color:var(--text-secondary); margin-bottom:4px;">• ${i.itemObj.nome}: <span style="color:var(--text-primary)">${i.series} Séries</span> (${i.duracao}m)</div>`).join('');
+         return `<div class="m-card" style="margin-bottom:8px;"><div class="m-card-header"><div class="m-title">Sessão das ${t.hora}</div><button class="sys-icon-btn" style="padding:0; width:24px; height:24px;" onclick="AppSaude.apagarLog('treinos', ${t.idLog})"><span class="material-symbols-rounded" style="font-size:16px;">delete</span></button></div><div>${subList}</div>${t.isDano?`<div class="s-alert-box" style="margin-top:12px;">Lesão/Falha: ${t.perigo}</div>`:''}</div>`;
+      }).join('') : '<div style="opacity:0.5; font-size:12px; text-align:center; padding:20px;">Nenhuma sessão registrada.</div>';
+    },
+
+    renderizarTomasSuplementos: function() {
+      const db = this.diarioDB[this.dataAtual]; const cSup = document.getElementById('sau-lista-sup-diario');
+      if(!db) return;
+      cSup.innerHTML = db.suplementos.length ? db.suplementos.map(s => {
+         let subList = s.itens.map(i => `<div style="font-size:12px; color:var(--text-secondary); margin-bottom:4px;">• ${i.itemObj.nome}: <span style="color:var(--text-primary)">${i.qtd} doses</span></div>`).join('');
+         return `<div class="m-card" style="margin-bottom:8px;"><div class="m-card-header"><div class="m-title">Toma das ${s.hora}</div><button class="sys-icon-btn" style="padding:0; width:24px; height:24px;" onclick="AppSaude.apagarLog('suplementos', ${s.idLog})"><span class="material-symbols-rounded" style="font-size:16px;">delete</span></button></div><div>${subList}</div></div>`;
+      }).join('') : '<div style="opacity:0.5; font-size:12px; text-align:center; padding:20px;">Nenhuma toma registrada.</div>';
+    },
+
+    renderizarLogsDeSono: function() {
+      const db = this.diarioDB[this.dataAtual]; const cS = document.getElementById('sau-lista-sono-diario');
+      if(!db) return;
+      if(db.sono && db.sono.min > 0) { 
+         const h = Math.floor(db.sono.min/60); const m = db.sono.min%60; 
+         cS.innerHTML = `<div class="m-card" style="margin-bottom:8px;"><div class="m-card-header"><div class="m-title">Descanso Noturno</div><div style="font-size:24px; font-weight:900; color:${db.sono.score >= 90 ? 'var(--mai-success)' : (db.sono.score >= 70 ? 'var(--accent)' : 'var(--mai-danger)')}">${db.sono.score}%</div></div><div style="font-size:12px; color:var(--text-secondary); line-height:1.4;">Tempo: <span style="color:var(--text-primary)">${h}h ${m}m</span> (${db.sono.blocos} ciclos completos)<br>Fases: <span style="color:var(--text-primary)">${db.sono.rem}m</span> REM | <span style="color:var(--text-primary)">${db.sono.prof}m</span> Profundo</div>${db.sono.isDano?`<div class="s-alert-box" style="margin-top:12px;">${db.sono.perigo}</div>`:''}<button class="sys-btn-primary" style="margin-top:16px; background:color-mix(in srgb, var(--mai-text-primary) 5%, transparent); color:var(--text-secondary); width:100%; border-radius:8px;" onclick="AppSaude.apagarLog('sono')">Apagar Registo</button></div>`; 
+      } else { cS.innerHTML = '<div style="opacity:0.5; font-size:12px; text-align:center; padding:20px;">Nenhum registo de sono neste dia.</div>'; }
+    }
+  };
+
+  setTimeout(() => AppSaude.init(), 100);
+</script>
+
+<script id="mai-v91-saude-instant">
+(() => {
+  if (typeof AppSaude === 'undefined') return;
+
+  AppSaude.salvarMetasBasicas = function(btn) {
+    const previous = MAIInstant.clone(this.metas);
+
+    this.metas.kcal = parseInt(document.getElementById('sau-meta-kcal').value) || 0;
+    this.metas.agua = parseInt(document.getElementById('sau-meta-agua').value) || 0;
+    this.metas.p = parseInt(document.getElementById('sau-meta-p').value) || 0;
+    this.metas.c = parseInt(document.getElementById('sau-meta-c').value) || 0;
+    this.metas.g = parseInt(document.getElementById('sau-meta-g').value) || 0;
+    this.metas.fibra = parseInt(document.getElementById('sau-meta-fibra').value) || 0;
+    this.metas.sodio = parseInt(document.getElementById('sau-meta-sodio').value) || 0;
+    this.metas.acucar = parseInt(document.getElementById('sau-meta-acucar').value) || 0;
+
+    this.processarMotorConformidade();
+
+    try {
+      localStorage.setItem('saude_metas_fallback', JSON.stringify(this.metas));
+    } catch (e) {}
+
+    if (btn) {
+      const original = btn.innerText;
+      btn.innerText = 'Salvo';
+      setTimeout(() => {
+        if (btn.innerText === 'Salvo') btn.innerText = original;
+      }, 700);
+    }
+
+    MAIInstant.changed('saude:metas');
+
+    const rollback = () => {
+      this.metas = previous;
+      this.carregarMetasBasicas();
+      this.processarMotorConformidade();
+      MAIInstant.error('As metas de saúde não foram sincronizadas.');
+    };
+
+    MAIRun
+      .withSuccessHandler(res => { if (res && res.ok === false) rollback(); })
+      .withFailureHandler(rollback)
+      .salvarMetasSaude(this.metas);
+  };
+
+  AppSaude.salvarMetasSono = function(btn) {
+    const previous = MAIInstant.clone(this.metas);
+
+    this.metas.deitar = document.getElementById('sau-meta-o-deitar').value;
+    this.metas.horasIdeais = parseFloat(document.getElementById('sau-meta-o-horas').value) || 8;
+    this.metas.rem = parseInt(document.getElementById('sau-meta-o-rem').value) || 90;
+    this.metas.profundo = parseInt(document.getElementById('sau-meta-o-profundo').value) || 90;
+
+    this.processarMotorConformidade();
+
+    try {
+      localStorage.setItem('saude_metas_fallback', JSON.stringify(this.metas));
+    } catch (e) {}
+
+    if (btn) {
+      const original = btn.innerText;
+      btn.innerText = 'Salvo';
+      setTimeout(() => {
+        if (btn.innerText === 'Salvo') btn.innerText = original;
+      }, 700);
+    }
+
+    MAIInstant.changed('saude:sono');
+
+    const rollback = () => {
+      this.metas = previous;
+      this.carregarMetasBasicas();
+      this.processarMotorConformidade();
+      MAIInstant.error('As metas de sono não foram sincronizadas.');
+    };
+
+    MAIRun
+      .withSuccessHandler(res => { if (res && res.ok === false) rollback(); })
+      .withFailureHandler(rollback)
+      .salvarMetasSaude(this.metas);
+  };
+})();
+</script>
+
+<style id="mai-v111-saude-color-contract">
+#sau-container {
+  background: var(--mai-bg-primary) !important;
+  color: var(--mai-text-primary) !important;
+}
+
+#sau-container .m-dash-widget,
+#sau-container .m-card,
+#sau-container .s-micro-item {
+  background: var(--mai-bg-card) !important;
+  border-color: var(--mai-divider) !important;
+  color: var(--mai-text-primary) !important;
+}
+
+#sau-container .m-dash-widget:hover,
+#sau-container .s-list-item:hover,
+#sau-container .s-micro-item:hover,
+#sau-container .filter-btn:hover {
+  background: var(--mai-bg-hover) !important;
+  border-color: var(--mai-divider-strong) !important;
+}
+
+#sau-container .active-widget {
+  background: var(--mai-accent-soft) !important;
+  border-color: var(--mai-accent) !important;
+}
+
+#sau-container .filter-btn,
+#sau-container .sys-input,
+#sau-container .s-toggle-container {
+  background: var(--mai-bg-hover) !important;
+  border-color: var(--mai-divider) !important;
+  color: var(--mai-text-primary) !important;
+}
+
+#sau-container .filter-content {
+  background: var(--mai-bg-elevated) !important;
+  border-color: var(--mai-divider) !important;
+}
+
+#sau-container .s-toggle-btn.active {
+  background: var(--mai-bg-card) !important;
+  color: var(--mai-text-primary) !important;
+}
+
+/* Saúde mantém cores de alerta, mas usando a semântica oficial. */
+#sau-container .s-alert-box {
+  background: color-mix(in srgb, var(--mai-danger) 5%, transparent) !important;
+  border-color: var(--mai-danger) !important;
+}
+
+#sau-container .s-switch-dano.active {
+  background: color-mix(in srgb, var(--mai-danger) 10%, transparent) !important;
+  border-color: var(--mai-danger) !important;
+  color: var(--mai-danger) !important;
+}
+
+/* Modais */
+#sau-container .sys-modal-overlay {
+  background: transparent !important;
+  backdrop-filter: none !important;
+}
+
+#sau-container .sys-modal-surface {
+  background: var(--mai-bg-card) !important;
+  border-color: var(--mai-divider) !important;
+  color: var(--mai-text-primary) !important;
+}
+
+#sau-container .sys-modal-header {
+  background: var(--mai-bg-card) !important;
+  border-color: var(--mai-divider) !important;
+}
+</style>

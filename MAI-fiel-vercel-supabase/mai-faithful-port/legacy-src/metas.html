@@ -1,0 +1,1205 @@
+<link href="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.snow.css" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js"></script>
+
+<style>
+  /* =========================================
+     ESTRUTURA GERAL MÓDULO METAS
+  ========================================= */
+  #m-container { width: 100%; height: 100vh; display: flex; flex-direction: column; overflow: hidden; position: relative; padding-bottom: 100px;}
+  #m-container ::-webkit-scrollbar, #modal-meta ::-webkit-scrollbar, #modal-categorias-meta ::-webkit-scrollbar, #modal-renomear-cat ::-webkit-scrollbar { width: 6px; height: 6px; }
+  #m-container ::-webkit-scrollbar-track, #modal-meta ::-webkit-scrollbar-track, #modal-categorias-meta ::-webkit-scrollbar-track, #modal-renomear-cat ::-webkit-scrollbar-track { background: transparent; }
+  #m-container ::-webkit-scrollbar-thumb, #modal-meta ::-webkit-scrollbar-thumb, #modal-categorias-meta ::-webkit-scrollbar-thumb, #modal-renomear-cat ::-webkit-scrollbar-thumb { background: var(--divider); border-radius: 10px; }
+  
+  /* FILTROS E NAVEGAÇÃO DE PERÍODO */
+  .m-context-tabs { display: flex; gap: 8px; background: var(--bg-hover); padding: 4px; border-radius: 12px; width: fit-content; }
+  .m-context-btn { padding: 6px 16px; border-radius: 8px; font-size: 12px; font-weight: 700; color: var(--text-secondary); cursor: pointer; transition: 0.2s; border: none; background: transparent;}
+  .m-context-btn.active { background: var(--bg-card); color: var(--text-primary); box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+
+  .m-period-nav { display: flex; align-items: center; gap: 8px; background: var(--bg-hover); padding: 4px; border-radius: 12px; width: fit-content; }
+  .m-period-label { font-size: 13px; font-weight: 800; color: var(--text-primary); min-width: 120px; text-align: center; text-transform: capitalize; letter-spacing: -0.3px;}
+
+  /* DASHBOARD WIDGETS (RELATÓRIOS) */
+  .m-dash-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px; flex-shrink: 0;}
+  .m-dash-widget { background: var(--bg-card); border: 1px solid var(--divider); border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.02);}
+  .m-dash-title { font-size: 11px; font-weight: 800; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; display: flex; align-items: center; justify-content: space-between;}
+  .m-dash-value { font-size: 28px; font-weight: 900; color: var(--text-primary); letter-spacing: -1px;}
+
+  .m-tabs { display: flex; gap: 24px; border-bottom: 1px solid var(--divider); margin-bottom: 20px; overflow-x: auto; flex-shrink: 0; align-items: center;}
+  .m-tab { padding: 12px 0; cursor: pointer; color: var(--text-secondary); font-weight: 600; font-size: 14px; border-bottom: 2px solid transparent; transition: 0.2s; white-space: nowrap; }
+  .m-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+  
+  .m-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; overflow-y: auto; flex: 1; align-content: flex-start; padding-bottom: 40px; padding-right: 8px;}
+  
+  /* CARDS DE METAS (VISÃO EXTERNA LIMPA SEM COR LATERAL) */
+  .m-card { background: var(--bg-card); border: 1px solid var(--divider); border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 12px; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); cursor: pointer; position: relative;}
+  .m-card:hover { border-color: var(--text-secondary); transform: translateY(-1.5px); box-shadow: 0 4px 12px rgba(0,0,0,0.06); }
+  
+  .m-card-top { display: flex; gap: 12px; width: 100%; align-items: flex-start; }
+  .m-card-icon { width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; background: var(--bg-hover); color: var(--text-primary); margin-top: 2px;}
+  .m-card-icon .material-symbols-rounded { font-size: 20px; }
+  
+  .m-card-content { flex: 1; display: flex; flex-direction: column; gap: 4px; min-width: 0;}
+  .m-title { font-size: 16px; font-weight: 700; color: var(--text-primary); line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-right: 24px;}
+  
+  .m-mini-progress { display: flex; flex-direction: column; gap: 4px; margin-top: 6px; }
+  .m-mini-progress-track { width: 100%; height: 4px; background: var(--bg-hover); border-radius: 2px; overflow: hidden; }
+  .m-mini-progress-fill { height: 100%; transition: width 0.3s ease; border-radius: 2px; }
+  .m-mini-progress-label { font-size: 11px; font-weight: 700; color: var(--text-secondary); display: flex; justify-content: space-between;}
+
+  .m-meta-badges { display: flex; gap: 8px; align-items: center; margin-top: 4px; flex-wrap: wrap;}
+  .m-badge { background: transparent; font-size: 11px; color: var(--text-secondary); font-weight: 500; display: inline-flex; align-items: center; gap: 4px;}
+  .m-badge.atrasada { color: var(--mai-danger); font-weight: 600;}
+  .m-badge.hoje { color: var(--mai-warning); font-weight: 600;}
+  .m-badge.status-concluida { color: var(--mai-success); }
+
+  .m-card.concluida { opacity: 0.5; }
+  .m-card.concluida .m-title { text-decoration: line-through; }
+  .m-card.concluida .m-card-icon { background: var(--text-secondary); color: var(--bg-primary); }
+
+  /* =========================================
+     MODAL UNIFICADO (TODOIST / NOTAS STYLE)
+  ========================================= */
+  .m-modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 9999; display: none; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(4px); }
+  .m-modal-overlay.active { display: flex; }
+  .m-modal-surface { background: var(--bg-card); width: 100%; max-width: 700px; border-radius: 20px; display: flex; flex-direction: column; height: auto; max-height: 85vh; box-shadow: 0 20px 40px rgba(0,0,0,0.4); border: 1px solid var(--divider); }
+  
+  .m-input-title { width: 100%; background: transparent; border: none; color: var(--text-primary); font-size: 26px; font-weight: 800; outline: none; padding: 0 0 8px 0; letter-spacing: -0.5px; margin-bottom: 8px;}
+  .m-input-title::placeholder { color: var(--text-secondary); opacity: 0.4; }
+
+  /* Editor de Descrição - Ajustável ao conteúdo */
+  #m-container .ql-container.ql-snow, #modal-meta .ql-container.ql-snow { border: none !important; }
+  #m-container .ql-toolbar.ql-snow, #modal-meta .ql-toolbar.ql-snow { border: none !important; border-bottom: 1px dashed var(--divider) !important; font-family: inherit; }
+  .m-desc-wrapper { border: 1px solid transparent; border-radius: 8px; transition: all 0.2s ease; margin-bottom: 16px; cursor: text; }
+  .m-desc-wrapper:not(.active-desc):hover { background: rgba(0,0,0,0.03); }
+  .m-desc-wrapper.active-desc { border-color: var(--accent); background: var(--bg-card); box-shadow: 0 4px 12px rgba(0,0,0,0.05); padding-bottom: 4px; cursor: auto; }
+  .m-desc-wrapper .ql-toolbar { display: none !important; }
+  .m-desc-wrapper.active-desc .ql-toolbar { display: block !important; padding: 8px !important; border-radius: 8px 8px 0 0 !important; background: var(--bg-hover); }
+  .m-desc-wrapper .ql-container { font-size: 14px; color: var(--text-primary); font-family: inherit; }
+  .m-desc-wrapper:not(.active-desc) .ql-editor { padding: 12px 16px; min-height: 44px; height: auto; max-height: none; overflow: hidden; white-space: normal; }
+  .m-desc-wrapper.active-desc .ql-editor { padding: 16px; min-height: 120px; height: auto; max-height: none; white-space: normal; overflow-y: auto;}
+  #m-container .ql-editor.ql-blank::before, #modal-meta .ql-editor.ql-blank::before { color: var(--text-secondary) !important; font-style: normal; opacity: 0.6; left: 16px;}
+
+  /* Pills de Ação */
+  .m-pill-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; align-items: center; }
+  .m-action-pill { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border: 1px solid var(--divider); border-radius: 8px; font-size: 12px; font-weight: 600; color: var(--text-secondary); cursor: pointer; transition: 0.2s; background: transparent; }
+  .m-action-pill:hover { background: var(--bg-hover); color: var(--text-primary); border-color: var(--text-secondary); }
+  .m-action-pill.active-val { color: var(--accent); border-color: color-mix(in srgb, var(--mai-accent) 30%, transparent); background: var(--mai-accent-soft); }
+  .m-action-pill.status-concluida { color: var(--mai-success); border-color: color-mix(in srgb, var(--mai-success) 30%, transparent); background: color-mix(in srgb, var(--mai-success) 5%, transparent); }
+  .m-action-pill.status-atencao { color: var(--mai-warning); border-color: color-mix(in srgb, var(--mai-warning) 30%, transparent); background: color-mix(in srgb, var(--mai-warning) 5%, transparent); }
+
+  #m-container .has-dropdown, #modal-meta .has-dropdown { position: relative; }
+  #m-container .sys-dropdown, #modal-meta .sys-dropdown { position: absolute; background: var(--bg-card); border: 1px solid var(--divider); border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.15); z-index: 1000; display: none; flex-direction: column; padding: 6px; min-width: 180px; }
+  #m-container .sys-dropdown.active, #modal-meta .sys-dropdown.active { display: flex; animation: fadeDrop 0.15s ease-out; }
+  @keyframes fadeDrop { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
+  #m-container .sys-drop-item, #modal-meta .sys-drop-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; font-size: 13px; font-weight: 500; cursor: pointer; border-radius: 8px; transition: 0.1s; color: var(--text-primary); white-space: nowrap;}
+  #m-container .sys-drop-item:hover, #modal-meta .sys-drop-item:hover { background: var(--bg-hover); }
+
+  .m-icon-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; padding: 8px; max-height: 200px; overflow-y: auto;}
+  .m-icon-swatch { aspect-ratio: 1; border-radius: 8px; border: 1px solid var(--divider); display: grid; place-items: center; cursor: pointer; background: var(--bg-primary); transition: 0.2s;}
+  .m-icon-swatch:hover { background: var(--bg-hover); border-color: var(--text-secondary); color: var(--accent); }
+
+  /* Subtarefas / Milestones e Anexos */
+  .m-section-container { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--divider); }
+  .m-subtask-item { display: flex; align-items: center; gap: 12px; padding: 8px 12px; border: 1px solid transparent; border-radius: 8px; transition: 0.2s;}
+  .m-subtask-item:hover { background: var(--bg-hover); border-color: var(--divider); }
+  .m-subtask-item.concluida { opacity: 0.5; }
+  .m-subtask-item.concluida .m-text-input { text-decoration: line-through; }
+  .m-text-input { flex: 1; background: transparent; border: 1px solid transparent; color: var(--text-primary); padding: 8px; border-radius: 8px; font-size: 13px; font-weight: 500; outline: none; transition: 0.2s;}
+  .m-text-input:focus { background: var(--bg-hover); border-color: var(--accent); }
+  .m-check-btn { width: 20px; height: 20px; border-radius: 6px; border: 2px solid var(--text-secondary); display: grid; place-items: center; cursor: pointer; transition: 0.2s; color: transparent;}
+  .m-check-btn:hover { border-color: var(--accent); }
+  .m-subtask-item.concluida .m-check-btn { background: var(--text-primary); border-color: var(--text-primary); color: var(--bg-primary); }
+
+  .m-tray-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;}
+  .m-tray-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 12px; }
+  .m-thumb-card { background: var(--bg-primary); border-radius: 12px; border: 1px solid var(--divider); display: flex; flex-direction: column; overflow: visible;}
+  .m-thumb-img-wrapper { height: 80px; background: var(--bg-hover); display: flex; justify-content: center; align-items: center; cursor: pointer; border-radius: 12px 12px 0 0; overflow: hidden; }
+  .m-thumb-footer { display: flex; align-items: center; justify-content: space-between; padding: 6px 8px; font-size: 11px; font-weight: 600; }
+
+  /* Métricas Manuais Ajustáveis */
+  .m-manual-metrics { display: flex; gap: 12px; align-items: center; background: var(--bg-hover); padding: 12px; border-radius: 12px; border: 1px dashed var(--divider);}
+
+  /* Ajustes Mobile */
+  @media (max-width: 768px) {
+    .m-header-top-row { flex-direction: column; gap: 16px; }
+    .m-header-actions { align-items: stretch !important; width: 100%; }
+    .m-context-tabs { display: grid; grid-template-columns: 1fr 1fr 1fr; width: 100%; margin: 0 !important; }
+    .m-context-btn { text-align: center; }
+    #m-period-nav-container { justify-content: center !important; margin-top: 8px; }
+    .m-modal-surface { max-height: 90vh !important; border-radius: 16px !important; }
+    .m-pill-row { gap: 6px; }
+    .m-manual-metrics { flex-direction: column; align-items: flex-start; }
+    .m-manual-metrics > div { width: 100% !important; }
+  }
+</style>
+
+<div class="sys-container" id="m-container">
+  
+  <div class="sys-header" style="align-items: flex-start; justify-content: space-between; border-bottom: none; padding-bottom: 0;">
+    <div style="display:flex; justify-content:space-between; width: 100%;" class="m-header-top-row">
+      <h1 style="display:flex; align-items:center; gap:8px; margin: 0;">
+        <span class="material-symbols-rounded" style="color: var(--accent); font-size: 28px;">ads_click</span>
+        <span>Metas</span>
+      </h1>
+      <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 8px;" class="m-header-actions">
+        <div class="m-context-tabs" style="margin: 0;">
+          <button class="m-context-btn active" onclick="AppMetas.setContext('total', this)">Total</button>
+          <button class="m-context-btn" onclick="AppMetas.setContext('anual', this)">Anual</button>
+          <button class="m-context-btn" onclick="AppMetas.setContext('mensal', this)">Mensal</button>
+        </div>
+        <div id="m-period-nav-container" style="display: none; justify-content: flex-end; width: 100%;"></div>
+      </div>
+    </div>
+  </div>
+
+  <div style="height: 1px; background: var(--divider); margin-top: 16px; margin-bottom: 24px;"></div>
+
+  <div class="m-dash-row">
+    <div class="m-dash-widget">
+      <span class="m-dash-title"><span id="dash-title-global">Progresso Global</span><span class="material-symbols-rounded" style="font-size: 16px; opacity:0.5;">query_stats</span></span>
+      <div style="display: flex; align-items: baseline; gap: 8px;"><span class="m-dash-value" id="m-stat-global">0%</span></div>
+      <div class="m-mini-progress-track" style="margin-top: 4px; background: var(--bg-primary); border: none;"><div class="m-mini-progress-fill" id="m-stat-bar" style="width: 0%; background: var(--accent);"></div></div>
+    </div>
+    <div class="m-dash-widget">
+      <span class="m-dash-title"><span id="dash-title-ativas">Metas Ativas</span><span class="material-symbols-rounded" style="font-size: 16px; color: var(--accent);">radio_button_unchecked</span></span>
+      <span class="m-dash-value" style="color: var(--accent);" id="m-stat-ativas">0</span>
+    </div>
+    <div class="m-dash-widget">
+      <span class="m-dash-title"><span id="dash-title-concluidas">Metas Concluídas</span><span class="material-symbols-rounded" style="font-size: 16px; color: var(--mai-success);">check_circle</span></span>
+      <span class="m-dash-value" style="color: var(--mai-success);" id="m-stat-concluidas">0</span>
+    </div>
+  </div>
+
+  <div class="m-tabs" id="m-tabs-list"></div>
+  <div class="m-grid" id="m-grid-content"></div>
+
+  <button class="sys-btn-fab" onclick="AppMetas.abrirModal()"><span class="material-symbols-rounded">add</span></button>
+
+  <div class="m-modal-overlay" id="modal-meta">
+    <div class="m-modal-surface">
+      
+      <div style="display: flex; justify-content: space-between; padding: 12px 24px; border-bottom: 1px solid var(--divider); align-items: center; background: var(--bg-hover); border-radius: 20px 20px 0 0;">
+        <span style="font-size: 14px; font-weight: 800; color: var(--text-secondary); text-transform: uppercase;" id="m-modal-category-label">Meta</span>
+        <button class="sys-icon-btn" onclick="AppMetas.fecharModal()"><span class="material-symbols-rounded">close</span></button>
+      </div>
+
+      <div style="padding:24px; flex:1; overflow-y:auto;">
+        <input type="hidden" id="m-id">
+        <input type="text" class="m-input-title" id="m-titulo" placeholder="Qual o seu grande objetivo?">
+
+        <div style="display:flex; align-items:center; gap:12px; margin-bottom: 20px;" id="m-progress-header">
+           <div style="flex:1;">
+              <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+                <span id="m-modal-progress-label" style="font-size:12px; font-weight:700; color:var(--text-secondary);">0 / 100</span>
+                <span id="m-modal-progress-text" style="font-size:14px; font-weight:800; color:var(--text-primary);">0%</span>
+              </div>
+              <div class="m-mini-progress-track" style="height: 8px;"><div class="m-mini-progress-fill" id="m-modal-progress-fill" style="width: 0%; background: var(--accent);"></div></div>
+           </div>
+           
+           <div class="has-dropdown" style="position:relative;" id="m-progress-menu-btn">
+              <button class="sys-icon-btn" onclick="AppMetas.toggleDrop(event, 'drop-progress')">
+                 <span class="material-symbols-rounded">more_vert</span>
+              </button>
+              <div id="drop-progress" class="sys-dropdown" style="top:100%; right:0; margin-top:4px;">
+                 <div class="sys-drop-item" onclick="AppMetas.addProgresso()"><span class="material-symbols-rounded" style="color:var(--accent);">add</span> Adicionar Progresso</div>
+                 <div class="sys-drop-item" onclick="AppMetas.ajustarProgresso()"><span class="material-symbols-rounded">tune</span> Ajustar Métricas</div>
+              </div>
+           </div>
+        </div>
+
+        <div class="m-manual-metrics" id="m-manual-metrics-box" style="display:none; margin-bottom:20px;">
+           <div style="display:flex; flex-direction:column; flex:1; gap:4px;">
+             <label style="font-size:10px; font-weight:800; color:var(--text-secondary); text-transform:uppercase;">Unidade (Ex: kg, livros)</label>
+             <input type="text" id="m-label" class="sys-input" style="height:32px; padding:0 8px; font-size:13px; background:var(--bg-primary); border-color:transparent;" placeholder="Unidade">
+           </div>
+           <div style="display:flex; gap:8px; width:160px;">
+             <div style="display:flex; flex-direction:column; gap:4px;">
+               <label style="font-size:10px; font-weight:800; color:var(--text-secondary); text-transform:uppercase;">Atual</label>
+               <input type="number" id="m-atual" class="sys-input" style="height:32px; padding:0; text-align:center; font-weight:700; background:var(--bg-primary); border-color:transparent;" onchange="AppMetas.atualizarBarraModal()">
+             </div>
+             <div style="display:flex; flex-direction:column; gap:4px;">
+               <label style="font-size:10px; font-weight:800; color:var(--text-secondary); text-transform:uppercase;">Alvo</label>
+               <input type="number" id="m-total" class="sys-input" style="height:32px; padding:0; text-align:center; font-weight:700; background:var(--bg-primary); border-color:transparent;" onchange="AppMetas.atualizarBarraModal()">
+             </div>
+           </div>
+        </div>
+        
+        <div id="m-desc-wrapper" class="m-desc-wrapper">
+           <div id="m-quill-editor"></div>
+        </div>
+
+        <div class="m-pill-row">
+           <div class="has-dropdown" style="position:relative;">
+              <div class="m-action-pill" id="pill-icone" onclick="AppMetas.toggleDrop(event, 'drop-icone')">
+                 <span class="material-symbols-rounded" id="lbl-icon-view">ads_click</span>
+                 <span id="lbl-icone">Ícone</span>
+              </div>
+              <div id="drop-icone" class="sys-dropdown" style="top:100%; left:0; margin-top:4px; padding:0; width: 220px;">
+                 <div class="m-icon-grid" id="m-icon-grid"></div>
+              </div>
+           </div>
+
+           <div class="has-dropdown" style="position:relative;">
+              <div class="m-action-pill" id="pill-prazo" onclick="AppMetas.toggleDrop(event, 'drop-prazo')">
+                 <span class="material-symbols-rounded">calendar_today</span>
+                 <span id="lbl-prazo">Prazo</span>
+              </div>
+              <div id="drop-prazo" class="sys-dropdown" style="top:100%; left:0; margin-top:4px;">
+                 <div class="sys-drop-item" onclick="AppMetas.setPrazo('hoje')"><span class="material-symbols-rounded" style="color: var(--mai-success);">today</span> Hoje</div>
+                 <div class="sys-drop-item" onclick="AppMetas.setPrazo('amanha')"><span class="material-symbols-rounded" style="color: var(--mai-warning);">event</span> Amanhã</div>
+                 <div style="height:1px; background:var(--divider); margin:4px 0;"></div>
+                 <div class="sys-drop-item" style="position:relative; overflow:hidden;">
+                    <span class="material-symbols-rounded">calendar_month</span> Outra data...
+                    <input type="date" id="m-prazo" onchange="AppMetas.updatePills(); document.querySelectorAll('.sys-dropdown').forEach(d => d.classList.remove('active'));" onclick="try{this.showPicker();}catch(e){}" style="position:absolute; inset:0; opacity:0; width:100%; height:100%; cursor:pointer; z-index:10;">
+                 </div>
+                 <div style="height:1px; background:var(--divider); margin:4px 0;"></div>
+                 <div class="sys-drop-item" onclick="AppMetas.setPrazo('')" style="color: var(--text-secondary);"><span class="material-symbols-rounded">close</span> Sem prazo</div>
+              </div>
+           </div>
+
+           <div class="has-dropdown" style="position:relative;">
+              <div class="m-action-pill" id="pill-cat" onclick="AppMetas.toggleDrop(event, 'drop-cat')">
+                 <span class="material-symbols-rounded">folder</span>
+                 <span id="lbl-cat">Categoria</span>
+              </div>
+              <div id="drop-cat" class="sys-dropdown" style="top:100%; left:0; margin-top:4px; max-height:250px; overflow-y:auto; min-width: 200px;"></div>
+           </div>
+
+           <div class="has-dropdown" style="position:relative;">
+              <div class="m-action-pill" id="pill-status" onclick="AppMetas.toggleDrop(event, 'drop-status')">
+                 <span class="material-symbols-rounded" id="icon-status">radio_button_unchecked</span>
+                 <span id="lbl-status">Em Andamento</span>
+              </div>
+              <div id="drop-status" class="sys-dropdown" style="top:100%; left:0; margin-top:4px;">
+                 <div class="sys-drop-item" onclick="AppMetas.setStatus('Em Andamento')"><span class="material-symbols-rounded" style="color:var(--accent);">radio_button_unchecked</span> Em Andamento</div>
+                 <div class="sys-drop-item" onclick="AppMetas.setStatus('Atenção')"><span class="material-symbols-rounded" style="color:var(--mai-warning);">error</span> Atenção</div>
+                 <div class="sys-drop-item" onclick="AppMetas.setStatus('Concluída')"><span class="material-symbols-rounded" style="color:var(--mai-success);">check_circle</span> Concluída</div>
+              </div>
+           </div>
+        </div>
+
+        <div class="m-section-container">
+          <label style="font-size: 11px; font-weight: 800; color: var(--text-secondary); text-transform: uppercase;">Milestones (Passos)</label>
+          <div id="m-milestones-list" style="display:flex; flex-direction:column; gap:4px; margin: 8px 0;"></div>
+          
+          <div style="display:flex; gap:8px; align-items: center; margin-top: 8px;">
+            <input type="text" class="m-text-input" id="m-new-milestone" placeholder="Adicionar um passo..." onkeypress="if(event.key==='Enter') AppMetas.addMilestone()" style="background: var(--bg-hover); margin: 0;">
+            <button class="sys-btn-primary" onclick="AppMetas.addMilestone()" style="padding: 0; width: 60px; height: 35px; border-radius: 8px; font-size: 12px; box-shadow: none; flex-shrink: 0;">Add</button>
+          </div>
+        </div>
+        
+        <div class="m-section-container">
+          <div class="m-tray-header">
+            <span style="font-size: 11px; font-weight: 800; color: var(--text-secondary); text-transform: uppercase;">Anexos</span>
+            <button class="sys-icon-btn" id="btn-anexar" onclick="AppMetas.triggerUpload()" style="background: var(--bg-hover); width: auto; padding: 4px 12px; border-radius: 8px;">
+              <span class="material-symbols-rounded" style="font-size: 16px;">add_circle</span> <span style="font-size: 12px; font-weight: 600;">Anexar</span>
+            </button>
+          </div>
+          <div class="m-tray-grid" id="m-tray-list"></div>
+        </div>
+
+      </div>
+      
+      <div style="padding: 16px 24px; border-top: 1px solid var(--divider); background: var(--bg-primary); border-radius: 0 0 20px 20px; display: flex; gap: 12px; align-items: center;">
+        <button class="sys-btn-primary" id="btn-m-salvar" onclick="AppMetas.salvar()" style="flex: 1; height: 44px; font-size: 14px; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">Guardar Meta</button>
+        <button class="sys-icon-btn" id="btn-m-excluir" onclick="AppMetas.excluirMetaAtual()" style="background: color-mix(in srgb, var(--mai-danger) 10%, transparent); color: var(--mai-danger); height: 44px; width: 44px; border-radius: 10px; display: none;">
+          <span class="material-symbols-rounded">delete</span>
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="sys-modal-overlay" id="modal-categorias-meta">
+    <div class="sys-modal-surface" style="max-width: 400px; margin: auto;">
+      <div class="sys-modal-header">
+        <h2>Categorias</h2>
+        <button class="sys-icon-btn" onclick="document.getElementById('modal-categorias-meta').classList.remove('active')"><span class="material-symbols-rounded">close</span></button>
+      </div>
+      <div class="sys-modal-body">
+        <div style="display:flex; gap:8px; align-items: center; margin-bottom:16px;">
+           <input type="text" id="m-nova-cat" class="sys-input" placeholder="Nova categoria..." style="height:40px;">
+           <button class="sys-btn-primary" style="width:auto; padding:0 16px; height: 40px;" onclick="AppMetas.adicionarCategoria()">Add</button>
+        </div>
+        <div id="m-lista-categorias" style="display:flex; flex-direction:column; gap:8px;"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sys-modal-overlay" id="modal-renomear-cat">
+    <div class="sys-modal-surface" style="max-width: 320px; margin: auto;">
+      <div class="sys-modal-header">
+        <h2>Renomear</h2>
+        <button class="sys-icon-btn" onclick="document.getElementById('modal-renomear-cat').classList.remove('active')"><span class="material-symbols-rounded">close</span></button>
+      </div>
+      <div class="sys-modal-body">
+        <input type="hidden" id="edit-cat-id">
+        <input type="hidden" id="edit-cat-old">
+        <input type="text" id="edit-cat-name" class="sys-input" style="margin-bottom: 16px;">
+        <button class="sys-btn-primary" onclick="AppMetas.confirmarRenomearCat()">Salvar Nome</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  let quillMeta;
+
+  document.addEventListener('click', function(e) {
+    if (!e.target.closest('.has-dropdown')) {
+      document.querySelectorAll('#m-container .sys-dropdown').forEach(d => d.classList.remove('active'));
+    }
+    const wrap = document.getElementById('m-desc-wrapper');
+    if (wrap) {
+      if (e.target.closest('.ql-toolbar') || e.target.closest('.ql-tooltip')) return;
+      if (wrap.contains(e.target)) { wrap.classList.add('active-desc'); } 
+      else { wrap.classList.remove('active-desc'); }
+    }
+  });
+
+  const AppMetas = {
+    data: [], categorias: [],
+    contexto: 'total', filtroCat: 'Todas',
+    anoFiltro: new Date().getFullYear(), mesFiltro: new Date().getMonth(),
+    metaAtual: { icone: 'ads_click', status: 'Em Andamento', categoria: '', anexos: [], milestones: [] },
+    iconesBasicos: ['flag', 'ads_click', 'terminal', 'flight_takeoff', 'monitor_weight', 'account_balance', 'school', 'fitness_center', 'menu_book', 'self_improvement', 'rocket_launch', 'public', 'palette', 'attach_money', 'psychology', 'directions_run', 'favorite', 'spa', 'bolt', 'local_fire_department'],
+
+    init: function() {
+      if(!quillMeta) {
+        quillMeta = new Quill('#m-quill-editor', { theme: 'snow', placeholder: 'Adicionar descrição...', modules: { toolbar: [['bold', 'italic', 'underline', 'strike'], [{ 'list': 'bullet' }, { 'list': 'ordered' }], ['link', 'clean']] }});
+      }
+      this.renderizarIconPicker();
+      this.carregar();
+    },
+
+    carregar: function() {
+      MAIRun.withSuccessHandler(resRaw => {
+        const res = JSON.parse(resRaw);
+        if(res.ok) {
+          this.data = (res.metas || []).map(m => {
+             if (m.prazo) {
+                 if (m.prazo.includes('T')) m.prazo = m.prazo.split('T')[0];
+                 else if (m.prazo.includes('/')) {
+                     const p = m.prazo.split('/');
+                     if (p.length === 3) m.prazo = `${p[2]}-${p[1]}-${p[0]}`;
+                 }
+             }
+             return m;
+          });
+          this.categorias = res.categorias || [];
+          this.renderSubContexts(); this.renderizarTabs(); this.renderizar();
+        }
+      }).getDadosMetas();
+    },
+
+    toggleDrop: function(e, id) {
+      e.stopPropagation();
+      const drop = document.getElementById(id);
+      const isActive = drop.classList.contains('active');
+      document.querySelectorAll('#m-container .sys-dropdown').forEach(d => d.classList.remove('active'));
+      if (!isActive) drop.classList.add('active');
+    },
+
+    /* =========================================
+       NAVEGAÇÃO DE PERÍODO E CONTEXTO
+    ========================================= */
+    setContext: function(ctx, el) {
+      this.contexto = ctx;
+      document.querySelectorAll('.m-context-btn').forEach(b => b.classList.remove('active'));
+      el.classList.add('active');
+      if(ctx === 'total') { this.anoFiltro = new Date().getFullYear(); this.mesFiltro = new Date().getMonth(); }
+      this.renderSubContexts(); this.renderizar();
+    },
+
+    renderSubContexts: function() {
+      const container = document.getElementById('m-period-nav-container');
+      if (this.contexto === 'total') { container.style.display = 'none'; return; }
+      
+      container.style.display = 'flex';
+      const mesesNomes = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+      const labelText = this.contexto === 'anual' ? this.anoFiltro : `${mesesNomes[this.mesFiltro]} ${this.anoFiltro}`;
+      
+      container.innerHTML = `
+        <div class="m-period-nav">
+          <button class="sys-icon-btn" style="width:28px; height:28px; padding:0;" onclick="AppMetas.prevPeriod()"><span class="material-symbols-rounded" style="font-size:20px;">chevron_left</span></button>
+          <span class="m-period-label">${labelText}</span>
+          <button class="sys-icon-btn" style="width:28px; height:28px; padding:0;" onclick="AppMetas.nextPeriod()"><span class="material-symbols-rounded" style="font-size:20px;">chevron_right</span></button>
+        </div>`;
+    },
+
+    prevPeriod: function() {
+      if (this.contexto === 'anual') this.anoFiltro--;
+      else { this.mesFiltro--; if (this.mesFiltro < 0) { this.mesFiltro = 11; this.anoFiltro--; } }
+      this.renderSubContexts(); this.renderizar();
+    },
+
+    nextPeriod: function() {
+      if (this.contexto === 'anual') this.anoFiltro++;
+      else { this.mesFiltro++; if (this.mesFiltro > 11) { this.mesFiltro = 0; this.anoFiltro++; } }
+      this.renderSubContexts(); this.renderizar();
+    },
+
+    renderizarTabs: function() {
+      let html = `<div class="m-tab ${this.filtroCat === 'Todas' ? 'active' : ''}" onclick="AppMetas.setCat('Todas')">Todas</div>`;
+      this.categorias.forEach(c => html += `<div class="m-tab ${this.filtroCat === c.nome ? 'active' : ''}" onclick="AppMetas.setCat('${c.nome}')">${c.nome}</div>`);
+      html += `<div class="m-tab" onclick="AppMetas.abrirModalCategoria()" style="color: var(--accent); margin-left: 8px; font-weight: 700;"><span class="material-symbols-rounded" style="font-size:18px; vertical-align:middle; margin-right:4px;">settings</span>Categorias</div>`;
+      document.getElementById('m-tabs-list').innerHTML = html;
+      this.updateCategoriasDropdown();
+    },
+
+    setCat: function(cat) { this.filtroCat = cat; this.renderizarTabs(); this.renderizar(); },
+    formatarDataBR: function(dtStr) {
+      if(!dtStr || !dtStr.includes('-')) return dtStr;
+      const p = dtStr.split('-');
+      return p.length === 3 ? `${p[2]}/${p[1]}/${p[0]}` : dtStr;
+    },
+
+    atualizarDashboard: function(metasFiltradas) {
+      let totalAtual = 0, totalAlvo = 0, concluidas = 0, ativas = 0;
+
+      metasFiltradas.forEach(m => {
+        totalAtual += Number(m.progresso_atual || 0); totalAlvo += Number(m.progresso_total || 0);
+        if(m.status === 'Concluída') concluidas++; else ativas++;
+      });
+
+      const globalPerc = totalAlvo > 0 ? Math.min(Math.round((totalAtual / totalAlvo) * 100), 100) : 0;
+      document.getElementById('m-stat-global').innerText = globalPerc + '%';
+      document.getElementById('m-stat-bar').style.width = globalPerc + '%';
+      document.getElementById('m-stat-ativas').innerText = ativas;
+      document.getElementById('m-stat-concluidas').innerText = concluidas;
+
+      const mesesNomes = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+      let tituloGlobal = 'Progresso Global', tituloAtivas = 'Metas Ativas', tituloConcluidas = 'Metas Concluídas';
+
+      if (this.contexto === 'anual') {
+           tituloGlobal = `Progresso de ${this.anoFiltro}`; tituloAtivas = `Ativas em ${this.anoFiltro}`; tituloConcluidas = `Concluídas em ${this.anoFiltro}`;
+      } else if (this.contexto === 'mensal') {
+           tituloGlobal = `Progresso de ${mesesNomes[this.mesFiltro]}`; tituloAtivas = `Ativas em ${mesesNomes[this.mesFiltro]}`; tituloConcluidas = `Concluídas em ${mesesNomes[this.mesFiltro]}`;
+      }
+      
+      document.getElementById('dash-title-global').innerText = tituloGlobal;
+      document.getElementById('dash-title-ativas').innerText = tituloAtivas;
+      document.getElementById('dash-title-concluidas').innerText = tituloConcluidas;
+    },
+
+    renderizar: function() {
+      const grid = document.getElementById('m-grid-content');
+      const filtradas = this.data.filter(m => {
+        if(this.filtroCat !== 'Todas' && m.categoria !== this.filtroCat) return false;
+        if(this.contexto === 'total') return true;
+        if(!m.prazo) return false; 
+        
+        const d = new Date(m.prazo + 'T12:00:00');
+        if(this.contexto === 'anual') return d.getFullYear() === this.anoFiltro;
+        if(this.contexto === 'mensal') return d.getFullYear() === this.anoFiltro && d.getMonth() === this.mesFiltro;
+        return true;
+      });
+
+      this.atualizarDashboard(filtradas);
+
+      if(filtradas.length === 0) {
+        grid.innerHTML = '<div style="padding: 60px 20px; color: var(--text-secondary); grid-column: 1 / -1; text-align: center;"><span class="material-symbols-rounded" style="font-size:48px; display:block; margin-bottom:12px; opacity:0.5;">target</span>Nenhuma meta encontrada para este período.</div>';
+        return;
+      }
+
+      grid.innerHTML = filtradas.map(m => {
+        const perc = m.progresso_total > 0 ? Math.min(Math.round((m.progresso_atual / m.progresso_total) * 100), 100) : 0;
+        const isConcluidaClass = m.status === 'Concluída' ? 'concluida' : '';
+        const barColor = m.status === 'Concluída' ? 'var(--mai-success)' : (m.status === 'Atenção' ? 'var(--mai-warning)' : 'var(--accent)');
+
+        let badgesHtml = '';
+        if(m.prazo) {
+          const hojeStr = new Date().toISOString().split('T')[0];
+          let pColor = 'prazo'; let txtPrazo = this.formatarDataBR(m.prazo);
+          if (m.prazo < hojeStr && m.status !== 'Concluída') pColor = 'atrasada';
+          else if (m.prazo === hojeStr && m.status !== 'Concluída') { pColor = 'hoje'; txtPrazo = 'Hoje'; }
+          badgesHtml += `<span class="m-badge ${pColor}"><span class="material-symbols-rounded" style="font-size:13px; margin-right:2px;">calendar_today</span> ${txtPrazo}</span>`;
+        }
+        if(m.categoria) badgesHtml += `<span class="m-badge"><span class="material-symbols-rounded" style="font-size:13px; margin-right:2px;">folder</span> ${m.categoria}</span>`;
+        
+        let stClass = m.status === 'Concluída' ? 'status-concluida' : (m.status === 'Atenção' ? 'status-atencao' : 'status-andamento');
+        let stIcon = m.status === 'Concluída' ? 'check_circle' : (m.status === 'Atenção' ? 'error' : 'radio_button_unchecked');
+        badgesHtml += `<span class="m-badge ${stClass}"><span class="material-symbols-rounded" style="font-size:13px; margin-right:2px;">${stIcon}</span> ${m.status}</span>`;
+
+        return `
+          <div class="m-card ${isConcluidaClass}" onclick="AppMetas.abrirModal('${m.id}')">
+            <div class="m-card-top">
+               <div class="m-card-icon"><span class="material-symbols-rounded">${m.icone || 'ads_click'}</span></div>
+               <div class="m-card-content">
+                  <div class="m-title">${m.titulo}</div>
+                  <div class="m-mini-progress">
+                    <div class="m-mini-progress-label"><span>${m.progresso_label || 'Progresso'}</span><span style="color: var(--text-primary); font-weight:700;">${perc}%</span></div>
+                    <div class="m-mini-progress-track"><div class="m-mini-progress-fill" style="width: ${perc}%; background: ${barColor};"></div></div>
+                  </div>
+               </div>
+            </div>
+            ${badgesHtml ? `<div class="m-meta-badges" style="margin-top:8px;">${badgesHtml}</div>` : ''}
+          </div>`;
+      }).join('');
+    },
+
+    /* =========================================
+       MODAL UNIFICADO (TODOIST STYLE)
+    ========================================= */
+    renderizarIconPicker: function() {
+      document.getElementById('m-icon-grid').innerHTML = this.iconesBasicos.map(icon => `
+        <div class="m-icon-swatch" onclick="AppMetas.setIcone('${icon}')"><span class="material-symbols-rounded">${icon}</span></div>
+      `).join('');
+    },
+
+    updateCategoriasDropdown: function() {
+      let html = `<div class="sys-drop-item" onclick="AppMetas.setCategoria('')"><span class="material-symbols-rounded" style="color:var(--text-secondary);">close</span> Sem Categoria</div>`;
+      this.categorias.forEach(c => { html += `<div class="sys-drop-item" onclick="AppMetas.setCategoria('${c.nome}')"><span class="material-symbols-rounded">folder</span> ${c.nome}</div>`; });
+      document.getElementById('drop-cat').innerHTML = html;
+    },
+
+    updatePills: function() {
+      document.getElementById('lbl-icon-view').innerText = this.metaAtual.icone || 'ads_click';
+      document.getElementById('pill-icone').classList.add('active-val');
+
+      document.getElementById('lbl-cat').innerText = this.metaAtual.categoria || 'Categoria';
+      if(this.metaAtual.categoria) document.getElementById('pill-cat').classList.add('active-val');
+      else document.getElementById('pill-cat').classList.remove('active-val');
+
+      const st = this.metaAtual.status || 'Em Andamento';
+      const pillSt = document.getElementById('pill-status');
+      document.getElementById('lbl-status').innerText = st;
+      pillSt.className = 'm-action-pill';
+      if (st === 'Concluída') { document.getElementById('icon-status').innerText = 'check_circle'; pillSt.classList.add('status-concluida'); } 
+      else if (st === 'Atenção') { document.getElementById('icon-status').innerText = 'error'; pillSt.classList.add('status-atencao'); } 
+      else { document.getElementById('icon-status').innerText = 'radio_button_unchecked'; pillSt.classList.add('active-val'); }
+
+      const dtVal = document.getElementById('m-prazo').value;
+      const lblDt = document.getElementById('lbl-prazo');
+      const pillDt = document.getElementById('pill-prazo');
+      
+      if (dtVal) {
+         const hojeObj = new Date(); const amanhaObj = new Date(); amanhaObj.setDate(amanhaObj.getDate() + 1);
+         const hojeStr = hojeObj.toISOString().split('T')[0]; const amanhaStr = amanhaObj.toISOString().split('T')[0];
+         
+         if (dtVal === hojeStr) lblDt.innerText = "Hoje";
+         else if (dtVal === amanhaStr) lblDt.innerText = "Amanhã";
+         else lblDt.innerText = this.formatarDataBR(dtVal);
+
+         pillDt.classList.add('active-val');
+         if (dtVal < hojeStr && st !== 'Concluída') { pillDt.style.color = 'var(--mai-danger)'; pillDt.style.borderColor = 'color-mix(in srgb, var(--mai-danger) 30%, transparent)'; pillDt.style.background = 'color-mix(in srgb, var(--mai-danger) 5%, transparent)'; } 
+         else { pillDt.style.color = ''; pillDt.style.borderColor = ''; pillDt.style.background = ''; }
+      } else {
+         lblDt.innerText = "Prazo"; pillDt.classList.remove('active-val'); pillDt.style.color = ''; pillDt.style.borderColor = ''; pillDt.style.background = '';
+      }
+
+      this.atualizarBarraModal();
+    },
+
+    setIcone: function(icon) { this.metaAtual.icone = icon; this.updatePills(); document.getElementById('drop-icone').classList.remove('active'); },
+    setCategoria: function(cat) { this.metaAtual.categoria = cat; this.updatePills(); document.getElementById('drop-cat').classList.remove('active'); },
+    setStatus: function(st) { this.metaAtual.status = st; this.updatePills(); document.getElementById('drop-status').classList.remove('active'); },
+    setPrazo: function(tipo) {
+      const input = document.getElementById('m-prazo');
+      const hojeObj = new Date();
+      if (tipo === 'hoje') input.value = hojeObj.toISOString().split('T')[0];
+      else if (tipo === 'amanha') { hojeObj.setDate(hojeObj.getDate() + 1); input.value = hojeObj.toISOString().split('T')[0]; } 
+      else input.value = '';
+      this.updatePills(); document.getElementById('drop-prazo').classList.remove('active');
+    },
+
+    atualizarBarraModal: function() {
+      let calcAtual = Number(document.getElementById('m-atual').value) || 0;
+      let calcTotal = Number(document.getElementById('m-total').value) || 100;
+      let label = document.getElementById('m-label').value || 'unidades';
+
+      const hasMilestones = this.metaAtual.milestones && this.metaAtual.milestones.length > 0;
+      
+      if(hasMilestones) {
+        calcAtual = this.metaAtual.milestones.filter(x => x.done).length;
+        calcTotal = this.metaAtual.milestones.length;
+        label = "passos";
+        document.getElementById('m-manual-metrics-box').style.display = 'none';
+        document.getElementById('m-progress-menu-btn').style.display = 'none';
+      } else {
+        document.getElementById('m-progress-menu-btn').style.display = 'block';
+      }
+
+      const perc = calcTotal > 0 ? Math.min(Math.round((calcAtual / calcTotal) * 100), 100) : 0;
+      document.getElementById('m-modal-progress-text').innerText = perc + '%';
+      document.getElementById('m-modal-progress-label').innerText = `${calcAtual} / ${calcTotal} ${label}`;
+      
+      const fill = document.getElementById('m-modal-progress-fill');
+      fill.style.width = perc + '%';
+      fill.style.background = this.metaAtual.status === 'Concluída' ? 'var(--mai-success)' : (this.metaAtual.status === 'Atenção' ? 'var(--mai-warning)' : 'var(--accent)');
+    },
+
+    addProgresso: function() {
+      if(this.metaAtual.milestones && this.metaAtual.milestones.length > 0) return;
+      const val = prompt("Adicionar quanto ao progresso atual?");
+      if(val && !isNaN(val)) {
+         const atual = Number(document.getElementById('m-atual').value) || 0;
+         document.getElementById('m-atual').value = atual + Number(val);
+         this.atualizarBarraModal();
+      }
+      document.getElementById('drop-progress').classList.remove('active');
+    },
+
+    ajustarProgresso: function() {
+      if(this.metaAtual.milestones && this.metaAtual.milestones.length > 0) return;
+      const box = document.getElementById('m-manual-metrics-box');
+      box.style.display = box.style.display === 'none' ? 'flex' : 'none';
+      document.getElementById('drop-progress').classList.remove('active');
+    },
+
+    abrirModal: function(id = null) {
+      document.getElementById('modal-meta').classList.add('active');
+      document.getElementById('m-desc-wrapper').classList.remove('active-desc');
+      
+      if(id) {
+        const m = this.data.find(x => String(x.id) === String(id));
+        document.getElementById('m-modal-category-label').innerText = m.categoria || "Meta";
+        document.getElementById('m-id').value = m.id;
+        document.getElementById('m-titulo').value = m.titulo;
+        quillMeta.root.innerHTML = m.descricao || '';
+        document.getElementById('m-prazo').value = m.prazo || '';
+        document.getElementById('m-label').value = m.progresso_label || '';
+        document.getElementById('m-atual').value = m.progresso_atual || 0;
+        document.getElementById('m-total').value = m.progresso_total || 100;
+        
+        this.metaAtual.icone = m.icone || 'ads_click';
+        this.metaAtual.categoria = m.categoria || '';
+        this.metaAtual.status = m.status || 'Em Andamento';
+        this.metaAtual.milestones = m.milestones ? JSON.parse(JSON.stringify(m.milestones)) : [];
+        this.metaAtual.anexos = m.anexos ? JSON.parse(JSON.stringify(m.anexos)) : [];
+        
+        document.getElementById('m-manual-metrics-box').style.display = 'none';
+        document.getElementById('btn-m-excluir').style.display = 'flex';
+      } else {
+        document.getElementById('m-modal-category-label').innerText = "Nova Meta";
+        document.getElementById('m-id').value = '';
+        document.getElementById('m-titulo').value = '';
+        quillMeta.root.innerHTML = '';
+        document.getElementById('m-prazo').value = '';
+        document.getElementById('m-label').value = '';
+        document.getElementById('m-atual').value = 0;
+        document.getElementById('m-total').value = 100;
+
+        this.metaAtual.icone = 'ads_click';
+        this.metaAtual.categoria = this.filtroCat !== 'Todas' ? this.filtroCat : '';
+        this.metaAtual.status = 'Em Andamento';
+        this.metaAtual.milestones = [];
+        this.metaAtual.anexos = [];
+        
+        document.getElementById('m-manual-metrics-box').style.display = 'flex';
+        document.getElementById('btn-m-excluir').style.display = 'none';
+      }
+      
+      this.updatePills();
+      this.renderizarMilestones();
+      this.renderizarBandeja();
+    },
+
+    fecharModal: function() { document.getElementById('modal-meta').classList.remove('active'); },
+
+    /* =========================================
+       MILESTONES E ANEXOS (DENTRO DO MODAL)
+    ========================================= */
+    renderizarMilestones: function() {
+      const container = document.getElementById('m-milestones-list');
+      container.innerHTML = this.metaAtual.milestones.map((s, i) => `
+        <div class="m-subtask-item ${s.done ? 'concluida' : ''}">
+          <button class="m-check-btn" onclick="AppMetas.toggleMilestone(${i})"><span class="material-symbols-rounded" style="font-size:12px;">check</span></button>
+          <input type="text" class="m-text-input" value="${s.titulo}" onchange="AppMetas.updateMilestone(${i}, this.value)">
+          <button class="sys-icon-btn" style="width:24px; height:24px; padding:0; color:var(--mai-danger)" onclick="AppMetas.delMilestone(${i})"><span class="material-symbols-rounded" style="font-size:14px">close</span></button>
+        </div>`).join('');
+      this.atualizarBarraModal();
+    },
+
+    addMilestone: function() {
+      const input = document.getElementById('m-new-milestone');
+      if(!input.value.trim()) return;
+      this.metaAtual.milestones.push({ titulo: input.value.trim(), done: false });
+      input.value = ''; this.renderizarMilestones();
+    },
+
+    updateMilestone: function(i, val) { this.metaAtual.milestones[i].titulo = val; },
+    toggleMilestone: function(i) { this.metaAtual.milestones[i].done = !this.metaAtual.milestones[i].done; this.renderizarMilestones(); },
+    delMilestone: function(i) { this.metaAtual.milestones.splice(i, 1); this.renderizarMilestones(); },
+
+    renderizarBandeja: function() {
+      const container = document.getElementById('m-tray-list');
+      if (!this.metaAtual.anexos || this.metaAtual.anexos.length === 0) { 
+        container.innerHTML = '<div style="grid-column: 1 / -1; font-size: 12px; color: var(--text-secondary); padding: 16px 0; text-align: center;">Sem arquivos anexados.</div>';
+        return; 
+      }
+      container.innerHTML = this.metaAtual.anexos.map((arq, i) => {
+        const isImg = arq.tipo.indexOf('image/') === 0;
+        const thumb = isImg ? `<div class="m-thumb-img-wrapper" onclick="window.open('${arq.url}')"><img src="${arq.url}" style="width:100%; height:100%; object-fit:cover;"></div>` : `<div class="m-thumb-img-wrapper" onclick="window.open('${arq.url}')"><span class="material-symbols-rounded" style="font-size:32px; color:var(--text-secondary); opacity:0.5;">description</span></div>`;
+        return `<div class="m-thumb-card">${thumb}
+            <div class="m-thumb-footer">
+              <span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; flex:1;">${arq.nome}</span>
+              <div class="has-dropdown" style="position:relative;">
+                <button class="sys-icon-btn" style="padding:0; width:24px; height:24px;" onclick="AppMetas.toggleDrop(event, 'drop-arq-${i}')"><span class="material-symbols-rounded" style="font-size:18px;">more_vert</span></button>
+                <div id="drop-arq-${i}" class="sys-dropdown" style="bottom:100%; right:0; margin-bottom:4px; z-index:9999;">
+                  <div class="sys-drop-item" onclick="AppMetas.renomearAnexoBandeja(${i})"><span class="material-symbols-rounded">edit</span> Renomear</div>
+                  <div class="sys-drop-item" onclick="AppMetas.inserirDoBandeja(${i})"><span class="material-symbols-rounded">arrow_upward</span> Inserir no Texto</div>
+                  <div class="sys-drop-item" style="color:var(--mai-danger);" onclick="AppMetas.removerDaBandeja(${i})"><span class="material-symbols-rounded">delete</span> Apagar Anexo</div>
+                </div>
+              </div>
+            </div>
+          </div>`;
+      }).join('');
+    },
+
+    renomearAnexoBandeja: function(index) {
+      const arq = this.metaAtual.anexos[index];
+      const novoNome = prompt("Renomear anexo:", arq.nome);
+      if (novoNome && novoNome.trim() !== "" && novoNome !== arq.nome) {
+        this.metaAtual.anexos[index].nome = novoNome.trim();
+        this.renderizarBandeja();
+      }
+      document.querySelectorAll('.sys-dropdown').forEach(d => d.classList.remove('active'));
+    },
+
+    triggerUpload: function() {
+      let oldInput = document.getElementById('m-hidden-file-input');
+      if (oldInput) oldInput.remove();
+
+      const input = document.createElement('input'); 
+      input.type = 'file'; 
+      input.multiple = true;
+      input.id = 'm-hidden-file-input';
+      input.style.display = 'none';
+      document.body.appendChild(input);
+
+      input.onchange = async e => {
+        const files = Array.from(e.target.files); 
+        if(!files.length) { input.remove(); return; }
+        
+        const btn = document.getElementById('btn-anexar'); 
+        const htmlOriginal = btn.innerHTML;
+        btn.disabled = true;
+        
+        for (let file of files) {
+          btn.innerHTML = '<span class="material-symbols-rounded" style="font-size:16px; animation: spin 1s linear infinite;">sync</span> <span style="font-size: 12px; font-weight: 600;">Enviando...</span>';
+          await new Promise(res => {
+            const reader = new FileReader();
+            reader.onload = ev => {
+              MAIRun.withSuccessHandler(r => {
+                if (r && r.ok) { 
+                  if (!this.metaAtual.anexos) this.metaAtual.anexos = [];
+                  this.metaAtual.anexos.push(r); 
+                  this.renderizarBandeja(); 
+                } else {
+                  alert("Erro ao guardar anexo no Drive.");
+                }
+                res();
+              }).salvarAnexoMetaDrive(ev.target.result, file.name, file.type);
+            };
+            reader.readAsDataURL(file);
+          });
+        }
+        btn.innerHTML = htmlOriginal;
+        btn.disabled = false;
+        input.remove(); 
+      };
+      input.click();
+    },
+
+    inserirDoBandeja: function(index) {
+      const arq = this.metaAtual.anexos[index];
+      const range = quillMeta.getSelection(true) || { index: quillMeta.getLength() };
+      if (arq.tipo.startsWith('image/')) { quillMeta.insertEmbed(range.index, 'image', arq.directUrl); quillMeta.insertText(range.index + 1, '\n'); } 
+      else { const txt = "Anexo: " + arq.nome; quillMeta.insertText(range.index, txt, 'link', arq.url); quillMeta.insertText(range.index + txt.length, '\n', 'link', false); }
+      document.querySelectorAll('.sys-dropdown').forEach(d => d.classList.remove('active'));
+    },
+    
+    removerDaBandeja: function(index) {
+      if(confirm("Apagar arquivo do Drive permanentemente?")) {
+        const id = this.metaAtual.anexos[index].idDrive;
+        this.metaAtual.anexos.splice(index, 1); this.renderizarBandeja();
+        MAIRun.deletarArquivoDrive(id);
+      }
+      document.querySelectorAll('.sys-dropdown').forEach(d => d.classList.remove('active'));
+    },
+
+    salvar: function() {
+      const titulo = document.getElementById('m-titulo').value.trim();
+      if(!titulo) return alert("O título é obrigatório.");
+
+      const btn = document.getElementById('btn-m-salvar');
+      btn.disabled = true; btn.innerHTML = '<span class="material-symbols-rounded" style="animation: spin 1s linear infinite;">sync</span> Salvando...';
+
+      const dados = {
+        id: document.getElementById('m-id').value || 'm-' + Date.now(),
+        titulo: titulo,
+        descricao: quillMeta.root.innerHTML,
+        categoria: this.metaAtual.categoria,
+        icone: this.metaAtual.icone,
+        status: this.metaAtual.status,
+        prazo: document.getElementById('m-prazo').value,
+        progresso_label: document.getElementById('m-label').value,
+        progresso_atual: Number(document.getElementById('m-atual').value) || 0,
+        progresso_total: Number(document.getElementById('m-total').value) || 100,
+        milestones: this.metaAtual.milestones.filter(s => s.titulo.trim() !== ''),
+        anexos: this.metaAtual.anexos
+      };
+
+      if (dados.milestones.length > 0) {
+        dados.progresso_atual = dados.milestones.filter(x => x.done).length;
+        dados.progresso_total = dados.milestones.length;
+        dados.progresso_label = "passos";
+      }
+
+      MAIRun.withSuccessHandler(() => {
+        btn.disabled = false; btn.innerText = "Guardar Meta";
+        this.fecharModal(); this.carregar();
+      }).salvarMeta(dados);
+    },
+
+    excluirMetaAtual: function() {
+      const id = document.getElementById('m-id').value;
+      if(!id) return;
+      if(confirm("Tem a certeza que deseja excluir esta meta permanentemente? Todas as anotações e anexos serão perdidos.")) {
+        const btn = document.getElementById('btn-m-excluir');
+        btn.style.pointerEvents = 'none';
+        btn.innerHTML = '<span class="material-symbols-rounded" style="animation: spin 1s linear infinite;">sync</span>';
+        
+        MAIRun.withSuccessHandler((res) => {
+          btn.style.pointerEvents = 'auto';
+          btn.innerHTML = '<span class="material-symbols-rounded">delete</span>';
+          if(res && !res.ok) alert("Erro ao excluir: " + res.erro);
+          this.fecharModal();
+          this.carregar();
+        }).excluirMeta(id);
+      }
+    },
+
+    /* =========================================
+       GESTÃO DE CATEGORIAS (INLINE NATIVA)
+    ========================================= */
+    abrirModalCategoria: function() {
+      document.getElementById('modal-categorias-meta').classList.add('active');
+      this.renderizarListaCategorias();
+    },
+
+    renderizarListaCategorias: function() {
+      let html = '';
+      this.categorias.forEach(c => {
+        html += `<div style="display:flex; align-items:center; justify-content:space-between; background:var(--bg-hover); padding:8px 12px; border-radius:8px; border:1px solid var(--divider);">
+          <span style="font-size:13px; font-weight:600; color:var(--text-primary);">${c.nome}</span>
+          <div style="display:flex; gap:4px;">
+            <button class="sys-icon-btn" style="width:28px; height:28px; padding:0;" onclick="AppMetas.abrirRenomearCat('${c.id}', '${c.nome}')"><span class="material-symbols-rounded" style="font-size:16px;">edit</span></button>
+            <button class="sys-icon-btn" style="width:28px; height:28px; padding:0; color:var(--mai-danger); background:color-mix(in srgb, var(--mai-danger) 10%, transparent);" onclick="AppMetas.excluirCategoria('${c.id}', '${c.nome}')"><span class="material-symbols-rounded" style="font-size:16px;">delete</span></button>
+          </div>
+        </div>`;
+      });
+      document.getElementById('m-lista-categorias').innerHTML = html;
+    },
+
+    adicionarCategoria: function() {
+      const input = document.getElementById('m-nova-cat');
+      const val = input.value.trim();
+      if(!val) return;
+      input.value = '';
+      MAIRun.withSuccessHandler(() => { this.carregar(); this.updateCategoriasDropdown(); }).salvarCategoriaMeta(val);
+    },
+
+    abrirRenomearCat: function(id, nome) {
+      document.getElementById('edit-cat-id').value = id;
+      document.getElementById('edit-cat-old').value = nome;
+      document.getElementById('edit-cat-name').value = nome;
+      document.getElementById('modal-renomear-cat').classList.add('active');
+    },
+
+    confirmarRenomearCat: function() {
+      const id = document.getElementById('edit-cat-id').value;
+      const oldName = document.getElementById('edit-cat-old').value;
+      const novoNome = document.getElementById('edit-cat-name').value.trim();
+      if(novoNome && novoNome !== oldName) {
+        document.getElementById('modal-renomear-cat').classList.remove('active');
+        MAIRun.withSuccessHandler(() => { this.carregar(); this.updateCategoriasDropdown(); }).renomearCategoriaMeta(id, novoNome);
+      }
+    },
+
+    excluirCategoria: function(id, nome) {
+      if(confirm(`Excluir a categoria "${nome}"? As metas continuarão a existir.`)) {
+        MAIRun.withSuccessHandler(() => {
+           if(this.filtroCat === nome) this.filtroCat = 'Todas';
+           this.carregar(); this.updateCategoriasDropdown();
+        }).excluirCategoriaMeta(id);
+      }
+    }
+  };
+
+  setTimeout(() => AppMetas.init(), 150);
+</script>
+
+<script id="mai-v91-metas-instant">
+(() => {
+  if (typeof AppMetas === 'undefined') return;
+
+  AppMetas.salvar = function() {
+    const titulo = document.getElementById('m-titulo').value.trim();
+    if (!titulo) return alert('O título é obrigatório.');
+
+    const dados = {
+      id: document.getElementById('m-id').value || `m-${Date.now()}`,
+      titulo,
+      descricao: quillMeta.root.innerHTML,
+      categoria: this.metaAtual.categoria,
+      icone: this.metaAtual.icone,
+      status: this.metaAtual.status,
+      prazo: document.getElementById('m-prazo').value,
+      progresso_label: document.getElementById('m-label').value,
+      progresso_atual: Number(document.getElementById('m-atual').value) || 0,
+      progresso_total: Number(document.getElementById('m-total').value) || 100,
+      milestones: this.metaAtual.milestones.filter(s => String(s.titulo || '').trim() !== ''),
+      anexos: MAIInstant.clone(this.metaAtual.anexos || [])
+    };
+
+    if (dados.milestones.length > 0) {
+      dados.progresso_atual = dados.milestones.filter(x => x.done).length;
+      dados.progresso_total = dados.milestones.length;
+      dados.progresso_label = 'passos';
+    }
+
+    const previous = MAIInstant.clone(this.data);
+    const idx = this.data.findIndex(m => String(m.id) === String(dados.id));
+
+    if (idx >= 0) this.data[idx] = { ...this.data[idx], ...dados };
+    else this.data.unshift(dados);
+
+    this.fecharModal();
+    this.renderizarTabs();
+    this.renderizar();
+    MAIInstant.changed('metas:salvar');
+
+    const rollback = () => {
+      this.data = previous;
+      this.renderizarTabs();
+      this.renderizar();
+      MAIInstant.error('A meta não foi sincronizada. A alteração foi desfeita.');
+    };
+
+    MAIRun
+      .withSuccessHandler(res => { if (res && res.ok === false) rollback(); })
+      .withFailureHandler(rollback)
+      .salvarMeta(dados);
+  };
+
+  AppMetas.excluirMetaAtual = function() {
+    const id = document.getElementById('m-id').value;
+    if (!id) return;
+
+    if (!confirm('Tem a certeza que deseja excluir esta meta permanentemente? Todas as anotações e anexos serão perdidos.')) {
+      return;
+    }
+
+    const previous = MAIInstant.clone(this.data);
+    this.data = this.data.filter(m => String(m.id) !== String(id));
+
+    this.fecharModal();
+    this.renderizarTabs();
+    this.renderizar();
+    MAIInstant.changed('metas:excluir');
+
+    const rollback = () => {
+      this.data = previous;
+      this.renderizarTabs();
+      this.renderizar();
+      MAIInstant.error('Não foi possível excluir a meta.');
+    };
+
+    MAIRun
+      .withSuccessHandler(res => { if (!res || res.ok === false) rollback(); })
+      .withFailureHandler(rollback)
+      .excluirMeta(id);
+  };
+
+  AppMetas.adicionarCategoria = function() {
+    const input = document.getElementById('m-nova-cat');
+    const val = input.value.trim();
+    if (!val) return;
+
+    const previous = MAIInstant.clone(this.categorias);
+    const cat = { id: `mcat-${Date.now()}-${Math.floor(Math.random() * 10000)}`, nome: val };
+
+    input.value = '';
+    this.categorias.push(cat);
+    this.renderizarListaCategorias();
+    this.updateCategoriasDropdown();
+    MAIInstant.changed('metas:categoria');
+
+    const rollback = () => {
+      this.categorias = previous;
+      this.renderizarListaCategorias();
+      this.updateCategoriasDropdown();
+      MAIInstant.error('Não foi possível criar a categoria.');
+    };
+
+    MAIRun
+      .withSuccessHandler(res => { if (!res || res.ok === false) rollback(); })
+      .withFailureHandler(rollback)
+      .salvarCategoriaMeta(cat);
+  };
+
+  AppMetas.confirmarRenomearCat = function() {
+    const id = document.getElementById('edit-cat-id').value;
+    const oldName = document.getElementById('edit-cat-old').value;
+    const novoNome = document.getElementById('edit-cat-name').value.trim();
+
+    if (!novoNome || novoNome === oldName) return;
+
+    const previousCats = MAIInstant.clone(this.categorias);
+    const previousMetas = MAIInstant.clone(this.data);
+
+    document.getElementById('modal-renomear-cat').classList.remove('active');
+
+    const cat = this.categorias.find(c => String(c.id) === String(id));
+    if (cat) cat.nome = novoNome;
+
+    this.data.forEach(meta => {
+      if (String(meta.categoria || '') === String(oldName)) meta.categoria = novoNome;
+    });
+
+    if (this.filtroCat === oldName) this.filtroCat = novoNome;
+
+    this.renderizarListaCategorias();
+    this.updateCategoriasDropdown();
+    this.renderizarTabs();
+    this.renderizar();
+    MAIInstant.changed('metas:renomear-categoria');
+
+    const rollback = () => {
+      this.categorias = previousCats;
+      this.data = previousMetas;
+      if (this.filtroCat === novoNome) this.filtroCat = oldName;
+      this.renderizarListaCategorias();
+      this.updateCategoriasDropdown();
+      this.renderizarTabs();
+      this.renderizar();
+      MAIInstant.error('Não foi possível renomear a categoria.');
+    };
+
+    MAIRun
+      .withSuccessHandler(res => { if (!res || res.ok === false) rollback(); })
+      .withFailureHandler(rollback)
+      .renomearCategoriaMeta(id, novoNome);
+  };
+
+  AppMetas.excluirCategoria = function(id, nome) {
+    if (!confirm(`Excluir a categoria "${nome}"? As metas continuarão a existir.`)) return;
+
+    const previous = MAIInstant.clone(this.categorias);
+    this.categorias = this.categorias.filter(c => String(c.id) !== String(id));
+
+    if (this.filtroCat === nome) this.filtroCat = 'Todas';
+
+    this.renderizarListaCategorias();
+    this.updateCategoriasDropdown();
+    this.renderizarTabs();
+    this.renderizar();
+    MAIInstant.changed('metas:excluir-categoria');
+
+    const rollback = () => {
+      this.categorias = previous;
+      this.renderizarListaCategorias();
+      this.updateCategoriasDropdown();
+      this.renderizarTabs();
+      this.renderizar();
+      MAIInstant.error('Não foi possível excluir a categoria.');
+    };
+
+    MAIRun
+      .withSuccessHandler(res => { if (!res || res.ok === false) rollback(); })
+      .withFailureHandler(rollback)
+      .excluirCategoriaMeta(id);
+  };
+})();
+</script>
+
+
+<style id="mai-v105-metas-overlay-guard">
+#modal-meta,
+#modal-categorias-meta,
+#modal-renomear-cat {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 50000 !important;
+}
+
+#modal-meta:not(.active),
+#modal-categorias-meta:not(.active),
+#modal-renomear-cat:not(.active) {
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+#modal-meta.active,
+#modal-categorias-meta.active,
+#modal-renomear-cat.active {
+  visibility: visible !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+}
+</style>
+
+<style id="mai-v111-metas-color-contract">
+#m-container {
+  background: var(--mai-bg-primary) !important;
+  color: var(--mai-text-primary) !important;
+}
+
+#m-container .m-dash-widget,
+#m-container .m-card {
+  background: var(--mai-bg-card) !important;
+  border-color: var(--mai-divider) !important;
+  color: var(--mai-text-primary) !important;
+}
+
+#m-container .m-card:hover,
+#m-container .m-context-btn:hover,
+#m-container .m-tab:hover {
+  background: var(--mai-bg-hover) !important;
+}
+
+#m-container .m-context-btn.active,
+#m-container .m-tab.active {
+  background: var(--mai-accent-soft) !important;
+  color: var(--mai-accent) !important;
+}
+
+#m-container .m-mini-progress-track {
+  background: var(--mai-bg-hover) !important;
+}
+
+#modal-meta .m-modal-surface,
+#modal-categorias-meta .m-modal-surface,
+#modal-renomear-cat .m-modal-surface {
+  background: var(--mai-bg-card) !important;
+  border-color: var(--mai-divider) !important;
+  color: var(--mai-text-primary) !important;
+}
+
+#modal-meta .sys-input,
+#modal-categorias-meta .sys-input,
+#modal-renomear-cat .sys-input {
+  background: var(--mai-bg-hover) !important;
+  color: var(--mai-text-primary) !important;
+  border-color: transparent !important;
+}
+
+#m-container .m-status-success,
+#modal-meta .m-status-success {
+  color: var(--mai-success) !important;
+}
+
+#m-container .m-status-warning,
+#modal-meta .m-status-warning {
+  color: var(--mai-warning) !important;
+}
+
+#m-container .m-status-danger,
+#modal-meta .m-status-danger {
+  color: var(--mai-danger) !important;
+}
+</style>

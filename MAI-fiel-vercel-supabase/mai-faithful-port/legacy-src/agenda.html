@@ -1,0 +1,1884 @@
+<style>
+  #a-container { width: 100%; height: 100vh; display: flex; flex-direction: column; overflow: hidden; position: relative; padding-bottom: 20px;}
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--divider); border-radius: 10px; }
+
+  .a-header-nav { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--divider); margin-bottom: 12px; flex-shrink: 0; gap: 12px; flex-wrap: wrap;}
+  .a-nav-info { display: flex; align-items: center; gap: 12px; }
+  .a-month-label { font-size: 20px; font-weight: 800; color: var(--text-primary); text-transform: capitalize; min-width: 140px; letter-spacing: -0.5px;}
+
+  .s-toggle-container { display:flex; background: var(--bg-hover); border-radius: 8px; padding: 4px; width: fit-content; }
+  .s-toggle-btn { padding: 6px 16px; border-radius: 6px; font-size: 11px; font-weight: 700; color: var(--text-secondary); cursor: pointer; transition: 0.2s; background: transparent; border: none; text-transform: uppercase; }
+  .s-toggle-btn.active { background: var(--bg-card); color: var(--text-primary); box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+
+  .a-filters { display: flex; gap: 8px; margin-bottom: 16px; overflow-x: auto; padding-bottom: 4px; }
+  .a-main-layout { display: flex; flex: 1; gap: 20px; overflow: hidden; position: relative; }
+  .a-calendar-wrapper { flex: 1; display: flex; flex-direction: column; overflow: hidden; background: var(--bg-card); border: 1px solid var(--divider); border-radius: 16px; box-shadow: 0 4px 16px rgba(0,0,0,0.03); }
+  
+  .a-view-container { display: none; flex: 1; flex-direction: column; overflow: hidden; height: 100%; }
+  .a-view-container.active { display: flex; }
+
+  .a-next-panel { width: 320px; display: none; flex-direction: column; background: var(--bg-card); border: 1px solid var(--divider); border-radius: 16px; overflow: hidden; animation: slideInRight 0.3s ease; flex-shrink: 0; }
+  .a-next-panel.active { display: flex; }
+  .a-next-header { padding: 16px; border-bottom: 1px solid var(--divider); background: var(--bg-hover); font-size: 11px; font-weight: 800; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; display: flex; justify-content: space-between; align-items: center;}
+  .a-next-list { flex: 1; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 4px; }
+  .a-group-label { font-size: 11px; font-weight: 800; text-transform: uppercase; color: var(--text-secondary); border-bottom: 1px solid var(--divider); padding-bottom: 2px; margin-top: 10px; margin-bottom: 2px; display: flex; justify-content: space-between; align-items: center; letter-spacing: 0.3px;}
+  .a-group-label:first-child { margin-top: 0; }
+  .destaque-hoje { color: var(--mai-danger); } .destaque-semana { color: var(--mai-warning); } .destaque-proximo { color: var(--mai-info); } .destaque-distante { color: var(--text-secondary); opacity: 0.7; } 
+
+  .a-next-item { padding: 8px 12px; border-radius: 8px; background: var(--bg-hover); border: 1px solid var(--divider); cursor: pointer; transition: 0.2s; display: flex; align-items: center; gap: 10px; }
+  .a-next-item:hover { border-color: var(--text-secondary); transform: translateX(4px); }
+  .a-next-title { font-size: 13px; font-weight: 600; color: var(--text-primary); flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
+  .a-next-meta { font-size: 10px; font-weight: 500; color: var(--text-secondary); margin-top: 2px;}
+
+  .a-grid-header { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); background: var(--bg-hover); border-bottom: 1px solid var(--divider); }
+  .a-day-name { padding: 10px 4px; text-align: center; font-size: 11px; font-weight: 800; color: var(--text-secondary); text-transform: uppercase; }
+  .a-grid-body { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); grid-auto-rows: minmax(0, 1fr); width: 100%; flex: 1; overflow: hidden; }
+  .a-cell { border-right: 1px solid var(--divider); border-bottom: 1px solid var(--divider); padding: 4px; display: flex; flex-direction: column; gap: 2px; overflow: hidden; transition: background 0.2s;}
+  .a-cell:hover { background: var(--bg-hover); cursor: pointer;}
+  .a-cell.today { background: color-mix(in srgb, var(--mai-accent) 3%, transparent); }
+  .a-day-num { font-size: 11px; font-weight: 700; color: var(--text-secondary); text-align: right; padding: 2px 4px; pointer-events: none;}
+  .a-cell.today .a-day-num { color: #FFF; background: var(--accent); border-radius: 4px; display: inline-block; width: fit-content; margin-left: auto; }
+
+  .time-grid-scroll { flex: 1; overflow-x: auto; overflow-y: auto; display: flex; position: relative; background: var(--bg-card); }
+  .time-axis { width: 50px; flex-shrink: 0; border-right: 1px solid var(--divider); position: sticky; left: 0; background: var(--bg-card); z-index: 10; }
+  .time-slot { height: 60px; font-size: 10px; color: var(--text-secondary); text-align: right; padding-right: 8px; border-bottom: 1px solid transparent; box-sizing: border-box; }
+  .time-slot span { position: relative; top: -6px; pointer-events: none; }
+  
+  .day-col-header { flex: 1; padding: 8px 0; text-align: center; border-right: 1px solid var(--divider); border-bottom: 1px solid var(--divider); font-size: 12px; font-weight: 700; color: var(--text-secondary); min-width: 100px; background: var(--bg-card);}
+  .day-col-header.hoje { color: var(--accent); background: var(--mai-accent-soft); }
+  .day-col-header:last-child { border-right: none; }
+  
+  .day-allday-col { flex: 1; min-height: 24px; padding: 4px; border-right: 1px solid var(--divider); min-width: 100px; display: flex; flex-direction: column; gap: 2px;}
+  .day-allday-col:last-child { border-right: none; }
+  
+  .day-time-col { flex: 1; position: relative; border-right: 1px solid var(--divider); min-width: 100px; }
+  .day-time-col:last-child { border-right: none; }
+
+  .grid-lines { position: absolute; top: 0; left: 0; right: 0; height: 1440px; pointer-events: none; }
+  .grid-line { height: 60px; border-bottom: 1px dashed var(--divider); opacity: 0.5; box-sizing: border-box; }
+
+  .time-needle { position: absolute; left: 0; right: 0; height: 2px; background: var(--mai-danger); z-index: 50; pointer-events: none; box-shadow: 0 1px 4px rgba(255,82,82,0.4);}
+  .time-needle::before { content: ''; position: absolute; left: -4px; top: -4px; width: 10px; height: 10px; border-radius: 50%; background: var(--mai-danger); }
+
+  /* COMPORTAMENTO DE ARRASTAR */
+  .time-event { position: absolute; left: 4px; right: 8px; border-radius: 6px; padding: 4px 6px; font-size: 10px; color: #FFF; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1); cursor: grab; border: 1px solid rgba(0,0,0,0.1); transition: box-shadow 0.2s; display: flex; flex-direction: column; justify-content: flex-start;}
+  .time-event:hover { filter: brightness(1.1); z-index: 30 !important; }
+  .time-event:active { cursor: grabbing; box-shadow: 0 8px 16px rgba(0,0,0,0.3); z-index: 40 !important; }
+  .a-item { font-size: 10px; font-weight: 700; padding: 2px 4px; border-radius: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: flex; align-items: center; gap: 4px; min-height: 20px; transition: transform 0.2s, filter 0.2s; cursor: grab;}
+  .a-item:hover { filter: brightness(1.1); transform: translateY(-1px); }
+  .a-item:active { cursor: grabbing; }
+  .drag-over-highlight { background: color-mix(in srgb, var(--mai-accent) 10%, transparent) !important; border: 1px dashed var(--accent) !important; }
+
+  .year-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; overflow-y: auto; padding-right: 8px; align-content: flex-start;}
+  .year-month { border: 1px solid var(--divider); border-radius: 12px; background: var(--bg-card); padding: 12px; }
+  .year-month-title { font-size: 13px; font-weight: 800; color: var(--accent); margin-bottom: 8px; text-transform: uppercase; text-align: center;}
+  .year-days-header { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; margin-bottom: 4px; }
+  .year-day-name { font-size: 9px; font-weight: 700; color: var(--text-secondary); text-align: center; }
+  .year-days-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+  .year-day-cell { height: 24px; display: flex; align-items: center; justify-content: center; font-size: 10px; border-radius: 4px; cursor: pointer; font-weight: 600;}
+  .year-day-cell:hover { background: var(--bg-hover); }
+  .year-day-cell.has-events { font-weight: 800; color: var(--accent); background: color-mix(in srgb, var(--mai-accent) 10%, transparent); }
+  .year-day-cell.today { background: var(--accent) !important; color: #FFF !important; }
+
+  .a-item.evento { background: var(--accent); color: #FFF; }
+  .a-item.gcalendar { color: #FFF; }
+  .a-item.tarefa, .a-item.habito { background: var(--bg-card); color: var(--text-primary); box-shadow: 0 1px 2px rgba(0,0,0,0.1); border: 1px solid var(--divider) !important; }
+  .a-task-check-icon { font-size: 14px !important; transition: all 0.2s ease; border-radius: 50%; cursor: pointer;}
+  .a-task-check-icon:hover { transform: scale(1.2); background: var(--bg-hover); }
+
+  .t-input-title { width: 100%; background: transparent; border: none; color: var(--text-primary); font-size: 26px; font-weight: 800; outline: none; padding: 0 0 8px 0; letter-spacing: -0.5px; margin-bottom: 8px;}
+  .t-input-title::placeholder { color: var(--text-secondary); opacity: 0.4; }
+  .ql-container.ql-snow { border: none !important; }
+  .ql-toolbar.ql-snow { border: none !important; border-bottom: 1px solid var(--divider) !important; font-family: inherit; }
+  .t-desc-wrapper { border: 1px solid transparent; border-radius: 12px; transition: all 0.2s ease; margin-bottom: 16px; cursor: text; }
+  .t-desc-wrapper:not(.active-desc):hover { background: var(--bg-hover); }
+  .t-desc-wrapper.active-desc { border-color: var(--accent); background: var(--bg-card); box-shadow: 0 4px 12px rgba(0,0,0,0.05); padding-bottom: 4px; cursor: auto; }
+  .t-desc-wrapper .ql-toolbar { display: none !important; }
+  .t-desc-wrapper.active-desc .ql-toolbar { display: block !important; padding: 8px !important; border-radius: 12px 12px 0 0 !important; background: var(--bg-hover); }
+  .t-desc-wrapper .ql-container { font-size: 14px; color: var(--text-primary); font-family: inherit; }
+  .t-desc-wrapper:not(.active-desc) .ql-editor { padding: 12px 16px; min-height: 44px; height: auto; max-height: none; overflow: hidden; white-space: normal; }
+  .t-desc-wrapper.active-desc .ql-editor { padding: 16px; min-height: 120px; height: auto; max-height: none; white-space: normal; overflow-y: auto;}
+
+  .t-pill-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; align-items: center; }
+  .t-action-pill { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border: 1px solid var(--divider); border-radius: 8px; font-size: 12px; font-weight: 600; color: var(--text-secondary); cursor: pointer; transition: 0.2s; background: transparent; }
+  .t-action-pill:hover { background: var(--bg-hover); color: var(--text-primary); border-color: var(--text-secondary); }
+  .t-action-pill.active-val { color: var(--accent); border-color: color-mix(in srgb, var(--mai-accent) 30%, transparent); background: var(--mai-accent-soft); }
+
+  .has-dropdown { position: relative; }
+  .sys-dropdown { position: absolute; background: var(--bg-card); border: 1px solid var(--divider); border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.15); z-index: 1000; display: none; flex-direction: column; padding: 6px; min-width: 180px; }
+  .sys-dropdown.active { display: flex; animation: fadeDrop 0.15s ease-out; }
+  @keyframes fadeDrop { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
+  .sys-drop-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; font-size: 13px; font-weight: 500; cursor: pointer; border-radius: 8px; transition: 0.1s; color: var(--text-primary); white-space: nowrap;}
+  .sys-drop-item:hover { background: var(--bg-hover); }
+  .sys-drop-item.selected { background: color-mix(in srgb, var(--mai-accent) 10%, transparent); color: var(--accent); }
+
+  .t-section-container { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--divider); }
+  .t-subtask-item { display: flex; align-items: center; gap: 12px; padding: 8px 12px; border: 1px solid transparent; border-radius: 8px; transition: 0.2s;}
+  .t-subtask-item:hover { background: var(--bg-hover); border-color: var(--divider); }
+  .t-subtask-item.concluida { opacity: 0.5; }
+  .t-subtask-item.concluida .t-text-input { text-decoration: line-through; }
+  .t-text-input { flex: 1; background: transparent; border: 1px solid transparent; color: var(--text-primary); padding: 8px; border-radius: 8px; font-size: 13px; font-weight: 500; outline: none; transition: 0.2s;}
+  .t-text-input:focus { background: var(--bg-hover); border-color: var(--accent); }
+  .t-check-btn { width: 20px; height: 20px; border-radius: 6px; border: 2px solid var(--text-secondary); display: grid; place-items: center; cursor: pointer; transition: 0.2s; color: transparent;}
+  .t-check-btn:hover { border-color: var(--accent); }
+  .t-subtask-item.concluida .t-check-btn { background: var(--text-primary); border-color: var(--text-primary); color: var(--bg-primary); }
+
+  .t-tray-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;}
+  .t-tray-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 12px; }
+  .t-thumb-card { background: var(--bg-primary); border-radius: 12px; border: 1px solid var(--divider); display: flex; flex-direction: column; overflow: visible;}
+  .t-thumb-img-wrapper { height: 80px; background: var(--bg-hover); display: flex; justify-content: center; align-items: center; cursor: pointer; border-radius: 12px 12px 0 0; overflow: hidden; }
+  .t-thumb-footer { display: flex; align-items: center; justify-content: space-between; padding: 6px 8px; font-size: 11px; font-weight: 600; }
+
+  @media (max-width: 1024px) {
+    .a-next-panel { position: fixed; top: 0; right: 0; bottom: 0; z-index: 1500; height: 100%; max-width: 320px; border-radius: 0; border: none; border-left: 1px solid var(--divider); box-shadow: -8px 0 32px rgba(0,0,0,0.5); transform: translateX(100%); display: flex !important; transition: transform 0.3s ease; }
+    .a-next-panel.active { transform: translateX(0); }
+    #btn-close-next { display: grid !important; }
+  }
+</style>
+
+<div id="a-container" class="sys-container mai-app-workspace mai-agenda-workspace">
+
+  <div class="a-header-nav mai-module-toolbar">
+    <div class="a-nav-info">
+      <div style="display: flex; gap: 4px; background: var(--bg-hover); border-radius: 12px; padding: 4px;">
+        <button class="sys-icon-btn" onclick="AppAgenda.prev()"><span class="material-symbols-rounded">chevron_left</span></button>
+        <button class="sys-icon-btn" onclick="AppAgenda.next()"><span class="material-symbols-rounded">chevron_right</span></button>
+      </div>
+      <button class="sys-btn-primary" style="padding: 0 16px; height: 36px; font-size: 13px; border-radius: 10px;" onclick="AppAgenda.goToToday()">Hoje</button>
+      <div class="a-month-label" id="a-display-date">...</div>
+    </div>
+    
+    <div class="s-toggle-container" style="margin: 0; padding: 4px; display:flex;">
+      <button class="s-toggle-btn" id="btn-visao-dia" onclick="AppAgenda.mudarVisao('dia')">Dia</button>
+      <button class="s-toggle-btn" id="btn-visao-semana" onclick="AppAgenda.mudarVisao('semana')">Semana</button>
+      <button class="s-toggle-btn active" id="btn-visao-mes" onclick="AppAgenda.mudarVisao('mes')">Mês</button>
+      <button class="s-toggle-btn" id="btn-visao-ano" onclick="AppAgenda.mudarVisao('ano')">Ano</button>
+    </div>
+
+    <div style="display: flex; gap: 8px; align-items:center;">
+      <button class="sys-btn-primary mai-compact-create" type="button" onclick="AppAgenda.abrirModal()"><span class="material-symbols-rounded">add</span> Novo</button>
+      <button class="sys-icon-btn" onclick="AppAgenda.abrirConfiguracoes()" title="Configurar Calendários">
+        <span class="material-symbols-rounded">settings</span>
+      </button>
+      <button class="t-action-pill" id="btn-toggle-proximos" onclick="AppAgenda.toggleProximos()">
+         <span class="material-symbols-rounded">format_list_bulleted</span> Agenda
+      </button>
+    </div>
+  </div>
+
+  <div class="a-filters">
+    <button id="filtro-compromissos" class="t-action-pill active-val" onclick="AppAgenda.toggleFiltro('compromissos')"><span class="material-symbols-rounded">schedule</span> Compromissos</button>
+    <button id="filtro-tarefas" class="t-action-pill active-val" onclick="AppAgenda.toggleFiltro('tarefas')"><span class="material-symbols-rounded">task_alt</span> Tarefas</button>
+    <button id="filtro-habitos" class="t-action-pill active-val" onclick="AppAgenda.toggleFiltro('habitos')"><span class="material-symbols-rounded">checklist</span> Hábitos</button>
+    <div style="width: 1px; height: 20px; background: var(--divider); margin: 0 4px;"></div>
+    <button id="filtro-repeticoes" class="t-action-pill" onclick="AppAgenda.toggleFiltro('repeticoes')"><span class="material-symbols-rounded">event_repeat</span> Repetições</button>
+  </div>
+
+  <div class="a-main-layout mai-agenda-surface">
+    <div class="a-calendar-wrapper" id="views-wrapper">
+      <div id="view-mes" class="a-view-container active">
+        <div class="a-grid-header">
+          <div class="a-day-name">Dom</div><div class="a-day-name">Seg</div><div class="a-day-name">Ter</div>
+          <div class="a-day-name">Qua</div><div class="a-day-name">Qui</div><div class="a-day-name">Sex</div><div class="a-day-name">Sáb</div>
+        </div>
+        <div class="a-grid-body" id="calendar-grid"></div>
+      </div>
+      <div id="view-time" class="a-view-container"><div class="time-grid-scroll" id="time-grid"></div></div>
+      <div id="view-ano" class="a-view-container" style="padding: 24px;"><div class="year-grid" id="year-grid"></div></div>
+    </div>
+    <div class="a-next-panel" id="next-panel">
+       <div class="a-next-header"><span>Agenda do Mês</span><button class="sys-icon-btn" id="btn-close-next" onclick="AppAgenda.toggleProximos()" style="padding: 2px; width: 24px; height: 24px; display: none;"><span class="material-symbols-rounded" style="font-size: 16px;">close</span></button></div>
+       <div class="a-next-list" id="next-list"></div>
+    </div>
+  </div>
+
+  <button class="sys-btn-fab" onclick="AppAgenda.abrirModal()"><span class="material-symbols-rounded">add</span></button>
+
+  <div class="sys-modal-overlay" id="modal-config-agenda">
+    <div class="sys-modal-surface" style="max-width: 400px; margin: auto;">
+      <div style="padding: 16px 24px; border-bottom: 1px solid var(--divider); display:flex; justify-content:space-between; align-items:center; background: var(--bg-hover); border-radius: 20px 20px 0 0;">
+        <span style="font-size:16px; font-weight:800;">Calendários</span><button class="sys-icon-btn" onclick="document.getElementById('modal-config-agenda').classList.remove('active')"><span class="material-symbols-rounded">close</span></button>
+      </div>
+      <div id="lista-calendarios" style="padding: 20px; overflow-y: auto; max-height: 400px; display: flex; flex-direction: column; gap: 4px;"></div>
+      <div style="padding: 16px 24px; border-top: 1px solid var(--divider); background: var(--bg-primary); border-radius: 0 0 20px 20px;">
+         <button class="sys-btn-primary" style="height: 44px;" onclick="AppAgenda.salvarConfiguracoes()">Salvar preferências</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="sys-modal-overlay" id="modal-dia">
+    <div class="sys-modal-surface" style="max-width: 500px; margin: auto;">
+      <div style="padding: 16px 24px; border-bottom: 1px solid var(--divider); display:flex; justify-content:space-between; align-items:center; background: var(--bg-hover); border-radius: 20px 20px 0 0;">
+        <span id="titulo-modal-dia" style="font-size:16px; font-weight:800;">...</span><button class="sys-icon-btn" onclick="AppAgenda.fecharDia()"><span class="material-symbols-rounded">close</span></button>
+      </div>
+      <div id="lista-modal-dia" style="overflow-y: auto; flex: 1;"></div>
+      <div style="padding: 16px 24px; border-top: 1px solid var(--divider); background: var(--bg-primary); display:flex; border-radius: 0 0 20px 20px;">
+         <button class="sys-btn-primary" style="flex:1; height: 44px; box-shadow: none; border: 1px dashed var(--divider); background: transparent; color: var(--text-secondary);" onclick="AppAgenda.criarNovoDoDia()"><span class="material-symbols-rounded" style="font-size: 18px; margin-right: 6px;">add</span> Criar novo</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="sys-modal-overlay mai-editor-overlay" id="modal-evento">
+    <div class="sys-modal-surface mai-editor-surface mai-editor-event">
+      <div class="mai-editor-header mai-editor-native-header">
+        <div class="has-dropdown mai-editor-type-selector">
+          <button class="mai-editor-type-button"
+                  type="button"
+                  onclick="AppAgenda.toggleDrop(event, 'e-editor-type-menu')"
+                  aria-label="Tipo do item">
+            <span class="material-symbols-rounded">event</span>
+            <span>Compromisso</span>
+            <span class="material-symbols-rounded mai-editor-type-chevron">expand_more</span>
+          </button>
+
+          <div class="sys-dropdown mai-editor-type-menu" id="e-editor-type-menu">
+            <button class="sys-drop-item active" type="button" onclick="event.stopPropagation(); document.getElementById('e-editor-type-menu').classList.remove('active')">
+              <span class="material-symbols-rounded">event</span>
+              Compromisso
+              <span class="material-symbols-rounded mai-editor-type-check">check</span>
+            </button>
+            <button class="sys-drop-item" type="button" onclick="event.stopPropagation(); AppAgenda.switchToTarefa()">
+              <span class="material-symbols-rounded">task_alt</span>
+              Tarefa
+            </button>
+          </div>
+        </div>
+
+        <button class="sys-icon-btn mai-editor-close" onclick="AppAgenda.fecharModal()" aria-label="Fechar">
+          <span class="material-symbols-rounded">close</span>
+        </button>
+      </div>
+
+      <div class="mai-editor-grid">
+        <div class="mai-editor-main">
+          <div class="mai-editor-column-label">Conteúdo</div>
+
+          <input type="hidden" id="e-id">
+          <input type="hidden" id="e-repeticao" value="">
+          <input type="text" class="t-input-title" id="e-titulo" placeholder="Título do compromisso...">
+
+          <div id="e-desc-wrapper" class="t-desc-wrapper">
+            <div id="e-quill-editor"></div>
+          </div>
+
+          <div class="t-section-container mai-event-checklist-section">
+            <label class="mai-editor-section-title">Checklist</label>
+            <div id="e-subtarefas-list" style="display:flex; flex-direction:column; gap:4px; margin:8px 0;"></div>
+            <div class="mai-editor-inline-add">
+              <input type="text" class="t-text-input" id="e-new-subtarefa" placeholder="Adicionar passo..." onkeypress="if(event.key==='Enter') AppAgenda.addSubtarefa()">
+              <button class="sys-icon-btn mai-editor-inline-add-button" onclick="AppAgenda.addSubtarefa()" aria-label="Adicionar passo">
+                <span class="material-symbols-rounded">add</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="t-section-container">
+            <div class="t-tray-header">
+              <span style="font-size:11px; font-weight:800; color:var(--text-secondary); text-transform:uppercase;">Anexos</span>
+              <button class="sys-icon-btn" id="btn-e-anexar" onclick="AppAgenda.triggerUpload()" style="background:var(--bg-hover); width:auto; padding:4px 12px; border-radius:8px;">
+                <span class="material-symbols-rounded" style="font-size:16px;">add_circle</span>
+                <span style="font-size:12px; font-weight:600;">Anexar</span>
+              </button>
+            </div>
+            <div class="t-tray-grid" id="e-tray-list"></div>
+          </div>
+        </div>
+
+        <div class="mai-editor-sidebar">
+          <div class="mai-editor-column-label">Organização</div>
+
+          <div class="t-pill-row">
+            <div class="has-dropdown" style="position:relative;">
+              <div class="t-action-pill" id="pill-e-data" onclick="AppAgenda.toggleDrop(event, 'drop-e-data')">
+                <span class="material-symbols-rounded">calendar_today</span>
+                <span id="lbl-e-data">Data</span>
+              </div>
+              <div id="drop-e-data" class="sys-dropdown" style="top:100%; left:0; margin-top:4px;">
+                <div class="sys-drop-item" onclick="AppAgenda.setDataPill('hoje')"><span class="material-symbols-rounded" style="color:var(--mai-success);">today</span> Hoje</div>
+                <div class="sys-drop-item" onclick="AppAgenda.setDataPill('amanha')"><span class="material-symbols-rounded" style="color:var(--mai-warning);">event</span> Amanhã</div>
+                <div style="height:1px; background:var(--divider); margin:4px 0;"></div>
+                <div class="sys-drop-item" style="position:relative; overflow:hidden;">
+                  <span class="material-symbols-rounded">calendar_month</span> Outra data...
+                  <input type="date" id="e-data" onchange="AppAgenda.updatePills(); document.querySelectorAll('.sys-dropdown').forEach(d => d.classList.remove('active'));" onclick="try{this.showPicker();}catch(e){}" style="position:absolute; inset:0; opacity:0; width:100%; height:100%; cursor:pointer; z-index:10;">
+                </div>
+              </div>
+            </div>
+
+            <div class="has-dropdown" style="position:relative;">
+              <div class="t-action-pill" id="pill-e-hora" onclick="AppAgenda.toggleDrop(event, 'drop-e-hora')">
+                <span class="material-symbols-rounded">schedule</span>
+                <span id="lbl-e-hora">Horário</span>
+              </div>
+              <div id="drop-e-hora" class="sys-dropdown" style="top:100%; left:0; margin-top:4px; padding:16px; min-width:260px;">
+                <label style="display:flex; align-items:center; gap:8px; font-size:13px; font-weight:600; color:var(--text-primary); cursor:pointer; margin-bottom:12px; padding-bottom:12px; border-bottom:1px solid var(--divider);">
+                  <input type="checkbox" id="e-dia-inteiro" onchange="AppAgenda.updatePills()" style="accent-color:var(--accent); width:16px; height:16px;"> Evento de Dia Inteiro
+                </label>
+                <div id="e-hora-inputs" style="display:flex; align-items:center; gap:8px;">
+                  <div style="flex:1;">
+                    <label style="font-size:10px; color:var(--text-secondary); font-weight:700; text-transform:uppercase;">Início</label>
+                    <input type="time" id="e-hora" class="sys-input" style="height:36px; padding:0 12px; width:100%;" onchange="AppAgenda.updatePills()">
+                  </div>
+                  <span style="font-size:16px; color:var(--text-secondary); margin-top:14px;">-</span>
+                  <div style="flex:1;">
+                    <label style="font-size:10px; color:var(--text-secondary); font-weight:700; text-transform:uppercase;">Fim</label>
+                    <input type="time" id="e-hora-fim" class="sys-input" style="height:36px; padding:0 12px; width:100%;" onchange="AppAgenda.updatePills()">
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="has-dropdown" style="position:relative;">
+              <div class="t-action-pill" id="pill-e-repeticao" onclick="AppAgenda.toggleDrop(event, 'drop-e-repeticao')">
+                <span class="material-symbols-rounded">repeat</span>
+                <span id="lbl-e-repeticao">Não Repetir</span>
+              </div>
+              <div id="drop-e-repeticao" class="sys-dropdown" style="top:100%; left:0; margin-top:4px;">
+                <div class="sys-drop-item" id="rep-opt-" onclick="AppAgenda.setRepeticao('')"><span class="material-symbols-rounded">close</span> Não Repetir</div>
+                <div style="height:1px; background:var(--divider); margin:4px 0;"></div>
+                <div class="sys-drop-item" id="rep-opt-diariamente" onclick="AppAgenda.setRepeticao('diariamente')"><span class="material-symbols-rounded">view_day</span> Diariamente</div>
+                <div class="sys-drop-item" id="rep-opt-semanalmente" onclick="AppAgenda.setRepeticao('semanalmente')"><span class="material-symbols-rounded">view_week</span> Semanalmente</div>
+                <div class="sys-drop-item" id="rep-opt-mensalmente" onclick="AppAgenda.setRepeticao('mensalmente')"><span class="material-symbols-rounded">calendar_month</span> Mensalmente</div>
+              </div>
+            </div>
+          </div>
+
+
+        </div>
+      </div>
+
+      <div class="mai-editor-footer" style="display:flex; gap:12px; align-items:center;">
+        <button class="sys-icon-btn" id="btn-e-excluir" style="background:color-mix(in srgb, var(--mai-danger) 10%, transparent); color:var(--mai-danger); height:38px; width:38px; border-radius:8px; display:none; margin-right:auto;" onclick="AppAgenda.excluir()">
+          <span class="material-symbols-rounded">delete</span>
+        </button>
+        <button class="sys-btn-primary mai-editor-cancel-event" type="button" onclick="AppAgenda.fecharModal()">Cancelar</button>
+        <button class="sys-btn-primary" id="btn-e-salvar" onclick="AppAgenda.salvar()">Salvar compromisso</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  let quillAgenda;
+  
+  document.addEventListener('click', function(e) {
+    if (!e.target.closest('.has-dropdown')) { document.querySelectorAll('#a-container .sys-dropdown').forEach(d => d.classList.remove('active')); }
+    const wrap = document.getElementById('e-desc-wrapper');
+    if (wrap) { if (e.target.closest('.ql-toolbar') || e.target.closest('.ql-tooltip')) return; if (wrap.contains(e.target)) { wrap.classList.add('active-desc'); } else { wrap.classList.remove('active-desc'); } }
+  });
+
+  const AppAgenda = {
+    currentDate: new Date(), visaoAtual: 'mes', 
+    data: { eventos: [], tarefas: [], habitos: [], conclusoes: [] },
+    filtros: JSON.parse(localStorage.getItem('azamoAgendaFiltros')) || { compromissos: true, tarefas: true, habitos: true, repeticoes: false },
+    dataAtualModal: null, showNextItems: false, isLoading: false, eventoAtual: { subtarefas: [], anexos: [] }, 
+
+    init: function() {
+      try { const salvos = localStorage.getItem('azamoAgendaFiltros'); if (salvos && salvos !== "null" && salvos !== "undefined") { this.filtros = { ...this.filtros, ...JSON.parse(salvos) }; } } catch(e) {}
+      try { if(!quillAgenda) { quillAgenda = new Quill('#e-quill-editor', { theme: 'snow', placeholder: 'Detalhes e anotações...', modules: { toolbar: [['bold', 'italic', 'underline', 'strike'], [{ 'list': 'bullet' }, { 'list': 'ordered' }], ['link', 'clean']] } }); } } catch(e) {}
+      ['compromissos', 'tarefas', 'habitos', 'repeticoes'].forEach(tipo => { const btn = document.getElementById('filtro-' + tipo); if (btn) { if (this.filtros[tipo]) btn.classList.add('active-val'); else btn.classList.remove('active-val'); } });
+      const embeddedEngine = !!document.getElementById('mai-agenda-engine');
+      if (!embeddedEngine) this.carregar();
+      else this.isLoading = false;
+
+      setInterval(() => { const needle = document.getElementById('needle'); if (needle) { const h = new Date(); needle.style.top = (h.getHours() * 60 + h.getMinutes()) + 'px'; } }, 60000);
+    },
+
+    sincronizarEmBreve: function() {
+      try {
+        if (window.Sys && Sys.upcoming) {
+          Sys.upcoming.cache = null;
+          if (Sys.currentModule === 'em-breve') Sys.upcoming.load(true);
+        }
+      } catch (e) {}
+    },
+
+    mudarVisao: function(visao) { this.visaoAtual = visao; this.carregar(); },
+    toggleDrop: function(e, id) { e.stopPropagation(); const drop = document.getElementById(id); const isActive = drop.classList.contains('active'); document.querySelectorAll('#a-container .sys-dropdown').forEach(d => d.classList.remove('active')); if (!isActive) drop.classList.add('active'); },
+    toggleFiltro: function(tipo) { this.filtros[tipo] = !this.filtros[tipo]; const btn = document.getElementById('filtro-' + tipo); if (this.filtros[tipo]) btn.classList.add('active-val'); else btn.classList.remove('active-val'); try { localStorage.setItem('azamoAgendaFiltros', JSON.stringify(this.filtros)); } catch(e) {} this.renderizar(); },
+    toggleProximos: function() { this.showNextItems = !this.showNextItems; this.renderizarPainelLateral(); },
+
+    carregar: function() {
+      this.isLoading = true; this.data.eventos = []; this.data.tarefas = []; this.data.habitos = []; this.renderizar(); 
+      setTimeout(() => {
+        let y = this.currentDate.getFullYear(); let m = this.currentDate.getMonth(); let iniISO, fimISO;
+        if (this.visaoAtual === 'ano') { iniISO = new Date(y, 0, 1).toISOString(); fimISO = new Date(y + 1, 0, 0).toISOString(); } 
+        else { iniISO = new Date(y, m - 1, 1).toISOString(); fimISO = new Date(y, m + 2, 0).toISOString(); }
+        MAIRun.withSuccessHandler(resRaw => {
+          try { const res = JSON.parse(resRaw); if(res.ok) { this.data.eventos = res.eventos || []; this.data.tarefas = res.tarefas || []; this.data.habitos = res.habitos || []; } } catch(e) {}
+          this.isLoading = false; this.renderizar();
+        }).getDadosAgendaCompleta(iniISO, fimISO);
+      }, 50);
+    },
+
+
+    getConclusaoEvento: function(item, dateStr) {
+      const eventId = String(item && item.id || '');
+      const tipo = String(item && item.tipo || 'evento');
+      const data = String(dateStr || item && item.data_inicio || '').split('T')[0];
+
+      return (this.data.conclusoes || []).find(reg =>
+        String(reg.evento_id || '') === eventId &&
+        String(reg.tipo || 'evento') === tipo &&
+        String(reg.data || '').split('T')[0] === data &&
+        (reg.concluida === true || String(reg.concluida) === 'true')
+      ) || null;
+    },
+
+    eventoConcluido: function(item, dateStr) {
+      return !!this.getConclusaoEvento(item, dateStr);
+    },
+
+    toggleEvento: function(id, dateStr, event) {
+      if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+
+      const eventId = String(id);
+      const item = (this.data.eventos || []).find(e => String(e.id) === eventId);
+      if (!item) return;
+
+      const data = String(dateStr || item.data_inicio || '').split('T')[0];
+      if (!data) return;
+
+      const previous = MAIInstant.clone(this.data.conclusoes || []);
+      const current = this.eventoConcluido(item, data);
+      const next = !current;
+      const tipo = String(item.tipo || 'evento');
+
+      this.data.conclusoes = (this.data.conclusoes || []).filter(reg =>
+        !(
+          String(reg.evento_id || '') === eventId &&
+          String(reg.tipo || 'evento') === tipo &&
+          String(reg.data || '').split('T')[0] === data
+        )
+      );
+
+      if (next) {
+        this.data.conclusoes.push({
+          chave: `${tipo}|${eventId}|${data}`,
+          evento_id: eventId,
+          data,
+          hora: String(item.hora_inicio || ''),
+          tipo,
+          titulo: String(item.titulo || 'Compromisso'),
+          concluida: true,
+          atualizado_em: new Date().toISOString()
+        });
+      }
+
+      this.renderizar();
+      MAIInstant.changed('agenda:compromisso-concluido');
+
+      // Mantém Hoje sincronizado imediatamente, sem esperar o servidor.
+      try {
+        if (window.Sys && Sys.today && Sys.today.cache && Sys.today.cache.agenda) {
+          const agendaHoje = Sys.today.cache.agenda;
+          if (!Array.isArray(agendaHoje.conclusoes)) agendaHoje.conclusoes = [];
+
+          agendaHoje.conclusoes = agendaHoje.conclusoes.filter(reg =>
+            !(
+              String(reg.evento_id || '') === eventId &&
+              String(reg.tipo || 'evento') === tipo &&
+              String(reg.data || '').split('T')[0] === data
+            )
+          );
+
+          if (next) {
+            agendaHoje.conclusoes.push({
+              evento_id: eventId,
+              data,
+              hora: String(item.hora_inicio || ''),
+              tipo,
+              titulo: String(item.titulo || 'Compromisso'),
+              concluida: true
+            });
+          }
+
+          if (Sys.currentModule === 'hoje') Sys.today.render(Sys.today.cache);
+        }
+      } catch (e) {}
+
+      const rollback = () => {
+        this.data.conclusoes = previous;
+        this.renderizar();
+        MAIInstant.error('Não foi possível sincronizar o compromisso.');
+      };
+
+      MAIRun
+        .withSuccessHandler(res => {
+          if (!res || res.ok === false) rollback();
+          else this.sincronizarEmBreve();
+        })
+        .withFailureHandler(rollback)
+        .acaoEventoAgenda({
+          id: eventId,
+          data,
+          hora: String(item.hora_inicio || ''),
+          tipo,
+          titulo: String(item.titulo || 'Compromisso'),
+          concluida: next
+        });
+    },
+
+    deveAparecer: function(item, targetDateStr) {
+      if (item.tipo === 'evento' || item.tipo === 'gcalendar') { if (!this.filtros.compromissos) return false; } 
+      else if (item.tipo === 'tarefa') { if (!this.filtros.tarefas) return false; } 
+      else if (item.tipo === 'habito') { if (!this.filtros.habitos) return false; }
+
+      if (!item.data_inicio) return false;
+      const inicio = item.data_inicio.split('T')[0];
+      if (inicio === targetDateStr) return true;
+      if (!item.repeticao) return false;
+
+      const targetDate = new Date(targetDateStr + 'T12:00:00');
+      const itemDate = new Date(inicio + 'T12:00:00');
+      if (targetDate < itemDate) return false;
+      
+      const diffDays = Math.round((targetDate - itemDate) / 86400000);
+      const rep = String(item.repeticao);
+      if (rep === 'diariamente') return true;
+      if (rep === 'semanalmente') return diffDays % 7 === 0;
+      if (rep === 'mensalmente') return itemDate.getDate() === targetDate.getDate();
+      if (rep.startsWith('intervalo:')) { const dias = parseInt(rep.split(':')[1]); return !isNaN(dias) && diffDays % dias === 0; }
+      if (rep.startsWith('semanal:')) { const diasPermitidos = rep.split(':')[1].split(',').map(Number); return diasPermitidos.includes(targetDate.getDay()); }
+      return false;
+    },
+
+    // ===============================================
+    // LÓGICA DE ARRASTAR E SOLTAR PROTEGIDA
+    // ===============================================
+    dragStart: function(e, id, tipo, oldDateStr) { 
+        e.dataTransfer.setData('text/plain', JSON.stringify({id, tipo, oldDateStr})); 
+        e.dataTransfer.effectAllowed = 'move'; 
+    },
+    dragOverCell: function(e) { 
+        e.preventDefault(); 
+        e.currentTarget.classList.add('drag-over-highlight'); 
+    },
+    dragLeaveCell: function(e) { 
+        e.currentTarget.classList.remove('drag-over-highlight'); 
+    },
+    dropData: function(e, newDateStr) {
+        e.preventDefault(); e.currentTarget.classList.remove('drag-over-highlight');
+        try {
+            const data = JSON.parse(e.dataTransfer.getData('text/plain'));
+            this._processDrop(data, newDateStr, null);
+        } catch(err) {}
+    },
+    dropTimeGrid: function(e, dateStr) {
+        e.preventDefault(); e.currentTarget.classList.remove('drag-over-highlight');
+        try {
+            const data = JSON.parse(e.dataTransfer.getData('text/plain'));
+            const rect = e.currentTarget.getBoundingClientRect(); 
+            let y = e.clientY - rect.top; 
+            let mins = Math.floor(y);
+            if (mins < 0) mins = 0; if (mins > 1400) mins = 1400; mins = Math.round(mins / 15) * 15;
+            let h = Math.floor(mins / 60); let m = mins % 60; 
+            const newTime = String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0');
+            this._processDrop(data, dateStr, newTime);
+        } catch(err) {}
+    },
+    _processDrop: function(data, newDateStr, newTimeStr) {
+        if (data.tipo === 'gcalendar') return alert('Eventos do Google Calendar devem ser editados diretamente no Google.');
+        if (data.tipo === 'habito' && !newTimeStr && newDateStr !== data.oldDateStr) return alert('Hábitos são diários. Arraste para a grade de horas caso queira mudar o horário padrão dele.');
+        
+        let item = [...this.data.eventos, ...this.data.tarefas, ...this.data.habitos].find(x => x.id === data.id);
+        if (item) {
+            if (data.tipo !== 'habito') item.data_inicio = newDateStr;
+            if (newTimeStr !== null) { 
+                item.hora_inicio = newTimeStr; item.dia_inteiro = false; 
+                if (item.hora_fim) item.hora_fim = ""; // Zera a hora fim visualmente para recalcular no backend
+            }
+            this.renderizar(); 
+            MAIRun.withSuccessHandler(res => {
+               if(!res.ok) { alert("Não foi possível salvar o novo horário no banco."); this.carregar(); }
+               else this.sincronizarEmBreve();
+            }).atualizarDataHoraArrastar(data.id, data.tipo, newDateStr, newTimeStr);
+        }
+    },
+
+    renderizar: function() {
+      if (!this.visaoAtual) this.visaoAtual = 'mes';
+      ['dia', 'semana', 'mes', 'ano'].forEach(v => { const btn = document.getElementById('btn-visao-' + v); if (btn) { if (this.visaoAtual === v) btn.classList.add('active'); else btn.classList.remove('active'); } });
+      if (this.visaoAtual === 'mes') this.renderizarMes(); else if (this.visaoAtual === 'semana') this.renderizarTempo(7); else if (this.visaoAtual === 'dia') this.renderizarTempo(1); else if (this.visaoAtual === 'ano') this.renderizarAno();
+      this.renderizarPainelLateral();
+    },
+
+    renderizarMes: function() {
+      document.getElementById('view-time').classList.remove('active'); document.getElementById('view-ano').classList.remove('active');
+      const viewMes = document.getElementById('view-mes'); viewMes.classList.add('active');
+      const grid = document.getElementById('calendar-grid'); const display = document.getElementById('a-display-date');
+      if(!grid || !display) return;
+      const year = this.currentDate.getFullYear(); const month = this.currentDate.getMonth();
+      display.innerHTML = new Intl.DateTimeFormat('pt-BR', { month: 'long', year: 'numeric' }).format(this.currentDate) + (this.isLoading ? ' <span class="material-symbols-rounded" style="font-size: 18px; animation: spin 1s linear infinite; vertical-align: middle; opacity: 0.5;">sync</span>' : '');
+      
+      let htmlGrid = ''; const firstDay = new Date(year, month, 1).getDay(); const daysInMonth = new Date(year, month + 1, 0).getDate();
+      for(let i = 0; i < firstDay; i++) htmlGrid += '<div class="a-cell" style="opacity:0.2; pointer-events:none;"></div>';
+      
+      const hoje = new Date(); hoje.setHours(0,0,0,0); let encontradosFuturo = new Set();
+      for(let d = 1; d <= daysInMonth; d++) {
+        const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+        const dataAtual = new Date(year, month, d); let itemsHtml = '';
+        if (!this.isLoading) {
+            const itemsDia = [...this.data.eventos, ...this.data.tarefas, ...this.data.habitos].filter(i => {
+                if (!this.deveAparecer(i, dateStr)) return false;
+                if (!this.filtros.repeticoes && dataAtual >= hoje && i.repeticao) {
+                    const key = i.id_base || i.lote_id || i.habit_id || (i.tipo + '-' + i.titulo);
+                    if (encontradosFuturo.has(key)) return false; encontradosFuturo.add(key);
+                } return true;
+            });
+            itemsDia.forEach(item => {
+              const fallbackCor = item.cor || 'var(--text-secondary)'; let iconeCheck = ''; let bgStyle = ''; let clickAction = '';
+              const repBadge = item.repeticao ? '<span class="material-symbols-rounded" style="font-size:10px; margin-left:auto;">sync</span>' : '';
+              let isHabitoDone = false;
+              if (item.tipo === 'habito' && typeof AppHabitos !== 'undefined' && AppHabitos.state && AppHabitos.state.habitos && AppHabitos.state.registros) {
+                 const hab = AppHabitos.state.habitos.find(h => h.id === item.id); const reg = AppHabitos.state.registros.find(r => r.habito_id === item.id && r.data.startsWith(dateStr)); if (hab && reg && Number(reg.valor) >= Number(hab.meta || 1)) isHabitoDone = true;
+              }
+              if (item.tipo === 'habito') {
+                 if (isHabitoDone) { iconeCheck = `<span class="material-symbols-rounded a-task-check-icon" style="color: var(--text-secondary);" onclick="AppAgenda.concluirHabito('${item.id}', '${dateStr}', event)">check_box</span>`; bgStyle = `opacity:0.5; text-decoration:line-through; border: 1px solid transparent !important;`;
+                 } else { iconeCheck = `<span class="material-symbols-rounded a-task-check-icon" style="color: ${fallbackCor};" onclick="AppAgenda.concluirHabito('${item.id}', '${dateStr}', event)">check_box_outline_blank</span>`; bgStyle = ``; }
+                 clickAction = `AppAgenda.abrirEdicao('${item.id}', '${item.tipo}'); event.stopPropagation();`;
+              } else if (item.tipo === 'tarefa') { iconeCheck = `<span class="material-symbols-rounded a-task-check-icon" style="color: ${fallbackCor};" onclick="AppAgenda.concluir('${item.id}', event)">radio_button_unchecked</span>`; clickAction = `AppAgenda.abrirEdicao('${item.id}', '${item.tipo}'); event.stopPropagation();`;
+              } else {
+                 const eventDone = this.eventoConcluido(item, dateStr);
+                 iconeCheck = `<span class="material-symbols-rounded a-event-check-icon ${eventDone ? 'done' : ''}" onclick="AppAgenda.toggleEvento('${item.id}', '${dateStr}', event)">${eventDone ? 'check_circle' : 'radio_button_unchecked'}</span>`;
+                 bgStyle = `background: ${item.cor}; border: none; ${eventDone ? 'opacity:0.58;' : ''}`;
+                 clickAction = `AppAgenda.abrirEdicao('${item.id}', '${item.tipo}'); event.stopPropagation();`;
+              }
+              itemsHtml += `<div class="a-item ${item.tipo} ${((item.tipo === 'evento' || item.tipo === 'gcalendar') && this.eventoConcluido(item, dateStr)) ? 'a-event-completed' : ''}" draggable="true" ondragstart="AppAgenda.dragStart(event, '${item.id}', '${item.tipo}', '${dateStr}')" style="${bgStyle}" onclick="${clickAction}">${iconeCheck}<span style="overflow:hidden; text-overflow:ellipsis;">${item.titulo}</span>${repBadge}</div>`;
+            });
+        }
+        htmlGrid += `<div class="a-cell ${dataAtual.getTime() === hoje.getTime() ? 'today' : ''}" ondragover="AppAgenda.dragOverCell(event)" ondragleave="AppAgenda.dragLeaveCell(event)" ondrop="AppAgenda.dropData(event, '${dateStr}')" onclick="AppAgenda.abrirDia('${dateStr}')"><span class="a-day-num">${d}</span>${itemsHtml}</div>`;
+      }
+      grid.innerHTML = htmlGrid;
+    },
+
+    renderizarTempo: function(diasCount) {
+        document.getElementById('view-mes').classList.remove('active'); document.getElementById('view-ano').classList.remove('active');
+        const viewTempo = document.getElementById('view-time'); viewTempo.classList.add('active');
+
+        let dates = []; let start = new Date(this.currentDate);
+        if (diasCount === 7) { let day = start.getDay(); start.setDate(start.getDate() - day); }
+        for(let i = 0; i < diasCount; i++) { let d = new Date(start); d.setDate(d.getDate() + i); dates.push(d); }
+
+        const monthText = new Intl.DateTimeFormat('pt-BR', { month: 'long', year: 'numeric' }).format(start);
+        if(diasCount === 1) { document.getElementById('a-display-date').innerHTML = `${start.getDate()} de ${monthText}` + (this.isLoading ? ' <span class="material-symbols-rounded" style="font-size: 18px; animation: spin 1s linear infinite; vertical-align: middle; opacity: 0.5;">sync</span>' : ''); } 
+        else { let end = dates[6]; let endMonthText = new Intl.DateTimeFormat('pt-BR', { month: 'long', year: 'numeric' }).format(end);
+            if (start.getMonth() === end.getMonth()) { document.getElementById('a-display-date').innerHTML = `${start.getDate()} a ${end.getDate()} de ${monthText}` + (this.isLoading ? ' <span class="material-symbols-rounded" style="font-size: 18px; animation: spin 1s linear infinite; vertical-align: middle; opacity: 0.5;">sync</span>' : ''); } 
+            else { document.getElementById('a-display-date').innerHTML = `${start.getDate()} de ${monthText.split(' ')[0]} a ${end.getDate()} de ${endMonthText}` + (this.isLoading ? ' <span class="material-symbols-rounded" style="font-size: 18px; animation: spin 1s linear infinite; vertical-align: middle; opacity: 0.5;">sync</span>' : ''); }
+        }
+
+        const hoje = new Date(); const minWidth = diasCount === 7 ? 'min-width: 800px;' : 'min-width: 100%;';
+        let html = `<div style="display:flex; flex-direction:column; ${minWidth} flex: 1;">`;
+        
+        let headerHtml = `<div style="display:flex; position:sticky; top:0; z-index:20; background:var(--bg-card);"><div style="width:50px; flex-shrink:0; border-right:1px solid var(--divider); border-bottom:1px solid var(--divider);"></div><div style="display:flex; flex:1;">`;
+        dates.forEach(d => { const diaSemana = d.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', '').toUpperCase(); const isToday = (d.getDate() === hoje.getDate() && d.getMonth() === hoje.getMonth() && d.getFullYear() === hoje.getFullYear()); headerHtml += `<div class="day-col-header ${isToday?'hoje':''}">${diaSemana} ${d.getDate()}</div>`; });
+        headerHtml += `</div></div>`; html += headerHtml;
+
+        let alldayHtml = `<div style="display:flex; background:var(--bg-hover);"><div style="width:50px; flex-shrink:0; border-right:1px solid var(--divider); border-bottom:1px solid var(--divider);"><span style="font-size:9px; font-weight:700; color:var(--text-secondary); display:block; text-align:center; margin-top:8px;">DIA TODO</span></div><div style="display:flex; flex:1;">`;
+        dates.forEach(d => { const dateStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+            alldayHtml += `<div class="day-allday-col" id="allday-${dateStr}" ondragover="AppAgenda.dragOverCell(event)" ondragleave="AppAgenda.dragLeaveCell(event)" ondrop="AppAgenda.dropData(event, '${dateStr}')"></div>`;
+        });
+        alldayHtml += `</div></div>`; html += alldayHtml;
+
+        let timeRowHtml = `<div style="display:flex; height: 1440px; position:relative;"><div style="width:50px; flex-shrink:0; border-right:1px solid var(--divider); background:var(--bg-card);">`;
+        for(let h=0; h<24; h++) { timeRowHtml += `<div class="time-slot"><span>${String(h).padStart(2,'0')}:00</span></div>`; }
+        timeRowHtml += `</div><div style="display:flex; flex:1; position:relative;">`;
+        
+        let lines = ''; for(let h=0; h<24; h++) lines += '<div class="grid-line"></div>';
+
+        let scrollToMins = 0;
+        dates.forEach(d => {
+            const dateStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+            const isToday = (d.getDate() === hoje.getDate() && d.getMonth() === hoje.getMonth() && d.getFullYear() === hoje.getFullYear());
+            let mins = hoje.getHours() * 60 + hoje.getMinutes(); if (isToday) scrollToMins = mins;
+
+            timeRowHtml += `<div class="day-time-col" id="time-${dateStr}" ondragover="AppAgenda.dragOverCell(event)" ondragleave="AppAgenda.dragLeaveCell(event)" ondrop="AppAgenda.dropTimeGrid(event, '${dateStr}')">
+                <div class="grid-lines">${lines}</div>
+                ${isToday ? `<div class="time-needle" id="needle" style="top:${mins}px;"></div>` : ''}
+            </div>`;
+        });
+        timeRowHtml += `</div></div></div>`; html += timeRowHtml;
+
+        document.getElementById('time-grid').innerHTML = html;
+
+        if (!this.isLoading) {
+            let repVistas = new Set();
+            dates.forEach(d => {
+                const dateStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+                const alldayCont = document.getElementById(`allday-${dateStr}`);
+                const timeCont = document.getElementById(`time-${dateStr}`);
+                const itemsDia = [...this.data.eventos, ...this.data.tarefas, ...this.data.habitos].filter(item => this.deveAparecer(item, dateStr));
+                
+                itemsDia.forEach(item => {
+                    if (!this.filtros.repeticoes && d >= new Date().setHours(0,0,0,0) && item.repeticao) {
+                        const key = item.id_base || item.lote_id || item.habit_id || (item.tipo + '-' + item.titulo);
+                        if (repVistas.has(key)) return; repVistas.add(key);
+                    }
+
+                    const cor = item.cor || 'var(--accent)';
+                    let icon = item.tipo === 'tarefa' ? 'task_alt' : (item.tipo === 'habito' ? 'cycle' : 'schedule');
+                    let ehDiaInteiro = item.dia_inteiro || !item.hora_inicio;
+                    const repBadge = item.repeticao ? '<span class="material-symbols-rounded" style="font-size:10px; margin-left:4px;">sync</span>' : '';
+
+                    const isEvent = item.tipo === 'evento' || item.tipo === 'gcalendar';
+                    const eventDone = isEvent && this.eventoConcluido(item, dateStr);
+                    const eventCheck = isEvent
+                      ? `<button class="a-event-check-button ${eventDone ? 'done' : ''}" type="button" aria-label="${eventDone ? 'Reabrir' : 'Concluir'} compromisso" onclick="AppAgenda.toggleEvento('${item.id}', '${dateStr}', event)"><span class="material-symbols-rounded">${eventDone ? 'check_circle' : 'radio_button_unchecked'}</span></button>`
+                      : `<span class="material-symbols-rounded" style="font-size:12px; color:${cor}">${icon}</span>`;
+
+                    if (ehDiaInteiro) {
+                        let evHtml = `<div class="a-item ${item.tipo} ${eventDone ? 'a-event-completed' : ''}" draggable="true" ondragstart="AppAgenda.dragStart(event, '${item.id}', '${item.tipo}', '${dateStr}')" style="border-left: 3px solid ${cor}; background: var(--bg-card); color: var(--text-primary); margin-bottom: 2px; ${eventDone ? 'opacity:0.58;' : ''}" onclick="AppAgenda.abrirEdicao('${item.id}', '${item.tipo}')">${eventCheck}<span style="overflow:hidden; text-overflow:ellipsis;">${item.titulo}</span>${repBadge}</div>`;
+                        if(alldayCont) alldayCont.innerHTML += evHtml;
+                    } else {
+                        let [h, m] = item.hora_inicio.split(':').map(Number); let top = h * 60 + (m || 0); let alturaCaixa = 50; let timeLabel = item.hora_inicio;
+                        if (item.hora_fim) {
+                            let [hF, mF] = item.hora_fim.split(':').map(Number); let minFim = hF * 60 + (mF || 0);
+                            if (minFim > top) alturaCaixa = minFim - top; timeLabel = `${item.hora_inicio} - ${item.hora_fim}`;
+                        }
+                        let hHtml = `<div class="time-event ${item.tipo} ${eventDone ? 'a-event-completed' : ''}" draggable="true" ondragstart="AppAgenda.dragStart(event, '${item.id}', '${item.tipo}', '${dateStr}')" style="background: ${cor}; top: ${top}px; height: ${Math.max(25, alturaCaixa)}px; ${eventDone ? 'opacity:0.58;' : ''}" onclick="AppAgenda.abrirEdicao('${item.id}', '${item.tipo}')"><div style="font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; display:flex; align-items:center; gap:4px;">${eventCheck}<span style="overflow:hidden; text-overflow:ellipsis;">${item.titulo}</span>${repBadge}</div><div style="font-size:9px; opacity:0.8;">${timeLabel}</div></div>`;
+                        if(timeCont) timeCont.innerHTML += hHtml;
+                    }
+                });
+            });
+        }
+        if (scrollToMins > 0) { setTimeout(() => { const viewGrid = document.getElementById('time-grid'); if (viewGrid) viewGrid.scrollTop = Math.max(0, scrollToMins - 100); }, 50); }
+    },
+
+    renderizarAno: function() {
+        document.getElementById('view-mes').classList.remove('active'); document.getElementById('view-time').classList.remove('active');
+        const viewAno = document.getElementById('view-ano'); viewAno.classList.add('active');
+        const y = this.currentDate.getFullYear(); document.getElementById('a-display-date').innerHTML = y + (this.isLoading ? ' <span class="material-symbols-rounded" style="font-size: 18px; animation: spin 1s linear infinite; vertical-align: middle; opacity: 0.5;">sync</span>' : '');
+
+        let html = ''; const mesesNomes = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']; const diasSemana = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S']; const hoje = new Date();
+        for(let m = 0; m < 12; m++) {
+            html += `<div class="year-month"><div class="year-month-title">${mesesNomes[m]}</div><div class="year-days-header">${diasSemana.map(d => `<div class="year-day-name">${d}</div>`).join('')}</div><div class="year-days-grid">`;
+            let d1 = new Date(y, m, 1).getDay(); let dMax = new Date(y, m + 1, 0).getDate();
+            for(let i=0; i<d1; i++) html += '<div></div>'; 
+            for(let d=1; d<=dMax; d++) {
+                const dateStr = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`; let hasEv = false;
+                if (!this.isLoading) { hasEv = [...this.data.eventos, ...this.data.tarefas, ...this.data.habitos].some(item => this.deveAparecer(item, dateStr)); }
+                const isToday = (d === hoje.getDate() && m === hoje.getMonth() && y === hoje.getFullYear());
+                let cls = 'year-day-cell'; if (hasEv) cls += ' has-events'; if (isToday) cls += ' today';
+                html += `<div class="${cls}" onclick="AppAgenda.abrirDia('${dateStr}')">${d}</div>`;
+            }
+            html += `</div></div>`;
+        }
+        document.getElementById('year-grid').innerHTML = html;
+    },
+
+    renderizarPainelLateral: function() {
+      const nextList = document.getElementById('next-list'); const headerSpan = document.querySelector('.a-next-header span'); const toggleBtn = document.getElementById('btn-toggle-proximos');
+      if (!nextList) return;
+
+      let tituloPainel = "Agenda";
+      if (this.visaoAtual === 'dia') tituloPainel = "Agenda do Dia"; else if (this.visaoAtual === 'semana') tituloPainel = "Agenda da Semana"; else if (this.visaoAtual === 'mes') tituloPainel = "Agenda do Mês"; else if (this.visaoAtual === 'ano') tituloPainel = "Agenda do Ano";
+      if (headerSpan) headerSpan.innerText = tituloPainel; if (toggleBtn) toggleBtn.innerHTML = `<span class="material-symbols-rounded" style="margin-right: 6px;">format_list_bulleted</span> ${tituloPainel}`;
+      
+      if (this.isLoading) { nextList.innerHTML = '<div style="opacity:0.5; padding:40px 20px; text-align:center; display:flex; flex-direction:column; align-items:center; gap:8px;"><span class="material-symbols-rounded" style="font-size:24px; animation: spin 1s linear infinite;">sync</span><span style="font-size:12px;">Atualizando...</span></div>'; return; }
+
+      let datesToProcess = []; const y = this.currentDate.getFullYear(); const m = this.currentDate.getMonth(); const dAtual = this.currentDate.getDate();
+      if (this.visaoAtual === 'dia') { datesToProcess.push(new Date(y, m, dAtual));
+      } else if (this.visaoAtual === 'semana') { let start = new Date(this.currentDate); start.setDate(start.getDate() - start.getDay()); for(let i=0; i<7; i++) { let d = new Date(start); d.setDate(d.getDate() + i); datesToProcess.push(d); }
+      } else if (this.visaoAtual === 'mes') { const dMax = new Date(y, m + 1, 0).getDate(); for(let d=1; d<=dMax; d++) { datesToProcess.push(new Date(y, m, d)); }
+      } else if (this.visaoAtual === 'ano') { let start = new Date(y, 0, 1); let dMax = (y % 4 === 0 && y % 100 !== 0) || (y % 400 === 0) ? 366 : 365; for(let i=0; i<dMax; i++) { let d = new Date(start); d.setDate(d.getDate() + i); datesToProcess.push(d); } }
+
+      const hoje = new Date(); hoje.setHours(0,0,0,0); let encontradosFuturo = new Set(); let gruposData = []; let tarefasAtrasadas = [];
+
+      datesToProcess.forEach(dataAtual => {
+          const dateStr = `${dataAtual.getFullYear()}-${String(dataAtual.getMonth()+1).padStart(2,'0')}-${String(dataAtual.getDate()).padStart(2,'0')}`; let itensParaLista = [];
+          const itemsDia = [...this.data.eventos, ...this.data.tarefas, ...this.data.habitos].filter(i => {
+              if (!this.deveAparecer(i, dateStr)) return false;
+              if (!this.filtros.repeticoes && dataAtual >= hoje) { const key = i.id_base || i.lote_id || i.habit_id || i.id; if (encontradosFuturo.has(key)) return false; encontradosFuturo.add(key); }
+              return true;
+          });
+          
+          itemsDia.forEach(item => { if (this.visaoAtual === 'dia' || this.visaoAtual === 'semana' || dataAtual >= hoje) { itensParaLista.push({ ...item, groupDateStr: dateStr }); } else if (item.tipo === 'tarefa' && !item.concluida) { if (!tarefasAtrasadas.some(t => t.id === item.id)) { tarefasAtrasadas.push({ ...item, atrasadaDateStr: dateStr }); } } });
+
+          if (itensParaLista.length > 0) {
+             const diffTime = dataAtual.getTime() - hoje.getTime(); const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+             let classeCor = 'destaque-distante'; let labelRelativa = '';
+             if (diffDays === 0) { classeCor = 'destaque-hoje'; labelRelativa = 'Hoje'; } else if (diffDays === -1) { classeCor = 'destaque-semana'; labelRelativa = 'Ontem'; } else if (diffDays === 1) { classeCor = 'destaque-semana'; labelRelativa = 'Amanhã'; } else if (diffDays > 1 && diffDays <= 7) { classeCor = 'destaque-semana'; labelRelativa = `Em ${diffDays} dias`; } else if (diffDays > 7 && diffDays <= 15) { classeCor = 'destaque-proximo'; labelRelativa = `Em ${diffDays} dias`; } else if (diffDays < -1) { classeCor = 'destaque-distante'; labelRelativa = `Há ${Math.abs(diffDays)} dias`; } else { classeCor = 'destaque-distante'; labelRelativa = `Em ${diffDays} dias`; }
+             const diaFormatado = String(dataAtual.getDate()).padStart(2,'0') + '/' + String(dataAtual.getMonth()+1).padStart(2,'0'); const diaSemana = dataAtual.toLocaleDateString('pt-BR', { weekday: 'long' }).split('-')[0]; const diaSemanaCap = diaSemana.charAt(0).toUpperCase() + diaSemana.slice(1);
+             gruposData.push({ labelFixa: `${diaSemanaCap}, ${diaFormatado}`, labelRelativa: labelRelativa, classeCor: classeCor, items: itensParaLista });
+          }
+      });
+      if (tarefasAtrasadas.length > 0) { gruposData.unshift({ labelFixa: 'Tarefas Atrasadas', labelRelativa: '', classeCor: '', items: tarefasAtrasadas }); }
+      this.renderizarListaMes(nextList, gruposData); document.getElementById('next-panel').classList.toggle('active', this.showNextItems);
+    },
+
+    renderizarListaMes: function(container, grupos) {
+      let html = ''; if(grupos.length === 0) { container.innerHTML = '<div style="opacity:0.5; padding:20px; text-align:center; font-size:12px;">Nenhum registo para apresentar.</div>'; return; }
+      grupos.forEach(g => {
+         const labelRelativaHtml = g.labelRelativa ? `<span class="${g.classeCor}">• ${g.labelRelativa}</span>` : '';
+         html += `<div class="a-group-label"><span>${g.labelFixa}</span>${labelRelativaHtml}</div>`;
+         html += g.items.map(i => {
+            const fallbackCor = i.cor || 'var(--text-secondary)'; let iconeLateral = ''; let clickAction = `AppAgenda.abrirEdicao('${i.id}', '${i.tipo}')`; let metaHtml = ''; let textStyle = '';
+
+            if (i.tipo === 'tarefa') { iconeLateral = `<span class="material-symbols-rounded a-task-check-icon" style="color: ${fallbackCor}; font-size:18px !important; margin-right:8px;" onclick="AppAgenda.concluir('${i.id}', event)">radio_button_unchecked</span>`; } 
+            else if (i.tipo === 'habito') {
+                 let isHabitoDone = false; const dateStr = i.groupDateStr || i.atrasadaDateStr || new Date().toISOString().split('T')[0];
+                 if (typeof AppHabitos !== 'undefined') { const hab = AppHabitos.state.habitos.find(h => h.id === i.id); const reg = AppHabitos.state.registros.find(r => r.habito_id === i.id && r.data.startsWith(dateStr)); if (hab && reg && Number(reg.valor) >= Number(hab.meta || 1)) isHabitoDone = true; }
+                 if (isHabitoDone) { iconeLateral = `<span class="material-symbols-rounded a-task-check-icon" style="color: var(--text-secondary); font-size:18px !important; margin-right:8px;" onclick="AppAgenda.concluirHabito('${i.id}', '${dateStr}', event)">check_box</span>`; textStyle = 'text-decoration:line-through; opacity:0.5;'; } 
+                 else { iconeLateral = `<span class="material-symbols-rounded a-task-check-icon" style="color: ${fallbackCor}; font-size:18px !important; margin-right:8px;" onclick="AppAgenda.concluirHabito('${i.id}', '${dateStr}', event)">check_box_outline_blank</span>`; }
+                 clickAction = `AppAgenda.verStatusHabito('${i.id}')`;
+            } else {
+                 const evColor = i.tipo === 'gcalendar' && i.cor ? i.cor : 'var(--accent)';
+                 const eventDate = i.groupDateStr || i.atrasadaDateStr || i.data_inicio;
+                 const eventDone = this.eventoConcluido(i, eventDate);
+                 iconeLateral = `<button class="a-event-side-check ${eventDone ? 'done' : ''}" type="button" aria-label="${eventDone ? 'Reabrir' : 'Concluir'} compromisso" onclick="AppAgenda.toggleEvento('${i.id}', '${eventDate}', event)"><span class="material-symbols-rounded" style="color:${evColor}; font-size:18px !important;">${eventDone ? 'check_circle' : 'radio_button_unchecked'}</span></button>`;
+                 metaHtml = `<div class="a-next-meta">${eventDone ? 'Concluído · ' : ''}${i.hora_inicio || 'Dia todo'}</div>`;
+                 if (eventDone) textStyle = 'opacity:0.58;';
+            }
+            return `<div class="a-next-item" onclick="${clickAction}">${iconeLateral}<div style="display:flex; flex-direction:column; flex:1; overflow:hidden; ${textStyle}"><div class="a-next-title">${i.titulo}</div>${metaHtml}</div></div>`;
+         }).join('');
+      });
+      container.innerHTML = html;
+    },
+
+    abrirDia: function(dateStr) { this.dataAtualModal = dateStr; const lista = document.getElementById('lista-modal-dia'); document.getElementById('titulo-modal-dia').innerText = `Registos - ${dateStr.split('-').reverse().slice(0,2).join('/')}`; const items = [...this.data.eventos, ...this.data.tarefas, ...this.data.habitos].filter(i => this.deveAparecer(i, dateStr)); let htmlItems = '';
+      items.forEach(item => { let icone = ''; let clickAction = `AppAgenda.abrirEdicao('${item.id}', '${item.tipo}')`; let metaHtml = ''; let textStyle = '';
+          if (item.tipo === 'tarefa') { icone = `<span class="material-symbols-rounded a-task-check-icon" style="color: ${item.cor || 'var(--text-secondary)'}; font-size:20px !important; margin-right:12px;" onclick="AppAgenda.concluir('${item.id}', event)">radio_button_unchecked</span>`; } else if (item.tipo === 'habito') {
+            let isHabitoDone = false; if (typeof AppHabitos !== 'undefined') { const hab = AppHabitos.state.habitos.find(h => h.id === item.id); const reg = AppHabitos.state.registros.find(r => r.habito_id === item.id && r.data.startsWith(dateStr)); if (hab && reg && Number(reg.valor) >= Number(hab.meta || 1)) isHabitoDone = true; }
+            if (isHabitoDone) { icone = `<span class="material-symbols-rounded a-task-check-icon" style="color: var(--text-secondary); font-size:20px !important; margin-right:12px;" onclick="AppAgenda.concluirHabito('${item.id}', '${dateStr}', event)">check_box</span>`; textStyle = 'text-decoration:line-through; opacity:0.5;'; } else { icone = `<span class="material-symbols-rounded a-task-check-icon" style="color: ${item.cor || 'var(--text-secondary)'}; font-size:20px !important; margin-right:12px;" onclick="AppAgenda.concluirHabito('${item.id}', '${dateStr}', event)">check_box_outline_blank</span>`; } clickAction = `AppAgenda.verStatusHabito('${item.id}')`; } else { icone = `<span class="material-symbols-rounded" style="color: ${item.tipo === 'gcalendar' && item.cor ? item.cor : 'var(--accent)'}; font-size:20px !important; margin-right:12px;">schedule</span>`; metaHtml = `<div class="a-next-meta">${item.hora_inicio || 'Dia todo'}</div>`; }
+          htmlItems += `<div class="a-next-item" style="background:var(--bg-card)" onclick="${clickAction}">${icone}<div style="display:flex; flex-direction:column; flex:1; overflow:hidden; ${textStyle}"><div class="a-next-title">${item.titulo}</div>${metaHtml}</div></div>`;
+      });
+      lista.innerHTML = htmlItems || '<div style="opacity:0.6; font-size:12px; text-align:center; padding: 20px;">Dia livre.</div>'; document.getElementById('modal-dia').classList.add('active');
+    },
+
+    fecharDia: function() { document.getElementById('modal-dia').classList.remove('active'); },
+    abrirEdicao: function(id, tipo) { this.fecharDia(); if (window.innerWidth <= 1024) this.showNextItems = false; setTimeout(() => { if (tipo === 'tarefa') this.switchToTarefa(id); else if (tipo === 'habito') this.verStatusHabito(id); else this.abrirModal(id); }, 100); },
+
+    concluir: function(id, e) {
+      if (e) { e.stopPropagation(); e.preventDefault(); } const target = e.currentTarget; target.innerText = 'check_circle'; const item = target.closest('.a-item') || target.closest('.time-event') || target.closest('.a-next-item');
+      if(item) { item.style.opacity = '0.5'; item.style.textDecoration = 'line-through'; item.style.pointerEvents = 'none'; }
+      MAIRun.withSuccessHandler(() => { if (typeof AppTarefas !== 'undefined' && typeof AppTarefas.carregar === 'function') AppTarefas.carregar(); this.carregar(); this.sincronizarEmBreve(); if (document.getElementById('modal-dia').classList.contains('active')) { setTimeout(() => this.abrirDia(this.dataAtualModal), 800); } }).acaoTarefa(id, 'concluir');
+    },
+
+    concluirHabito: function(id, dataStr, e) {
+      if (e) { e.stopPropagation(); e.preventDefault(); } const target = e.currentTarget; const isDoneVisually = target.innerText.includes('check_box') && !target.innerText.includes('blank');
+      if (typeof AppHabitos !== 'undefined') {
+         const h = AppHabitos.state.habitos.find(x => x.id === id); if (!h) return;
+         if (h.unidade && h.meta > 1 && !isDoneVisually) { const modalValor = document.getElementById('valueModal'); if (modalValor && modalValor.parentNode !== document.body) document.body.appendChild(modalValor); document.getElementById('v-habito-id').value = id; document.getElementById('v-data').value = dataStr; document.getElementById('v-title').innerText = h.nome; document.getElementById('v-unidade').innerText = h.unidade; document.getElementById('v-quantidade').value = h.meta; const originalConfirm = AppHabitos.confirmValue; AppHabitos.confirmValue = function(evt) { originalConfirm.call(AppHabitos, evt); AppAgenda.renderizar(); if(document.getElementById('modal-dia').classList.contains('active')) AppAgenda.abrirDia(AppAgenda.dataAtualModal); AppHabitos.confirmValue = originalConfirm; }; AppHabitos.openModal('valueModal'); setTimeout(() => document.getElementById('v-quantidade').select(), 100);
+         } else { if (!isDoneVisually) { target.innerText = 'check_box'; target.style.color = 'var(--text-secondary)'; const wrapper = target.closest('.a-item') || target.closest('.a-next-item') || target.closest('.time-event'); if(wrapper) { wrapper.style.opacity = '0.5'; wrapper.style.textDecoration = 'line-through'; wrapper.style.border = '1px solid transparent'; } } else { target.innerText = 'check_box_outline_blank'; target.style.color = h.cor_hex || 'var(--text-secondary)'; const wrapper = target.closest('.a-item') || target.closest('.a-next-item') || target.closest('.time-event'); if(wrapper) { wrapper.style.opacity = '1'; wrapper.style.textDecoration = 'none'; wrapper.style.border = '1px solid var(--divider)'; } }
+            AppHabitos.execToggle(id, dataStr, !isDoneVisually, isDoneVisually ? 0 : (h.meta || 1)); setTimeout(() => { AppAgenda.renderizar(); if(document.getElementById('modal-dia').classList.contains('active')) AppAgenda.abrirDia(AppAgenda.dataAtualModal); }, 50);
+         }
+      } else { alert("Aguarde um segundo para os dados carregarem e tente novamente."); }
+    },
+
+    verStatusHabito: function(id) { this.fecharDia(); if(typeof AppHabitos !== 'undefined') { const statsModal = document.getElementById('statsModal'); if (statsModal && statsModal.parentNode !== document.body) { document.body.appendChild(statsModal); } AppHabitos.openStats(id); } else { alert("Aguarde um segundo para os dados dos hábitos carregarem e tente novamente."); } },
+
+    abrirModal: function(id = null, dataSugerida = null) {
+      document.getElementById('modal-evento').classList.add('active'); document.getElementById('e-desc-wrapper').classList.remove('active-desc');
+      if(id) { const ev = this.data.eventos.find(x => x.id === id); if(!ev) return; document.getElementById('e-id').value = ev.id; document.getElementById('e-titulo').value = ev.titulo; quillAgenda.root.innerHTML = ev.descricao || ''; document.getElementById('e-data').value = ev.data_inicio.split('T')[0]; document.getElementById('e-hora').value = ev.hora_inicio || "09:00"; document.getElementById('e-hora-fim').value = ev.hora_fim || ""; document.getElementById('e-dia-inteiro').checked = ev.dia_inteiro; document.getElementById('e-repeticao').value = ev.repeticao || ''; document.getElementById('btn-e-excluir').style.display = ev.tipo === 'gcalendar' ? 'none' : 'block'; this.eventoAtual.subtarefas = ev.subtarefas ? (typeof ev.subtarefas === 'string' ? JSON.parse(ev.subtarefas) : ev.subtarefas) : []; this.eventoAtual.anexos = ev.anexos ? (typeof ev.anexos === 'string' ? JSON.parse(ev.anexos) : ev.anexos) : [];
+      } else { document.getElementById('e-id').value = ''; document.getElementById('e-titulo').value = ''; quillAgenda.root.innerHTML = ''; document.getElementById('e-data').value = dataSugerida || new Date().toISOString().split('T')[0]; document.getElementById('e-hora').value = '09:00'; document.getElementById('e-hora-fim').value = ''; document.getElementById('e-repeticao').value = ''; document.getElementById('btn-e-excluir').style.display = 'none'; this.eventoAtual.subtarefas = []; this.eventoAtual.anexos = []; }
+      this.updatePills(); this.renderizarSubtarefas(); this.renderizarBandeja(); setTimeout(() => document.getElementById('e-titulo').focus(), 100);
+    },
+
+    fecharModal: function() { document.getElementById('modal-evento').classList.remove('active'); },
+    
+    setDataPill: function(tipo) { const input = document.getElementById('e-data'); const hojeObj = new Date(); if (tipo === 'hoje') input.value = hojeObj.toISOString().split('T')[0]; else if (tipo === 'amanha') { hojeObj.setDate(hojeObj.getDate() + 1); input.value = hojeObj.toISOString().split('T')[0]; } else input.value = ''; this.updatePills(); document.querySelectorAll('.sys-dropdown').forEach(d => d.classList.remove('active')); },
+    setRepeticao: function(valor) { document.getElementById('e-repeticao').value = valor; this.updatePills(); document.getElementById('drop-e-repeticao').classList.remove('active'); },
+
+    updatePills: function() {
+      const dt = document.getElementById('e-data').value; const lblDt = document.getElementById('lbl-e-data'); const pillDt = document.getElementById('pill-e-data');
+      if (dt) { const hojeObj = new Date(); const amanhaObj = new Date(); amanhaObj.setDate(amanhaObj.getDate() + 1); const hojeStr = hojeObj.toISOString().split('T')[0]; const amanhaStr = amanhaObj.toISOString().split('T')[0]; if (dt === hojeStr) lblDt.innerText = "Hoje"; else if (dt === amanhaStr) lblDt.innerText = "Amanhã"; else lblDt.innerText = dt.split('-').reverse().slice(0,2).join('/'); pillDt.classList.add('active-val'); } else { lblDt.innerText = "Data"; pillDt.classList.remove('active-val'); }
+
+      const ehDiaInteiro = document.getElementById('e-dia-inteiro').checked; const hIni = document.getElementById('e-hora').value; const hFim = document.getElementById('e-hora-fim').value; const lblHora = document.getElementById('lbl-e-hora'); const pillHora = document.getElementById('pill-e-hora');
+      if (ehDiaInteiro) { lblHora.innerText = "Dia Todo"; document.getElementById('e-hora-inputs').style.opacity = '0.3'; document.getElementById('e-hora-inputs').style.pointerEvents = 'none'; } else { lblHora.innerText = hIni ? (hFim ? `${hIni} - ${hFim}` : hIni) : "Horário"; document.getElementById('e-hora-inputs').style.opacity = '1'; document.getElementById('e-hora-inputs').style.pointerEvents = 'auto'; }
+      pillHora.classList.add('active-val');
+
+      const rep = document.getElementById('e-repeticao').value; const lblRep = document.getElementById('lbl-e-repeticao'); const pillRep = document.getElementById('pill-e-repeticao'); document.querySelectorAll('#drop-e-repeticao .sys-drop-item').forEach(el => el.classList.remove('selected'));
+      if (rep === 'diariamente') { lblRep.innerText = 'Diariamente'; pillRep.classList.add('active-val'); document.getElementById('rep-opt-diariamente').classList.add('selected'); } else if (rep === 'semanalmente') { lblRep.innerText = 'Semanalmente'; pillRep.classList.add('active-val'); document.getElementById('rep-opt-semanalmente').classList.add('selected'); } else if (rep === 'mensalmente') { lblRep.innerText = 'Mensalmente'; pillRep.classList.add('active-val'); document.getElementById('rep-opt-mensalmente').classList.add('selected'); } else { lblRep.innerText = 'Não Repetir'; pillRep.classList.remove('active-val'); document.getElementById('rep-opt-').classList.add('selected'); }
+    },
+
+    renderizarSubtarefas: function() { const container = document.getElementById('e-subtarefas-list'); if(!this.eventoAtual.subtarefas) this.eventoAtual.subtarefas = []; container.innerHTML = this.eventoAtual.subtarefas.map((s, i) => `<div class="t-subtask-item ${s.done ? 'concluida' : ''}"><button class="t-check-btn" onclick="AppAgenda.toggleSubtarefa(${i})"><span class="material-symbols-rounded" style="font-size:12px;">check</span></button><input type="text" class="t-text-input" value="${s.titulo}" onchange="AppAgenda.updateSubtarefa(${i}, this.value)"><button class="sys-icon-btn" style="width:24px; height:24px; padding:0; color:var(--mai-danger)" onclick="AppAgenda.delSubtarefa(${i})"><span class="material-symbols-rounded" style="font-size:14px">close</span></button></div>`).join(''); },
+    addSubtarefa: function() { const input = document.getElementById('e-new-subtarefa'); if(!input.value.trim()) return; this.eventoAtual.subtarefas.push({ titulo: input.value.trim(), done: false }); input.value = ''; this.renderizarSubtarefas(); },
+    updateSubtarefa: function(i, val) { this.eventoAtual.subtarefas[i].titulo = val; }, toggleSubtarefa: function(i) { this.eventoAtual.subtarefas[i].done = !this.eventoAtual.subtarefas[i].done; this.renderizarSubtarefas(); }, delSubtarefa: function(i) { this.eventoAtual.subtarefas.splice(i, 1); this.renderizarSubtarefas(); },
+
+    renderizarBandeja: function() { const container = document.getElementById('e-tray-list'); if (!this.eventoAtual.anexos || this.eventoAtual.anexos.length === 0) { container.innerHTML = '<div style="grid-column: 1 / -1; font-size: 12px; color: var(--text-secondary); padding: 16px 0; text-align: center;">Sem arquivos anexados.</div>'; return; }
+      container.innerHTML = this.eventoAtual.anexos.map((arq, i) => { const isImg = arq.tipo.indexOf('image/') === 0; const thumb = isImg ? `<div class="t-thumb-img-wrapper" onclick="window.open('${arq.url}')"><img src="${arq.url}" style="width:100%; height:100%; object-fit:cover;"></div>` : `<div class="t-thumb-img-wrapper" onclick="window.open('${arq.url}')"><span class="material-symbols-rounded" style="font-size:32px; color:var(--text-secondary); opacity:0.5;">description</span></div>`; return `<div class="t-thumb-card">${thumb}<div class="t-thumb-footer"><span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; flex:1;">${arq.nome}</span><div class="has-dropdown" style="position:relative;"><button class="sys-icon-btn" style="padding:0; width:24px; height:24px;" onclick="AppAgenda.toggleDrop(event, 'drop-e-arq-${i}')"><span class="material-symbols-rounded" style="font-size:18px;">more_vert</span></button><div id="drop-e-arq-${i}" class="sys-dropdown" style="bottom:100%; right:0; margin-bottom:4px; z-index:9999;"><div class="sys-drop-item" onclick="AppAgenda.renomearAnexoBandeja(${i})"><span class="material-symbols-rounded">edit</span> Renomear</div><div class="sys-drop-item" onclick="AppAgenda.inserirDoBandeja(${i})"><span class="material-symbols-rounded">arrow_upward</span> Inserir no Texto</div><div class="sys-drop-item" style="color:var(--mai-danger);" onclick="AppAgenda.removerDaBandeja(${i})"><span class="material-symbols-rounded">delete</span> Apagar Anexo</div></div></div></div></div>`; }).join(''); },
+    renomearAnexoBandeja: function(index) { const arq = this.eventoAtual.anexos[index]; const novoNome = prompt("Renomear anexo:", arq.nome); if (novoNome && novoNome.trim() !== "" && novoNome !== arq.nome) { this.eventoAtual.anexos[index].nome = novoNome.trim(); this.renderizarBandeja(); } document.querySelectorAll('.sys-dropdown').forEach(d => d.classList.remove('active')); },
+    triggerUpload: function() { let oldInput = document.getElementById('e-hidden-file-input'); if (oldInput) oldInput.remove(); const input = document.createElement('input'); input.type = 'file'; input.multiple = true; input.id = 'e-hidden-file-input'; input.style.display = 'none'; document.body.appendChild(input); input.onchange = async e => { const files = Array.from(e.target.files); if(!files.length) { input.remove(); return; } const btn = document.getElementById('btn-e-anexar'); const htmlOriginal = btn.innerHTML; btn.disabled = true; for (let file of files) { btn.innerHTML = '<span class="material-symbols-rounded" style="font-size:16px; animation: spin 1s linear infinite;">sync</span> <span style="font-size: 12px; font-weight: 600;">Enviando...</span>'; await new Promise(res => { const reader = new FileReader(); reader.onload = ev => { MAIRun.withSuccessHandler(r => { if (r && r.ok) { this.eventoAtual.anexos.push(r); this.renderizarBandeja(); } else { alert("Erro ao salvar arquivo."); } res(); }).salvarAnexoMetaDrive(ev.target.result, file.name, file.type); }; reader.readAsDataURL(file); }); } btn.innerHTML = htmlOriginal; btn.disabled = false; input.remove(); }; input.click(); },
+    inserirDoBandeja: function(index) { const arq = this.eventoAtual.anexos[index]; const range = quillAgenda.getSelection(true) || { index: quillAgenda.getLength() }; if (arq.tipo.startsWith('image/')) { quillAgenda.insertEmbed(range.index, 'image', arq.directUrl); quillAgenda.insertText(range.index + 1, '\n'); } else { const txt = "Anexo: " + arq.nome; quillAgenda.insertText(range.index, txt, 'link', arq.url); quillAgenda.insertText(range.index + txt.length, '\n', 'link', false); } document.querySelectorAll('.sys-dropdown').forEach(d => d.classList.remove('active')); },
+    removerDaBandeja: function(index) { if(confirm("Apagar arquivo do Drive permanentemente?")) { const id = this.eventoAtual.anexos[index].idDrive; this.eventoAtual.anexos.splice(index, 1); this.renderizarBandeja(); MAIRun.deletarArquivoDrive(id); } document.querySelectorAll('.sys-dropdown').forEach(d => d.classList.remove('active')); },
+
+    salvar: function() {
+      const titulo = document.getElementById('e-titulo').value.trim(); if(!titulo) { alert("O título é obrigatório."); return; }
+      const id = document.getElementById('e-id').value; const ev = this.data.eventos.find(x => x.id === id); if(ev && ev.tipo === 'gcalendar') { alert("Eventos do Google Calendar devem ser editados diretamente no Google."); return; }
+      const btn = document.getElementById('btn-e-salvar'); btn.disabled = true; btn.innerHTML = '<span class="material-symbols-rounded" style="animation: spin 1s linear infinite;">sync</span> Salvando...';
+      const dados = { id: id, titulo: titulo, descricao: quillAgenda.root.innerHTML, data_inicio: document.getElementById('e-data').value, hora_inicio: document.getElementById('e-hora').value, hora_fim: document.getElementById('e-hora-fim').value, dia_inteiro: document.getElementById('e-dia-inteiro').checked, repeticao: document.getElementById('e-repeticao').value, cor: 'var(--accent)', subtarefas: this.eventoAtual.subtarefas.filter(s => s.titulo.trim() !== ''), anexos: this.eventoAtual.anexos };
+      MAIRun.withSuccessHandler(() => { btn.disabled = false; btn.innerText = "Salvar"; this.carregar(); this.sincronizarEmBreve(); this.fecharModal(); }).salvarEventoAgenda(dados);
+    },
+
+    excluir: function() { const id = document.getElementById('e-id').value; if(confirm("Excluir este compromisso permanentemente?")) { const btn = document.getElementById('btn-e-excluir'); btn.style.pointerEvents = 'none'; btn.innerHTML = '<span class="material-symbols-rounded" style="animation: spin 1s linear infinite;">sync</span>'; MAIRun.withSuccessHandler(() => { btn.style.pointerEvents = 'auto'; btn.innerHTML = '<span class="material-symbols-rounded">delete</span>'; this.carregar(); this.sincronizarEmBreve(); this.fecharModal(); }).excluirEventoAgenda(id); } },
+
+    switchToTarefa: function(id = null) { const dataSugerida = document.getElementById('e-data').value; this.fecharModal(); Sys.ensureModule('tarefas', () => { const abrir = () => { AppTarefas.abrirModal(id); if (!id && dataSugerida) { const dateInput = document.getElementById('t-data'); if (dateInput) { dateInput.value = dataSugerida; AppTarefas.updatePills(); } } }; if (id) Sys.waitFor(() => AppTarefas.state.tarefas.some(t => String(t.id) === String(id)), abrir); else setTimeout(abrir, 40); }); },
+
+    abrirConfiguracoes: function() { document.getElementById('modal-config-agenda').classList.add('active'); const lista = document.getElementById('lista-calendarios'); lista.innerHTML = '<div style="padding:20px; text-align:center;"><span class="spinner"></span></div>'; MAIRun.withSuccessHandler(calendarios => { lista.innerHTML = calendarios.map(cal => `<label class="a-cal-item" style="display:flex; align-items:center; gap:12px; padding:12px; border-radius:12px; background:var(--bg-hover); cursor:pointer;"><input type="checkbox" value="${cal.id}" ${cal.selecionado ? 'checked' : ''} class="cal-checkbox" style="accent-color:var(--accent); width:18px; height:18px;"><div style="width:16px; height:16px; border-radius:50%; background: ${cal.cor}"></div><span style="font-size:14px; font-weight:600; color:var(--text-primary);">${cal.nome}</span></label>`).join(''); }).getListaCalendarios(); },
+    salvarConfiguracoes: function() { const selecionados = Array.from(document.querySelectorAll('.cal-checkbox')).filter(cb => cb.checked).map(cb => cb.value); MAIRun.withSuccessHandler(() => { document.getElementById('modal-config-agenda').classList.remove('active'); this.carregar(); }).salvarConfigsAgenda(selecionados); },
+
+    prev: function() { this.currentDate.setMonth(this.currentDate.getMonth() - 1); this.carregar(); }, next: function() { this.currentDate.setMonth(this.currentDate.getMonth() + 1); this.carregar(); }, goToToday: function() { this.currentDate = new Date(); this.carregar(); }, criarNovoDoDia: function() { this.abrirModal(null, this.dataAtualModal); }
+  };
+</script>
+
+<script id="mai-v91-agenda-instant">
+(() => {
+  if (typeof AppAgenda === 'undefined') return;
+
+  AppAgenda.mudarVisao = function(visao) {
+    this.visaoAtual = visao;
+    this.renderizar();
+  };
+
+  AppAgenda.carregar = function() {
+    const temDados = (this.data.eventos && this.data.eventos.length) ||
+      (this.data.tarefas && this.data.tarefas.length) ||
+      (this.data.habitos && this.data.habitos.length);
+
+    this.isLoading = !temDados;
+    if (!temDados) this.renderizar();
+
+    setTimeout(() => {
+      const y = this.currentDate.getFullYear();
+      const m = this.currentDate.getMonth();
+      let iniISO, fimISO;
+
+      if (this.visaoAtual === 'ano') {
+        iniISO = new Date(y, 0, 1).toISOString();
+        fimISO = new Date(y + 1, 0, 0).toISOString();
+      } else {
+        iniISO = new Date(y, m - 1, 1).toISOString();
+        fimISO = new Date(y, m + 2, 0).toISOString();
+      }
+
+      MAIRun
+        .withSuccessHandler(resRaw => {
+          try {
+            const res = typeof resRaw === 'string' ? JSON.parse(resRaw) : resRaw;
+            if (res && res.ok) {
+              this.data.eventos = res.eventos || [];
+              this.data.tarefas = res.tarefas || [];
+              this.data.habitos = res.habitos || [];
+              this.data.conclusoes = res.conclusoes || [];
+            }
+          } catch (e) {}
+          this.isLoading = false;
+          this.renderizar();
+        })
+        .withFailureHandler(() => {
+          this.isLoading = false;
+          this.renderizar();
+        })
+        .getDadosAgendaCompleta(iniISO, fimISO);
+    }, 0);
+  };
+
+  AppAgenda.concluir = function(id, e) {
+    if (e) {
+      e.stopPropagation();
+      e.preventDefault();
+    }
+
+    const taskId = String(id);
+    const task = (this.data.tarefas || []).find(t => String(t.id) === taskId);
+    const oldTask = task ? MAIInstant.clone(task) : null;
+
+    if (task) task.concluida = true;
+
+    if (
+      typeof AppTarefas !== 'undefined' &&
+      AppTarefas.state &&
+      Array.isArray(AppTarefas.state.tarefas)
+    ) {
+      const linked = AppTarefas.state.tarefas.find(t => String(t.id) === taskId);
+      if (linked) linked.concluida = true;
+    }
+
+    this.renderizar();
+    if (document.getElementById('modal-dia')?.classList.contains('active')) {
+      this.abrirDia(this.dataAtualModal);
+    }
+
+    const rollback = () => {
+      if (oldTask && task) Object.assign(task, oldTask);
+
+      if (
+        typeof AppTarefas !== 'undefined' &&
+        AppTarefas.state &&
+        Array.isArray(AppTarefas.state.tarefas)
+      ) {
+        const linked = AppTarefas.state.tarefas.find(t => String(t.id) === taskId);
+        if (linked && oldTask) linked.concluida = !!oldTask.concluida;
+      }
+
+      this.renderizar();
+      if (document.getElementById('modal-dia')?.classList.contains('active')) {
+        this.abrirDia(this.dataAtualModal);
+      }
+      MAIInstant.error('Não foi possível concluir a tarefa.');
+    };
+
+    MAIRun
+      .withSuccessHandler(res => {
+        if (res && res.ok === false) rollback();
+        else {
+          MAIInstant.changed('agenda:tarefa');
+          this.sincronizarEmBreve();
+        }
+      })
+      .withFailureHandler(rollback)
+      .acaoTarefa(taskId, 'concluir');
+  };
+
+  AppAgenda.salvar = function() {
+    const titulo = document.getElementById('e-titulo').value.trim();
+    if (!titulo) {
+      alert('O título é obrigatório.');
+      return;
+    }
+
+    const originalId = document.getElementById('e-id').value;
+    const originalEvent = this.data.eventos.find(x => String(x.id) === String(originalId));
+
+    if (originalEvent && originalEvent.tipo === 'gcalendar') {
+      alert('Eventos do Google Calendar devem ser editados diretamente no Google.');
+      return;
+    }
+
+    const id = originalId || `ev-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
+    const previous = MAIInstant.clone(this.data.eventos);
+
+    const dados = {
+      id,
+      titulo,
+      descricao: quillAgenda.root.innerHTML,
+      data_inicio: document.getElementById('e-data').value,
+      hora_inicio: document.getElementById('e-hora').value,
+      hora_fim: document.getElementById('e-hora-fim').value,
+      dia_inteiro: document.getElementById('e-dia-inteiro').checked,
+      repeticao: document.getElementById('e-repeticao').value,
+      cor: originalEvent?.cor || 'var(--accent)',
+      subtarefas: this.eventoAtual.subtarefas.filter(s => String(s.titulo || '').trim() !== ''),
+      anexos: MAIInstant.clone(this.eventoAtual.anexos || [])
+    };
+
+    const local = {
+      ...(originalEvent || {}),
+      ...dados,
+      tipo: 'evento'
+    };
+
+    const idx = this.data.eventos.findIndex(x => String(x.id) === String(id));
+    if (idx >= 0) this.data.eventos[idx] = local;
+    else this.data.eventos.push(local);
+
+    this.renderizar();
+    this.fecharModal();
+    MAIInstant.changed('agenda:evento');
+
+    const rollback = () => {
+      this.data.eventos = previous;
+      this.renderizar();
+      MAIInstant.error('O evento não foi sincronizado. A alteração foi desfeita.');
+    };
+
+    MAIRun
+      .withSuccessHandler(res => {
+        if (res && res.ok === false) rollback();
+        else this.sincronizarEmBreve();
+      })
+      .withFailureHandler(rollback)
+      .salvarEventoAgenda(dados);
+  };
+
+  AppAgenda.excluir = function() {
+    const id = document.getElementById('e-id').value;
+    if (!id) return;
+    if (!confirm('Excluir este compromisso permanentemente?')) return;
+
+    const previous = MAIInstant.clone(this.data.eventos);
+    this.data.eventos = this.data.eventos.filter(x => String(x.id) !== String(id));
+    this.renderizar();
+    this.fecharModal();
+    MAIInstant.changed('agenda:excluir');
+
+    const rollback = () => {
+      this.data.eventos = previous;
+      this.renderizar();
+      MAIInstant.error('Não foi possível excluir o compromisso.');
+    };
+
+    MAIRun
+      .withSuccessHandler(res => {
+        if (res && res.ok === false) rollback();
+        else this.sincronizarEmBreve();
+      })
+      .withFailureHandler(rollback)
+      .excluirEventoAgenda(id);
+  };
+
+  AppAgenda.salvarConfiguracoes = function() {
+    const selecionados = Array.from(document.querySelectorAll('.cal-checkbox'))
+      .filter(cb => cb.checked)
+      .map(cb => cb.value);
+
+    document.getElementById('modal-config-agenda').classList.remove('active');
+
+    MAIRun
+      .withSuccessHandler(res => {
+        if (res && res.ok === false) {
+          MAIInstant.error('Não foi possível salvar as preferências da Agenda.');
+          return;
+        }
+        this.carregar();
+      })
+      .withFailureHandler(() => MAIInstant.error('Não foi possível salvar as preferências da Agenda.'))
+      .salvarConfigsAgenda(selecionados);
+  };
+})();
+</script>
+
+
+<style id="mai-v92-agenda-compromissos-concluidos">
+#a-container .a-event-check-icon,
+#a-container .a-event-check-button,
+#a-container .a-event-side-check {
+  flex: 0 0 auto;
+  cursor: pointer;
+}
+
+#a-container .a-event-check-icon {
+  font-size: 15px !important;
+  color: currentColor;
+}
+
+#a-container .a-event-check-button,
+#a-container .a-event-side-check {
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  display: inline-grid;
+  place-items: center;
+  background: transparent;
+  color: inherit;
+}
+
+#a-container .a-event-check-button .material-symbols-rounded {
+  font-size: 16px !important;
+}
+
+#a-container .a-event-side-check {
+  margin-right: 8px;
+}
+
+#a-container .a-event-completed {
+  filter: saturate(.72);
+}
+
+#a-container .a-event-completed * {
+  text-decoration: none !important;
+}
+</style>
+
+
+<style id="mai-v97-event-editor-visual">
+/* =========================================================
+   EDITOR DE COMPROMISSO — MESMO PADRÃO DA TAREFA
+   ========================================================= */
+
+#modal-evento {
+  padding: 18px !important;
+  background: rgba(12, 12, 13, .66) !important;
+  backdrop-filter: blur(10px) !important;
+  -webkit-backdrop-filter: blur(10px) !important;
+}
+
+#modal-evento .mai-editor-surface {
+  width: min(940px, calc(100vw - 36px)) !important;
+  height: min(720px, calc(100dvh - 36px)) !important;
+  max-width: 940px !important;
+  max-height: 720px !important;
+  border: 1px solid color-mix(in srgb, var(--text-primary) 9%, transparent) !important;
+  border-radius: 18px !important;
+  background: var(--bg-card) !important;
+  box-shadow:
+    0 28px 90px rgba(0, 0, 0, .42),
+    0 1px 0 color-mix(in srgb, #fff 5%, transparent) inset !important;
+  overflow: hidden !important;
+}
+
+#modal-evento .mai-editor-header {
+  min-height: 58px !important;
+  padding: 10px 16px !important;
+  border: 0 !important;
+  border-bottom: 1px solid color-mix(in srgb, var(--text-primary) 7%, transparent) !important;
+  border-radius: 0 !important;
+  background: color-mix(in srgb, var(--bg-card) 92%, var(--text-primary) 2%) !important;
+}
+
+#modal-evento .mai-editor-header > div:first-child {
+  padding: 3px !important;
+  border: 0 !important;
+  border-radius: 9px !important;
+  background: color-mix(in srgb, var(--text-primary) 5%, transparent) !important;
+}
+
+#modal-evento .mai-editor-header > div:first-child > div {
+  min-height: 30px !important;
+  padding: 6px 11px !important;
+  border-radius: 7px !important;
+  box-shadow: none !important;
+  font-size: 10px !important;
+}
+
+#modal-evento .mai-editor-header > div:first-child > div:first-child {
+  background: var(--bg-card) !important;
+  color: var(--text-primary) !important;
+  box-shadow: 0 1px 4px rgba(0,0,0,.12) !important;
+}
+
+#modal-evento .mai-editor-grid {
+  min-height: 0 !important;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) 270px !important;
+  background: var(--bg-card) !important;
+}
+
+#modal-evento .mai-editor-main {
+  min-width: 0 !important;
+  padding: 28px 30px 34px !important;
+  overflow-y: auto !important;
+  border-right: 1px solid color-mix(in srgb, var(--text-primary) 7%, transparent) !important;
+  background: var(--bg-card) !important;
+}
+
+#modal-evento .mai-editor-sidebar {
+  width: auto !important;
+  min-width: 0 !important;
+  padding: 24px 18px !important;
+  overflow-y: auto !important;
+  background: color-mix(in srgb, var(--bg-card) 92%, var(--text-primary) 2%) !important;
+}
+
+#modal-evento .mai-editor-column-label {
+  margin: 0 0 10px !important;
+  color: var(--text-tertiary) !important;
+  font-size: 9px !important;
+  font-weight: 720 !important;
+  letter-spacing: .075em !important;
+  text-transform: uppercase !important;
+}
+
+#modal-evento #e-titulo {
+  width: 100% !important;
+  min-height: 48px !important;
+  padding: 0 0 11px !important;
+  border: 0 !important;
+  border-bottom: 1px solid color-mix(in srgb, var(--text-primary) 8%, transparent) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  color: var(--text-primary) !important;
+  font-size: clamp(19px, 2vw, 25px) !important;
+  font-weight: 650 !important;
+  letter-spacing: -.025em !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+#modal-evento #e-titulo::placeholder {
+  color: color-mix(in srgb, var(--text-tertiary) 72%, transparent) !important;
+}
+
+#modal-evento .t-desc-wrapper {
+  min-height: 132px !important;
+  margin: 16px 0 22px !important;
+  padding: 0 !important;
+  border: 1px solid color-mix(in srgb, var(--text-primary) 7%, transparent) !important;
+  border-radius: 12px !important;
+  background: color-mix(in srgb, var(--text-primary) 2.5%, transparent) !important;
+  overflow: hidden !important;
+}
+
+#modal-evento .t-desc-wrapper:hover,
+#modal-evento .t-desc-wrapper.active-desc {
+  border-color: color-mix(in srgb, var(--accent) 38%, var(--divider)) !important;
+  background: color-mix(in srgb, var(--accent) 2.5%, transparent) !important;
+}
+
+#modal-evento .ql-container,
+#modal-evento .ql-toolbar {
+  border: 0 !important;
+  background: transparent !important;
+}
+
+#modal-evento .ql-editor {
+  min-height: 108px !important;
+  padding: 14px 15px !important;
+  color: var(--text-primary) !important;
+  font-size: 12px !important;
+  line-height: 1.6 !important;
+}
+
+#modal-evento .ql-toolbar {
+  padding: 7px 10px !important;
+  border-bottom: 1px solid color-mix(in srgb, var(--text-primary) 7%, transparent) !important;
+}
+
+#modal-evento .t-pill-row {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 8px !important;
+}
+
+#modal-evento .t-action-pill {
+  width: 100% !important;
+  min-height: 42px !important;
+  padding: 9px 11px !important;
+  border: 1px solid color-mix(in srgb, var(--text-primary) 7%, transparent) !important;
+  border-radius: 9px !important;
+  background: color-mix(in srgb, var(--text-primary) 3%, transparent) !important;
+  color: var(--text-secondary) !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+
+#modal-evento .t-action-pill:hover {
+  border-color: color-mix(in srgb, var(--text-primary) 13%, transparent) !important;
+  background: color-mix(in srgb, var(--text-primary) 6%, transparent) !important;
+  color: var(--text-primary) !important;
+}
+
+#modal-evento .t-action-pill.active-val {
+  border-color: color-mix(in srgb, var(--accent) 30%, transparent) !important;
+  background: color-mix(in srgb, var(--accent) 8%, transparent) !important;
+  color: var(--text-primary) !important;
+}
+
+#modal-evento .t-action-pill .material-symbols-rounded {
+  font-size: 17px !important;
+}
+
+#modal-evento .t-section-container {
+  margin-top: 18px !important;
+  padding: 15px !important;
+  border: 1px solid color-mix(in srgb, var(--text-primary) 7%, transparent) !important;
+  border-radius: 12px !important;
+  background: color-mix(in srgb, var(--text-primary) 2.2%, transparent) !important;
+}
+
+#modal-evento #e-subtarefas-list > div {
+  border-color: color-mix(in srgb, var(--text-primary) 7%, transparent) !important;
+  background: color-mix(in srgb, var(--text-primary) 2.5%, transparent) !important;
+}
+
+#modal-evento .mai-editor-footer {
+  min-height: 64px !important;
+  padding: 11px 16px !important;
+  border: 0 !important;
+  border-top: 1px solid color-mix(in srgb, var(--text-primary) 7%, transparent) !important;
+  border-radius: 0 !important;
+  background: color-mix(in srgb, var(--bg-card) 92%, var(--text-primary) 2%) !important;
+}
+
+#modal-evento .mai-editor-footer .sys-btn-primary {
+  min-height: 38px !important;
+  padding: 0 16px !important;
+  border-radius: 8px !important;
+  font-size: 10px !important;
+  font-weight: 650 !important;
+  box-shadow: none !important;
+}
+
+#modal-evento #btn-e-salvar {
+  min-width: 142px !important;
+}
+
+#modal-evento .mai-editor-cancel-event {
+  background: transparent !important;
+  color: var(--text-secondary) !important;
+  border: 1px solid color-mix(in srgb, var(--text-primary) 9%, transparent) !important;
+}
+
+#modal-evento .sys-dropdown {
+  max-width: min(320px, calc(100vw - 24px)) !important;
+  border: 1px solid color-mix(in srgb, var(--text-primary) 8%, transparent) !important;
+  border-radius: 10px !important;
+  background: var(--bg-card) !important;
+  box-shadow: 0 16px 44px rgba(0,0,0,.30) !important;
+}
+
+@media (max-width: 760px) {
+  #modal-evento {
+    padding: 0 !important;
+  }
+
+  #modal-evento .mai-editor-surface {
+    width: 100vw !important;
+    height: 100dvh !important;
+    max-width: none !important;
+    max-height: none !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+  }
+
+  #modal-evento .mai-editor-grid {
+    display: block !important;
+    overflow-y: auto !important;
+  }
+
+  #modal-evento .mai-editor-main {
+    padding: 21px 17px !important;
+    border-right: 0 !important;
+  }
+
+  #modal-evento .mai-editor-sidebar {
+    width: 100% !important;
+    padding: 18px 17px 26px !important;
+    border-top: 1px solid color-mix(in srgb, var(--text-primary) 7%, transparent) !important;
+  }
+
+  #modal-evento .mai-editor-footer {
+    position: sticky !important;
+    bottom: 0 !important;
+    z-index: 20 !important;
+    padding-bottom: calc(11px + env(safe-area-inset-bottom)) !important;
+  }
+
+  #modal-evento .sys-dropdown {
+    position: fixed !important;
+    left: 12px !important;
+    right: 12px !important;
+    top: auto !important;
+    bottom: calc(76px + env(safe-area-inset-bottom)) !important;
+    width: auto !important;
+    max-height: 55dvh !important;
+    overflow-y: auto !important;
+  }
+}
+</style>
+
+
+<style id="mai-v98-event-editor-native">
+#modal-evento {
+  padding: 22px !important;
+  background: transparent !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+#modal-evento .mai-editor-surface {
+  width: min(850px, calc(100vw - 44px)) !important;
+  height: auto !important;
+  max-width: 850px !important;
+  max-height: min(84dvh, 740px) !important;
+  border: 1px solid var(--divider) !important;
+  border-radius: 14px !important;
+  background: var(--bg-card) !important;
+  box-shadow: 0 14px 42px rgba(0,0,0,.16) !important;
+  overflow: hidden !important;
+}
+
+#modal-evento .mai-editor-native-header {
+  min-height: 48px !important;
+  padding: 8px 10px 8px 14px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  border: 0 !important;
+  border-bottom: 1px solid color-mix(in srgb, var(--text-primary) 6%, transparent) !important;
+  border-radius: 0 !important;
+  background: var(--bg-card) !important;
+}
+
+#modal-evento .mai-editor-type-selector {
+  position: relative !important;
+}
+
+#modal-evento .mai-editor-type-button {
+  min-height: 30px !important;
+  padding: 5px 7px !important;
+  border: 0 !important;
+  border-radius: 7px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  background: transparent !important;
+  color: var(--text-secondary) !important;
+  font: inherit !important;
+  font-size: 10px !important;
+  font-weight: 650 !important;
+  cursor: pointer !important;
+}
+
+#modal-evento .mai-editor-type-button:hover {
+  background: color-mix(in srgb, var(--text-primary) 5%, transparent) !important;
+  color: var(--text-primary) !important;
+}
+
+#modal-evento .mai-editor-type-button > .material-symbols-rounded:first-child {
+  font-size: 16px !important;
+  color: var(--accent) !important;
+}
+
+#modal-evento .mai-editor-type-chevron {
+  font-size: 15px !important;
+  color: var(--text-tertiary) !important;
+}
+
+#modal-evento .mai-editor-type-menu {
+  top: calc(100% + 5px) !important;
+  left: 0 !important;
+  right: auto !important;
+  min-width: 180px !important;
+}
+
+#modal-evento .mai-editor-type-check {
+  margin-left: auto !important;
+  font-size: 15px !important;
+  color: var(--accent) !important;
+}
+
+#modal-evento .mai-editor-close {
+  width: 31px !important;
+  height: 31px !important;
+  border-radius: 7px !important;
+}
+
+#modal-evento .mai-editor-grid {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) 255px !important;
+  min-height: 0 !important;
+  background: var(--bg-card) !important;
+}
+
+#modal-evento .mai-editor-main {
+  min-width: 0 !important;
+  padding: 28px 30px 32px !important;
+  overflow-y: auto !important;
+  border-right: 0 !important;
+  background: var(--bg-card) !important;
+}
+
+#modal-evento .mai-editor-sidebar {
+  width: auto !important;
+  min-width: 0 !important;
+  padding: 26px 18px 28px !important;
+  overflow-y: auto !important;
+  background: color-mix(in srgb, var(--bg-card) 94%, var(--text-primary) 2.5%) !important;
+}
+
+#modal-evento .mai-editor-main > .mai-editor-column-label {
+  display: none !important;
+}
+
+#modal-evento .mai-editor-column-label,
+#modal-evento .mai-editor-section-title {
+  margin: 0 0 11px !important;
+  color: var(--text-tertiary) !important;
+  font-size: 9px !important;
+  font-weight: 720 !important;
+  letter-spacing: .07em !important;
+  text-transform: uppercase !important;
+}
+
+#modal-evento #e-titulo {
+  width: 100% !important;
+  min-height: 46px !important;
+  padding: 0 0 8px !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  color: var(--text-primary) !important;
+  font-size: 23px !important;
+  font-weight: 650 !important;
+  line-height: 1.25 !important;
+  letter-spacing: -.025em !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+#modal-evento #e-titulo::placeholder {
+  color: color-mix(in srgb, var(--text-tertiary) 68%, transparent) !important;
+}
+
+#modal-evento .t-desc-wrapper {
+  min-height: 110px !important;
+  margin: 5px 0 14px !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  overflow: visible !important;
+}
+
+#modal-evento .t-desc-wrapper.active-desc {
+  border: 0 !important;
+  background: transparent !important;
+}
+
+#modal-evento .ql-toolbar {
+  padding: 6px 0 !important;
+  border: 0 !important;
+  border-bottom: 1px solid color-mix(in srgb, var(--text-primary) 6%, transparent) !important;
+  background: transparent !important;
+}
+
+#modal-evento .ql-container {
+  border: 0 !important;
+  background: transparent !important;
+}
+
+#modal-evento .ql-editor {
+  min-height: 90px !important;
+  padding: 10px 0 !important;
+  color: var(--text-secondary) !important;
+  font-size: 11px !important;
+  line-height: 1.6 !important;
+}
+
+#modal-evento .ql-editor.ql-blank::before {
+  left: 0 !important;
+  right: auto !important;
+  color: var(--text-tertiary) !important;
+  font-style: normal !important;
+}
+
+/* Checklist e anexos pertencem ao conteúdo, como na tarefa. */
+#modal-evento .t-section-container {
+  margin: 16px 0 0 !important;
+  padding: 15px 0 0 !important;
+  border: 0 !important;
+  border-top: 1px solid color-mix(in srgb, var(--text-primary) 6%, transparent) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+}
+
+#modal-evento .mai-editor-inline-add {
+  display: flex !important;
+  align-items: center !important;
+  gap: 7px !important;
+  margin-top: 7px !important;
+}
+
+#modal-evento .mai-editor-inline-add .t-text-input {
+  min-height: 34px !important;
+  margin: 0 !important;
+  padding: 7px 9px !important;
+  border: 0 !important;
+  border-radius: 7px !important;
+  background: color-mix(in srgb, var(--text-primary) 4%, transparent) !important;
+  color: var(--text-primary) !important;
+  box-shadow: none !important;
+}
+
+#modal-evento .mai-editor-inline-add-button {
+  width: 34px !important;
+  height: 34px !important;
+  flex: 0 0 34px !important;
+  border-radius: 7px !important;
+}
+
+/* Sidebar só para quando/organização. */
+#modal-evento .t-pill-row {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 1px !important;
+}
+
+#modal-evento .t-action-pill {
+  width: 100% !important;
+  min-height: 36px !important;
+  padding: 7px 7px !important;
+  border: 0 !important;
+  border-radius: 7px !important;
+  background: transparent !important;
+  color: var(--text-secondary) !important;
+  box-shadow: none !important;
+  font-size: 10px !important;
+  font-weight: 560 !important;
+}
+
+#modal-evento .t-action-pill:hover {
+  background: color-mix(in srgb, var(--text-primary) 5%, transparent) !important;
+  color: var(--text-primary) !important;
+}
+
+#modal-evento .t-action-pill.active-val {
+  border: 0 !important;
+  background: transparent !important;
+  color: var(--text-primary) !important;
+}
+
+#modal-evento .t-action-pill.active-val:hover {
+  background: color-mix(in srgb, var(--text-primary) 5%, transparent) !important;
+}
+
+#modal-evento .t-action-pill .material-symbols-rounded {
+  width: 18px !important;
+  font-size: 16px !important;
+  color: var(--text-tertiary) !important;
+}
+
+#modal-evento .mai-editor-footer {
+  min-height: 58px !important;
+  padding: 9px 12px !important;
+  border: 0 !important;
+  border-top: 1px solid color-mix(in srgb, var(--text-primary) 6%, transparent) !important;
+  border-radius: 0 !important;
+  background: var(--bg-card) !important;
+}
+
+#modal-evento .mai-editor-footer .sys-btn-primary {
+  min-height: 36px !important;
+  height: 36px !important;
+  padding: 0 14px !important;
+  border-radius: 7px !important;
+  font-size: 10px !important;
+  font-weight: 650 !important;
+  box-shadow: none !important;
+}
+
+#modal-evento #btn-e-salvar {
+  min-width: 128px !important;
+}
+
+#modal-evento #btn-e-excluir {
+  width: 34px !important;
+  height: 34px !important;
+}
+
+#modal-evento .sys-dropdown {
+  border: 1px solid var(--divider) !important;
+  border-radius: 10px !important;
+  background: var(--bg-card) !important;
+  box-shadow: 0 12px 30px rgba(0,0,0,.14) !important;
+}
+
+#modal-evento .sys-drop-item {
+  min-height: 32px !important;
+  border-radius: 7px !important;
+}
+
+@media (max-width: 760px) {
+  #modal-evento {
+    padding: 0 !important;
+  }
+
+  #modal-evento .mai-editor-surface {
+    width: 100vw !important;
+    height: 100dvh !important;
+    max-width: none !important;
+    max-height: none !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+  }
+
+  #modal-evento .mai-editor-grid {
+    display: block !important;
+    overflow-y: auto !important;
+  }
+
+  #modal-evento .mai-editor-main {
+    padding: 22px 18px !important;
+  }
+
+  #modal-evento .mai-editor-sidebar {
+    width: 100% !important;
+    padding: 18px 18px 24px !important;
+    border-top: 1px solid color-mix(in srgb, var(--text-primary) 6%, transparent) !important;
+  }
+
+  #modal-evento .mai-editor-footer {
+    position: sticky !important;
+    bottom: 0 !important;
+    z-index: 20 !important;
+    padding-bottom: calc(9px + env(safe-area-inset-bottom)) !important;
+  }
+}
+</style>
+
+<style id="mai-v111-agenda-color-contract">
+#a-container {
+  background: var(--mai-bg-primary) !important;
+  color: var(--mai-text-primary) !important;
+}
+
+#a-container .a-header-nav {
+  background: var(--mai-bg-primary) !important;
+  border-color: var(--mai-divider) !important;
+}
+
+#a-container .a-main-layout,
+#a-container .a-calendar-wrapper,
+#a-container .a-next-panel,
+#a-container .a-view-container,
+#a-container .year-month-card {
+  background: var(--mai-bg-card) !important;
+  border-color: var(--mai-divider) !important;
+  color: var(--mai-text-primary) !important;
+}
+
+#a-container .a-grid-header,
+#a-container .a-grid-body,
+#a-container .a-cell,
+#a-container .time-grid-scroll,
+#a-container .time-grid,
+#a-container .year-grid {
+  border-color: var(--mai-divider) !important;
+}
+
+#a-container .a-cell:hover,
+#a-container .year-day-cell:hover,
+#a-container .a-next-item:hover,
+#a-container .t-action-pill:hover,
+#a-container .s-toggle-btn:hover {
+  background: var(--mai-bg-hover) !important;
+}
+
+#a-container .t-action-pill.active-val,
+#a-container .s-toggle-btn.active {
+  background: var(--mai-accent-soft) !important;
+  color: var(--mai-accent) !important;
+  border-color: color-mix(in srgb, var(--mai-accent) 30%, transparent) !important;
+}
+
+#a-container .a-day-name,
+#a-container .a-item-meta,
+#a-container .time-label,
+#a-container .a-next-meta {
+  color: var(--mai-text-tertiary) !important;
+}
+
+/* Modais da Agenda seguem as mesmas superfícies do Hoje. */
+#modal-evento .sys-modal-surface,
+#modal-dia .sys-modal-surface,
+#modal-config-agenda .sys-modal-surface {
+  background: var(--mai-bg-card) !important;
+  border-color: var(--mai-divider) !important;
+  color: var(--mai-text-primary) !important;
+}
+
+#modal-evento .sys-modal-header,
+#modal-dia .sys-modal-header,
+#modal-config-agenda .sys-modal-header {
+  background: var(--mai-bg-card) !important;
+  border-color: var(--mai-divider) !important;
+}
+
+#modal-evento .sys-input,
+#modal-dia .sys-input,
+#modal-config-agenda .sys-input {
+  background: var(--mai-bg-hover) !important;
+  color: var(--mai-text-primary) !important;
+  border-color: transparent !important;
+}
+</style>

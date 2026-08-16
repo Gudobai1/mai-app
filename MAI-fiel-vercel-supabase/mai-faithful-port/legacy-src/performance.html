@@ -1,0 +1,335 @@
+<script>
+(() => {
+  'use strict';
+
+  const DB_NAME = 'mai-local-first-v4';
+  const DB_VERSION = 1;
+  const STORE_NAME = 'responses';
+  const MAX_LOCAL_AGE = 1000 * 60 * 60 * 24 * 30;
+
+  const READ_METHODS = new Set([
+    'getScriptUrl',
+    'getConfigsAgenda',
+    'getListaCalendarios',
+    'getDadosAgendaCompleta',
+    'getResumoHoje',
+    'getDadosTarefas',
+    'getImagemProjeto',
+    'getHabitos',
+    'getRegistrosDoPeriodo',
+    'getEstatisticas',
+    'getNotas',
+    'getDadosFinanceiro',
+    'getDadosMetas',
+    'getDadosSaude',
+    'getDriveContent'
+  ]);
+
+  const PREFETCH_QUEUE = [
+    ['getDadosTarefas', []],
+    ['getHabitos', []],
+    ['getNotas', []],
+    ['getDadosFinanceiro', []],
+    ['getDadosMetas', []],
+    ['getDadosSaude', []],
+    ['getDriveContent', ['root', 'grid']]
+  ];
+
+  const memory = new Map();
+  const inflight = new Map();
+  let dbPromise = null;
+  let bypassCacheUntil = 0;
+  let latestServerVersion = Number(sessionStorage.getItem('mai-server-version') || 0);
+  let lastWriteAt = Number(localStorage.getItem('mai-last-write-at') || 0);
+  let prefetchStarted = false;
+
+  function canonical(value) {
+    if (Array.isArray(value)) return value.map(canonical);
+    if (value && typeof value === 'object') {
+      return Object.keys(value).sort().reduce((acc, key) => {
+        const current = value[key];
+        if (current !== undefined && typeof current !== 'function') acc[key] = canonical(current);
+        return acc;
+      }, {});
+    }
+    return value;
+  }
+
+  function simpleHash(text) {
+    let h1 = 0xdeadbeef ^ text.length;
+    let h2 = 0x41c6ce57 ^ text.length;
+    for (let i = 0; i < text.length; i++) {
+      const ch = text.charCodeAt(i);
+      h1 = Math.imul(h1 ^ ch, 2654435761);
+      h2 = Math.imul(h2 ^ ch, 1597334677);
+    }
+    h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+    h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+    return (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(36);
+  }
+
+  function cacheKey(method, args) {
+    let raw = '[]';
+    try { raw = JSON.stringify(canonical(args || [])); } catch (e) {}
+    return `${method}:${simpleHash(raw)}`;
+  }
+
+  function signature(payload) {
+    try { return simpleHash(JSON.stringify(payload)); }
+    catch (e) { return String(Date.now()); }
+  }
+
+  function openDb() {
+    if (dbPromise) return dbPromise;
+    dbPromise = new Promise(resolve => {
+      if (!('indexedDB' in window)) return resolve(null);
+      let request;
+      try { request = indexedDB.open(DB_NAME, DB_VERSION); }
+      catch (e) { return resolve(null); }
+
+      request.onupgradeneeded = event => {
+        const db = event.target.result;
+        if (!db.objectStoreNames.contains(STORE_NAME)) {
+          db.createObjectStore(STORE_NAME, { keyPath: 'key' });
+        }
+      };
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => resolve(null);
+      request.onblocked = () => resolve(null);
+    });
+    return dbPromise;
+  }
+
+  async function idbGet(key) {
+    const db = await openDb();
+    if (!db) return null;
+    return new Promise(resolve => {
+      try {
+        const tx = db.transaction(STORE_NAME, 'readonly');
+        const request = tx.objectStore(STORE_NAME).get(key);
+        request.onsuccess = () => resolve(request.result || null);
+        request.onerror = () => resolve(null);
+      } catch (e) { resolve(null); }
+    });
+  }
+
+  async function idbPut(record) {
+    const db = await openDb();
+    if (!db) return;
+    return new Promise(resolve => {
+      try {
+        const tx = db.transaction(STORE_NAME, 'readwrite');
+        tx.objectStore(STORE_NAME).put(record);
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => resolve();
+        tx.onabort = () => resolve();
+      } catch (e) { resolve(); }
+    });
+  }
+
+  async function idbClear() {
+    const db = await openDb();
+    if (!db) return;
+    return new Promise(resolve => {
+      try {
+        const tx = db.transaction(STORE_NAME, 'readwrite');
+        tx.objectStore(STORE_NAME).clear();
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => resolve();
+        tx.onabort = () => resolve();
+      } catch (e) { resolve(); }
+    });
+  }
+
+  async function getCached(key) {
+    if (Date.now() < bypassCacheUntil) return null;
+    let record = memory.get(key) || null;
+    if (!record) {
+      record = await idbGet(key);
+      if (record) memory.set(key, record);
+    }
+    if (!record) return null;
+    if (!record.ts || Date.now() - record.ts > MAX_LOCAL_AGE) return null;
+    if (lastWriteAt && record.ts < lastWriteAt) return null;
+    if (latestServerVersion && record.serverVersion && record.serverVersion < latestServerVersion) return null;
+    return record;
+  }
+
+  function putCached(key, payload, serverVersion) {
+    const record = {
+      key,
+      payload,
+      signature: signature(payload),
+      ts: Date.now(),
+      serverVersion: Number(serverVersion || latestServerVersion || 0)
+    };
+    memory.set(key, record);
+    idbPut(record);
+    return record;
+  }
+
+  function callHandler(handler, payload, userObject) {
+    if (typeof handler !== 'function') return;
+    try { handler(payload, userObject); }
+    catch (error) { setTimeout(() => { throw error; }, 0); }
+  }
+
+  function normalizeError(error) {
+    if (error instanceof Error) return error;
+    const message = error && error.message ? error.message : String(error || 'Erro de comunicação.');
+    return new Error(message);
+  }
+
+  function unwrapEnvelope(response) {
+    if (!response || response.__mai_rpc__ !== true) {
+      return { payload: response, serverVersion: 0, serverCache: false };
+    }
+    const version = Number(response.version || 0);
+    if (version > latestServerVersion) {
+      latestServerVersion = version;
+      sessionStorage.setItem('mai-server-version', String(version));
+    }
+    return {
+      payload: response.payload,
+      serverVersion: version,
+      serverCache: response.serverCache === true
+    };
+  }
+
+  function nativeRpc(method, args) {
+    const key = cacheKey(method, args);
+    if (READ_METHODS.has(method) && inflight.has(key)) return inflight.get(key);
+
+    const promise = new Promise((resolve, reject) => {
+      try {
+        google.script.run
+          .withSuccessHandler(response => resolve(unwrapEnvelope(response)))
+          .withFailureHandler(error => reject(normalizeError(error)))
+          .maiRpc(method, Array.isArray(args) ? args : []);
+      } catch (error) {
+        reject(normalizeError(error));
+      }
+    });
+
+    if (READ_METHODS.has(method)) {
+      inflight.set(key, promise);
+      promise.finally(() => inflight.delete(key));
+    }
+    return promise;
+  }
+
+  function markWrite(version) {
+    lastWriteAt = Date.now();
+    localStorage.setItem('mai-last-write-at', String(lastWriteAt));
+    bypassCacheUntil = Date.now() + 1600;
+    if (Number(version || 0) > latestServerVersion) {
+      latestServerVersion = Number(version);
+      sessionStorage.setItem('mai-server-version', String(latestServerVersion));
+    }
+    window.dispatchEvent(new CustomEvent('mai:data-changed', { detail: { version: latestServerVersion } }));
+  }
+
+  function invokeRead(method, args, state) {
+    const key = cacheKey(method, args);
+    let cachedDelivered = false;
+    let cachedSignature = '';
+    let freshFinished = false;
+
+    getCached(key).then(record => {
+      if (!record || freshFinished) return;
+      cachedDelivered = true;
+      cachedSignature = record.signature || signature(record.payload);
+      callHandler(state.success, record.payload, state.userObject);
+      window.dispatchEvent(new CustomEvent('mai:cache-hit', { detail: { method } }));
+    });
+
+    nativeRpc(method, args).then(result => {
+      freshFinished = true;
+      if (result.serverVersion && latestServerVersion && result.serverVersion < latestServerVersion) return;
+      const freshRecord = putCached(key, result.payload, result.serverVersion);
+      if (!cachedDelivered || freshRecord.signature !== cachedSignature) {
+        callHandler(state.success, result.payload, state.userObject);
+      }
+      window.dispatchEvent(new CustomEvent('mai:fresh-data', { detail: { method, serverCache: result.serverCache } }));
+    }).catch(error => {
+      freshFinished = true;
+      if (!cachedDelivered) callHandler(state.failure, error, state.userObject);
+      else window.dispatchEvent(new CustomEvent('mai:background-sync-error', { detail: { method, error } }));
+    });
+  }
+
+  function invokeWrite(method, args, state) {
+    nativeRpc(method, args).then(result => {
+      markWrite(result.serverVersion);
+      callHandler(state.success, result.payload, state.userObject);
+    }).catch(error => callHandler(state.failure, error, state.userObject));
+  }
+
+  function createRunner(state = {}) {
+    return new Proxy({}, {
+      get(_target, property) {
+        if (property === 'withSuccessHandler') {
+          return handler => createRunner({ ...state, success: handler });
+        }
+        if (property === 'withFailureHandler') {
+          return handler => createRunner({ ...state, failure: handler });
+        }
+        if (property === 'withUserObject') {
+          return userObject => createRunner({ ...state, userObject });
+        }
+        if (property === 'then') return undefined;
+        if (typeof property !== 'string') return undefined;
+
+        return (...args) => {
+          if (READ_METHODS.has(property)) invokeRead(property, args, state);
+          else invokeWrite(property, args, state);
+        };
+      }
+    });
+  }
+
+  function prefetch(method, args = []) {
+    if (!READ_METHODS.has(method)) return Promise.resolve();
+    const key = cacheKey(method, args);
+    return getCached(key).then(record => {
+      if (record) return record;
+      return nativeRpc(method, args).then(result => putCached(key, result.payload, result.serverVersion));
+    }).catch(() => null);
+  }
+
+  function startPrefetch() {
+    if (prefetchStarted) return;
+    prefetchStarted = true;
+    if (navigator.connection && navigator.connection.saveData) return;
+
+    const start = () => {
+      let index = 0;
+      const next = () => {
+        if (index >= PREFETCH_QUEUE.length) return;
+        const [method, args] = PREFETCH_QUEUE[index++];
+        prefetch(method, args).finally(() => setTimeout(next, 650));
+      };
+      next();
+    };
+
+    if ('requestIdleCallback' in window) requestIdleCallback(start, { timeout: 4000 });
+    else setTimeout(start, 2600);
+  }
+
+  function invalidateAll() {
+    bypassCacheUntil = Date.now() + 5000;
+    lastWriteAt = Date.now();
+    localStorage.setItem('mai-last-write-at', String(lastWriteAt));
+    memory.clear();
+    idbClear();
+  }
+
+  window.MAIRun = createRunner();
+  window.MAIPerformance = Object.freeze({
+    prefetch,
+    startPrefetch,
+    invalidateAll,
+    isReadMethod: method => READ_METHODS.has(method)
+  });
+})();
+</script>

@@ -1,0 +1,976 @@
+<style>
+  .h-dates-grid, .habit-row { display: grid; grid-template-columns: minmax(0, 1fr) repeat(5, 40px); gap: 8px; align-items: center; }
+  #h-container .date-col { text-align: center; font-size: 11px; color: var(--text-secondary); display: flex; flex-direction: column; }
+  #h-container .date-col.today { color: var(--text-primary); font-weight: 700; }
+  #h-container .date-col span:last-child { font-size: 15px; margin-top: 2px;}
+  .habit-row { padding: 14px 0; border-bottom: 1px solid var(--divider); }
+  .habit-info { display: flex; align-items: center; gap: 10px; cursor: pointer; min-width: 0; user-select: none; }
+  .habit-icon { width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; color: #FFF; flex-shrink: 0; }
+  .habit-details { display: flex; flex-direction: column; min-width: 0; overflow: hidden; }
+  .habit-name { font-weight: 600; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .habit-streak { font-size: 10px; color: var(--text-secondary); display: flex; align-items: center; gap: 3px; }
+  #h-container .check-btn { width: 40px; height: 40px; border-radius: 12px; border: 2px solid var(--divider); background: transparent; cursor: pointer; transition: 0.2s; flex-shrink: 0; }
+  #h-container .check-btn.checked { border: none; }
+  #h-container .color-picker, #habitModal .color-picker, #iconModal .color-picker { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; padding: 4px 0; justify-items: center; }
+  #h-container .color-swatch, #habitModal .color-swatch, #iconModal .color-swatch { width: 36px; height: 36px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; transition: transform 0.2s; }
+  #h-container .color-swatch.selected, #habitModal .color-swatch.selected, #iconModal .color-swatch.selected { transform: scale(1.15); border-color: var(--text-primary); }
+  /* Relatório detalhado de hábitos */
+  #statsModal { padding: 18px; box-sizing: border-box; align-items: center; justify-content: center; }
+  #statsModal .sys-modal-surface { width: min(760px, 100%); max-width: 760px; min-width: 0; max-height: min(86vh, 820px); margin: auto; overflow: hidden; box-sizing: border-box; }
+  #statsModal .sys-modal-header { flex: 0 0 auto; border-bottom: 1px solid var(--divider); }
+  #statsModal .sys-modal-body { width:100%; min-width:0; max-width:100%; overflow-y:auto; overflow-x:hidden; padding:14px 16px 18px; gap:16px; box-sizing:border-box; }
+  #statsModal #stats-content, #statsModal .h-report-grid, #statsModal .h-report-section { width:100%; min-width:0; max-width:100%; box-sizing:border-box; }
+  .h-report-heading { display:flex; align-items:center; gap:12px; min-width:0; flex:1; }
+  .h-report-title-wrap { min-width:0; }
+  .h-report-title-wrap h2 { margin:0; font-size:18px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .h-report-subtitle { display:flex; flex-wrap:wrap; gap:6px 12px; margin-top:3px; font-size:11px; color:var(--text-secondary); }
+  .h-report-loading { min-height:320px; display:grid; place-items:center; color:var(--text-secondary); font-size:13px; }
+  .h-report-summary { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); border-top:1px solid var(--divider); border-bottom:1px solid var(--divider); }
+  .h-report-metric { min-width:0; padding:11px 12px; border-right:1px solid var(--divider); }
+  .h-report-metric:last-child { border-right:0; }
+  .h-report-metric-label { display:flex; align-items:center; gap:6px; font-size:10px; color:var(--text-secondary); text-transform:uppercase; letter-spacing:.045em; font-weight:700; }
+  .h-report-metric-label .material-symbols-rounded { font-size:15px; }
+  .h-report-metric-value { display:block; margin-top:4px; font-size:22px; line-height:1.1; font-weight:700; color:var(--text-primary); }
+  .h-report-metric-note { display:block; margin-top:3px; color:var(--text-secondary); font-size:10px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .h-report-grid { display:grid; grid-template-columns:minmax(0,1fr) minmax(220px,.72fr); gap:16px; align-items:start; }
+  .h-report-section { min-width:0; }
+  .h-report-section + .h-report-section { margin-top:16px; }
+  .h-report-section-head { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:10px; }
+  .h-report-section-title { font-size:13px; font-weight:700; color:var(--text-primary); }
+  .h-report-section-note { font-size:10px; color:var(--text-secondary); }
+  .h-report-weeks { width:100%; min-width:0; display:grid; grid-template-columns:repeat(8,minmax(0,1fr)); gap:5px; min-height:126px; align-items:end; padding:12px 6px 6px; border-top:1px solid var(--divider); border-bottom:1px solid var(--divider); overflow:hidden; box-sizing:border-box; }
+  .h-report-week { min-width:0; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; gap:5px; height:104px; }
+  .h-report-week-track { width:100%; max-width:26px; height:70px; display:flex; align-items:flex-end; border-radius:6px; background:var(--bg-hover); overflow:hidden; }
+  .h-report-week-fill { width:100%; min-height:2px; border-radius:6px 6px 0 0; background:var(--habit-report-color,var(--accent)); }
+  .h-report-week strong { font-size:10px; }
+  .h-report-week small { color:var(--text-secondary); font-size:9px; }
+  .h-report-week-label { color:var(--text-secondary); font-size:9px; white-space:nowrap; }
+  .h-report-weekdays { display:grid; gap:8px; }
+  .h-report-weekday { display:grid; grid-template-columns:34px minmax(0,1fr) 38px; gap:9px; align-items:center; }
+  .h-report-weekday-label { font-size:10px; color:var(--text-secondary); }
+  .h-report-weekday-track { height:7px; border-radius:999px; background:var(--bg-hover); overflow:hidden; }
+  .h-report-weekday-fill { height:100%; border-radius:999px; background:var(--habit-report-color,var(--accent)); }
+  .h-report-weekday-value { text-align:right; font-size:10px; font-weight:600; }
+  .h-report-heatmap { display:grid; grid-auto-flow:column; grid-template-rows:repeat(7,12px); grid-auto-columns:12px; gap:3px; overflow-x:auto; padding:4px 2px 8px; scrollbar-width:thin; }
+  .h-report-heat-cell { width:12px; height:12px; border-radius:3px; background:var(--bg-hover); border:1px solid color-mix(in srgb,var(--divider) 70%,transparent); }
+  .h-report-heat-cell.partial { background:color-mix(in srgb,var(--habit-report-color,var(--accent)) 42%,var(--bg-primary)); border-color:color-mix(in srgb,var(--habit-report-color,var(--accent)) 55%,transparent); }
+  .h-report-heat-cell.complete { background:var(--habit-report-color,var(--accent)); border-color:transparent; }
+  .h-report-heat-cell.future { opacity:.28; }
+  .h-report-calendar { border-top:1px solid var(--divider); }
+  .h-report-calendar-toolbar { display:flex; align-items:center; justify-content:space-between; gap:10px; min-height:48px; }
+  .h-report-calendar-toolbar strong { font-size:13px; text-transform:capitalize; }
+  .h-report-calendar-nav { display:flex; align-items:center; gap:3px; }
+  .h-report-calendar-nav button { width:32px; height:32px; border:0; border-radius:7px; background:transparent; color:var(--text-secondary); display:grid; place-items:center; cursor:pointer; }
+  .h-report-calendar-nav button:hover { background:var(--bg-hover); color:var(--text-primary); }
+  .h-report-calendar-nav button:disabled { opacity:.25; cursor:default; background:transparent; }
+  #statsModal .calendar-grid { display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:3px; }
+  #statsModal .cal-day-label { min-height:24px; display:grid; place-items:center; color:var(--text-secondary); font-size:9px; font-weight:700; text-transform:uppercase; }
+  #statsModal .cal-cell { position:relative; aspect-ratio:1; min-height:38px; border-radius:7px; border:1px solid transparent; background:transparent; display:grid; place-items:center; font-size:10px; color:var(--text-secondary); cursor:pointer; transition:.15s ease; }
+  #statsModal .cal-cell:hover { background:var(--bg-hover); color:var(--text-primary); }
+  #statsModal .cal-cell.today { box-shadow:inset 0 0 0 1px var(--habit-report-color,var(--accent)); color:var(--text-primary); font-weight:700; }
+  #statsModal .cal-cell.complete { color:#fff; background:var(--habit-report-color,var(--accent)); font-weight:700; }
+  #statsModal .cal-cell.partial { color:var(--text-primary); border-color:color-mix(in srgb,var(--habit-report-color,var(--accent)) 68%,transparent); background:color-mix(in srgb,var(--habit-report-color,var(--accent)) 14%,transparent); }
+  #statsModal .cal-cell.missed::after { content:''; position:absolute; bottom:5px; width:3px; height:3px; border-radius:50%; background:color-mix(in srgb,var(--text-secondary) 50%,transparent); }
+  #statsModal .cal-cell.future { opacity:.28; cursor:default; }
+  .h-report-day-detail { min-height:68px; margin-top:10px; padding:11px 12px; border-top:1px solid var(--divider); display:flex; align-items:center; justify-content:space-between; gap:12px; }
+  .h-report-day-detail strong { display:block; font-size:12px; }
+  .h-report-day-detail small { display:block; margin-top:3px; color:var(--text-secondary); font-size:10px; }
+  .h-report-day-status { flex:0 0 auto; padding:5px 8px; border-radius:999px; background:var(--bg-hover); color:var(--text-secondary); font-size:9px; font-weight:700; text-transform:uppercase; }
+  .h-report-day-status.complete { color:var(--habit-report-color,var(--accent)); background:color-mix(in srgb,var(--habit-report-color,var(--accent)) 14%,transparent); }
+  .h-report-history { display:flex; flex-direction:column; border-top:1px solid var(--divider); }
+  .h-report-history-item { min-height:48px; display:grid; grid-template-columns:minmax(0,1fr) auto; gap:12px; align-items:center; border-bottom:1px solid var(--divider); }
+  .h-report-history-item strong { font-size:11px; font-weight:600; }
+  .h-report-history-item small { display:block; margin-top:2px; font-size:9px; color:var(--text-secondary); }
+  .h-report-history-value { text-align:right; font-size:11px; font-weight:700; }
+  .h-report-history-empty { padding:20px 0; color:var(--text-secondary); font-size:11px; }
+
+  @media (min-width: 841px) {
+    #statsModal {
+      left: 0 !important;
+      right: 0 !important;
+      width: 100% !important;
+    }
+  }
+  @media (max-width:900px) {
+    .h-report-grid { grid-template-columns:1fr; gap:20px; }
+  }
+  @media (max-width:760px) {
+    #statsModal { padding:6px; }
+    #statsModal .sys-modal-surface { width:100%; max-width:100%; max-height:calc(100vh - 12px); margin:auto; }
+    #statsModal .sys-modal-body { padding:14px 14px 22px; }
+    .h-report-summary { grid-template-columns:repeat(2,minmax(0,1fr)); }
+    .h-report-metric:nth-child(2) { border-right:0; }
+    .h-report-metric:nth-child(-n+2) { border-bottom:1px solid var(--divider); }
+    .h-report-weeks { gap:4px; padding-inline:4px; }
+    .h-report-week small { display:none; }
+  }
+  .icon-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
+  .icon-swatch { aspect-ratio: 1; border-radius: 8px; border: 1px solid var(--divider); display: grid; place-items: center; cursor: pointer; background: var(--bg-primary); }
+  @media (max-width: 600px) { .h-dates-grid, .habit-row { grid-template-columns: minmax(0, 1fr) repeat(5, 34px); gap: 6px; } .check-btn, .habit-icon { width: 34px; height: 34px; } }
+</style>
+
+<div class="sys-container mai-app-workspace mai-habits-workspace" id="h-container">
+  <button class="sys-btn-fab" onclick="AppHabitos.openCreateHabit()"><span class="material-symbols-rounded" style="font-size: 32px;">add</span></button>
+  <div class="mai-module-toolbar mai-simple-toolbar">
+    <strong>Hábitos</strong>
+    <button class="sys-btn-primary mai-compact-create" type="button" onclick="AppHabitos.openCreateHabit()"><span class="material-symbols-rounded">add</span> Novo hábito</button>
+  </div>
+  <div class="mai-module-surface mai-habit-board">
+    <div id="dates-header" class="h-dates-grid"></div>
+    <div id="habits-list"><div style="text-align:center; padding: 40px; color: var(--text-secondary)">Carregando...</div></div>
+  </div>
+
+  <div class="sys-modal-overlay" id="actionMenuModal">
+    <div class="sys-modal-surface" style="max-width: 300px;">
+      <div class="sys-modal-header"><h2 id="action-title">Opções</h2><button class="sys-icon-btn" onclick="AppHabitos.closeModal('actionMenuModal')"><span class="material-symbols-rounded">close</span></button></div>
+      <div class="sys-modal-body" style="gap: 12px;">
+        <input type="hidden" id="action-h-id">
+        <button class="sys-btn-primary" style="background: var(--bg-hover); color: var(--text-primary);" onclick="AppHabitos.openEditHabit()">Editar Hábito</button>
+        <button class="sys-btn-primary" style="background: var(--mai-danger); color: #fff;" onclick="AppHabitos.deleteHabit()">Excluir Hábito</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="sys-modal-overlay" id="habitModal">
+    <div class="sys-modal-surface">
+      <div class="sys-modal-header"><h2 id="habit-modal-title">Novo Hábito</h2><button class="sys-icon-btn" onclick="AppHabitos.closeModal('habitModal')"><span class="material-symbols-rounded">close</span></button></div>
+      <form class="sys-modal-body" id="habitForm" onsubmit="AppHabitos.saveHabit(event)">
+        <input type="hidden" id="form-h-id">
+        <input type="text" id="h-nome" class="sys-input" required placeholder="Nome do Hábito">
+        
+        <div style="display:flex; gap:10px; margin-top: 12px;">
+          <div style="flex:1"><label style="font-size:10px; color:var(--text-secondary); font-weight:700;">META DIÁRIA</label><input type="number" id="h-meta" class="sys-input" placeholder="Ex: 1"></div>
+          <div style="flex:1"><label style="font-size:10px; color:var(--text-secondary); font-weight:700;">UNIDADE</label><input type="text" id="h-unidade" class="sys-input" placeholder="Ex: min, L"></div>
+          <div style="flex:1"><label style="font-size:10px; color:var(--text-secondary); font-weight:700;">HORÁRIO</label><input type="time" id="h-hora" class="sys-input"></div>
+        </div>
+
+        <div style="margin-top: 16px;"><label style="font-size: 14px; font-weight: 500; color: var(--text-secondary);">Cor Principal</label><div class="color-picker" id="h-cores"></div><input type="hidden" id="h-cor_hex" required></div>
+        
+        <div style="margin-top: 16px;">
+          <label style="display:inline-flex; align-items:center; gap:8px; font-size:13px; font-weight:600; color:var(--text-primary); cursor:pointer; background: var(--bg-hover); padding: 10px 16px; border-radius: 12px; border: 1px solid var(--divider); width: 100%;">
+            <input type="checkbox" id="h-ocultar-agenda" style="accent-color:var(--accent); width:18px; height:18px;">
+            <span class="material-symbols-rounded" style="font-size:20px; color:var(--text-secondary);">visibility_off</span>Não mostrar na Agenda
+          </label>
+        </div>
+
+        <button type="submit" class="sys-btn-primary" id="btn-save-habit" style="margin-top: 24px;">Salvar</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="sys-modal-overlay" id="valueModal">
+    <div class="sys-modal-surface" style="max-width:300px">
+      <div class="sys-modal-header"><h2 id="v-title">Registrar</h2><button class="sys-icon-btn" onclick="AppHabitos.closeModal('valueModal')"><span class="material-symbols-rounded">close</span></button></div>
+      <form class="sys-modal-body" onsubmit="AppHabitos.confirmValue(event)">
+        <input type="hidden" id="v-habito-id"><input type="hidden" id="v-data">
+        <div style="display:flex; align-items:center; gap:10px; justify-content:center;">
+          <input type="number" id="v-quantidade" class="sys-input" step="0.1" required style="text-align:center; font-size:20px; width: 100px;">
+          <span id="v-unidade" style="color: var(--text-secondary); font-weight: 600;"></span>
+        </div>
+        <button type="submit" class="sys-btn-primary">Salvar</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="sys-modal-overlay" id="calendarModal">
+    <div class="sys-modal-surface" style="max-width:300px">
+      <div class="sys-modal-header"><h2>Data Passada</h2><button class="sys-icon-btn" onclick="AppHabitos.closeModal('calendarModal')"><span class="material-symbols-rounded">close</span></button></div>
+      <form class="sys-modal-body" onsubmit="AppHabitos.confirmCalendar(event)">
+        <input type="hidden" id="cal-habito-id"><input type="date" id="cal-data" class="sys-input" required>
+        <button type="submit" class="sys-btn-primary">Continuar</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="sys-modal-overlay" id="iconModal">
+    <div class="sys-modal-surface">
+      <div class="sys-modal-header"><h2>Escolher Ícone</h2><button class="sys-icon-btn" onclick="AppHabitos.closeModal('iconModal')"><span class="material-symbols-rounded">close</span></button></div>
+      <div class="sys-modal-body"><input type="hidden" id="icon-habito-id"><div class="icon-grid" id="icon-grid-container"></div></div>
+    </div>
+  </div>
+
+  <div class="sys-modal-overlay" id="nameModal">
+    <div class="sys-modal-surface" style="max-width:300px">
+      <div class="sys-modal-header"><h2>Editar Nome</h2><button class="sys-icon-btn" onclick="AppHabitos.closeModal('nameModal')"><span class="material-symbols-rounded">close</span></button></div>
+      <form class="sys-modal-body" onsubmit="AppHabitos.saveNewName(event)">
+        <input type="hidden" id="name-habito-id"><input type="text" id="name-input" class="sys-input" required>
+        <button type="submit" class="sys-btn-primary">Salvar</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="sys-modal-overlay" id="statsModal">
+    <div class="sys-modal-surface" id="stats-report-surface">
+      <div class="sys-modal-header">
+        <div class="h-report-heading">
+          <div id="stats-icon" class="habit-icon" style="width:34px; height:34px; color:#FFF; border-radius:9px;"></div>
+          <div class="h-report-title-wrap">
+            <h2 id="stats-title"></h2>
+            <div class="h-report-subtitle" id="stats-subtitle"></div>
+          </div>
+        </div>
+        <button class="sys-icon-btn" title="Excluir hábito" onclick="AppHabitos.deleteHabitFromStats()"><span class="material-symbols-rounded" style="font-size:18px;">delete</span></button>
+        <button class="sys-icon-btn" title="Editar hábito" onclick="AppHabitos.triggerEditFromStats()"><span class="material-symbols-rounded" style="font-size:18px;">edit</span></button>
+        <button class="sys-icon-btn" title="Fechar" onclick="AppHabitos.closeModal('statsModal')"><span class="material-symbols-rounded">close</span></button>
+      </div>
+      <div class="sys-modal-body" id="stats-report-body">
+        <input type="hidden" id="stats-h-id">
+        <div class="h-report-loading" id="stats-loading">Carregando relatório...</div>
+        <div id="stats-content" style="display:none; --habit-report-color:var(--accent);">
+          <div class="h-report-summary">
+            <div class="h-report-metric"><span class="h-report-metric-label"><span class="material-symbols-rounded">local_fire_department</span> Sequência atual</span><span class="h-report-metric-value" id="stats-streak">0</span><span class="h-report-metric-note">dias consecutivos</span></div>
+            <div class="h-report-metric"><span class="h-report-metric-label"><span class="material-symbols-rounded">emoji_events</span> Melhor sequência</span><span class="h-report-metric-value" id="stats-best">0</span><span class="h-report-metric-note">melhor marca histórica</span></div>
+            <div class="h-report-metric"><span class="h-report-metric-label"><span class="material-symbols-rounded">percent</span> Consistência 30d</span><span class="h-report-metric-value" id="stats-rate-30">0%</span><span class="h-report-metric-note" id="stats-rate-note">0 de 30 dias</span></div>
+            <div class="h-report-metric"><span class="h-report-metric-label"><span class="material-symbols-rounded">task_alt</span> Conclusões</span><span class="h-report-metric-value" id="stats-completed-total">0</span><span class="h-report-metric-note">últimos 12 meses</span></div>
+          </div>
+
+          <div class="h-report-grid" style="margin-top:20px;">
+            <div>
+              <section class="h-report-section">
+                <div class="h-report-section-head"><span class="h-report-section-title">Ritmo nas últimas 8 semanas</span><span class="h-report-section-note">percentual de dias concluídos</span></div>
+                <div class="h-report-weeks" id="stats-week-chart"></div>
+              </section>
+
+              <section class="h-report-section">
+                <div class="h-report-section-head"><span class="h-report-section-title">Consistência recente</span><span class="h-report-section-note">últimas 12 semanas</span></div>
+                <div class="h-report-heatmap" id="stats-heatmap"></div>
+              </section>
+
+              <section class="h-report-section">
+                <div class="h-report-section-head"><span class="h-report-section-title">Desempenho por dia da semana</span><span class="h-report-section-note">últimos 90 dias</span></div>
+                <div class="h-report-weekdays" id="stats-weekdays"></div>
+              </section>
+            </div>
+
+            <div>
+              <section class="h-report-section h-report-calendar">
+                <div class="h-report-calendar-toolbar">
+                  <strong id="cal-month-name"></strong>
+                  <div class="h-report-calendar-nav">
+                    <button type="button" id="stats-prev-month" title="Mês anterior" onclick="AppHabitos.changeStatsMonth(-1)"><span class="material-symbols-rounded">chevron_left</span></button>
+                    <button type="button" id="stats-next-month" title="Próximo mês" onclick="AppHabitos.changeStatsMonth(1)"><span class="material-symbols-rounded">chevron_right</span></button>
+                  </div>
+                </div>
+                <div class="calendar-grid" id="calendar-month-grid"></div>
+                <div class="h-report-day-detail" id="day-detail"><div><strong>Selecione um dia</strong><small>Veja o registro e o progresso daquele dia.</small></div><span class="h-report-day-status">Detalhes</span></div>
+              </section>
+
+              <section class="h-report-section">
+                <div class="h-report-section-head"><span class="h-report-section-title">Registros recentes</span><span class="h-report-section-note">atividade mais recente</span></div>
+                <div class="h-report-history" id="stats-history-list"></div>
+              </section>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const AppHabitos = {
+    state: { habitos: [], registros: [], datasSemana: [], statsRegistros: [], statsMonth: null, statsBackend: null },
+    icones: ['star', 'favorite', 'fitness_center', 'local_drink', 'menu_book', 'self_improvement', 'directions_run', 'bedtime', 'palette', 'code', 'attach_money', 'psychology', 'restaurant', 'cleaning_services', 'directions_bike', 'air', 'spa', 'bolt', 'school', 'monitor_heart'],
+    cores: ['#FF5252', '#FF4081', '#E040FB', '#7C4DFF', '#536DFE', '#2979FF', '#00BCD4', '#00E676', '#FFD600', '#FF6D00'],
+    pressTimer: null, isLongPress: false,
+
+    init: function() { this.setupDates(); this.renderIconGrid(); this.renderColors(); this.loadData(); },
+
+    setupDates: function() {
+      const hoje = new Date(); this.state.datasSemana = [];
+      const hojeStr = new Date(hoje.getTime() - (hoje.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
+      const segunda = new Date(hoje); const dia = segunda.getDay(); segunda.setDate(hoje.getDate() - (dia === 0 ? 6 : dia - 1));
+      for (let i = 0; i < 7; i++) { const d = new Date(segunda); d.setDate(segunda.getDate() + i); this.state.datasSemana.push(new Date(d.getTime() - (d.getTimezoneOffset() * 60000)).toISOString().split('T')[0]); }
+      const container = document.getElementById('dates-header'); if(!container) return; 
+      const dias = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+      let html = `<div class="habit-grid-label"><span>Hábito</span><small>Sequência</small></div>`;
+      this.state.datasSemana.forEach(dStr => { const d = new Date(dStr + 'T12:00:00'); html += `<div class="date-col ${dStr === hojeStr ? 'today' : ''}"><span>${dias[d.getDay()]}</span><span>${d.getDate()}</span></div>`; });
+      container.innerHTML = html;
+    },
+
+    renderColors: function() { const container = document.getElementById('h-cores'); if(container) { container.innerHTML = this.cores.map(c => `<div class="color-swatch" style="background:${c}" onclick="AppHabitos.selectColor('${c}', this)"></div>`).join(''); } },
+    selectColor: function(hex, el) { document.querySelectorAll('.color-swatch').forEach(e => e.classList.remove('selected')); if(el) el.classList.add('selected'); document.getElementById('h-cor_hex').value = hex; },
+
+    loadData: function() {
+      MAIRun.withSuccessHandler(res => { if(res.ok) { this.state.habitos = res.data; this.renderHabits(); } }).getHabitos();
+      MAIRun.withSuccessHandler(res => { if(res.ok) { this.state.registros = res.data; this.updateUI(); } }).getRegistrosDoPeriodo(this.state.datasSemana[0], this.state.datasSemana[this.state.datasSemana.length - 1]);
+    },
+
+    renderHabits: function() {
+      const container = document.getElementById('habits-list');
+      if (this.state.habitos.length === 0) return container.innerHTML = `<div style="text-align:center; padding:40px; color:var(--text-secondary)">Nenhum hábito.<br>Clique no <strong>+</strong> para começar.</div>`;
+      let html = '';
+      this.state.habitos.forEach(h => {
+        const icone = h.icone || 'star'; const cor = h.cor_hex || '#2979FF'; const safeName = h.nome.replace(/'/g, "\\'");
+        html += `<div class="habit-row">
+          <div class="habit-info" onmousedown="AppHabitos.startPress(event, '${h.id}')" onmouseup="AppHabitos.cancelPress()" onmouseleave="AppHabitos.cancelPress()" ontouchstart="AppHabitos.startPress(event, '${h.id}')" ontouchend="AppHabitos.cancelPress()" ontouchmove="AppHabitos.cancelPress()" onclick="AppHabitos.handleHabitClick('${h.id}')">
+            <div class="habit-icon" style="background: ${cor};" onclick="event.stopPropagation(); AppHabitos.openIconPicker('${h.id}')"><span class="material-symbols-rounded" style="font-size:18px">${icone}</span></div>
+            <div class="habit-details">
+              <span class="habit-name" onclick="event.stopPropagation(); AppHabitos.openNameEditor('${h.id}', '${safeName}')">${h.nome}</span>
+              <span class="habit-streak"><span class="material-symbols-rounded" style="font-size:12px">local_fire_department</span> <span id="st-${h.id}">${Number(h.streakAtual || 0)}</span></span>
+            </div>
+          </div>`;
+        this.state.datasSemana.forEach(dStr => { html += `<button class="check-btn" data-h="${h.id}" data-d="${dStr}" onclick="AppHabitos.handleCheck('${h.id}', '${dStr}', this)"></button>`; });
+        html += `</div>`;
+      });
+      container.innerHTML = html; this.updateUI();
+    },
+
+    updateUI: function() {
+      document.querySelectorAll('.check-btn').forEach(btn => {
+        const hId = btn.getAttribute('data-h'); const dStr = btn.getAttribute('data-d'); if(!hId) return;
+        const habito = this.state.habitos.find(h => h.id === hId); const reg = this.state.registros.find(r => r.habito_id === hId && r.data.split('T')[0] === dStr);
+        const cor = habito.cor_hex || '#2979FF';
+        btn.classList.remove('checked', 'partial'); btn.style.background = 'transparent'; btn.style.borderColor = 'var(--divider)';
+        if (reg) {
+          btn.classList.add('checked');
+          const pct = Math.min((parseFloat(reg.valor) / (parseFloat(habito.meta) || 1)) * 100, 100);
+          if (pct < 100 && habito.unidade) { btn.classList.add('partial'); btn.style.background = `conic-gradient(${cor} ${pct}%, transparent 0)`; btn.style.borderColor = cor; } 
+          else { btn.style.background = cor; btn.style.borderColor = 'transparent'; }
+        }
+      });
+    },
+
+    startPress: function(e, hId) { this.isLongPress = false; this.pressTimer = setTimeout(() => { this.isLongPress = true; if (navigator.vibrate) navigator.vibrate(50); this.openActionMenu(hId); }, 600); },
+    cancelPress: function() { clearTimeout(this.pressTimer); },
+    handleHabitClick: function(hId) { if(this.isLongPress) { this.isLongPress = false; return; } this.openStats(hId); },
+
+    openActionMenu: function(hId) { const h = this.state.habitos.find(x => x.id === hId); document.getElementById('action-title').innerText = h.nome; document.getElementById('action-h-id').value = hId; this.openModal('actionMenuModal'); },
+
+    deleteHabit: function() {
+      if(confirm("Tem certeza que deseja excluir este hábito?")) {
+        const hId = document.getElementById('action-h-id').value; this.closeModal('actionMenuModal');
+        this.state.habitos = this.state.habitos.filter(x => x.id !== hId); this.renderHabits(); MAIRun.excluirHabito(hId);
+      }
+    },
+
+    deleteHabitFromStats: function() {
+      const hId = document.getElementById('stats-h-id').value;
+      const h = this.state.habitos.find(x => String(x.id) === String(hId));
+      if (!hId || !h) return;
+      if (confirm(`Tem certeza que deseja excluir o hábito "${h.nome}"?`)) {
+        this.closeModal('statsModal');
+        this.state.habitos = this.state.habitos.filter(x => String(x.id) !== String(hId));
+        this.state.registros = this.state.registros.filter(r => String(r.habito_id) !== String(hId));
+        this.renderHabits();
+        MAIRun.withFailureHandler(() => this.loadData()).excluirHabito(hId);
+      }
+    },
+
+    handleCheck: function(hId, dStr, btn) {
+      const h = this.state.habitos.find(x => x.id === hId);
+      if (btn.classList.contains('checked')) { this.execToggle(hId, dStr, false); }
+      else {
+        if (h.unidade && h.meta > 1) {
+          document.getElementById('v-habito-id').value = hId; document.getElementById('v-data').value = dStr;
+          document.getElementById('v-title').innerText = h.nome; document.getElementById('v-unidade').innerText = h.unidade; document.getElementById('v-quantidade').value = h.meta; 
+          this.openModal('valueModal'); setTimeout(() => document.getElementById('v-quantidade').select(), 100);
+        } else { this.execToggle(hId, dStr, true, h.meta || 1); }
+      }
+    },
+
+    execToggle: function(hId, dStr, marcar, valor = 0) {
+      if (marcar) { const idx = this.state.registros.findIndex(r => r.habito_id === hId && r.data.split('T')[0] === dStr); if (idx > -1) this.state.registros[idx].valor = valor; else this.state.registros.push({ habito_id: hId, data: dStr, valor: valor }); } 
+      else { this.state.registros = this.state.registros.filter(r => !(r.habito_id === hId && r.data.split('T')[0] === dStr)); }
+      this.updateUI(); MAIRun[marcar ? 'marcarHabito' : 'desmarcarHabito'](hId, dStr, valor);
+    },
+
+    openStats: function(hId) {
+      const h = this.state.habitos.find(x => x.id === hId);
+      if (!h) return;
+      document.getElementById('stats-h-id').value = hId;
+      document.getElementById('stats-title').innerText = h.nome;
+      document.getElementById('stats-icon').style.background = h.cor_hex || '#2979FF';
+      document.getElementById('stats-icon').innerHTML = `<span class="material-symbols-rounded" style="font-size:17px">${h.icone || 'star'}</span>`;
+      const subtitle = [];
+      if (h.meta) subtitle.push(`Meta: ${h.meta}${h.unidade ? ' ' + h.unidade : ''}`);
+      if (h.hora) subtitle.push(`Horário: ${h.hora}`);
+      document.getElementById('stats-subtitle').innerHTML = subtitle.map(x => `<span>${x}</span>`).join('');
+      document.getElementById('stats-content').style.setProperty('--habit-report-color', h.cor_hex || '#2979FF');
+      document.getElementById('stats-loading').style.display = 'grid';
+      document.getElementById('stats-content').style.display = 'none';
+      this.state.statsRegistros = [];
+      this.state.statsBackend = null;
+      const now = new Date();
+      this.state.statsMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      this.openModal('statsModal');
+
+      let pending = 2;
+      const finish = () => {
+        pending -= 1;
+        if (pending > 0) return;
+        document.getElementById('stats-loading').style.display = 'none';
+        document.getElementById('stats-content').style.display = 'block';
+        this.renderStatsReport(h);
+      };
+
+      MAIRun.withSuccessHandler(res => {
+        this.state.statsBackend = res && res.ok ? res.data : {};
+        finish();
+      }).getEstatisticas(hId);
+
+      const start = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
+      MAIRun.withSuccessHandler(res => {
+        this.state.statsRegistros = res && res.ok ? (res.data || []) : [];
+        finish();
+      }).getRegistrosDoPeriodo(this.localDateKey(start), this.localDateKey(now));
+    },
+
+    triggerEditFromStats: function() {
+      const hId = document.getElementById('stats-h-id').value;
+      this.closeModal('statsModal');
+      document.getElementById('action-h-id').value = hId;
+      this.openEditHabit();
+    },
+
+    localDateKey: function(date) {
+      const y = date.getFullYear();
+      const m = String(date.getMonth() + 1).padStart(2, '0');
+      const d = String(date.getDate()).padStart(2, '0');
+      return `${y}-${m}-${d}`;
+    },
+
+    getHabitHistory: function(hId) {
+      return (this.state.statsRegistros || [])
+        .filter(r => String(r.habito_id) === String(hId))
+        .map(r => ({ ...r, dateKey: String(r.data || '').split('T')[0], valorNum: parseFloat(r.valor) || 0 }))
+        .filter(r => /^\d{4}-\d{2}-\d{2}$/.test(r.dateKey));
+    },
+
+    isRecordComplete: function(h, reg) {
+      if (!reg) return false;
+      const meta = parseFloat(h.meta) || 1;
+      return (parseFloat(reg.valor) || 0) >= meta;
+    },
+
+    recordMap: function(hId) {
+      return this.getHabitHistory(hId).reduce((acc, r) => { acc[r.dateKey] = r; return acc; }, {});
+    },
+
+    renderStatsReport: function(h) {
+      const backend = this.state.statsBackend || {};
+      const map = this.recordMap(h.id);
+      const now = new Date();
+      const today = this.localDateKey(now);
+      const last30 = [];
+      for (let i = 29; i >= 0; i--) { const d = new Date(now); d.setDate(now.getDate() - i); last30.push(this.localDateKey(d)); }
+      const completed30 = last30.filter(k => this.isRecordComplete(h, map[k])).length;
+      const rate30 = Math.round((completed30 / last30.length) * 100);
+      const completedTotal = Object.values(map).filter(r => r.dateKey <= today && this.isRecordComplete(h, r)).length;
+
+      document.getElementById('stats-streak').innerText = backend.streakAtual ?? 0;
+      document.getElementById('stats-best').innerText = backend.melhorStreak ?? 0;
+      document.getElementById('stats-rate-30').innerText = rate30 + '%';
+      document.getElementById('stats-rate-note').innerText = `${completed30} de ${last30.length} dias`;
+      document.getElementById('stats-completed-total').innerText = completedTotal;
+
+      this.renderWeeklyChart(h, map);
+      this.renderStatsHeatmap(h, map);
+      this.renderWeekdayPerformance(h, map);
+      this.renderMonthCalendar(h);
+      this.renderRecentHistory(h);
+    },
+
+    renderWeeklyChart: function(h, map) {
+      const container = document.getElementById('stats-week-chart');
+      const now = new Date();
+      const weeks = [];
+      const currentMonday = new Date(now);
+      const wd = currentMonday.getDay();
+      currentMonday.setDate(currentMonday.getDate() - (wd === 0 ? 6 : wd - 1));
+      for (let w = 7; w >= 0; w--) {
+        const start = new Date(currentMonday); start.setDate(currentMonday.getDate() - (w * 7));
+        let eligible = 0, completed = 0;
+        for (let i = 0; i < 7; i++) {
+          const d = new Date(start); d.setDate(start.getDate() + i);
+          if (d > now) continue;
+          eligible++;
+          if (this.isRecordComplete(h, map[this.localDateKey(d)])) completed++;
+        }
+        const pct = eligible ? Math.round((completed / eligible) * 100) : 0;
+        weeks.push({ start, completed, eligible, pct });
+      }
+      container.innerHTML = weeks.map((w, i) => {
+        const label = new Intl.DateTimeFormat('pt-BR',{day:'2-digit',month:'2-digit'}).format(w.start);
+        return `<div class="h-report-week" title="${w.completed} de ${w.eligible} dias"><strong>${w.pct}%</strong><div class="h-report-week-track"><div class="h-report-week-fill" style="height:${Math.max(w.pct,2)}%"></div></div><span class="h-report-week-label">${i === 7 ? 'Atual' : label}</span></div>`;
+      }).join('');
+    },
+
+    renderStatsHeatmap: function(h, map) {
+      const container = document.getElementById('stats-heatmap');
+      const now = new Date();
+      const start = new Date(now); start.setDate(now.getDate() - 83);
+      let html = '';
+      for (let i = 0; i < 84; i++) {
+        const d = new Date(start); d.setDate(start.getDate() + i);
+        const key = this.localDateKey(d); const reg = map[key];
+        let cls = '';
+        if (d > now) cls = 'future';
+        else if (reg && this.isRecordComplete(h, reg)) cls = 'complete';
+        else if (reg) cls = 'partial';
+        const val = reg ? `${reg.valor}${h.unidade ? ' ' + h.unidade : ''}` : 'Sem registro';
+        const dateLabel = new Intl.DateTimeFormat('pt-BR',{day:'2-digit',month:'2-digit'}).format(d);
+        html += `<span class="h-report-heat-cell ${cls}" title="${dateLabel}: ${val}"></span>`;
+      }
+      container.innerHTML = html;
+    },
+
+    renderWeekdayPerformance: function(h, map) {
+      const container = document.getElementById('stats-weekdays');
+      const names = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+      const counts = names.map(() => ({ eligible:0, completed:0 }));
+      const now = new Date();
+      for (let i = 89; i >= 0; i--) {
+        const d = new Date(now); d.setDate(now.getDate() - i);
+        const slot = counts[d.getDay()]; slot.eligible++;
+        if (this.isRecordComplete(h, map[this.localDateKey(d)])) slot.completed++;
+      }
+      container.innerHTML = counts.map((c, i) => {
+        const pct = c.eligible ? Math.round(c.completed / c.eligible * 100) : 0;
+        return `<div class="h-report-weekday"><span class="h-report-weekday-label">${names[i]}</span><div class="h-report-weekday-track"><div class="h-report-weekday-fill" style="width:${pct}%"></div></div><span class="h-report-weekday-value">${pct}%</span></div>`;
+      }).join('');
+    },
+
+    changeStatsMonth: function(delta) {
+      const current = this.state.statsMonth || new Date();
+      const next = new Date(current.getFullYear(), current.getMonth() + delta, 1);
+      const now = new Date();
+      const oldest = new Date(now.getFullYear() - 1, now.getMonth(), 1);
+      const newest = new Date(now.getFullYear(), now.getMonth(), 1);
+      if (next < oldest || next > newest) return;
+      this.state.statsMonth = next;
+      const h = this.state.habitos.find(x => String(x.id) === String(document.getElementById('stats-h-id').value));
+      if (h) this.renderMonthCalendar(h);
+    },
+
+    renderMonthCalendar: function(h) {
+      const container = document.getElementById('calendar-month-grid');
+      const cursor = this.state.statsMonth || new Date();
+      const ano = cursor.getFullYear(); const mes = cursor.getMonth();
+      const now = new Date(); const today = this.localDateKey(now);
+      const map = this.recordMap(h.id);
+      document.getElementById('cal-month-name').innerText = new Intl.DateTimeFormat('pt-BR',{month:'long',year:'numeric'}).format(cursor);
+      const oldest = new Date(now.getFullYear() - 1, now.getMonth(), 1);
+      const newest = new Date(now.getFullYear(), now.getMonth(), 1);
+      document.getElementById('stats-prev-month').disabled = new Date(ano, mes - 1, 1) < oldest;
+      document.getElementById('stats-next-month').disabled = new Date(ano, mes + 1, 1) > newest;
+      const primDia = new Date(ano, mes, 1).getDay(); const diasMes = new Date(ano, mes + 1, 0).getDate();
+      let html = ['D','S','T','Q','Q','S','S'].map(d => `<div class="cal-day-label">${d}</div>`).join('');
+      for(let i=0; i < primDia; i++) html += `<div></div>`;
+      for(let dia=1; dia <= diasMes; dia++) {
+        const dIso = `${ano}-${String(mes+1).padStart(2,'0')}-${String(dia).padStart(2,'0')}`;
+        const reg = map[dIso];
+        const future = dIso > today;
+        let cls = future ? 'future' : (reg ? (this.isRecordComplete(h, reg) ? 'complete' : 'partial') : 'missed');
+        if (dIso === today) cls += ' today';
+        html += `<button type="button" class="cal-cell ${cls}" ${future ? 'disabled' : ''} onclick="AppHabitos.showStatsDay('${dIso}')">${dia}</button>`;
+      }
+      container.innerHTML = html;
+      const selected = (ano === now.getFullYear() && mes === now.getMonth()) ? today : `${ano}-${String(mes+1).padStart(2,'0')}-01`;
+      this.showStatsDay(selected);
+    },
+
+    showStatsDay: function(dateKey) {
+      const h = this.state.habitos.find(x => String(x.id) === String(document.getElementById('stats-h-id').value));
+      if (!h) return;
+      const map = this.recordMap(h.id); const reg = map[dateKey];
+      const dt = new Date(dateKey + 'T12:00:00');
+      const label = new Intl.DateTimeFormat('pt-BR',{weekday:'long',day:'numeric',month:'long'}).format(dt);
+      let status = 'Não concluído', cls = '', detail = 'Nenhum registro neste dia.';
+      if (reg) {
+        const pct = Math.min(100, Math.round(((parseFloat(reg.valor)||0) / (parseFloat(h.meta)||1)) * 100));
+        const value = `${reg.valor}${h.unidade ? ' ' + h.unidade : ''}`;
+        if (this.isRecordComplete(h, reg)) { status = 'Concluído'; cls = 'complete'; detail = `${value} registrados · meta atingida.`; }
+        else { status = 'Parcial'; detail = `${value} registrados · ${pct}% da meta.`; }
+      }
+      document.getElementById('day-detail').innerHTML = `<div><strong>${label.charAt(0).toUpperCase()+label.slice(1)}</strong><small>${detail}</small></div><span class="h-report-day-status ${cls}">${status}</span>`;
+    },
+
+    renderRecentHistory: function(h) {
+      const container = document.getElementById('stats-history-list');
+      const history = this.getHabitHistory(h.id).sort((a,b) => b.dateKey.localeCompare(a.dateKey)).slice(0,8);
+      if (!history.length) { container.innerHTML = '<div class="h-report-history-empty">Ainda não há registros para este hábito.</div>'; return; }
+      container.innerHTML = history.map(r => {
+        const dt = new Date(r.dateKey + 'T12:00:00');
+        const date = new Intl.DateTimeFormat('pt-BR',{weekday:'short',day:'2-digit',month:'short'}).format(dt);
+        const complete = this.isRecordComplete(h, r);
+        const pct = Math.min(100, Math.round((r.valorNum / (parseFloat(h.meta)||1)) * 100));
+        const val = `${r.valor}${h.unidade ? ' ' + h.unidade : ''}`;
+        return `<div class="h-report-history-item"><div><strong>${date}</strong><small>${complete ? 'Meta concluída' : pct + '% da meta'}</small></div><span class="h-report-history-value">${val}</span></div>`;
+      }).join('');
+    },
+
+    renderIconGrid: function() { document.getElementById('icon-grid-container').innerHTML = this.icones.map(icon => `<div class="icon-swatch" onclick="AppHabitos.saveNewIcon('${icon}')"><span class="material-symbols-rounded">${icon}</span></div>`).join(''); },
+    openModal: function(id) { document.getElementById(id).classList.add('active'); },
+    closeModal: function(id) { document.getElementById(id).classList.remove('active'); },
+    
+    openCreateHabit: function() { 
+        document.getElementById('habitForm').reset();
+        document.getElementById('form-h-id').value = ""; 
+        document.getElementById('habit-modal-title').innerText = "Novo Hábito"; 
+        const sw = document.querySelectorAll('.color-swatch'); 
+        if(sw.length) this.selectColor(this.cores[0], sw[0]); 
+        document.getElementById('h-ocultar-agenda').checked = false; 
+        document.getElementById('h-hora').value = '';
+        this.openModal('habitModal'); 
+    },
+
+    openEditHabit: function() {
+      this.closeModal('actionMenuModal'); const hId = document.getElementById('action-h-id').value; const h = this.state.habitos.find(x => x.id === hId);
+      document.getElementById('form-h-id').value = h.id; document.getElementById('h-nome').value = h.nome; document.getElementById('h-meta').value = h.meta || ''; document.getElementById('h-unidade').value = h.unidade || '';
+      document.getElementById('h-hora').value = h.hora || '';
+      document.getElementById('h-ocultar-agenda').checked = (h.ocultar_agenda === true || String(h.ocultar_agenda) === 'true');
+      document.getElementById('habit-modal-title').innerText = "Editar Hábito";
+      const sw = Array.from(document.querySelectorAll('.color-swatch')); const targetColor = sw.find(el => el.style.backgroundColor === h.cor_hex || el.style.background === h.cor_hex);
+      this.selectColor(h.cor_hex || this.cores[0], targetColor || sw[0]); 
+      this.openModal('habitModal');
+    },
+
+    saveHabit: function(e) { 
+      e.preventDefault(); const btn = document.getElementById('btn-save-habit'); btn.disabled = true; btn.innerText = 'Salvando...'; const hId = document.getElementById('form-h-id').value;
+      const dados = { nome: document.getElementById('h-nome').value, meta: document.getElementById('h-meta').value || 1, unidade: document.getElementById('h-unidade').value || "", cor_hex: document.getElementById('h-cor_hex').value || '#2979FF', ocultar_agenda: document.getElementById('h-ocultar-agenda').checked, hora: document.getElementById('h-hora').value };
+      if (hId) {
+        MAIRun.withSuccessHandler(res => { 
+            btn.disabled = false; btn.innerText = 'Salvar'; 
+            if (res.ok) { 
+                this.closeModal('habitModal'); 
+                const idx = this.state.habitos.findIndex(x => x.id === hId); 
+                if(idx > -1) { this.state.habitos[idx].nome = dados.nome; this.state.habitos[idx].meta = dados.meta; this.state.habitos[idx].unidade = dados.unidade; this.state.habitos[idx].cor_hex = dados.cor_hex; this.state.habitos[idx].ocultar_agenda = dados.ocultar_agenda; this.state.habitos[idx].hora = dados.hora; } 
+                this.renderHabits(); 
+                if (typeof AppAgenda !== 'undefined' && typeof AppAgenda.carregar === 'function') AppAgenda.carregar(); 
+            } else {
+                alert(res.erro || "Falha ao editar hábito no banco.");
+            }
+        }).editarHabito(hId, dados);
+      } else {
+        MAIRun.withSuccessHandler(res => { 
+            btn.disabled = false; btn.innerText = 'Salvar'; 
+            if (res.ok) { 
+                this.closeModal('habitModal'); this.state.habitos.push(res.data); this.renderHabits(); 
+                if (typeof AppAgenda !== 'undefined' && typeof AppAgenda.carregar === 'function') AppAgenda.carregar(); 
+            } else {
+                alert(res.erro || "Falha ao criar hábito.");
+            }
+        }).criarHabito(dados);
+      }
+    },
+
+    openIconPicker: function(id) { document.getElementById('icon-habito-id').value = id; this.openModal('iconModal'); },
+    saveNewIcon: function(icon) { const id = document.getElementById('icon-habito-id').value; this.closeModal('iconModal'); const h = this.state.habitos.find(x => x.id === id); if(!h) return; const oldIcon = h.icone; h.icone = icon; this.renderHabits(); MAIRun.withSuccessHandler(res => { if(!res.ok) { h.icone = oldIcon; this.renderHabits(); } }).editarHabito(id, { icone: icon }); },
+    openNameEditor: function(id, name) { document.getElementById('name-habito-id').value = id; document.getElementById('name-input').value = name; this.openModal('nameModal'); },
+    saveNewName: function(e) { e.preventDefault(); const id = document.getElementById('name-habito-id').value; const name = document.getElementById('name-input').value; this.closeModal('nameModal'); const h = this.state.habitos.find(x => x.id === id); if(h) h.nome = name; this.renderHabits(); MAIRun.editarHabito(id, { nome: name }); },
+    openCalendar: function(id) { document.getElementById('cal-habito-id').value = id; document.getElementById('cal-data').value = this.state.datasSemana[0]; this.openModal('calendarModal'); },
+    confirmCalendar: function(e) { e.preventDefault(); this.closeModal('calendarModal'); const id = document.getElementById('cal-habito-id').value; const data = document.getElementById('cal-data').value; const h = this.state.habitos.find(x => x.id === id); if(h.unidade && h.meta > 1) { document.getElementById('v-habito-id').value = id; document.getElementById('v-data').value = data; document.getElementById('v-title').innerText = h.nome; document.getElementById('v-unidade').innerText = h.unidade; document.getElementById('v-quantidade').value = h.meta; this.openModal('valueModal'); } else { this.execToggle(id, data, true, h.meta || 1); } },
+    confirmValue: function(e) { e.preventDefault(); this.closeModal('valueModal'); this.execToggle(document.getElementById('v-habito-id').value, document.getElementById('v-data').value, true, document.getElementById('v-quantidade').value); }
+  };
+</script>
+
+<style id="mai-v29-habitos-report-center">
+/* V29 — o relatório de hábitos fica centralizado na área útil inteira do app. */
+#statsModal,
+#statsModal.sys-modal-overlay,
+#statsModal.mai-entity-modal {
+  position: fixed !important;
+  inset: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  width: 100vw !important;
+  height: 100dvh !important;
+  padding: 18px !important;
+  display: none;
+  align-items: center !important;
+  justify-content: center !important;
+  box-sizing: border-box !important;
+}
+#statsModal.active {
+  display: flex !important;
+}
+#statsModal #stats-report-surface,
+#statsModal > .sys-modal-surface {
+  position: relative !important;
+  inset: auto !important;
+  width: min(760px, calc(100vw - 36px)) !important;
+  max-width: 760px !important;
+  max-height: min(86dvh, 820px) !important;
+  margin: auto !important;
+  transform: none !important;
+}
+@media (max-width: 720px) {
+  #statsModal,
+  #statsModal.sys-modal-overlay,
+  #statsModal.mai-entity-modal { padding: 8px !important; }
+  #statsModal #stats-report-surface,
+  #statsModal > .sys-modal-surface {
+    width: calc(100vw - 16px) !important;
+    max-height: calc(100dvh - 16px) !important;
+  }
+}
+</style>
+
+
+<script id="mai-v91-habitos-instant">
+(() => {
+  if (typeof AppHabitos === 'undefined') return;
+
+  AppHabitos.execToggle = function(hId, dStr, marcar, valor = 0) {
+    const previous = MAIInstant.clone(this.state.registros);
+
+    if (marcar) {
+      const idx = this.state.registros.findIndex(r =>
+        String(r.habito_id) === String(hId) &&
+        String(r.data).split('T')[0] === dStr
+      );
+
+      if (idx > -1) this.state.registros[idx].valor = valor;
+      else this.state.registros.push({ habito_id: hId, data: dStr, valor });
+    } else {
+      this.state.registros = this.state.registros.filter(r =>
+        !(String(r.habito_id) === String(hId) && String(r.data).split('T')[0] === dStr)
+      );
+    }
+
+    this.updateUI();
+    MAIInstant.changed('habitos:registro');
+
+    const rollback = () => {
+      this.state.registros = previous;
+      this.updateUI();
+      MAIInstant.error('Não foi possível sincronizar o hábito.');
+    };
+
+    const runner = MAIRun
+      .withSuccessHandler(res => {
+        if (res && res.ok === false) rollback();
+      })
+      .withFailureHandler(rollback);
+
+    if (marcar) runner.marcarHabito(hId, dStr, valor);
+    else runner.desmarcarHabito(hId, dStr, valor);
+  };
+
+  AppHabitos.saveHabit = function(e) {
+    e.preventDefault();
+
+    const formId = String(document.getElementById('form-h-id').value || '');
+    const id = formId || `hab-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
+    const previous = MAIInstant.clone(this.state.habitos);
+    const existing = this.state.habitos.find(x => String(x.id) === id);
+
+    const dados = {
+      id,
+      nome: document.getElementById('h-nome').value,
+      meta: document.getElementById('h-meta').value || 1,
+      unidade: document.getElementById('h-unidade').value || '',
+      cor_hex: document.getElementById('h-cor_hex').value || '#2979FF',
+      ocultar_agenda: document.getElementById('h-ocultar-agenda').checked,
+      hora: document.getElementById('h-hora').value,
+      icone: existing?.icone || 'star',
+      ativo: true,
+      criado_em: existing?.criado_em || new Date().toISOString()
+    };
+
+    if (!String(dados.nome || '').trim()) return;
+
+    const idx = this.state.habitos.findIndex(x => String(x.id) === id);
+    if (idx >= 0) this.state.habitos[idx] = { ...this.state.habitos[idx], ...dados };
+    else this.state.habitos.push(dados);
+
+    this.closeModal('habitModal');
+    this.renderHabits();
+    MAIInstant.changed('habitos:salvar');
+
+    const rollback = () => {
+      this.state.habitos = previous;
+      this.renderHabits();
+      MAIInstant.error('O hábito não foi sincronizado. A alteração foi desfeita.');
+    };
+
+    if (formId) {
+      MAIRun
+        .withSuccessHandler(res => {
+          if (!res || res.ok === false) rollback();
+        })
+        .withFailureHandler(rollback)
+        .editarHabito(id, dados);
+    } else {
+      MAIRun
+        .withSuccessHandler(res => {
+          if (!res || res.ok === false) rollback();
+          else if (res.data) {
+            const pos = this.state.habitos.findIndex(x => String(x.id) === id);
+            if (pos >= 0) this.state.habitos[pos] = { ...this.state.habitos[pos], ...res.data };
+            this.renderHabits();
+          }
+        })
+        .withFailureHandler(rollback)
+        .criarHabito(dados);
+    }
+  };
+
+  AppHabitos.deleteHabit = function() {
+    if (!confirm('Tem certeza que deseja excluir este hábito?')) return;
+
+    const hId = document.getElementById('action-h-id').value;
+    const previousHabits = MAIInstant.clone(this.state.habitos);
+    const previousRecords = MAIInstant.clone(this.state.registros);
+
+    this.closeModal('actionMenuModal');
+    this.state.habitos = this.state.habitos.filter(x => String(x.id) !== String(hId));
+    this.state.registros = this.state.registros.filter(r => String(r.habito_id) !== String(hId));
+    this.renderHabits();
+    MAIInstant.changed('habitos:excluir');
+
+    const rollback = () => {
+      this.state.habitos = previousHabits;
+      this.state.registros = previousRecords;
+      this.renderHabits();
+      MAIInstant.error('Não foi possível excluir o hábito.');
+    };
+
+    MAIRun
+      .withSuccessHandler(res => {
+        if (!res || res.ok === false) rollback();
+      })
+      .withFailureHandler(rollback)
+      .excluirHabito(hId);
+  };
+
+  AppHabitos.deleteHabitFromStats = function() {
+    const hId = document.getElementById('stats-h-id').value;
+    const h = this.state.habitos.find(x => String(x.id) === String(hId));
+    if (!hId || !h) return;
+
+    if (!confirm(`Tem certeza que deseja excluir o hábito "${h.nome}"?`)) return;
+
+    const previousHabits = MAIInstant.clone(this.state.habitos);
+    const previousRecords = MAIInstant.clone(this.state.registros);
+
+    this.closeModal('statsModal');
+    this.state.habitos = this.state.habitos.filter(x => String(x.id) !== String(hId));
+    this.state.registros = this.state.registros.filter(r => String(r.habito_id) !== String(hId));
+    this.renderHabits();
+    MAIInstant.changed('habitos:excluir');
+
+    const rollback = () => {
+      this.state.habitos = previousHabits;
+      this.state.registros = previousRecords;
+      this.renderHabits();
+      MAIInstant.error('Não foi possível excluir o hábito.');
+    };
+
+    MAIRun
+      .withSuccessHandler(res => {
+        if (!res || res.ok === false) rollback();
+      })
+      .withFailureHandler(rollback)
+      .excluirHabito(hId);
+  };
+})();
+</script>
+
+
+<style id="mai-v105-habitos-overlay-guard">
+#actionMenuModal,
+#habitModal,
+#valueModal,
+#calendarModal,
+#iconModal,
+#nameModal,
+#statsModal {
+  position: fixed !important;
+  inset: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  width: 100% !important;
+  z-index: 50000 !important;
+}
+
+#actionMenuModal:not(.active),
+#habitModal:not(.active),
+#valueModal:not(.active),
+#calendarModal:not(.active),
+#iconModal:not(.active),
+#nameModal:not(.active),
+#statsModal:not(.active) {
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+#actionMenuModal.active,
+#habitModal.active,
+#valueModal.active,
+#calendarModal.active,
+#iconModal.active,
+#nameModal.active,
+#statsModal.active {
+  visibility: visible !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+}
+</style>
+
+<style id="mai-v111-habitos-color-contract">
+#h-container {
+  background: var(--mai-bg-primary) !important;
+  color: var(--mai-text-primary) !important;
+}
+
+#h-container .mai-module-surface,
+#h-container .mai-habit-board,
+#h-container .stat-card,
+#h-container .stats-calendar {
+  background: var(--mai-bg-card) !important;
+  border-color: var(--mai-divider) !important;
+  color: var(--mai-text-primary) !important;
+}
+
+#h-container .habit-row:hover,
+#h-container .date-col:hover {
+  background: var(--mai-bg-hover) !important;
+}
+
+#h-container .habit-title,
+#h-container .habit-name {
+  color: var(--mai-text-primary) !important;
+}
+
+#h-container .habit-meta,
+#h-container .habit-subtitle {
+  color: var(--mai-text-tertiary) !important;
+}
+
+#actionMenuModal .sys-modal-surface,
+#habitModal .sys-modal-surface,
+#valueModal .sys-modal-surface,
+#calendarModal .sys-modal-surface,
+#iconModal .sys-modal-surface,
+#nameModal .sys-modal-surface,
+#statsModal .sys-modal-surface {
+  background: var(--mai-bg-card) !important;
+  border-color: var(--mai-divider) !important;
+  color: var(--mai-text-primary) !important;
+}
+
+#actionMenuModal .sys-modal-header,
+#habitModal .sys-modal-header,
+#valueModal .sys-modal-header,
+#calendarModal .sys-modal-header,
+#iconModal .sys-modal-header,
+#nameModal .sys-modal-header,
+#statsModal .sys-modal-header {
+  background: var(--mai-bg-card) !important;
+  border-color: var(--mai-divider) !important;
+}
+
+#habitModal .sys-input,
+#valueModal .sys-input,
+#calendarModal .sys-input,
+#nameModal .sys-input {
+  background: var(--mai-bg-hover) !important;
+  color: var(--mai-text-primary) !important;
+  border-color: transparent !important;
+}
+
+/* Cor escolhida pelo usuário continua apenas no ícone/progresso do hábito. */
+</style>

@@ -1,0 +1,703 @@
+<link href="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.snow.css" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+
+<style>
+  .n-tabs { display: flex; gap: 24px; border-bottom: 1px solid var(--divider); margin-bottom: 16px; overflow-x: auto; }
+  .n-tab { padding: 12px 0; cursor: pointer; color: var(--text-secondary); font-weight: 600; font-size: 14px; border-bottom: 2px solid transparent; transition: 0.2s; white-space: nowrap; }
+  .n-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  /* === GRID E CARDS (ALTA ESPECIFICIDADE CONTRA BUGS DO DESKTOP E MOBILE) === */
+  body .n-container .n-grid { 
+    display: grid !important; 
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)) !important; 
+    gap: 20px !important; padding: 10px 0 !important;
+  }
+
+  body .n-container .n-grid .n-card { 
+    background: var(--bg-card) !important; color: var(--text-primary) !important;
+    border: 1px solid var(--divider) !important; border-radius: 16px !important;
+    padding: 24px !important; height: 240px !important; display: flex !important;
+    flex-direction: column !important; position: relative !important;
+    transition: all 0.3s ease !important; text-align: left !important;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2) !important;
+  }
+
+  body .n-container .n-grid .n-card:hover { border-color: var(--accent) !important; transform: translateY(-5px) !important; }
+
+  /* Tamanhos (Largo e Grande) */
+  body .n-container .n-grid .n-card.size-largo { grid-column: span 2 !important; }
+  body .n-container .n-grid .n-card.size-grande { grid-column: span 2 !important; grid-row: span 2 !important; height: 500px !important; }
+
+  .n-card-title { font-weight: 800; font-size: 18px; margin-bottom: 8px; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-right: 30px;}
+  .n-card-body { font-size: 14px; color: var(--text-secondary); line-height: 1.6; overflow: hidden; flex: 1; pointer-events: none; }
+  .n-card-date { font-size: 11px; color: var(--text-secondary); margin-top: 12px; font-weight: 600; text-transform: uppercase; }
+  .n-pin-icon { position: absolute; top: 20px; right: 48px; color: var(--accent); font-size: 20px; transform: rotate(45deg); z-index: 5;}
+  .n-card-btn-menu { position: absolute; top: 16px; right: 16px; background: transparent; border: none; color: var(--text-secondary); cursor: pointer; display: grid; place-items: center; border-radius: 50%; padding: 4px; transition: 0.2s; z-index: 10; }
+  .n-card-btn-menu:hover { background: var(--bg-hover); color: var(--text-primary); }
+  .n-card-badge { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; background: var(--bg-hover); padding: 4px 8px; border-radius: 4px; margin-bottom: 8px; width: fit-content; font-weight: 600;}
+
+  /* === MENUS SUSPENSOS === */
+  .sys-dropdown { position: absolute; background: var(--bg-card); border: 1px solid var(--divider); border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.15); z-index: 1000; display: none; flex-direction: column; padding: 6px; min-width: 180px; }
+  .sys-dropdown.active { display: flex; animation: fadeDrop 0.15s ease-out; }
+  @keyframes fadeDrop { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
+  .sys-drop-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; font-size: 13px; font-weight: 500; cursor: pointer; border-radius: 8px; transition: 0.1s; color: var(--text-primary); white-space: nowrap;}
+  .sys-drop-item:hover { background: var(--bg-hover); }
+
+  /* === MINIATURAS === */
+  .n-tray { margin-top: 24px; padding-top: 24px; border-top: 1px dashed var(--divider); display: flex; flex-direction: column; gap: 16px; }
+  .n-tray-header { display: flex; justify-content: space-between; align-items: center; }
+  .n-tray-title { font-size: 14px; font-weight: 700; color: var(--text-secondary); display: flex; align-items: center; gap: 6px; text-transform: uppercase;}
+  .n-tray-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 16px; }
+  .n-thumb-card { background: var(--bg-primary); border-radius: 12px; overflow: visible !important; position: relative; border: 1px solid var(--divider); }
+  .n-thumb-img-wrapper { height: 100px; width: 100%; display: flex; justify-content: center; align-items: center; overflow: hidden; border-radius: 11px 11px 0 0; background: var(--bg-hover); }
+  .n-thumb-img-wrapper img { width: 100%; height: 100%; object-fit: contain; }
+  .n-thumb-footer { display: flex; align-items: center; justify-content: space-between; padding: 8px 4px 8px 12px; background: var(--bg-primary); border-radius: 0 0 11px 11px; }
+  .n-thumb-name { font-size: 12px; font-weight: 600; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1; }
+
+  /* === MODAL (ESTRUTURA BLINDADA) === */
+  .n-modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 9999;
+    display: none; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(4px);
+  }
+  .n-modal-overlay.active { display: flex; }
+  .n-modal-surface {
+    background: var(--bg-card); width: 100%; max-width: 800px; border-radius: 20px;
+    display: flex; flex-direction: column; height: auto; max-height: 85vh; /* O Segredo do Layout */
+    box-shadow: 0 20px 40px rgba(0,0,0,0.4); border: 1px solid var(--divider);
+  }
+
+  .n-input-title { width: 100%; background: transparent; border: none; color: var(--text-primary); font-size: 28px; font-weight: 800; outline: none; padding: 0 0 16px 0; margin-bottom: 16px; border-bottom: 1px dashed var(--divider); }
+  .ql-toolbar.ql-snow { border: none !important; border-bottom: 1px solid var(--divider) !important; padding: 8px 0 !important; font-family: 'Inter', sans-serif; }
+  .ql-container.ql-snow { border: none !important; font-family: 'Inter', sans-serif; font-size: 16px; color: var(--text-primary); }
+  .ql-editor { padding: 16px 0; min-height: 150px; }
+  .ql-editor img { border-radius: 8px; max-width: 100%; margin: 12px 0; }
+  .ql-snow .ql-editor.ql-blank::before { color: var(--text-secondary) !important; opacity: 0.6; font-style: normal; }
+  .ql-editor { color: var(--text-primary) !important; }
+  .ql-toolbar.ql-snow, .ql-container.ql-snow { border-color: var(--divider) !important; }
+
+  /* SPINNER DE LOADING */
+  .spinner {
+    width: 18px; height: 18px; border: 2px solid rgba(255,255,255,0.3);
+    border-radius: 50%; border-top-color: #fff; animation: spin 0.8s linear infinite;
+    display: inline-block; margin-right: 8px; vertical-align: middle;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* === RESPONSIVIDADE EXTREMA (MOBILE) === */
+  @media (max-width: 768px) {
+    body .n-container .n-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)) !important; gap: 12px !important;}
+    body .n-container .n-grid .n-card { height: 180px !important; padding: 16px !important; border-radius: 12px !important;}
+    
+    /* Força os tamanhos especiais a virarem 1x1 no celular para caberem na tela */
+    body .n-container .n-grid .n-card.size-largo,
+    body .n-container .n-grid .n-card.size-grande {
+      grid-column: span 1 !important; grid-row: span 1 !important; height: 180px !important;
+    }
+    
+    .n-modal-overlay { padding: 12px !important; }
+    .n-modal-surface { max-height: 90vh !important; } /* Aumenta a área útil no celular */
+    
+    /* Empilha os botões no celular para não ficarem espremidos */
+    .n-modal-footer-actions { flex-direction: column !important; gap: 8px !important; }
+    .n-input-title { font-size: 22px; }
+    .n-tray-grid { grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); }
+  }
+</style>
+
+<div class="sys-container n-container">
+  <button class="sys-btn-fab" id="btn-nova-nota" onclick="AppNotas.abrirModal()"><span class="material-symbols-rounded" style="font-size: 32px;">edit</span></button>
+
+  <div class="n-tabs">
+    <div class="n-tab active" id="tab-ativas" onclick="AppNotas.mudarAba('ativas')">Minhas Notas</div>
+    <div class="n-tab" id="tab-arquivo" onclick="AppNotas.mudarAba('arquivo')">Arquivo</div>
+    <div class="n-tab" id="tab-lixeira" onclick="AppNotas.mudarAba('lixeira')">Lixeira</div>
+  </div>
+
+  <div class="n-grid" id="notas-grid">
+    <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: var(--text-secondary);">Carregando notas...</div>
+  </div>
+
+  <div class="n-modal-overlay" id="modal-nota">
+    <div class="n-modal-surface">
+      <div style="flex-shrink: 0; display: flex; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid var(--divider); align-items: center;">
+        <span style="font-size: 13px; color: var(--text-secondary); font-weight: 600;" id="n-modal-date">Nova Nota</span>
+        <div style="display: flex; gap: 4px;" id="n-top-actions">
+          <button class="sys-icon-btn" id="btn-arquivar" onclick="AppNotas.acao('arquivar')" title="Arquivar Nota"><span class="material-symbols-rounded">archive</span></button>
+          <button class="sys-icon-btn" id="btn-desarquivar" onclick="AppNotas.acao('desarquivar')" title="Desarquivar" style="display:none;"><span class="material-symbols-rounded">unarchive</span></button>
+          <button class="sys-icon-btn" id="btn-restaurar" onclick="AppNotas.acao('restaurar')" title="Restaurar" style="display:none; color: var(--accent);"><span class="material-symbols-rounded">restore_from_trash</span></button>
+          <button class="sys-icon-btn" id="btn-lixeira" onclick="AppNotas.acao('lixeira')" title="Mover para Lixeira" style="color: var(--mai-danger);"><span class="material-symbols-rounded">delete</span></button>
+          <div style="width: 1px; height: 24px; background: var(--divider); margin: 0 4px;"></div>
+          <button class="sys-icon-btn" onclick="AppNotas.fecharModal()"><span class="material-symbols-rounded">close</span></button>
+        </div>
+      </div>
+      
+      <div style="flex: 1; overflow-y: auto; padding: 24px 20px;">
+        <input type="hidden" id="n-id">
+        <input type="text" class="n-input-title" id="n-titulo" placeholder="Título da nota...">
+        <div id="n-editor-container"></div>
+
+        <div class="n-tray" id="n-tray" style="display: none;">
+          <div class="n-tray-header">
+            <div class="n-tray-title"><span class="material-symbols-rounded" style="font-size: 20px;">folder_open</span> Anexos</div>
+            <button class="sys-icon-btn" id="btn-anexar" onclick="AppNotas.uploadBandeja()" style="background: var(--bg-hover); width: auto; padding: 4px 12px; border-radius: 8px;">
+              <span class="material-symbols-rounded" style="font-size: 18px;">add_circle</span> <span style="font-size: 13px; font-weight: 600;">Adicionar</span>
+            </button>
+          </div>
+          <div class="n-tray-grid" id="n-tray-list"></div>
+        </div>
+      </div>
+      
+      <div class="n-modal-footer-actions" style="flex-shrink: 0; padding: 20px; border-top: 1px solid var(--divider); background: var(--bg-primary); display: flex; gap: 12px; border-radius: 0 0 16px 16px;">
+        <button class="sys-btn-primary" id="n-btn-salvar" onclick="AppNotas.salvar()" style="flex: 1;">Salvar Nota</button>
+        <button class="sys-btn-primary" id="n-btn-excluir-definitivo" onclick="AppNotas.acao('deletar')" style="flex: 1; background: var(--mai-danger); color: #FFF; display: none;">Excluir Definitivamente</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('.has-dropdown')) {
+      document.querySelectorAll('.sys-dropdown').forEach(d => d.classList.remove('active'));
+      document.querySelectorAll('.n-card, .n-thumb-card').forEach(c => c.style.zIndex = '1');
+    }
+  });
+
+  const AppNotas = {
+    state: { notas: [], view: 'ativas', notaAtual: { fixado: false, tamanho: 'normal', anexos: [] } },
+    editor: null, sortableInstance: null,
+
+    init: function() {
+      this.editor = new Quill('#n-editor-container', {
+        theme: 'snow',
+        placeholder: 'Comece a digitar sua anotação...',
+        modules: {
+          toolbar: [
+            [{ 'header': [1, 2, 3, false] }],
+            ['bold', 'italic', 'underline', 'strike'],
+            [{ 'list': 'check'}, { 'list': 'ordered'}, { 'list': 'bullet' }],
+            ['link', 'clean']
+          ]
+        }
+      });
+      this.carregar();
+    },
+
+    toggleDrop: function(e, id) {
+      e.stopPropagation();
+      const drop = document.getElementById(id);
+      const isActive = drop.classList.contains('active');
+      document.querySelectorAll('.sys-dropdown').forEach(d => d.classList.remove('active'));
+      document.querySelectorAll('.n-card, .n-thumb-card').forEach(c => c.style.zIndex = '1');
+      if (!isActive) {
+        drop.classList.add('active');
+        const parentCard = drop.closest('.n-card') || drop.closest('.n-thumb-card');
+        if (parentCard) parentCard.style.zIndex = '100'; 
+      }
+    },
+
+    carregar: function() {
+      MAIRun.withSuccessHandler(res => {
+        if(res.ok) { this.state.notas = res.data; this.renderizar(); }
+      }).getNotas();
+    },
+
+    mudarAba: function(aba) {
+      this.state.view = aba;
+      document.querySelectorAll('.n-tab').forEach(el => el.classList.remove('active'));
+      document.getElementById('tab-' + aba).classList.add('active');
+      document.getElementById('btn-nova-nota').style.display = aba === 'ativas' ? 'grid' : 'none';
+      this.renderizar();
+    },
+
+    renderizar: function() {
+      const container = document.getElementById('notas-grid');
+      const notasFiltradas = this.state.notas.filter(n => {
+        if (this.state.view === 'ativas') return n.ativo && !n.arquivado;
+        if (this.state.view === 'arquivo') return n.ativo && n.arquivado;
+        if (this.state.view === 'lixeira') return !n.ativo;
+      });
+
+      if (notasFiltradas.length === 0) {
+        container.innerHTML = `<div style="grid-column: 1 / -1; text-align: center; padding: 60px 20px; color: var(--text-secondary);">Nenhuma nota encontrada aqui.</div>`;
+        if(this.sortableInstance) this.sortableInstance.destroy();
+        return;
+      }
+
+      const notasOrdenadas = notasFiltradas.sort((a, b) => {
+        const fixA = a.fixado === true || String(a.fixado) === "true";
+        const fixB = b.fixado === true || String(b.fixado) === "true";
+        if (fixA && !fixB) return -1; if (!fixA && fixB) return 1;
+        return a.ordem - b.ordem;
+      });
+
+      let html = '';
+      notasOrdenadas.forEach(n => {
+        const d = new Date(n.data);
+        const dataFmt = `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`;
+        const tempDiv = document.createElement("div");
+        tempDiv.innerHTML = n.conteudo.replace(/<li data-list="check">/g, "☐ ").replace(/<li data-list="bullet">/g, "• ");
+        const textoPuro = tempDiv.textContent || tempDiv.innerText || '<em>Sem conteúdo</em>';
+        const qdtAnexos = n.anexos ? n.anexos.length : 0;
+        const isFixado = n.fixado === true || String(n.fixado) === "true";
+
+        html += `
+          <div class="n-card size-${n.tamanho || 'normal'}" data-id="${n.id}" onclick="AppNotas.abrirModal('${n.id}')">
+            ${isFixado ? `<span class="material-symbols-rounded n-pin-icon">push_pin</span>` : ''}
+            
+            <div class="has-dropdown" style="position: absolute; top: 16px; right: 16px; z-index: 10;">
+              <button class="n-card-btn-menu" onclick="AppNotas.toggleDrop(event, 'drop-card-${n.id}')">
+                <span class="material-symbols-rounded">more_vert</span>
+              </button>
+              <div id="drop-card-${n.id}" class="sys-dropdown" style="top: 32px; right: 0;">
+                <div class="sys-drop-item" onclick="AppNotas.acaoExterna(event, '${n.id}', 'fixar')"><span class="material-symbols-rounded">push_pin</span> ${isFixado ? 'Desfixar' : 'Fixar'}</div>
+                <div style="height: 1px; background: var(--divider); margin: 4px 0;"></div>
+                <div style="padding: 4px 12px; font-size: 10px; color: var(--text-secondary); font-weight: 800;">TAMANHO</div>
+                <div class="sys-drop-item" onclick="AppNotas.acaoExterna(event, '${n.id}', 'tam-normal')"><span class="material-symbols-rounded">crop_square</span> Normal</div>
+                <div class="sys-drop-item" onclick="AppNotas.acaoExterna(event, '${n.id}', 'tam-largo')"><span class="material-symbols-rounded">rectangle</span> Largo</div>
+                <div class="sys-drop-item" onclick="AppNotas.acaoExterna(event, '${n.id}', 'tam-grande')"><span class="material-symbols-rounded">grid_view</span> Grande</div>
+                <div style="height: 1px; background: var(--divider); margin: 4px 0;"></div>
+                ${this.state.view === 'ativas' ? `<div class="sys-drop-item" onclick="AppNotas.acaoExterna(event, '${n.id}', 'arquivar')"><span class="material-symbols-rounded">archive</span> Arquivar</div>` : ''}
+                ${this.state.view === 'arquivo' ? `<div class="sys-drop-item" onclick="AppNotas.acaoExterna(event, '${n.id}', 'desarquivar')"><span class="material-symbols-rounded">unarchive</span> Desarquivar</div>` : ''}
+                ${this.state.view === 'lixeira' ? `<div class="sys-drop-item" style="color: var(--accent);" onclick="AppNotas.acaoExterna(event, '${n.id}', 'restaurar')"><span class="material-symbols-rounded">restore_from_trash</span> Restaurar</div>` : ''}
+                <div class="sys-drop-item" style="color: var(--mai-danger);" onclick="AppNotas.acaoExterna(event, '${n.id}', '${this.state.view === 'lixeira' ? 'deletar' : 'lixeira'}')">
+                  <span class="material-symbols-rounded">delete</span> ${this.state.view === 'lixeira' ? 'Excluir Definitivo' : 'Lixeira'}
+                </div>
+              </div>
+            </div>
+
+            <div style="padding-right: 32px;">
+              ${qdtAnexos > 0 ? `<div class="n-card-badge"><span class="material-symbols-rounded" style="font-size: 14px;">attach_file</span> ${qdtAnexos} Arquivo${qdtAnexos > 1 ? 's' : ''}</div>` : ''}
+              <div class="n-card-title">${n.titulo || 'Sem título'}</div>
+            </div>
+
+            <div class="n-card-body">${textoPuro}</div>
+            <span class="n-card-date">${dataFmt}</span>
+          </div>
+        `;
+      });
+      container.innerHTML = html;
+
+      if (this.state.view === 'ativas') {
+        if(this.sortableInstance) this.sortableInstance.destroy();
+        this.sortableInstance = new Sortable(container, {
+          animation: 150, ghostClass: 'n-card-ghost', delay: window.innerWidth <= 768 ? 200 : 0, delayOnTouchOnly: true,
+          onEnd: function () { AppNotas.salvarOrdem(); }
+        });
+      } else { if(this.sortableInstance) this.sortableInstance.destroy(); }
+    },
+
+    salvarOrdem: function() {
+      const idsOrder = Array.from(document.querySelectorAll('#notas-grid .n-card')).map(card => card.dataset.id);
+      idsOrder.forEach((id, index) => { const nota = this.state.notas.find(n => String(n.id) === String(id)); if(nota) nota.ordem = index; });
+      MAIRun.atualizarOrdemNotas(idsOrder);
+    },
+
+    acao: function(tipoAcao) {
+      const id = document.getElementById('n-id').value;
+      if (!id) return;
+
+      if (tipoAcao === 'deletar') {
+        if (!confirm("ATENÇÃO: A nota e todos os anexos serão apagados do seu Drive permanentemente. Confirma?")) return;
+        
+        // Ativa o spinner e bloqueia o botão para não dar duplo clique no celular
+        const btn = document.getElementById('n-btn-excluir-definitivo');
+        btn.disabled = true;
+        btn.innerHTML = `<span class="spinner"></span> Excluindo...`;
+      } else {
+        this.fecharModal();
+      }
+
+      MAIRun.withSuccessHandler(res => {
+        if(res.ok) {
+          const idx = this.state.notas.findIndex(n => String(n.id) === String(id));
+          if (idx > -1) {
+            if (tipoAcao === 'deletar') this.state.notas.splice(idx, 1);
+            else if (tipoAcao === 'lixeira') this.state.notas[idx].ativo = false;
+            else if (tipoAcao === 'restaurar') this.state.notas[idx].ativo = true;
+            else if (tipoAcao === 'arquivar') this.state.notas[idx].arquivado = true;
+            else if (tipoAcao === 'desarquivar') this.state.notas[idx].arquivado = false;
+            this.renderizar();
+          }
+          if(tipoAcao === 'deletar') this.fecharModal();
+        } else {
+          alert("Erro ao processar: " + res.erro);
+          this.carregar();
+        }
+      }).acaoNota(id, tipoAcao);
+    },
+
+    acaoExterna: function(e, id, acao) {
+      if(e) e.stopPropagation();
+      document.querySelectorAll('.sys-dropdown').forEach(d => d.classList.remove('active'));
+      
+      document.getElementById('n-id').value = id;
+
+      const nota = this.state.notas.find(n => String(n.id) === String(id));
+      if (!nota) return;
+
+      if (acao === 'fixar') {
+        nota.fixado = !(nota.fixado === true || String(nota.fixado) === "true");
+        this.renderizar();
+        MAIRun.salvarNota(nota); 
+      } else if (acao.startsWith('tam-')) {
+        nota.tamanho = acao.replace('tam-', '');
+        this.renderizar();
+        MAIRun.salvarNota(nota);
+      } else {
+        this.acao(acao);
+      }
+    },
+
+    abrirModal: function(id = null) {
+      document.getElementById('modal-nota').classList.add('active');
+      const btnArq = document.getElementById('btn-arquivar'); const btnDesarq = document.getElementById('btn-desarquivar');
+      const btnLixo = document.getElementById('btn-lixeira'); const btnRestaurar = document.getElementById('btn-restaurar');
+      const btnSalvar = document.getElementById('n-btn-salvar'); const btnDelDef = document.getElementById('n-btn-excluir-definitivo');
+      const tray = document.getElementById('n-tray');
+      
+      // Reseta o botão de excluir
+      btnDelDef.innerHTML = "Excluir Definitivamente";
+      btnDelDef.disabled = false;
+      
+      if (id) {
+        const nota = this.state.notas.find(n => String(n.id) === String(id));
+        document.getElementById('n-id').value = nota.id;
+        document.getElementById('n-titulo').value = nota.titulo;
+        this.editor.root.innerHTML = nota.conteudo;
+        this.state.notaAtual = { fixado: nota.fixado, tamanho: nota.tamanho || 'normal', anexos: nota.anexos || [] };
+        
+        const d = new Date(nota.data);
+        document.getElementById('n-modal-date').innerText = `Editada em ${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`;
+        
+        if (!nota.ativo) { 
+          this.editor.disable(); document.getElementById('n-titulo').disabled = true;
+          btnArq.style.display = 'none'; btnDesarq.style.display = 'none'; btnLixo.style.display = 'none'; tray.style.display = 'none';
+          btnSalvar.style.display = 'none'; btnRestaurar.style.display = 'block'; btnDelDef.style.display = 'block';
+        } else { 
+          this.editor.enable(); document.getElementById('n-titulo').disabled = false;
+          btnLixo.style.display = 'block'; tray.style.display = 'flex';
+          btnSalvar.style.display = 'block'; btnRestaurar.style.display = 'none'; btnDelDef.style.display = 'none';
+          if (nota.arquivado) { btnArq.style.display = 'none'; btnDesarq.style.display = 'block'; } 
+          else { btnArq.style.display = 'block'; btnDesarq.style.display = 'none'; }
+        }
+      } else {
+        document.getElementById('n-id').value = ""; document.getElementById('n-titulo').value = "";
+        this.editor.root.innerHTML = ""; document.getElementById('n-modal-date').innerText = "Nova Nota";
+        this.state.notaAtual = { fixado: false, tamanho: 'normal', anexos: [] };
+        this.editor.enable(); document.getElementById('n-titulo').disabled = false;
+        btnArq.style.display = 'none'; btnDesarq.style.display = 'none'; btnLixo.style.display = 'none'; btnRestaurar.style.display = 'none'; btnDelDef.style.display = 'none';
+        tray.style.display = 'flex'; btnSalvar.style.display = 'block';
+      }
+      this.renderizarBandeja();
+    },
+
+    fecharModal: function() { document.getElementById('modal-nota').classList.remove('active'); },
+
+    renderizarBandeja: function() {
+      const container = document.getElementById('n-tray-list');
+      if (this.state.notaAtual.anexos.length === 0) {
+        container.innerHTML = `<div style="grid-column: 1 / -1; font-size: 13px; color: var(--text-secondary); padding: 24px 0; text-align: center; border: 1px dashed var(--divider); border-radius: 12px;">Sua gaveta de arquivos está vazia.</div>`;
+        return;
+      }
+      let html = '';
+      this.state.notaAtual.anexos.forEach((arq, index) => {
+        const isImg = arq.tipo.startsWith('image/');
+        const iconName = isImg ? 'image' : (arq.tipo.includes('pdf') ? 'picture_as_pdf' : 'description');
+        const thumbSrc = isImg ? `https://drive.google.com/thumbnail?id=${arq.idDrive}&sz=w400` : '';
+        const thumbHTML = isImg 
+          ? `<div class="n-thumb-img-wrapper" onclick="window.open('${arq.url}', '_blank')"><img src="${thumbSrc}" onerror="this.src='${arq.directUrl}'"></div>`
+          : `<div class="n-thumb-img-wrapper" onclick="window.open('${arq.url}', '_blank')"><span class="material-symbols-rounded" style="font-size: 42px; color: var(--text-secondary); opacity: 0.5;">${iconName}</span></div>`;
+
+        html += `
+          <div class="n-thumb-card" style="overflow: visible !important;">
+            ${thumbHTML}
+            <div class="n-thumb-footer" style="overflow: visible !important;">
+              <span class="n-thumb-name" title="${arq.nome}">${arq.nome}</span>
+              <div class="has-dropdown" style="position: static;">
+                <button class="sys-icon-btn" style="padding: 4px; width: 28px; height: 28px;" onclick="AppNotas.toggleDrop(event, 'drop-arq-${index}')">
+                  <span class="material-symbols-rounded" style="font-size: 18px;">more_vert</span>
+                </button>
+                <div id="drop-arq-${index}" class="sys-dropdown" style="top: 100%; right: -5px; z-index: 9999; margin-top: 4px;">
+                  <div class="sys-drop-item" onclick="AppNotas.renomearDaBandeja(${index})"><span class="material-symbols-rounded">edit</span> Renomear</div>
+                  <div class="sys-drop-item" onclick="AppNotas.inserirDoBandeja(${index})"><span class="material-symbols-rounded">arrow_upward</span> Inserir no Texto</div>
+                  <div style="height: 1px; background: var(--divider); margin: 4px 0;"></div>
+                  <div class="sys-drop-item" style="color: var(--mai-danger);" onclick="AppNotas.removerDaBandeja(${index})"><span class="material-symbols-rounded">delete</span> Excluir</div>
+                </div>
+              </div>
+            </div>
+          </div>`;
+      });
+      container.innerHTML = html;
+    },
+
+    uploadBandeja: function() {
+      const input = document.createElement('input'); 
+      input.type = 'file'; input.multiple = true;
+      input.onchange = async e => {
+        const files = Array.from(e.target.files); 
+        if(files.length === 0) return;
+        const btn = document.getElementById('btn-anexar');
+        btn.disabled = true;
+        for (let i = 0; i < files.length; i++) {
+          const file = files[i];
+          btn.innerHTML = `<span class="spinner"></span> Subindo ${i + 1}/${files.length}`;
+          let nomeFinal = file.name;
+          await new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onload = event => {
+              MAIRun.withSuccessHandler(res => {
+                if(res.ok) {
+                  this.state.notaAtual.anexos.push({ idDrive: res.idDrive, nome: nomeFinal, tipo: file.type, url: res.url, directUrl: res.directUrl });
+                  this.renderizarBandeja();
+                }
+                resolve();
+              }).salvarAnexoDrive(event.target.result, nomeFinal, file.type);
+            };
+            reader.readAsDataURL(file);
+          });
+        }
+        btn.innerHTML = `<span class="material-symbols-rounded" style="font-size: 18px;">add_circle</span> <span style="font-size: 13px; font-weight: 600;">Adicionar</span>`; 
+        btn.disabled = false;
+        this.salvar(false); 
+      };
+      input.click();
+    },
+
+    renomearDaBandeja: function(index) {
+      const arq = this.state.notaAtual.anexos[index];
+      const partes = arq.nome.split('.');
+      const ext = partes.length > 1 ? '.' + partes.pop() : '';
+      const nomeSemExt = partes.join('.');
+      const novoNome = prompt("Digite o novo nome para o arquivo:", nomeSemExt);
+      if (novoNome !== null && novoNome.trim() !== "") {
+        arq.nome = novoNome.trim() + ext;
+        this.renderizarBandeja();
+        this.salvar(false); 
+      }
+    },
+
+    inserirDoBandeja: function(index) {
+      const arq = this.state.notaAtual.anexos[index];
+      const range = this.editor.getSelection(true) || { index: this.editor.getLength() };
+      if (arq.tipo.startsWith('image/')) {
+        this.editor.insertEmbed(range.index, 'image', arq.directUrl);
+        this.editor.insertText(range.index + 1, '\n');
+      } else {
+        const texto = "📎 " + arq.nome;
+        this.editor.insertText(range.index, texto, 'link', arq.url);
+        this.editor.insertText(range.index + texto.length, '\n', 'link', false);
+      }
+    },
+
+    removerDaBandeja: function(index) {
+      if(confirm("Tem certeza? O arquivo será apagado permanentemente da sua gaveta e do Google Drive.")) {
+        const arqId = this.state.notaAtual.anexos[index].idDrive;
+        this.state.notaAtual.anexos.splice(index, 1);
+        this.renderizarBandeja();
+        this.salvar(false); 
+        MAIRun.deletarArquivoDrive(arqId);
+      }
+    },
+
+    salvar: function(fecharModal = true) {
+      let id = document.getElementById('n-id').value;
+      const titulo = document.getElementById('n-titulo').value.trim();
+      const conteudoHTML = this.editor.root.innerHTML;
+      if (!titulo && (conteudoHTML === "<p><br></p>" || conteudoHTML.trim() === "") && this.state.notaAtual.anexos.length === 0) { 
+        if(fecharModal) this.fecharModal(); 
+        return; 
+      }
+      if (!id) { 
+        id = 'nota-' + Date.now() + '-' + Math.floor(Math.random() * 10000); 
+        document.getElementById('n-id').value = id; 
+      }
+      const btn = document.getElementById('n-btn-salvar');
+      btn.disabled = true; btn.innerText = "Salvando...";
+      const dados = { 
+        id: id, titulo: titulo, conteudo: conteudoHTML, data: new Date().toISOString(),
+        fixado: this.state.notaAtual.fixado, tamanho: this.state.notaAtual.tamanho,
+        ativo: true, arquivado: this.state.view === 'arquivo', anexos: this.state.notaAtual.anexos,
+        ordem: this.state.notas.find(n => String(n.id) === String(id)) ? this.state.notas.find(n => String(n.id) === String(id)).ordem : 0 
+      };
+      const idx = this.state.notas.findIndex(n => String(n.id) === String(id));
+      if (idx > -1) { this.state.notas[idx] = Object.assign(this.state.notas[idx], dados); } else { this.state.notas.unshift(dados); }
+      this.renderizar(); 
+      if(fecharModal) this.fecharModal();
+      btn.disabled = false; btn.innerText = "Salvar Nota";
+      MAIRun.salvarNota(dados);
+    }
+  };
+
+  setTimeout(() => { AppNotas.init(); }, 150);
+</script>
+
+<script id="mai-v91-notas-instant">
+(() => {
+  if (typeof AppNotas === 'undefined') return;
+
+  AppNotas.acao = function(tipoAcao) {
+    const id = document.getElementById('n-id').value;
+    if (!id) return;
+
+    if (
+      tipoAcao === 'deletar' &&
+      !confirm('ATENÇÃO: A nota e todos os anexos serão apagados do seu Drive permanentemente. Confirma?')
+    ) return;
+
+    const previous = MAIInstant.clone(this.state.notas);
+    const idx = this.state.notas.findIndex(n => String(n.id) === String(id));
+
+    if (idx < 0) return;
+
+    if (tipoAcao === 'deletar') this.state.notas.splice(idx, 1);
+    else if (tipoAcao === 'lixeira') this.state.notas[idx].ativo = false;
+    else if (tipoAcao === 'restaurar') this.state.notas[idx].ativo = true;
+    else if (tipoAcao === 'arquivar') this.state.notas[idx].arquivado = true;
+    else if (tipoAcao === 'desarquivar') this.state.notas[idx].arquivado = false;
+
+    this.fecharModal();
+    this.renderizar();
+    MAIInstant.changed(`notas:${tipoAcao}`);
+
+    const rollback = () => {
+      this.state.notas = previous;
+      this.renderizar();
+      MAIInstant.error('Não foi possível sincronizar a nota.');
+    };
+
+    MAIRun
+      .withSuccessHandler(res => {
+        if (!res || res.ok === false) rollback();
+      })
+      .withFailureHandler(rollback)
+      .acaoNota(id, tipoAcao);
+  };
+
+  AppNotas.salvar = function(fecharModal = true) {
+    let id = document.getElementById('n-id').value;
+    const titulo = document.getElementById('n-titulo').value.trim();
+    const conteudoHTML = this.editor.root.innerHTML;
+
+    if (
+      !titulo &&
+      (conteudoHTML === '<p><br></p>' || conteudoHTML.trim() === '') &&
+      this.state.notaAtual.anexos.length === 0
+    ) {
+      if (fecharModal) this.fecharModal();
+      return;
+    }
+
+    if (!id) {
+      id = `nota-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
+      document.getElementById('n-id').value = id;
+    }
+
+    const previous = MAIInstant.clone(this.state.notas);
+
+    const dados = {
+      id,
+      titulo,
+      conteudo: conteudoHTML,
+      data: new Date().toISOString(),
+      fixado: this.state.notaAtual.fixado,
+      tamanho: this.state.notaAtual.tamanho,
+      ativo: true,
+      arquivado: this.state.view === 'arquivo',
+      anexos: MAIInstant.clone(this.state.notaAtual.anexos),
+      ordem: this.state.notas.find(n => String(n.id) === String(id))?.ordem || 0
+    };
+
+    const idx = this.state.notas.findIndex(n => String(n.id) === String(id));
+    if (idx > -1) this.state.notas[idx] = { ...this.state.notas[idx], ...dados };
+    else this.state.notas.unshift(dados);
+
+    this.renderizar();
+    if (fecharModal) this.fecharModal();
+    MAIInstant.changed('notas:salvar');
+
+    const rollback = () => {
+      this.state.notas = previous;
+      this.renderizar();
+      MAIInstant.error('A nota não foi sincronizada. A alteração foi desfeita.');
+    };
+
+    MAIRun
+      .withSuccessHandler(res => {
+        if (res && res.ok === false) rollback();
+      })
+      .withFailureHandler(rollback)
+      .salvarNota(dados);
+  };
+})();
+</script>
+
+<style id="mai-v111-notas-color-contract">
+.n-container {
+  background: var(--mai-bg-primary) !important;
+  color: var(--mai-text-primary) !important;
+}
+
+.n-container .n-tabs {
+  border-color: var(--mai-divider) !important;
+}
+
+.n-container .n-tab {
+  color: var(--mai-text-secondary) !important;
+}
+
+.n-container .n-tab.active {
+  color: var(--mai-accent) !important;
+  border-bottom-color: var(--mai-accent) !important;
+}
+
+body .n-container .n-grid .n-card {
+  background: var(--mai-bg-card) !important;
+  color: var(--mai-text-primary) !important;
+  border-color: var(--mai-divider) !important;
+  box-shadow: var(--mai-shadow-panel) !important;
+}
+
+body .n-container .n-grid .n-card:hover {
+  background: var(--mai-bg-hover) !important;
+  border-color: var(--mai-divider-strong) !important;
+}
+
+.n-container .n-card-btn-menu:hover,
+.n-container .n-card-badge {
+  background: var(--mai-bg-hover) !important;
+}
+
+.n-container .n-thumb-card,
+.n-container .n-thumb-footer {
+  background: var(--mai-bg-card) !important;
+  border-color: var(--mai-divider) !important;
+}
+
+.n-container .n-thumb-img-wrapper {
+  background: var(--mai-bg-hover) !important;
+}
+
+/* Modal sem fundo preto, seguindo o padrão atual do MAI. */
+#modal-nota.n-modal-overlay {
+  background: transparent !important;
+  backdrop-filter: none !important;
+}
+
+#modal-nota .n-modal-surface {
+  background: var(--mai-bg-card) !important;
+  border-color: var(--mai-divider) !important;
+  color: var(--mai-text-primary) !important;
+}
+
+#modal-nota .n-tray {
+  border-color: var(--mai-divider) !important;
+}
+
+#modal-nota .ql-toolbar,
+#modal-nota .ql-container {
+  border-color: var(--mai-divider) !important;
+  color: var(--mai-text-primary) !important;
+}
+</style>
