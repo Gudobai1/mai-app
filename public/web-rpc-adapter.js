@@ -141,7 +141,12 @@
   const handlers = {
     getScriptUrl: () => location.origin,
     getConfigsAgenda: () => ({ ok:true, calendarios: clone(state.configs.calendarios||[]) }),
-    salvarConfigsAgenda: configs => { state.configs = { ...state.configs, ...(configs||{}) }; persist(); return {ok:true}; },
+    salvarConfigsAgenda: configs => {
+      const next = Array.isArray(configs) ? { calendarios: configs.map(String) } : (configs || {});
+      state.configs = { ...state.configs, ...next };
+      persist();
+      return {ok:true};
+    },
     getListaCalendarios: () => [],
     getGoogleCalendarPeriodo: () => ({ok:true,eventos:[]}),
     getAgendaPlannerInterno: (s,e) => agendaPlanner(s,e),
