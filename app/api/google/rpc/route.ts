@@ -30,7 +30,7 @@ async function drive(method: string, args: unknown[], g: Awaited<ReturnType<type
     const name = String(args[0] || (method === 'criarPastaDriveHub' ? 'Nova pasta' : 'arquivo.txt'))
     const parent = String(args[1] || 'root')
     const metadata:any = { name, parents: [parent === 'root' ? 'root' : parent] }
-    if (method === 'criarPastaDriveHub') metadata.mimeType = 'application/vnd.google-apps.folder'
+    metadata.mimeType = method === 'criarPastaDriveHub' ? 'application/vnd.google-apps.folder' : 'text/plain'
     const response = await g.fetch('https://www.googleapis.com/drive/v3/files?fields=id,name,mimeType,size,modifiedTime,webViewLink', {
       method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(metadata),
     })
