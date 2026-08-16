@@ -1,6 +1,6 @@
 import crypto from 'node:crypto'
 import { NextResponse } from 'next/server'
-import { GOOGLE_SCOPES, googleConfig } from '@/lib/google'
+import { GOOGLE_SCOPES, googleConfig } from '../../../../lib/google'
 
 export async function GET() {
   const { clientId, appUrl } = googleConfig()
