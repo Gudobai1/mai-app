@@ -87,6 +87,24 @@
       'criarArquivoTextoDriveHub','salvarAnexoDrive','deletarArquivoDrive'
     ].forEach(method => { h[method] = (...args) => google(method,args) })
 
+    function showCalendarSettingsButton() {
+      const button = document.querySelector('button[onclick*="AppAgenda.abrirConfiguracoes"]')
+      if (!button || button.dataset.maiCalendarSettings === 'ready') return
+      button.dataset.maiCalendarSettings = 'ready'
+      button.title = 'Escolher calendários do Google'
+      button.setAttribute('aria-label', 'Configurar calendários do Google')
+      button.style.setProperty('display', 'inline-flex', 'important')
+      button.style.setProperty('width', 'auto', 'important')
+      button.style.setProperty('min-width', 'auto', 'important')
+      button.style.setProperty('gap', '6px', 'important')
+      button.style.setProperty('padding', '0 12px', 'important')
+      button.innerHTML = '<span class="material-symbols-rounded">settings</span><span style="font-size:12px;font-weight:700">Calendários</span>'
+    }
+
+    showCalendarSettingsButton()
+    const calendarButtonObserver = new MutationObserver(showCalendarSettingsButton)
+    calendarButtonObserver.observe(document.body, {childList:true, subtree:true})
+
     window.dispatchEvent(new CustomEvent('mai:google-ready'))
   }
 
