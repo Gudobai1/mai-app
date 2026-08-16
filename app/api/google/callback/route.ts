@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { GOOGLE_COOKIE, googleConfig, sealTokens } from '@/lib/google'
+import { GOOGLE_COOKIE, googleConfig, sealTokens } from '../../../../lib/google'
 
 export async function GET(request: NextRequest) {
   const { clientId, clientSecret, appUrl } = googleConfig()
