@@ -69,21 +69,45 @@ async function calendar(method:string, args:unknown[], g:Awaited<ReturnType<type
     const response = await g.fetch('https://www.googleapis.com/calendar/v3/users/me/calendarList?maxResults=250')
     const data = await response.json()
     if (!response.ok) throw new Error(data.error?.message || 'Erro ao consultar calendários')
-    return (data.items || []).map((cal:any) => ({id:cal.id,nome:cal.summary,cor:cal.backgroundColor,selecionado:cal.selected !== false}))
+    return (data.items || []).map((cal:any) => ({
+      id:cal.id,
+      nome:cal.summary,
+      cor:cal.backgroundColor || '#4285f4',
+      primary:cal.primary === true,
+      acesso:cal.accessRole || '',
+    }))
   }
 
   if (method === 'getGoogleCalendarPeriodo' || method === 'getDadosAgendaCompleta') {
     const timeMin = new Date(String(args[0])).toISOString()
     const timeMax = new Date(String(args[1])).toISOString()
-    const response = await g.fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events?singleEvents=true&orderBy=startTime&timeMin=${q(timeMin)}&timeMax=${q(timeMax)}&maxResults=2500`)
-    const data = await response.json()
-    if (!response.ok) throw new Error(data.error?.message || 'Erro ao consultar agenda')
-    const eventos = (data.items || []).map((event:any) => {
-      const start = event.start?.dateTime || event.start?.date || ''
-      const end = event.end?.dateTime || event.end?.date || ''
-      return {id:event.id,titulo:event.summary||'Compromisso',descricao:event.description||'',data_inicio:dateOnly(start),hora_inicio:start.includes('T')?start.slice(11,16):'',hora_fim:end.includes('T')?end.slice(11,16):'',dia_inteiro:!start.includes('T'),repeticao:event.recurrence?.[0]||'',cor:event.colorId||'',tipo:'google',url:event.htmlLink}
-    })
-    return {ok:true,eventos}
+    const requested = Array.isArray(args[2]) ? args[2].map(String).filter(Boolean) : []
+    const calendarIds = requested.length ? requested : ['primary']
+    const results = await Promise.all(calendarIds.map(async calendarId => {
+      const response = await g.fetch(`https://www.googleapis.com/calendar/v3/calendars/${q(calendarId)}/events?singleEvents=true&orderBy=startTime&timeMin=${q(timeMin)}&timeMax=${q(timeMax)}&maxResults=2500`)
+      const data = await response.json()
+      if (!response.ok) throw new Error(data.error?.message || 'Erro ao consultar agenda')
+      return (data.items || []).map((event:any) => {
+        const start = event.start?.dateTime || event.start?.date || ''
+        const end = event.end?.dateTime || event.end?.date || ''
+        return {
+          id:`${calendarId}::${event.id}`,
+          google_event_id:event.id,
+          calendario_id:calendarId,
+          titulo:event.summary||'Compromisso',
+          descricao:event.description||'',
+          data_inicio:dateOnly(start),
+          hora_inicio:start.includes('T')?start.slice(11,16):'',
+          hora_fim:end.includes('T')?end.slice(11,16):'',
+          dia_inteiro:!start.includes('T'),
+          repeticao:event.recurrence?.[0]||'',
+          cor:event.colorId||'',
+          tipo:'google',
+          url:event.htmlLink,
+        }
+      })
+    }))
+    return {ok:true,eventos:results.flat()}
   }
 
   if (method === 'salvarEventoAgenda') {
