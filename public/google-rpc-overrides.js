@@ -31,15 +31,34 @@
       return JSON.stringify({...local, eventos:[...(remote.eventos || []), ...(local.eventos || [])]})
     }
 
+    let todayGoogleEvents = []
+    let todayGoogleRequest = null
+    let todayGoogleKey = ''
+
+    function refreshTodayGoogle(start, end, key) {
+      if (todayGoogleRequest && todayGoogleKey === key) return
+      todayGoogleKey = key
+      todayGoogleRequest = google('getGoogleCalendarPeriodo', [start.toISOString(), end.toISOString()])
+        .then(remote => {
+          todayGoogleEvents = remote.eventos || []
+          window.dispatchEvent(new CustomEvent('mai:data-changed', {
+            detail: { method: 'googleCalendarToday', at: Date.now() }
+          }))
+        })
+        .catch(() => {})
+        .finally(() => { todayGoogleRequest = null })
+    }
+
     h.getResumoHoje = async () => {
       const local = await localToday()
       const start = new Date(); start.setHours(0,0,0,0)
       const end = new Date(); end.setHours(23,59,59,999)
-      try {
-        const remote = await google('getGoogleCalendarPeriodo', [start.toISOString(), end.toISOString()])
-        local.agenda = local.agenda || {eventos:[],tarefas:[],habitos:[],conclusoes:[]}
-        local.agenda.eventos = [...(remote.eventos || []), ...(local.agenda.eventos || [])]
-      } catch (_) {}
+      const key = start.toISOString().slice(0, 10)
+
+      local.agenda = local.agenda || {eventos:[],tarefas:[],habitos:[],conclusoes:[]}
+      local.agenda.eventos = [...todayGoogleEvents, ...(local.agenda.eventos || [])]
+
+      refreshTodayGoogle(start, end, key)
       return local
     }
 
