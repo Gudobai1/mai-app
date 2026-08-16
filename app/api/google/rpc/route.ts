@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { authorizedGoogle, GOOGLE_COOKIE, sealTokens } from '@/lib/google'
+import { authorizedGoogle, GOOGLE_COOKIE, sealTokens } from '../../../../lib/google'
 
 const json = (body: unknown, status = 200) => NextResponse.json(body, { status })
 const q = (value: unknown) => encodeURIComponent(String(value ?? ''))
