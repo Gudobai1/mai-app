@@ -117,7 +117,10 @@ async function calendar(method:string, args:unknown[], g:Awaited<ReturnType<type
     if (endDate) endDate.setDate(endDate.getDate()+1)
     const end = d.dia_inteiro ? {date:endDate!.toISOString().slice(0,10)} : {dateTime:`${dateOnly(d.data_inicio)}T${d.hora_fim || d.hora_inicio || '10:00'}:00`,timeZone:'America/Maceio'}
     const isGoogleId = d.tipo === 'google' && d.id
-    const url = `https://www.googleapis.com/calendar/v3/calendars/primary/events${isGoogleId ? `/${q(d.id)}` : ''}`
+    const [idCalendar, compositeEventId] = String(d.id || '').split('::')
+    const calendarId = String(d.calendario_id || (compositeEventId ? idCalendar : 'primary'))
+    const eventId = String(d.google_event_id || compositeEventId || d.id || '')
+    const url = `https://www.googleapis.com/calendar/v3/calendars/${q(calendarId)}/events${isGoogleId ? `/${q(eventId)}` : ''}`
     const response = await g.fetch(url,{method:isGoogleId?'PATCH':'POST',headers:{'content-type':'application/json'},body:JSON.stringify({summary:d.titulo,description:d.descricao||'',start,end})})
     const event = await response.json()
     if (!response.ok) throw new Error(event.error?.message || 'Erro ao salvar evento')
@@ -125,7 +128,10 @@ async function calendar(method:string, args:unknown[], g:Awaited<ReturnType<type
   }
 
   if (method === 'excluirEventoAgenda') {
-    const response = await g.fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events/${q(args[0])}`,{method:'DELETE'})
+    const [calendarPart, eventPart] = String(args[0] || '').split('::')
+    const calendarId = eventPart ? calendarPart : 'primary'
+    const eventId = eventPart || calendarPart
+    const response = await g.fetch(`https://www.googleapis.com/calendar/v3/calendars/${q(calendarId)}/events/${q(eventId)}`,{method:'DELETE'})
     if (!response.ok && response.status !== 410) throw new Error('Erro ao excluir evento')
     return {ok:true}
   }
