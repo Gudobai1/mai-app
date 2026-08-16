@@ -89,11 +89,30 @@
 
     function openCalendarSettings() {
       const open = () => {
-        if (window.Sys?.promoteModuleModals) window.Sys.promoteModuleModals('agenda')
-        if (window.AppAgenda?.abrirConfiguracoes) window.AppAgenda.abrirConfiguracoes()
+        const legacyButton = document.querySelector('button[onclick*="AppAgenda.abrirConfiguracoes"]')
+        if (legacyButton) {
+          legacyButton.click()
+          return
+        }
+        try {
+          if (typeof AppAgenda !== 'undefined' && AppAgenda?.abrirConfiguracoes) {
+            AppAgenda.abrirConfiguracoes()
+          }
+        } catch (_) {}
       }
-      if (window.Sys?.ensureModule) window.Sys.ensureModule('agenda', open)
-      else open()
+
+      try {
+        if (typeof Sys !== 'undefined' && Sys?.ensureModule) {
+          Sys.ensureModule('agenda', () => {
+            try {
+              if (Sys?.promoteModuleModals) Sys.promoteModuleModals('agenda')
+            } catch (_) {}
+            open()
+          })
+          return
+        }
+      } catch (_) {}
+      open()
     }
 
     function showCalendarSettingsButton() {
