@@ -54,14 +54,17 @@
     let todayGoogleEvents = []
     let todayGoogleRequest = null
     let todayGoogleKey = ''
+    let todayGoogleFetchedAt = 0
 
     function refreshTodayGoogle(start, end, key) {
       if (todayGoogleRequest && todayGoogleKey === key) return
+      if (todayGoogleKey === key && Date.now() - todayGoogleFetchedAt < 30000) return
       todayGoogleKey = key
       todayGoogleRequest = selectedCalendarIds()
         .then(ids => google('getGoogleCalendarPeriodo', [start.toISOString(), end.toISOString(), ids]))
         .then(remote => {
           todayGoogleEvents = remote.eventos || []
+          todayGoogleFetchedAt = Date.now()
           window.dispatchEvent(new CustomEvent('mai:data-changed', {
             detail: { method: 'googleCalendarToday', at: Date.now() }
           }))
@@ -145,6 +148,24 @@
     showCalendarSettingsButton()
     const calendarButtonObserver = new MutationObserver(showCalendarSettingsButton)
     calendarButtonObserver.observe(document.body, {childList:true, subtree:true})
+
+    let todayRefreshTimer = null
+    window.addEventListener('mai:data-changed', event => {
+      const method = event?.detail?.method || ''
+      clearTimeout(todayRefreshTimer)
+      todayRefreshTimer = setTimeout(() => {
+        try {
+          if (typeof Sys === 'undefined') return
+          if (Sys?.currentModule === 'hoje' && Sys?.today?.load) {
+            Sys.today.invalidate()
+            Sys.today.load(true)
+          } else if (Sys?.currentModule === 'em-breve' && method === 'salvarConfigsAgenda' && Sys?.upcoming?.load) {
+            Sys.upcoming.cache = null
+            Sys.upcoming.load(true)
+          }
+        } catch (_) {}
+      }, method === 'googleCalendarToday' ? 30 : 0)
+    })
 
     window.dispatchEvent(new CustomEvent('mai:google-ready'))
   }
