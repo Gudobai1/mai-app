@@ -18,16 +18,36 @@
     const h = window.MAIPort.handlers
     const localAgenda = h.getDadosAgendaCompleta
     const localToday = h.getResumoHoje
+    const localGetConfigs = h.getConfigsAgenda
+    const localSaveConfigs = h.salvarConfigsAgenda
 
-    h.getListaCalendarios = (...args) => google('getListaCalendarios', args)
-    h.getGoogleCalendarPeriodo = (...args) => google('getGoogleCalendarPeriodo', args)
+    async function selectedCalendarIds() {
+      const configs = await localGetConfigs()
+      return Array.isArray(configs?.calendarios) ? configs.calendarios : []
+    }
+
+    h.getListaCalendarios = async () => {
+      const [calendars, selected] = await Promise.all([
+        google('getListaCalendarios'),
+        selectedCalendarIds(),
+      ])
+      const selectedSet = new Set(selected.map(String))
+      return calendars.map(cal => ({
+        ...cal,
+        selecionado: selected.length ? selectedSet.has(String(cal.id)) : cal.primary === true,
+      }))
+    }
+    h.getConfigsAgenda = () => localGetConfigs()
+    h.salvarConfigsAgenda = ids => localSaveConfigs(Array.isArray(ids) ? ids : [])
+    h.getGoogleCalendarPeriodo = async (start, end) =>
+      google('getGoogleCalendarPeriodo', [start, end, await selectedCalendarIds()])
     h.salvarEventoAgenda = (...args) => google('salvarEventoAgenda', args)
     h.excluirEventoAgenda = (...args) => google('excluirEventoAgenda', args)
 
     h.getDadosAgendaCompleta = async (...args) => {
       const localRaw = await localAgenda(...args)
       const local = typeof localRaw === 'string' ? JSON.parse(localRaw) : localRaw
-      const remote = await google('getGoogleCalendarPeriodo', args)
+      const remote = await h.getGoogleCalendarPeriodo(...args)
       return JSON.stringify({...local, eventos:[...(remote.eventos || []), ...(local.eventos || [])]})
     }
 
@@ -38,7 +58,8 @@
     function refreshTodayGoogle(start, end, key) {
       if (todayGoogleRequest && todayGoogleKey === key) return
       todayGoogleKey = key
-      todayGoogleRequest = google('getGoogleCalendarPeriodo', [start.toISOString(), end.toISOString()])
+      todayGoogleRequest = selectedCalendarIds()
+        .then(ids => google('getGoogleCalendarPeriodo', [start.toISOString(), end.toISOString(), ids]))
         .then(remote => {
           todayGoogleEvents = remote.eventos || []
           window.dispatchEvent(new CustomEvent('mai:data-changed', {
