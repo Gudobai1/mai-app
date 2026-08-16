@@ -151,15 +151,20 @@
 
     let todayRefreshTimer = null
     window.addEventListener('mai:data-changed', event => {
+      const method = event?.detail?.method || ''
       clearTimeout(todayRefreshTimer)
       todayRefreshTimer = setTimeout(() => {
         try {
-          if (typeof Sys !== 'undefined' && Sys?.currentModule === 'hoje' && Sys?.today?.load) {
+          if (typeof Sys === 'undefined') return
+          if (Sys?.currentModule === 'hoje' && Sys?.today?.load) {
             Sys.today.invalidate()
             Sys.today.load(true)
+          } else if (Sys?.currentModule === 'em-breve' && method === 'salvarConfigsAgenda' && Sys?.upcoming?.load) {
+            Sys.upcoming.cache = null
+            Sys.upcoming.load(true)
           }
         } catch (_) {}
-      }, event?.detail?.method === 'googleCalendarToday' ? 30 : 0)
+      }, method === 'googleCalendarToday' ? 30 : 0)
     })
 
     window.dispatchEvent(new CustomEvent('mai:google-ready'))
