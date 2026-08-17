@@ -23,7 +23,18 @@ async function drive(method: string, args: unknown[], g: Awaited<ReturnType<type
       modificado: file.modifiedTime,
       url: file.webViewLink,
     }))
-    return { ok: true, items, folders: items.filter((x:any) => x.tipo === 'folder'), files: items.filter((x:any) => x.tipo !== 'folder'), path: [] }
+    const path:any[] = []
+    if (folderId !== 'root') {
+      let cursor = folderId
+      for (let depth = 0; cursor && cursor !== 'root' && depth < 12; depth += 1) {
+        const folderResponse = await g.fetch(`https://www.googleapis.com/drive/v3/files/${q(cursor)}?fields=id,name,parents`)
+        const folder = await folderResponse.json()
+        if (!folderResponse.ok) break
+        path.unshift({ id: folder.id, nome: folder.name, name: folder.name })
+        cursor = folder.parents?.[0] || 'root'
+      }
+    }
+    return { ok: true, items, folders: items.filter((x:any) => x.tipo === 'folder'), files: items.filter((x:any) => x.tipo !== 'folder'), path }
   }
 
   if (method === 'criarPastaDriveHub' || method === 'criarArquivoTextoDriveHub') {
@@ -31,8 +42,11 @@ async function drive(method: string, args: unknown[], g: Awaited<ReturnType<type
     const parent = String(args[1] || 'root')
     const metadata:any = { name, parents: [parent === 'root' ? 'root' : parent] }
     metadata.mimeType = method === 'criarPastaDriveHub' ? 'application/vnd.google-apps.folder' : 'text/plain'
-    const response = await g.fetch('https://www.googleapis.com/drive/v3/files?fields=id,name,mimeType,size,modifiedTime,webViewLink', {
-      method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(metadata),
+    const content = String(args[2] || '')
+    const boundary = `mai-text-${crypto.randomUUID()}`
+    const multipart = `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify(metadata)}\r\n--${boundary}\r\nContent-Type: text/plain; charset=UTF-8\r\n\r\n${content}\r\n--${boundary}--`
+    const response = await g.fetch(method === 'criarArquivoTextoDriveHub' ? 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,mimeType,size,modifiedTime,webViewLink' : 'https://www.googleapis.com/drive/v3/files?fields=id,name,mimeType,size,modifiedTime,webViewLink', {
+      method: 'POST', headers: { 'content-type': method === 'criarArquivoTextoDriveHub' ? `multipart/related; boundary=${boundary}` : 'application/json' }, body: method === 'criarArquivoTextoDriveHub' ? multipart : JSON.stringify(metadata),
     })
     const file = await response.json()
     if (!response.ok) throw new Error(file.error?.message || 'Erro ao criar item no Drive')
@@ -60,6 +74,25 @@ async function drive(method: string, args: unknown[], g: Awaited<ReturnType<type
     })
     if (!response.ok) throw new Error('Erro ao mover item para a lixeira')
     return { ok:true }
+  }
+  if (method === 'renomearDriveItem') {
+    const response = await g.fetch(`https://www.googleapis.com/drive/v3/files/${q(args[0])}?fields=id,name,mimeType,size,modifiedTime,webViewLink`, {
+      method:'PATCH', headers:{'content-type':'application/json'}, body:JSON.stringify({name:String(args[1] || '').trim()}),
+    })
+    const file = await response.json()
+    if (!response.ok) throw new Error(file.error?.message || 'Erro ao renomear item')
+    return {ok:true,item:file}
+  }
+  if (method === 'moverDriveItem') {
+    const fileId = String(args[0] || '')
+    const destination = String(args[1] || 'root')
+    const currentResponse = await g.fetch(`https://www.googleapis.com/drive/v3/files/${q(fileId)}?fields=parents`)
+    const current = await currentResponse.json()
+    if (!currentResponse.ok) throw new Error(current.error?.message || 'Erro ao consultar item')
+    const removeParents = (current.parents || []).join(',')
+    const response = await g.fetch(`https://www.googleapis.com/drive/v3/files/${q(fileId)}?addParents=${q(destination)}&removeParents=${q(removeParents)}&fields=id,parents`, {method:'PATCH'})
+    if (!response.ok) throw new Error('Erro ao mover item')
+    return {ok:true}
   }
   throw new Error(`Método Drive não implementado: ${method}`)
 }
@@ -116,15 +149,23 @@ async function calendar(method:string, args:unknown[], g:Awaited<ReturnType<type
     const endDate = d.dia_inteiro ? new Date(`${dateOnly(d.data_inicio)}T12:00:00`) : null
     if (endDate) endDate.setDate(endDate.getDate()+1)
     const end = d.dia_inteiro ? {date:endDate!.toISOString().slice(0,10)} : {dateTime:`${dateOnly(d.data_inicio)}T${d.hora_fim || d.hora_inicio || '10:00'}:00`,timeZone:'America/Maceio'}
-    const isGoogleId = d.tipo === 'google' && d.id
+    const isGoogleId = Boolean(d.id && (d.tipo === 'google' || d.tipo === 'gcalendar' || String(d.id).includes('::')))
     const [idCalendar, compositeEventId] = String(d.id || '').split('::')
     const calendarId = String(d.calendario_id || (compositeEventId ? idCalendar : 'primary'))
     const eventId = String(d.google_event_id || compositeEventId || d.id || '')
-    const url = `https://www.googleapis.com/calendar/v3/calendars/${q(calendarId)}/events${isGoogleId ? `/${q(eventId)}` : ''}`
-    const response = await g.fetch(url,{method:isGoogleId?'PATCH':'POST',headers:{'content-type':'application/json'},body:JSON.stringify({summary:d.titulo,description:d.descricao||'',start,end})})
+    const recurrence = d.repeticao ? [String(d.repeticao).startsWith('RRULE:') ? String(d.repeticao) : ({diariamente:'RRULE:FREQ=DAILY',semanalmente:'RRULE:FREQ=WEEKLY',mensalmente:'RRULE:FREQ=MONTHLY',anualmente:'RRULE:FREQ=YEARLY'} as Record<string,string>)[String(d.repeticao)] || String(d.repeticao)] : []
+    const body = JSON.stringify({summary:d.titulo,description:d.descricao||'',start,end,recurrence})
+    const originalCalendar = compositeEventId ? idCalendar : calendarId
+    const moved = isGoogleId && originalCalendar !== calendarId
+    const url = `https://www.googleapis.com/calendar/v3/calendars/${q(moved ? calendarId : originalCalendar)}/events${isGoogleId && !moved ? `/${q(eventId)}` : ''}`
+    const response = await g.fetch(url,{method:isGoogleId&&!moved?'PATCH':'POST',headers:{'content-type':'application/json'},body})
     const event = await response.json()
     if (!response.ok) throw new Error(event.error?.message || 'Erro ao salvar evento')
-    return {ok:true,id:event.id}
+    if (moved) {
+      const remove = await g.fetch(`https://www.googleapis.com/calendar/v3/calendars/${q(originalCalendar)}/events/${q(eventId)}`,{method:'DELETE'})
+      if (!remove.ok && remove.status !== 410) throw new Error('Evento criado no novo calendário, mas não foi possível remover o anterior')
+    }
+    return {ok:true,id:`${calendarId}::${event.id}`}
   }
 
   if (method === 'excluirEventoAgenda') {
@@ -144,7 +185,7 @@ export async function POST(request:NextRequest) {
     const method = String(body?.method || '')
     const args = Array.isArray(body?.args) ? body.args : []
     const g = await authorizedGoogle(request)
-    const payload = method.includes('Drive') || ['getDriveContent','uploadToDriveHub','trashDriveItem','criarPastaDriveHub','criarArquivoTextoDriveHub','salvarAnexoDrive','deletarArquivoDrive'].includes(method)
+    const payload = method.includes('Drive') || ['getDriveContent','uploadToDriveHub','trashDriveItem','criarPastaDriveHub','criarArquivoTextoDriveHub','salvarAnexoDrive','deletarArquivoDrive','renomearDriveItem','moverDriveItem'].includes(method)
       ? await drive(method,args,g)
       : await calendar(method,args,g)
     const response = json({payload})
