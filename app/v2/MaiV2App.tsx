@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react'
 import styles from './mai-v2.module.css'
 import { createTask, dateKey, emptyState, LegacyTask, loadState, MaiState, persistState } from '../../lib/v2/state'
+import { V2ModuleView } from './V2ModuleViews'
 
 type Area = 'inicio' | 'planejar' | 'tarefas' | 'rotinas' | 'projetos' | 'notas' | 'dinheiro' | 'bem-estar' | 'arquivos'
 
@@ -76,11 +77,16 @@ export function MaiV2App() {
     setState(next)
   }
 
+  function addTaskForDate(taskTitle: string, dueDate = today) {
+    const task = { ...createTask(taskTitle), data_vencimento: dueDate }
+    updateTasks([...state.tasks, task])
+  }
+
   function addTask(event: FormEvent) {
     event.preventDefault()
     const value = title.trim()
     if (!value) return
-    updateTasks([...state.tasks, createTask(value)])
+    addTaskForDate(value)
     setTitle('')
   }
 
@@ -210,14 +216,13 @@ export function MaiV2App() {
             </section>
           </div>
         ) : (
-          <div className={styles.content}>
-            <section className={styles.moduleIntro}>
-              <span>Nova área</span>
-              <h1>{activeLabel}</h1>
-              <p>Esta área será reconstruída do zero na próxima etapa, com interação instantânea e sincronização em segundo plano.</p>
-              <button onClick={() => setArea('inicio')}>Voltar ao Início</button>
-            </section>
-          </div>
+          <V2ModuleView
+            area={area}
+            state={state}
+            today={today}
+            onCreateTask={addTaskForDate}
+            onToggleTask={toggleTask}
+          />
         )}
       </main>
     </div>
