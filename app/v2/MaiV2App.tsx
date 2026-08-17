@@ -1,37 +1,29 @@
 'use client'
 
-import { FormEvent, useEffect, useMemo, useState } from 'react'
+import { FormEvent, useEffect, useMemo, useRef, useState } from 'react'
 import styles from './mai-v2.module.css'
 import { createTask, dateKey, emptyState, LegacyTask, loadState, MaiState, persistState } from '../../lib/v2/state'
-import { V2ModuleView } from './V2ModuleViews'
 
-type Area = 'inicio' | 'planejar' | 'tarefas' | 'rotinas' | 'projetos' | 'notas' | 'dinheiro' | 'bem-estar' | 'arquivos'
-
-const areas: { id: Area; label: string; icon: string }[] = [
-  { id: 'inicio', label: 'Início', icon: 'home' },
-  { id: 'planejar', label: 'Planejar', icon: 'calendar' },
-  { id: 'tarefas', label: 'Tarefas', icon: 'check' },
-  { id: 'rotinas', label: 'Rotinas', icon: 'repeat' },
-  { id: 'projetos', label: 'Projetos', icon: 'folder' },
-  { id: 'notas', label: 'Notas', icon: 'note' },
-  { id: 'dinheiro', label: 'Dinheiro', icon: 'wallet' },
-  { id: 'bem-estar', label: 'Bem-estar', icon: 'heart' },
-  { id: 'arquivos', label: 'Arquivos', icon: 'cloud' },
-]
+type View = 'inbox' | 'today' | 'upcoming' | `project:${string}`
+type Project = { id: string; name: string; color: string }
+type Calendar = { id: string; nome: string; cor: string; primary?: boolean; acesso?: string }
+type CalendarEvent = Record<string, unknown>
 
 const iconPaths: Record<string, string> = {
-  home: 'M3 11.5 12 4l9 7.5V21h-6v-6H9v6H3z',
-  calendar: 'M5 3v3m14-3v3M4 8h16v12H4zM8 12h3v3H8z',
-  check: 'm5 12 4 4L19 6',
-  repeat: 'M17 2l4 4-4 4M3 11V8a2 2 0 0 1 2-2h16M7 22l-4-4 4-4m14-1v3a2 2 0 0 1-2 2H3',
-  folder: 'M3 6h7l2 2h9v11H3z',
-  note: 'M6 3h9l4 4v14H6zM14 3v5h5M9 13h7M9 17h5',
-  wallet: 'M3 6h16v14H3zM3 9h18v7h-5a3 3 0 0 1 0-6h5',
-  heart: 'M12 21S3 15.5 3 9.5A4.5 4.5 0 0 1 12 7a4.5 4.5 0 0 1 9 2.5C21 15.5 12 21 12 21Z',
-  cloud: 'M7 19h11a4 4 0 0 0 .6-7.95A7 7 0 0 0 5.2 9.4 4.8 4.8 0 0 0 7 19Z',
+  menu: 'M4 7h16M4 12h16M4 17h16',
   plus: 'M12 5v14M5 12h14',
   search: 'm20 20-4.5-4.5M18 11a7 7 0 1 1-14 0 7 7 0 0 1 14 0Z',
-  menu: 'M4 7h16M4 12h16M4 17h16',
+  inbox: 'M4 5h16v14H4zM4 14h5l2 3h2l2-3h5',
+  today: 'M6 3v3m12-3v3M4 8h16v12H4zM8 12h4v4H8z',
+  upcoming: 'M6 3v3m12-3v3M4 8h16v12H4zM8 12h8m-8 4h5',
+  hash: 'M10 3 8 21m8-18-2 18M4 9h16M3 15h16',
+  settings: 'M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7ZM19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.83 2.83-.06-.06A1.7 1.7 0 0 0 15 19.4a1.7 1.7 0 0 0-1 .6l-.04.08H10l-.04-.08a1.7 1.7 0 0 0-1-.6 1.7 1.7 0 0 0-1.88.34l-.06.06-2.83-2.83.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-.6-1l-.08-.04V10L4 9.96a1.7 1.7 0 0 0 .6-1 1.7 1.7 0 0 0-.34-1.88L4.2 7.02 7.02 4.2l.06.06A1.7 1.7 0 0 0 8.96 4.6a1.7 1.7 0 0 0 1-.6l.04-.08h3.96L14 4a1.7 1.7 0 0 0 1 .6 1.7 1.7 0 0 0 1.88-.34l.06-.06 2.83 2.83-.06.06A1.7 1.7 0 0 0 19.4 9c.08.4.3.75.6 1l.08.04V14L20 14.04c-.3.25-.52.6-.6.96Z',
+  calendar: 'M6 3v3m12-3v3M4 8h16v12H4z',
+  chevron: 'm9 18 6-6-6-6',
+  close: 'M6 6l12 12M18 6 6 18',
+  external: 'M14 4h6v6m0-6-9 9M20 13v7H4V4h7',
+  sync: 'M20 7h-5V2M4 17h5v5M19 12a7 7 0 0 0-12-5l-2 2m0 3a7 7 0 0 0 12 5l2-2',
+  trash: 'M4 7h16M9 7V4h6v3m3 0-1 14H7L6 7m4 4v6m4-6v6',
   more: 'M5 12h.01M12 12h.01M19 12h.01',
 }
 
@@ -43,216 +35,417 @@ function Icon({ name, size = 19 }: { name: string; size?: number }) {
   )
 }
 
-function taskDate(task: LegacyTask) {
-  return String(task.data_vencimento || '').slice(0, 10)
+const rows = (value: unknown) => Array.isArray(value) ? value as CalendarEvent[] : []
+const taskDate = (task: LegacyTask) => String(task.data_vencimento || '').slice(0, 10)
+const taskTime = (task: LegacyTask) => String(task.data_vencimento || '').includes('T') ? String(task.data_vencimento).slice(11, 16) : ''
+const eventDate = (event: CalendarEvent) => String(event.data_inicio || '').slice(0, 10)
+const eventTime = (event: CalendarEvent) => String(event.hora_inicio || '')
+
+function addDays(key: string, amount: number) {
+  const date = new Date(`${key}T12:00:00`)
+  date.setDate(date.getDate() + amount)
+  return dateKey(date)
+}
+
+function formatDate(key: string, options: Intl.DateTimeFormatOptions) {
+  return new Date(`${key}T12:00:00`).toLocaleDateString('pt-BR', options)
+}
+
+function projectList(value: unknown): Project[] {
+  return rows(value)
+    .filter(item => item.ativo !== false)
+    .map((item, index) => ({
+      id: String(item.id || `projeto-${index}`),
+      name: String(item.nome || item.name || 'Projeto sem nome'),
+      color: String(item.cor || item.color || ['#7a8f72', '#8d786b', '#6f8398', '#8c7b9b'][index % 4]),
+    }))
+}
+
+function sameProject(task: LegacyTask, projectId: string) {
+  return String(task.projeto_id || 'entrada') === projectId
 }
 
 export function MaiV2App() {
-  const [area, setArea] = useState<Area>('inicio')
   const [state, setState] = useState<MaiState>(() => emptyState())
   const [ready, setReady] = useState(false)
-  const [title, setTitle] = useState('')
-  const [now, setNow] = useState<Date | null>(null)
+  const [view, setView] = useState<View>('today')
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [composerOpen, setComposerOpen] = useState(false)
+  const [draftTitle, setDraftTitle] = useState('')
+  const [draftDate, setDraftDate] = useState('')
+  const [draftProject, setDraftProject] = useState('entrada')
+  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null)
+  const [showCompleted, setShowCompleted] = useState(false)
+  const [searchOpen, setSearchOpen] = useState(false)
+  const [search, setSearch] = useState('')
+  const [newProjectOpen, setNewProjectOpen] = useState(false)
+  const [newProjectName, setNewProjectName] = useState('')
+  const [settingsOpen, setSettingsOpen] = useState(false)
+  const [googleConnected, setGoogleConnected] = useState<boolean | null>(null)
+  const [calendars, setCalendars] = useState<Calendar[]>([])
+  const [calendarDraft, setCalendarDraft] = useState<string[]>([])
+  const [calendarBusy, setCalendarBusy] = useState(false)
+  const quickInput = useRef<HTMLInputElement>(null)
+  const today = dateKey()
+
+  const projects = useMemo(() => projectList(state.projects), [state.projects])
+  const events = useMemo(() => rows(state.events), [state.events])
+  const openTasks = useMemo(() => state.tasks.filter(task => !task.concluida), [state.tasks])
+  const completedTasks = useMemo(() => state.tasks.filter(task => task.concluida), [state.tasks])
+  const selectedTask = useMemo(() => state.tasks.find(task => task.id === selectedTaskId) || null, [state.tasks, selectedTaskId])
 
   useEffect(() => {
-    setState(loadState())
-    setNow(new Date())
+    const saved = loadState()
+    setState(saved)
     setReady(true)
+    void checkGoogle(saved)
   }, [])
 
-  const today = dateKey(now || new Date())
-  const todayTasks = useMemo(
-    () => state.tasks
-      .filter(task => taskDate(task) === today)
-      .sort((a, b) => Number(a.concluida) - Number(b.concluida) || Number(a.ordem || 0) - Number(b.ordem || 0)),
-    [state.tasks, today],
-  )
-  const completed = todayTasks.filter(task => task.concluida).length
-  const pending = todayTasks.length - completed
-  const progress = todayTasks.length ? Math.round((completed / todayTasks.length) * 100) : 0
+  useEffect(() => {
+    const onKeyDown = (event: globalThis.KeyboardEvent) => {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
+        event.preventDefault()
+        setSearchOpen(true)
+      }
+      if (event.key === 'Escape') {
+        setSearchOpen(false)
+        setSettingsOpen(false)
+        setSelectedTaskId(null)
+      }
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [])
 
-  function updateTasks(tasks: LegacyTask[]) {
-    const next = persistState({ ...state, tasks })
-    setState(next)
+  function commit(change: (current: MaiState) => MaiState) {
+    setState(current => persistState(change(current)))
   }
 
-  function addTaskForDate(taskTitle: string, dueDate = today) {
-    const task = { ...createTask(taskTitle), data_vencimento: dueDate }
-    updateTasks([...state.tasks, task])
+  async function googleRpc(method: string, args: unknown[] = []) {
+    const response = await fetch('/api/google/rpc', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ method, args }),
+    })
+    const data = await response.json()
+    if (!response.ok) throw new Error(data.error || 'Não foi possível acessar o Google')
+    return data.payload
+  }
+
+  async function checkGoogle(snapshot: MaiState) {
+    try {
+      const response = await fetch('/api/google/status', { cache: 'no-store' })
+      const data = await response.json()
+      const connected = data.connected === true
+      setGoogleConnected(connected)
+      if (connected) void syncCalendarEvents(snapshot.configs.calendarios || [])
+    } catch {
+      setGoogleConnected(false)
+    }
+  }
+
+  async function syncCalendarEvents(calendarIds: string[]) {
+    setCalendarBusy(true)
+    try {
+      const start = new Date(`${addDays(today, -14)}T00:00:00`)
+      const end = new Date(`${addDays(today, 61)}T23:59:59`)
+      const payload = await googleRpc('getGoogleCalendarPeriodo', [start.toISOString(), end.toISOString(), calendarIds])
+      const nextEvents = Array.isArray(payload?.eventos) ? payload.eventos : []
+      setState(current => ({ ...current, events: nextEvents }))
+    } catch {
+      // A lista local continua disponível caso a rede ou o Google falhe.
+    } finally {
+      setCalendarBusy(false)
+    }
+  }
+
+  async function openGoogleSettings() {
+    setSettingsOpen(true)
+    setCalendarBusy(true)
+    try {
+      const response = await fetch('/api/google/status', { cache: 'no-store' })
+      const status = await response.json()
+      const connected = status.connected === true
+      setGoogleConnected(connected)
+      if (!connected) return
+      const list = await googleRpc('getListaCalendarios') as Calendar[]
+      const safeList = Array.isArray(list) ? list : []
+      setCalendars(safeList)
+      const saved = state.configs.calendarios || []
+      setCalendarDraft(saved.length ? saved : safeList.filter(calendar => calendar.primary).map(calendar => calendar.id))
+    } catch {
+      setGoogleConnected(false)
+    } finally {
+      setCalendarBusy(false)
+    }
+  }
+
+  async function saveCalendars() {
+    commit(current => ({
+      ...current,
+      configs: { ...current.configs, calendarios: calendarDraft },
+    }))
+    setSettingsOpen(false)
+    await syncCalendarEvents(calendarDraft)
+  }
+
+  function navigate(next: View) {
+    setView(next)
+    setSidebarOpen(false)
+    setSelectedTaskId(null)
+    setShowCompleted(false)
+    if (next === 'today') setDraftDate(today)
+    else if (next === 'upcoming') setDraftDate(addDays(today, 1))
+    else setDraftDate('')
+    if (next.startsWith('project:')) setDraftProject(next.slice(8))
+    else setDraftProject('entrada')
+  }
+
+  function openComposer() {
+    if (view === 'today' && !draftDate) setDraftDate(today)
+    if (view === 'upcoming' && !draftDate) setDraftDate(addDays(today, 1))
+    if (view.startsWith('project:')) setDraftProject(view.slice(8))
+    setComposerOpen(true)
+    requestAnimationFrame(() => quickInput.current?.focus())
   }
 
   function addTask(event: FormEvent) {
     event.preventDefault()
-    const value = title.trim()
-    if (!value) return
-    addTaskForDate(value)
-    setTitle('')
+    const title = draftTitle.trim()
+    if (!title) return
+    const task: LegacyTask = {
+      ...createTask(title),
+      data_vencimento: draftDate,
+      projeto_id: draftProject || 'entrada',
+    }
+    commit(current => ({ ...current, tasks: [...current.tasks, task] }))
+    setDraftTitle('')
+    setComposerOpen(false)
+  }
+
+  function updateTask(id: string, patch: Partial<LegacyTask>) {
+    commit(current => ({
+      ...current,
+      tasks: current.tasks.map(task => task.id === id ? { ...task, ...patch } : task),
+    }))
   }
 
   function toggleTask(id: string) {
-    updateTasks(state.tasks.map(task => task.id === id ? { ...task, concluida: !task.concluida } : task))
+    commit(current => ({
+      ...current,
+      tasks: current.tasks.map(task => task.id === id ? { ...task, concluida: !task.concluida } : task),
+    }))
   }
 
-  const greeting = !now ? 'Olá' : now.getHours() < 12 ? 'Bom dia' : now.getHours() < 18 ? 'Boa tarde' : 'Boa noite'
-  const formattedDate = now?.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })
-  const activeLabel = areas.find(item => item.id === area)?.label || 'Início'
-  const eventRows = Array.isArray(state.events) ? state.events as Array<Record<string, any>> : []
-  const habitRows = Array.isArray(state.habits) ? state.habits as Array<Record<string, any>> : []
-  const habitEntryRows = Array.isArray(state.habitEntries) ? state.habitEntries as Array<Record<string, any>> : []
-  const projectRows = Array.isArray(state.projects) ? state.projects as Array<Record<string, any>> : []
-  const overdueTasks = state.tasks.filter(task => !task.concluida && taskDate(task) && taskDate(task) < today)
-  const todayEvents = eventRows.filter(event => String(event.data_inicio || '').slice(0, 10) === today)
-  const nextWeek = new Date(new Date(`${today}T12:00:00`).getTime() + 7 * 86400000).toISOString().slice(0, 10)
-  const upcomingTasks = state.tasks
-    .filter(task => !task.concluida && taskDate(task) > today && taskDate(task) <= nextWeek)
-    .sort((a, b) => taskDate(a).localeCompare(taskDate(b)))
-  const habitsDoneToday = habitEntryRows.filter(entry => String(entry.data || '').slice(0, 10) === today).length
-  const finance = state.finance as Record<string, any>
-  const pendingFinance = Array.isArray(finance.transactions)
-    ? finance.transactions.filter((item: Record<string, any>) => !['pago','paga','concluido','concluída'].includes(String(item.status || '').toLowerCase())).length
-    : 0
-  const todayOverviewItems: Array<{ id: string; type: 'Tarefa' | 'Agenda'; title: string; time: string; done: boolean }> = [
-    ...todayTasks.map(task => ({
-      id: task.id,
-      type: 'Tarefa' as const,
-      title: task.titulo,
-      time: String(task.data_vencimento || '').includes('T') ? String(task.data_vencimento).slice(11, 16) : 'Dia todo',
-      done: task.concluida === true,
-    })),
-    ...todayEvents.map(event => ({
-      id: String(event.id),
-      type: 'Agenda' as const,
-      title: String(event.titulo || 'Compromisso'),
-      time: String(event.hora_inicio || 'Dia todo'),
-      done: false,
-    })),
-  ].sort((a, b) => (a.time === 'Dia todo' ? '99:99' : a.time).localeCompare(b.time === 'Dia todo' ? '99:99' : b.time))
+  function deleteTask(id: string) {
+    if (!window.confirm('Excluir esta tarefa?')) return
+    commit(current => ({ ...current, tasks: current.tasks.filter(task => task.id !== id) }))
+    setSelectedTaskId(null)
+  }
+
+  function addProject(event: FormEvent) {
+    event.preventDefault()
+    const name = newProjectName.trim()
+    if (!name) return
+    const id = `p-${crypto.randomUUID()}`
+    const project = { id, nome: name, cor: '#73866c', ativo: true, criado_em: new Date().toISOString() }
+    commit(current => ({ ...current, projects: [...rows(current.projects), project] }))
+    setNewProjectName('')
+    setNewProjectOpen(false)
+    navigate(`project:${id}`)
+  }
+
+  const projectId = view.startsWith('project:') ? view.slice(8) : ''
+  const activeProject = projects.find(project => project.id === projectId)
+  const viewTitle = view === 'inbox' ? 'Entrada' : view === 'today' ? 'Hoje' : view === 'upcoming' ? 'Em breve' : activeProject?.name || 'Projeto'
+  const viewSubtitle = view === 'today'
+    ? formatDate(today, { weekday: 'long', day: 'numeric', month: 'long' })
+    : view === 'upcoming' ? 'Próximos 14 dias' : ''
+  const inboxTasks = openTasks.filter(task => sameProject(task, 'entrada'))
+  const overdueTasks = openTasks.filter(task => taskDate(task) && taskDate(task) < today).sort((a, b) => taskDate(a).localeCompare(taskDate(b)))
+  const todayTasks = openTasks.filter(task => taskDate(task) === today)
+  const projectTasks = openTasks.filter(task => sameProject(task, projectId))
+  const visibleCompleted = completedTasks.filter(task => {
+    if (view === 'inbox') return sameProject(task, 'entrada')
+    if (view === 'today') return taskDate(task) === today
+    if (view.startsWith('project:')) return sameProject(task, projectId)
+    return taskDate(task) > today && taskDate(task) <= addDays(today, 14)
+  })
+
+  const upcomingDays = Array.from({ length: 14 }, (_, index) => addDays(today, index + 1))
+  const searchResults = useMemo(() => {
+    const query = search.trim().toLocaleLowerCase('pt-BR')
+    if (!query) return []
+    return state.tasks.filter(task => `${task.titulo} ${task.descricao || ''}`.toLocaleLowerCase('pt-BR').includes(query)).slice(0, 20)
+  }, [search, state.tasks])
+
+  function TaskRow({ task }: { task: LegacyTask }) {
+    const due = taskDate(task)
+    const project = projects.find(item => item.id === String(task.projeto_id))
+    return (
+      <div className={styles.taskRow} data-completed={task.concluida === true}>
+        <button
+          className={styles.check}
+          data-priority={task.prioridade || 4}
+          onClick={() => toggleTask(task.id)}
+          aria-label={task.concluida ? 'Reabrir tarefa' : 'Concluir tarefa'}
+        >{task.concluida ? '✓' : ''}</button>
+        <button className={styles.taskBody} onClick={() => setSelectedTaskId(task.id)}>
+          <strong>{task.titulo}</strong>
+          {task.descricao && <span className={styles.description}>{task.descricao}</span>}
+          <span className={styles.taskMeta}>
+            {due && <em data-overdue={!task.concluida && due < today}>{due === today ? 'Hoje' : formatDate(due, { day: 'numeric', month: 'short' })}{taskTime(task) ? ` · ${taskTime(task)}` : ''}</em>}
+            {project && <em><i style={{ background: project.color }} />{project.name}</em>}
+          </span>
+        </button>
+        <button className={styles.rowAction} onClick={() => setSelectedTaskId(task.id)} aria-label="Abrir detalhes"><Icon name="more" /></button>
+      </div>
+    )
+  }
+
+  function EventRow({ event }: { event: CalendarEvent }) {
+    const url = String(event.url || '')
+    const body = (
+      <>
+        <span className={styles.eventTime}>{eventTime(event) || 'Dia todo'}</span>
+        <span className={styles.eventBody}><strong>{String(event.titulo || 'Compromisso')}</strong><small>Google Agenda</small></span>
+        {url && <Icon name="external" size={15} />}
+      </>
+    )
+    return url
+      ? <a className={styles.eventRow} href={url} target="_blank" rel="noreferrer">{body}</a>
+      : <div className={styles.eventRow}>{body}</div>
+  }
+
+  function AddLine() {
+    if (!composerOpen) return <button className={styles.addLine} onClick={openComposer}><Icon name="plus" size={17} />Adicionar tarefa</button>
+    return (
+      <form className={styles.composer} onSubmit={addTask}>
+        <input ref={quickInput} value={draftTitle} onChange={event => setDraftTitle(event.target.value)} placeholder="Nome da tarefa" autoComplete="off" />
+        <div className={styles.composerFields}>
+          <label><Icon name="calendar" size={15} /><input type="date" value={draftDate} onChange={event => setDraftDate(event.target.value)} /></label>
+          <label><Icon name="hash" size={15} /><select value={draftProject} onChange={event => setDraftProject(event.target.value)}><option value="entrada">Entrada</option>{projects.map(project => <option key={project.id} value={project.id}>{project.name}</option>)}</select></label>
+          <span />
+          <button type="button" onClick={() => { setComposerOpen(false); setDraftTitle('') }}>Cancelar</button>
+          <button type="submit" disabled={!draftTitle.trim()}>Adicionar</button>
+        </div>
+      </form>
+    )
+  }
 
   return (
     <div className={styles.app}>
       <aside className={styles.sidebar} data-open={sidebarOpen}>
-        <div className={styles.brand}>
-          <div className={styles.brandMark}>M</div>
-          <div><strong>MAI</strong><span>Seu espaço pessoal</span></div>
+        <div className={styles.accountTop}>
+          <div className={styles.avatar}>M</div>
+          <strong>MAI</strong>
+          <button onClick={() => setSidebarOpen(false)} aria-label="Fechar menu"><Icon name="close" /></button>
         </div>
 
-        <nav className={styles.nav} aria-label="Áreas do MAI">
-          <span className={styles.navCaption}>Organizar</span>
-          {areas.slice(0, 5).map(item => (
-            <button key={item.id} className={area === item.id ? styles.navActive : ''} onClick={() => { setArea(item.id); setSidebarOpen(false) }}>
-              <Icon name={item.icon} /><span>{item.label}</span>
-            </button>
-          ))}
-          <span className={styles.navCaption}>Vida</span>
-          {areas.slice(5).map(item => (
-            <button key={item.id} className={area === item.id ? styles.navActive : ''} onClick={() => { setArea(item.id); setSidebarOpen(false) }}>
-              <Icon name={item.icon} /><span>{item.label}</span>
-            </button>
-          ))}
+        <button className={styles.addTaskButton} onClick={openComposer}><Icon name="plus" />Adicionar tarefa</button>
+        <button className={styles.searchButton} onClick={() => setSearchOpen(true)}><Icon name="search" /><span>Buscar</span><kbd>Ctrl K</kbd></button>
+
+        <nav className={styles.primaryNav} aria-label="Navegação principal">
+          <button data-active={view === 'inbox'} onClick={() => navigate('inbox')}><Icon name="inbox" /><span>Entrada</span><b>{inboxTasks.length || ''}</b></button>
+          <button data-active={view === 'today'} onClick={() => navigate('today')}><Icon name="today" /><span>Hoje</span><b>{overdueTasks.length + todayTasks.length || ''}</b></button>
+          <button data-active={view === 'upcoming'} onClick={() => navigate('upcoming')}><Icon name="upcoming" /><span>Em breve</span></button>
         </nav>
 
-        <div className={styles.account}>
-          <div className={styles.avatar}>A</div>
-          <div><strong>Adm</strong><span>Sincronização ativa</span></div>
-          <button aria-label="Mais opções"><Icon name="more" /></button>
-        </div>
+        <div className={styles.projectsHeader}><span>Meus projetos</span><button onClick={() => setNewProjectOpen(value => !value)} aria-label="Criar projeto"><Icon name="plus" size={16} /></button></div>
+        {newProjectOpen && <form className={styles.projectComposer} onSubmit={addProject}><input autoFocus value={newProjectName} onChange={event => setNewProjectName(event.target.value)} placeholder="Nome do projeto" /><button>Adicionar</button></form>}
+        <nav className={styles.projectNav} aria-label="Projetos">
+          {projects.map(project => (
+            <button key={project.id} data-active={projectId === project.id} onClick={() => navigate(`project:${project.id}`)}>
+              <i style={{ background: project.color }} /><span>{project.name}</span><b>{openTasks.filter(task => sameProject(task, project.id)).length || ''}</b>
+            </button>
+          ))}
+          {!projects.length && ready && <small>Crie um projeto quando precisar separar um trabalho.</small>}
+        </nav>
+
+        <button className={styles.googleButton} onClick={openGoogleSettings}>
+          <span className={styles.googleMark}>G</span><span><strong>Google</strong><small>{googleConnected === null ? 'Verificando conexão' : googleConnected ? 'Agenda e Drive conectados' : 'Conectar Agenda e Drive'}</small></span><Icon name="settings" size={17} />
+        </button>
       </aside>
 
       {sidebarOpen && <button className={styles.scrim} aria-label="Fechar menu" onClick={() => setSidebarOpen(false)} />}
 
       <main className={styles.main}>
-        <header className={styles.topbar}>
-          <button className={styles.menuButton} onClick={() => setSidebarOpen(true)} aria-label="Abrir menu"><Icon name="menu" /></button>
-          <div className={styles.breadcrumb}><span>MAI</span><b>/</b><strong>{activeLabel}</strong></div>
-          <div className={styles.topActions}>
-            <button className={styles.searchButton}><Icon name="search" /><span>Buscar</span><kbd>⌘ K</kbd></button>
-            <button className={styles.newButton} onClick={() => document.getElementById('v2-quick-task')?.focus()}><Icon name="plus" />Novo</button>
-          </div>
-        </header>
+        <div className={styles.mobileBar}>
+          <button onClick={() => setSidebarOpen(true)} aria-label="Abrir menu"><Icon name="menu" /></button>
+          <strong>MAI</strong>
+          <button onClick={openComposer} aria-label="Adicionar tarefa"><Icon name="plus" /></button>
+        </div>
 
-        {area === 'inicio' ? (
-          <div className={styles.glanceContent}>
-            <section className={styles.glanceHeader}>
-              <div>
-                <span>{formattedDate || 'Carregando seu dia...'}</span>
-                <h1>Visão geral</h1>
-                <p>O que importa, o que precisa de atenção e o que vem depois.</p>
-              </div>
-              <button onClick={() => document.getElementById('v2-glance-add')?.focus()}><Icon name="plus" /> Adicionar item</button>
-            </section>
+        <section className={styles.workspace}>
+          <header className={styles.viewHeader}>
+            <div><h1>{viewTitle}</h1>{viewSubtitle && <p>{viewSubtitle}</p>}</div>
+            <button className={styles.syncButton} onClick={() => googleConnected ? syncCalendarEvents(state.configs.calendarios || []) : openGoogleSettings()} title="Atualizar Google Agenda" data-busy={calendarBusy}><Icon name="sync" /></button>
+          </header>
 
-            <section className={styles.glanceSummary} aria-label="Resumo rápido">
-              <article><span>Hoje</span><strong>{ready ? todayOverviewItems.length : '—'}</strong><small>{pending} tarefas · {todayEvents.length} compromissos</small></article>
-              <article data-alert={overdueTasks.length > 0}><span>Precisam de atenção</span><strong>{ready ? overdueTasks.length : '—'}</strong><small>{overdueTasks.length ? 'Itens atrasados' : 'Nenhum item atrasado'}</small></article>
-              <article><span>Próximos 7 dias</span><strong>{ready ? upcomingTasks.length : '—'}</strong><small>Itens já planejados</small></article>
-              <article><span>Progresso de hoje</span><strong>{progress}%</strong><div><i style={{ width: `${progress}%` }} /></div></article>
-            </section>
+          {!ready ? <div className={styles.loading}>Carregando...</div> : (
+            <>
+              {view === 'inbox' && <section className={styles.listSection}>{inboxTasks.map(task => <TaskRow key={task.id} task={task} />)}{!inboxTasks.length && <div className={styles.empty}><strong>Sua entrada está livre</strong><span>Capture aqui tudo que não pode esquecer.</span></div>}<AddLine /></section>}
 
-            <section className={styles.glanceMainGrid}>
-              <article className={styles.todayOverview}>
-                <header>
-                  <div><span>Hoje</span><h2>Seu dia em ordem</h2></div>
-                  <button onClick={() => setArea('planejar')}>Abrir planejamento</button>
-                </header>
-
-                <form className={styles.glanceAdd} onSubmit={addTask}>
-                  <button type="submit" aria-label="Adicionar">＋</button>
-                  <input id="v2-glance-add" value={title} onChange={event => setTitle(event.target.value)} placeholder="Escreva e pressione Enter para adicionar uma tarefa hoje" autoComplete="off" />
-                  <kbd>Enter</kbd>
-                </form>
-
-                <div className={styles.overviewList}>
-                  {!ready ? <div className={styles.glanceEmpty}>Carregando informações...</div> : todayOverviewItems.length ? todayOverviewItems.map(item => (
-                    <div key={`${item.type}-${item.id}`} className={styles.overviewRow} data-done={item.done}>
-                      <time>{item.time}</time>
-                      <span data-type={item.type}>{item.type}</span>
-                      <strong>{item.title}</strong>
-                      {item.type === 'Tarefa'
-                        ? <button onClick={() => toggleTask(item.id)}>{item.done ? 'Concluída' : 'Concluir'}</button>
-                        : <button onClick={() => setArea('planejar')}>Ver agenda</button>}
-                    </div>
-                  )) : <div className={styles.glanceEmpty}><strong>Seu dia está livre</strong><span>Adicione uma tarefa ou compromisso quando precisar.</span></div>}
-                </div>
-              </article>
-
-              <aside className={styles.attentionColumn}>
-                <section className={styles.attentionPanel}>
-                  <header><div><span>Atenção</span><h2>Pendências</h2></div><b>{overdueTasks.length}</b></header>
-                  {overdueTasks.length ? overdueTasks.slice(0, 4).map(task => (
-                    <button key={task.id} onClick={() => setArea('tarefas')}><i /><span><strong>{task.titulo}</strong><small>Venceu em {new Date(`${taskDate(task)}T12:00:00`).toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' })}</small></span><b>→</b></button>
-                  )) : <div className={styles.compactEmpty}><i>✓</i><span><strong>Nada atrasado</strong><small>Você está em dia.</small></span></div>}
+              {view === 'today' && <>
+                {overdueTasks.length > 0 && <section className={styles.listSection}><h2 className={styles.overdueTitle}>Atrasadas <span>{overdueTasks.length}</span></h2>{overdueTasks.map(task => <TaskRow key={task.id} task={task} />)}</section>}
+                <section className={styles.listSection}>
+                  {(todayTasks.length > 0 || events.some(event => eventDate(event) === today)) && <h2>Hoje <span>{todayTasks.length + events.filter(event => eventDate(event) === today).length}</span></h2>}
+                  {[...todayTasks].sort((a, b) => taskTime(a).localeCompare(taskTime(b))).map(task => <TaskRow key={task.id} task={task} />)}
+                  {events.filter(event => eventDate(event) === today).sort((a, b) => eventTime(a).localeCompare(eventTime(b))).map(event => <EventRow key={String(event.id)} event={event} />)}
+                  {!todayTasks.length && !events.some(event => eventDate(event) === today) && !overdueTasks.length && <div className={styles.empty}><strong>Dia livre</strong><span>Nada marcado para hoje.</span></div>}
+                  <AddLine />
                 </section>
+              </>}
 
-                <section className={styles.nextPanel}>
-                  <header><div><span>Depois</span><h2>Próximos 7 dias</h2></div><button onClick={() => setArea('planejar')}>Ver tudo</button></header>
-                  {upcomingTasks.length ? upcomingTasks.slice(0, 4).map(task => (
-                    <div key={task.id}><time>{new Date(`${taskDate(task)}T12:00:00`).toLocaleDateString('pt-BR', { weekday: 'short', day: 'numeric' })}</time><span>{task.titulo}</span></div>
-                  )) : <div className={styles.compactEmpty}><i>○</i><span><strong>Nada planejado</strong><small>Os próximos dias estão livres.</small></span></div>}
-                </section>
-              </aside>
-            </section>
+              {view === 'upcoming' && <div className={styles.upcomingList}>
+                {upcomingDays.map(day => {
+                  const dayTasks = openTasks.filter(task => taskDate(task) === day)
+                  const dayEvents = events.filter(event => eventDate(event) === day)
+                  return <section className={styles.dayGroup} key={day}><h2><span>{formatDate(day, { weekday: 'long', day: 'numeric', month: 'long' })}</span><b>{dayTasks.length + dayEvents.length || ''}</b></h2>{dayTasks.map(task => <TaskRow key={task.id} task={task} />)}{dayEvents.sort((a, b) => eventTime(a).localeCompare(eventTime(b))).map(event => <EventRow key={String(event.id)} event={event} />)}{!dayTasks.length && !dayEvents.length && <small className={styles.noItems}>Nenhum item</small>}</section>
+                })}
+                <AddLine />
+              </div>}
 
-            <section className={styles.followSection}>
-              <header><div><span>Acompanhamento</span><h2>Outras áreas importantes</h2></div><small>Resumo, sem precisar abrir cada tela</small></header>
-              <div className={styles.followGrid}>
-                <button onClick={() => setArea('rotinas')}><span>Rotinas</span><strong>{habitsDoneToday} de {habitRows.length}</strong><small>concluídas hoje</small><b>→</b></button>
-                <button onClick={() => setArea('projetos')}><span>Projetos</span><strong>{projectRows.length}</strong><small>em acompanhamento</small><b>→</b></button>
-                <button onClick={() => setArea('dinheiro')}><span>Dinheiro</span><strong>{pendingFinance}</strong><small>movimentações pendentes</small><b>→</b></button>
-                <button onClick={() => setArea('bem-estar')}><span>Bem-estar</span><strong>{Object.keys((state.health as Record<string, any>)?.diary?.[today] || {}).length ? 'Registrado' : 'Pendente'}</strong><small>check-in de hoje</small><b>→</b></button>
-              </div>
-            </section>
-          </div>
-        ) : (
-          <V2ModuleView
-            area={area}
-            state={state}
-            today={today}
-            onCreateTask={addTaskForDate}
-            onToggleTask={toggleTask}
-          />
-        )}
+              {view.startsWith('project:') && <section className={styles.listSection}>{projectTasks.map(task => <TaskRow key={task.id} task={task} />)}{!projectTasks.length && <div className={styles.empty}><strong>Projeto vazio</strong><span>Adicione a primeira tarefa deste projeto.</span></div>}<AddLine /></section>}
+
+              {visibleCompleted.length > 0 && <section className={styles.completedSection}><button onClick={() => setShowCompleted(value => !value)}><Icon name="chevron" size={15} /><span>Concluídas</span><b>{visibleCompleted.length}</b></button>{showCompleted && <div>{visibleCompleted.map(task => <TaskRow key={task.id} task={task} />)}</div>}</section>}
+            </>
+          )}
+        </section>
       </main>
+
+      {selectedTask && <>
+        <button className={styles.drawerScrim} onClick={() => setSelectedTaskId(null)} aria-label="Fechar detalhes" />
+        <aside className={styles.taskDrawer}>
+          <header><span>Detalhes da tarefa</span><button onClick={() => setSelectedTaskId(null)} aria-label="Fechar"><Icon name="close" /></button></header>
+          <div className={styles.drawerContent}>
+            <div className={styles.drawerTitle}><button className={styles.check} data-priority={selectedTask.prioridade || 4} onClick={() => toggleTask(selectedTask.id)}>{selectedTask.concluida ? '✓' : ''}</button><textarea value={selectedTask.titulo} onChange={event => updateTask(selectedTask.id, { titulo: event.target.value })} rows={2} /></div>
+            <label className={styles.detailField}><span>Descrição</span><textarea value={selectedTask.descricao || ''} onChange={event => updateTask(selectedTask.id, { descricao: event.target.value })} placeholder="Adicione detalhes..." rows={5} /></label>
+            <label className={styles.detailField}><span>Data</span><input type="date" value={taskDate(selectedTask)} onChange={event => updateTask(selectedTask.id, { data_vencimento: event.target.value })} /></label>
+            <label className={styles.detailField}><span>Projeto</span><select value={String(selectedTask.projeto_id || 'entrada')} onChange={event => updateTask(selectedTask.id, { projeto_id: event.target.value })}><option value="entrada">Entrada</option>{projects.map(project => <option value={project.id} key={project.id}>{project.name}</option>)}</select></label>
+            <label className={styles.detailField}><span>Prioridade</span><select value={selectedTask.prioridade || 4} onChange={event => updateTask(selectedTask.id, { prioridade: Number(event.target.value) })}><option value={1}>P1 · Urgente</option><option value={2}>P2 · Alta</option><option value={3}>P3 · Média</option><option value={4}>P4 · Normal</option></select></label>
+          </div>
+          <footer><button onClick={() => deleteTask(selectedTask.id)}><Icon name="trash" size={16} />Excluir tarefa</button></footer>
+        </aside>
+      </>}
+
+      {searchOpen && <div className={styles.modalLayer} onMouseDown={() => setSearchOpen(false)}>
+        <section className={styles.searchModal} onMouseDown={event => event.stopPropagation()}>
+          <label><Icon name="search" /><input autoFocus value={search} onChange={event => setSearch(event.target.value)} placeholder="Buscar tarefas" /><kbd>Esc</kbd></label>
+          <div className={styles.searchResults}>{!search.trim() ? <p>Digite para encontrar qualquer tarefa.</p> : searchResults.length ? searchResults.map(task => <button key={task.id} onClick={() => { setSearchOpen(false); setSelectedTaskId(task.id) }}><span className={styles.searchCheck}>{task.concluida ? '✓' : ''}</span><span><strong>{task.titulo}</strong><small>{taskDate(task) ? formatDate(taskDate(task), { day: 'numeric', month: 'short' }) : 'Sem data'}</small></span></button>) : <p>Nenhuma tarefa encontrada.</p>}</div>
+        </section>
+      </div>}
+
+      {settingsOpen && <div className={styles.modalLayer} onMouseDown={() => setSettingsOpen(false)}>
+        <section className={styles.settingsModal} onMouseDown={event => event.stopPropagation()}>
+          <header><div><h2>Google</h2><p>Agenda e Drive conectados ao MAI.</p></div><button onClick={() => setSettingsOpen(false)}><Icon name="close" /></button></header>
+          {calendarBusy && !calendars.length ? <div className={styles.settingsLoading}>Carregando conexão...</div> : googleConnected ? <>
+            <div className={styles.connectionRow}><span className={styles.googleMark}>G</span><span><strong>Conta conectada</strong><small>Sincronização ativa</small></span><i /></div>
+            <div className={styles.calendarSettings}><h3>Calendários visíveis</h3><p>Os escolhidos aparecem em Hoje e Em breve.</p>{calendars.map(calendar => <label key={calendar.id}><input type="checkbox" checked={calendarDraft.includes(calendar.id)} onChange={event => setCalendarDraft(current => event.target.checked ? [...current, calendar.id] : current.filter(id => id !== calendar.id))} /><i style={{ background: calendar.cor }} /><span>{calendar.nome}</span>{calendar.primary && <small>Principal</small>}</label>)}</div>
+            <div className={styles.settingsActions}><a href="https://drive.google.com/drive/my-drive" target="_blank" rel="noreferrer">Abrir Google Drive <Icon name="external" size={14} /></a><button onClick={saveCalendars}>Salvar</button></div>
+          </> : <div className={styles.connectPanel}><strong>Conecte sua conta Google</strong><p>Seus eventos e arquivos continuarão na sua conta. O MAI apenas organiza o acesso.</p><a href="/api/google/connect">Conectar com Google</a></div>}
+        </section>
+      </div>}
     </div>
   )
 }
