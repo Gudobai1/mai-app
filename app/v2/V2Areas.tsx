@@ -92,7 +92,7 @@ function Goals({ state, commit }: Pick<Props, 'state' | 'commit'>) {
     event.preventDefault()
     if (!draft || !String(draft.titulo || '').trim()) return
     const milestones = String(draft.milestoneText || '').split('\n').map(value => value.trim()).filter(Boolean).map((titulo, index) => ({ id: draft.milestones?.[index]?.id || id('passo'), titulo, done: draft.milestones?.[index]?.done === true }))
-    const next = { ...draft, id: draft.id || id('meta'), titulo: String(draft.titulo).trim(), descricao: draft.descricao || '', categoria: draft.categoria || '', status: draft.status || 'Em Andamento', prazo: draft.prazo || '', progresso_label: milestones.length ? 'passos' : draft.progresso_label || 'Progresso', progresso_atual: milestones.length ? milestones.filter(item => item.done).length : Number(draft.progresso_atual || 0), progresso_total: milestones.length ? milestones.length : Number(draft.progresso_total || 100), milestones, anexos: draft.anexos || [] }
+    const next: Row = { ...draft, id: draft.id || id('meta'), titulo: String(draft.titulo).trim(), descricao: draft.descricao || '', categoria: draft.categoria || '', status: draft.status || 'Em Andamento', prazo: draft.prazo || '', progresso_label: milestones.length ? 'passos' : draft.progresso_label || 'Progresso', progresso_atual: milestones.length ? milestones.filter(item => item.done).length : Number(draft.progresso_atual || 0), progresso_total: milestones.length ? milestones.length : Number(draft.progresso_total || 100), milestones, anexos: draft.anexos || [] }
     delete next.milestoneText
     commit(current => ({ ...current, goals: rows(current.goals).some(item => String(item.id) === String(next.id)) ? rows(current.goals).map(item => String(item.id) === String(next.id) ? next : item) : [next, ...rows(current.goals)] }))
     setDraft(null)
@@ -218,7 +218,7 @@ function Finance({ state, today, commit }: Pick<Props, 'state' | 'today' | 'comm
         currentFinance.transactions = [...collection, ...installments]
       } else {
         const prefix = kind === 'transaction' ? 'fin' : kind === 'account' ? 'cta' : kind === 'card' ? 'crd' : kind === 'category' ? 'cat' : 'fix'
-        const next = { ...draft, id: draft.id || id(prefix), valor: draft.valor === undefined ? undefined : Number(draft.valor || 0), valor_pago: kind === 'transaction' && draft.status === 'pago' ? Number(draft.valor || 0) : Number(draft.valor_pago || 0), ignorar_calculo: draft.ignorar_calculo === true }
+        const next: Row = { ...draft, id: draft.id || id(prefix), valor: draft.valor === undefined ? undefined : Number(draft.valor || 0), valor_pago: kind === 'transaction' && draft.status === 'pago' ? Number(draft.valor || 0) : Number(draft.valor_pago || 0), ignorar_calculo: draft.ignorar_calculo === true }
         delete next.recorrencia; delete next.parcelas
         currentFinance[key] = collection.some(item => String(item.id) === String(next.id)) ? collection.map(item => String(item.id) === String(next.id) ? next : item) : [...collection, next]
       }
@@ -300,7 +300,8 @@ function Health({ state, today, commit }: Pick<Props, 'state' | 'today' | 'commi
     setDraft(null)
   }
 
-  const logs = [...rows(day.treinos).map(item => ({ ...item, tipo: 'Treino' })), ...rows(day.nutricao).map(item => ({ ...item, tipo: 'Nutrição' })), ...rows(day.suplementos).map(item => ({ ...item, tipo: 'Suplemento' }))].sort((a, b) => String(a.hora).localeCompare(String(b.hora)))
+  const logs: Row[] = [...rows(day.treinos).map(item => ({ ...item, tipo: 'Treino' })), ...rows(day.nutricao).map(item => ({ ...item, tipo: 'Nutrição' })), ...rows(day.suplementos).map(item => ({ ...item, tipo: 'Suplemento' }))]
+  logs.sort((a, b) => String(a.hora).localeCompare(String(b.hora)))
   return <>
     <AreaToolbar tabs={['Diário', 'Metas', 'Variáveis', 'Biblioteca']} active={tab} onTab={setTab} onAdd={openNew} addLabel={tab === 'Diário' ? 'Registro' : tab === 'Metas' ? 'Editar metas' : tab === 'Variáveis' ? 'Variável' : 'Item'} />
     {tab === 'Diário' && <div className={styles.areaList}>{day.sono?.deitar && <div className={styles.healthRow}><span>☾</span><span><strong>Sono</strong><small>{day.sono.deitar} → {day.sono.acordar || '—'} · {day.sono.score || 0} pontos</small></span></div>}{logs.map(log => <div className={styles.healthRow} key={String(log.idLog)}><span>＋</span><span><strong>{log.nome || log.tipo}</strong><small>{log.tipo} · {log.hora || 'Sem horário'}{log.valor ? ` · ${log.valor}` : ''}</small></span></div>)}{!day.sono?.deitar && !logs.length && <Empty title="Sem registros hoje" text="Registre sono, treino, nutrição ou suplementos." />}</div>}
