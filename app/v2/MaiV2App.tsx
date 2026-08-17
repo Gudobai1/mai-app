@@ -97,6 +97,37 @@ export function MaiV2App() {
   const greeting = !now ? 'Olá' : now.getHours() < 12 ? 'Bom dia' : now.getHours() < 18 ? 'Boa tarde' : 'Boa noite'
   const formattedDate = now?.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })
   const activeLabel = areas.find(item => item.id === area)?.label || 'Início'
+  const eventRows = Array.isArray(state.events) ? state.events as Array<Record<string, any>> : []
+  const habitRows = Array.isArray(state.habits) ? state.habits as Array<Record<string, any>> : []
+  const habitEntryRows = Array.isArray(state.habitEntries) ? state.habitEntries as Array<Record<string, any>> : []
+  const projectRows = Array.isArray(state.projects) ? state.projects as Array<Record<string, any>> : []
+  const overdueTasks = state.tasks.filter(task => !task.concluida && taskDate(task) && taskDate(task) < today)
+  const todayEvents = eventRows.filter(event => String(event.data_inicio || '').slice(0, 10) === today)
+  const nextWeek = new Date(new Date(`${today}T12:00:00`).getTime() + 7 * 86400000).toISOString().slice(0, 10)
+  const upcomingTasks = state.tasks
+    .filter(task => !task.concluida && taskDate(task) > today && taskDate(task) <= nextWeek)
+    .sort((a, b) => taskDate(a).localeCompare(taskDate(b)))
+  const habitsDoneToday = habitEntryRows.filter(entry => String(entry.data || '').slice(0, 10) === today).length
+  const finance = state.finance as Record<string, any>
+  const pendingFinance = Array.isArray(finance.transactions)
+    ? finance.transactions.filter((item: Record<string, any>) => !['pago','paga','concluido','concluída'].includes(String(item.status || '').toLowerCase())).length
+    : 0
+  const todayOverviewItems: Array<{ id: string; type: 'Tarefa' | 'Agenda'; title: string; time: string; done: boolean }> = [
+    ...todayTasks.map(task => ({
+      id: task.id,
+      type: 'Tarefa' as const,
+      title: task.titulo,
+      time: String(task.data_vencimento || '').includes('T') ? String(task.data_vencimento).slice(11, 16) : 'Dia todo',
+      done: task.concluida === true,
+    })),
+    ...todayEvents.map(event => ({
+      id: String(event.id),
+      type: 'Agenda' as const,
+      title: String(event.titulo || 'Compromisso'),
+      time: String(event.hora_inicio || 'Dia todo'),
+      done: false,
+    })),
+  ].sort((a, b) => (a.time === 'Dia todo' ? '99:99' : a.time).localeCompare(b.time === 'Dia todo' ? '99:99' : b.time))
 
   return (
     <div className={styles.app}>
@@ -141,78 +172,75 @@ export function MaiV2App() {
         </header>
 
         {area === 'inicio' ? (
-          <div className={styles.content}>
-            <section className={styles.welcome}>
+          <div className={styles.glanceContent}>
+            <section className={styles.glanceHeader}>
               <div>
-                <p>{formattedDate || 'Carregando seu dia...'}</p>
-                <h1>{greeting}, Adm.</h1>
-                <span>Organize o que importa e deixe o restante em segundo plano.</span>
+                <span>{formattedDate || 'Carregando seu dia...'}</span>
+                <h1>Visão geral</h1>
+                <p>O que importa, o que precisa de atenção e o que vem depois.</p>
               </div>
-              <div className={styles.syncStatus}><i /> Tudo sincronizado</div>
+              <button onClick={() => document.getElementById('v2-glance-add')?.focus()}><Icon name="plus" /> Adicionar item</button>
             </section>
 
-            <section className={styles.metrics}>
-              <article>
-                <span>Pendências de hoje</span>
-                <strong>{ready ? pending : '—'}</strong>
-                <small>{pending === 1 ? 'item precisa da sua atenção' : 'itens precisam da sua atenção'}</small>
-              </article>
-              <article>
-                <span>Concluído</span>
-                <strong>{progress}%</strong>
-                <div className={styles.progress}><i style={{ width: `${progress}%` }} /></div>
-              </article>
-              <article className={styles.focusCard}>
-                <span>Próximo passo</span>
-                <strong>{todayTasks.find(task => !task.concluida)?.titulo || 'Seu dia está livre'}</strong>
-                <small>{pending ? 'Continue de onde parou' : 'Aproveite para planejar algo novo'}</small>
-              </article>
+            <section className={styles.glanceSummary} aria-label="Resumo rápido">
+              <article><span>Hoje</span><strong>{ready ? todayOverviewItems.length : '—'}</strong><small>{pending} tarefas · {todayEvents.length} compromissos</small></article>
+              <article data-alert={overdueTasks.length > 0}><span>Precisam de atenção</span><strong>{ready ? overdueTasks.length : '—'}</strong><small>{overdueTasks.length ? 'Itens atrasados' : 'Nenhum item atrasado'}</small></article>
+              <article><span>Próximos 7 dias</span><strong>{ready ? upcomingTasks.length : '—'}</strong><small>Itens já planejados</small></article>
+              <article><span>Progresso de hoje</span><strong>{progress}%</strong><div><i style={{ width: `${progress}%` }} /></div></article>
             </section>
 
-            <section className={styles.grid}>
-              <article className={styles.panel}>
-                <div className={styles.panelHead}>
-                  <div><span>Agora</span><h2>Meu dia</h2></div>
-                  <button onClick={() => setArea('tarefas')}>Ver tarefas</button>
-                </div>
+            <section className={styles.glanceMainGrid}>
+              <article className={styles.todayOverview}>
+                <header>
+                  <div><span>Hoje</span><h2>Seu dia em ordem</h2></div>
+                  <button onClick={() => setArea('planejar')}>Abrir planejamento</button>
+                </header>
 
-                <form className={styles.quickAdd} onSubmit={addTask}>
-                  <button type="submit" aria-label="Adicionar tarefa"><Icon name="plus" /></button>
-                  <input id="v2-quick-task" value={title} onChange={event => setTitle(event.target.value)} placeholder="Adicionar algo para hoje..." autoComplete="off" />
+                <form className={styles.glanceAdd} onSubmit={addTask}>
+                  <button type="submit" aria-label="Adicionar">＋</button>
+                  <input id="v2-glance-add" value={title} onChange={event => setTitle(event.target.value)} placeholder="Escreva e pressione Enter para adicionar uma tarefa hoje" autoComplete="off" />
                   <kbd>Enter</kbd>
                 </form>
 
-                <div className={styles.taskList}>
-                  {!ready ? (
-                    <div className={styles.empty}>Carregando suas informações...</div>
-                  ) : todayTasks.length === 0 ? (
-                    <div className={styles.empty}><span>✓</span><strong>Nada pendente por aqui</strong><small>Adicione uma tarefa acima para começar.</small></div>
-                  ) : todayTasks.map(task => (
-                    <label className={styles.task} key={task.id} data-done={task.concluida}>
-                      <input type="checkbox" checked={task.concluida === true} onChange={() => toggleTask(task.id)} />
-                      <i />
-                      <span><strong>{task.titulo}</strong><small>{task.prioridade && task.prioridade < 4 ? `Prioridade P${task.prioridade}` : 'Hoje'}</small></span>
-                      <button type="button" aria-label="Opções da tarefa"><Icon name="more" /></button>
-                    </label>
-                  ))}
+                <div className={styles.overviewList}>
+                  {!ready ? <div className={styles.glanceEmpty}>Carregando informações...</div> : todayOverviewItems.length ? todayOverviewItems.map(item => (
+                    <div key={`${item.type}-${item.id}`} className={styles.overviewRow} data-done={item.done}>
+                      <time>{item.time}</time>
+                      <span data-type={item.type}>{item.type}</span>
+                      <strong>{item.title}</strong>
+                      {item.type === 'Tarefa'
+                        ? <button onClick={() => toggleTask(item.id)}>{item.done ? 'Concluída' : 'Concluir'}</button>
+                        : <button onClick={() => setArea('planejar')}>Ver agenda</button>}
+                    </div>
+                  )) : <div className={styles.glanceEmpty}><strong>Seu dia está livre</strong><span>Adicione uma tarefa ou compromisso quando precisar.</span></div>}
                 </div>
               </article>
 
-              <aside className={styles.sideColumn}>
-                <article className={styles.miniPanel}>
-                  <div className={styles.panelHead}><div><span>Agenda</span><h2>Próximos</h2></div><button onClick={() => setArea('planejar')}>Abrir</button></div>
-                  <div className={styles.timeline}>
-                    <div><time>Agora</time><i /><span><strong>Planejamento do dia</strong><small>Organização pessoal</small></span></div>
-                    <div><time>Mais tarde</time><i /><span><strong>Tempo de foco</strong><small>Reserve espaço para o essencial</small></span></div>
-                  </div>
-                </article>
+              <aside className={styles.attentionColumn}>
+                <section className={styles.attentionPanel}>
+                  <header><div><span>Atenção</span><h2>Pendências</h2></div><b>{overdueTasks.length}</b></header>
+                  {overdueTasks.length ? overdueTasks.slice(0, 4).map(task => (
+                    <button key={task.id} onClick={() => setArea('tarefas')}><i /><span><strong>{task.titulo}</strong><small>Venceu em {new Date(`${taskDate(task)}T12:00:00`).toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' })}</small></span><b>→</b></button>
+                  )) : <div className={styles.compactEmpty}><i>✓</i><span><strong>Nada atrasado</strong><small>Você está em dia.</small></span></div>}
+                </section>
 
-                <article className={styles.quote}>
-                  <span>Intenção do dia</span>
-                  <p>“Clareza primeiro. Movimento depois.”</p>
-                  <button>Definir intenção</button>
-                </article>
+                <section className={styles.nextPanel}>
+                  <header><div><span>Depois</span><h2>Próximos 7 dias</h2></div><button onClick={() => setArea('planejar')}>Ver tudo</button></header>
+                  {upcomingTasks.length ? upcomingTasks.slice(0, 4).map(task => (
+                    <div key={task.id}><time>{new Date(`${taskDate(task)}T12:00:00`).toLocaleDateString('pt-BR', { weekday: 'short', day: 'numeric' })}</time><span>{task.titulo}</span></div>
+                  )) : <div className={styles.compactEmpty}><i>○</i><span><strong>Nada planejado</strong><small>Os próximos dias estão livres.</small></span></div>}
+                </section>
               </aside>
+            </section>
+
+            <section className={styles.followSection}>
+              <header><div><span>Acompanhamento</span><h2>Outras áreas importantes</h2></div><small>Resumo, sem precisar abrir cada tela</small></header>
+              <div className={styles.followGrid}>
+                <button onClick={() => setArea('rotinas')}><span>Rotinas</span><strong>{habitsDoneToday} de {habitRows.length}</strong><small>concluídas hoje</small><b>→</b></button>
+                <button onClick={() => setArea('projetos')}><span>Projetos</span><strong>{projectRows.length}</strong><small>em acompanhamento</small><b>→</b></button>
+                <button onClick={() => setArea('dinheiro')}><span>Dinheiro</span><strong>{pendingFinance}</strong><small>movimentações pendentes</small><b>→</b></button>
+                <button onClick={() => setArea('bem-estar')}><span>Bem-estar</span><strong>{Object.keys((state.health as Record<string, any>)?.diary?.[today] || {}).length ? 'Registrado' : 'Pendente'}</strong><small>check-in de hoje</small><b>→</b></button>
+              </div>
             </section>
           </div>
         ) : (
