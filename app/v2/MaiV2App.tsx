@@ -105,8 +105,8 @@ export function MaiV2App() {
   const [calendars, setCalendars] = useState<Calendar[]>([])
   const [calendarDraft, setCalendarDraft] = useState<string[]>([])
   const [calendarBusy, setCalendarBusy] = useState(false)
+  const [today, setToday] = useState('')
   const quickInput = useRef<HTMLInputElement>(null)
-  const today = dateKey()
 
   const projects = useMemo(() => projectList(state.projects), [state.projects])
   const events = useMemo(() => rows(state.events), [state.events])
@@ -117,6 +117,7 @@ export function MaiV2App() {
 
   useEffect(() => {
     const saved = loadState()
+    setToday(dateKey())
     setState(saved)
     setReady(true)
     void checkGoogle(saved)
@@ -168,8 +169,9 @@ export function MaiV2App() {
   async function syncCalendarEvents(calendarIds: string[]) {
     setCalendarBusy(true)
     try {
-      const start = new Date(`${addDays(today, -14)}T00:00:00`)
-      const end = new Date(`${addDays(today, 61)}T23:59:59`)
+      const baseDay = today || dateKey()
+      const start = new Date(`${addDays(baseDay, -14)}T00:00:00`)
+      const end = new Date(`${addDays(baseDay, 61)}T23:59:59`)
       const payload = await googleRpc('getGoogleCalendarPeriodo', [start.toISOString(), end.toISOString(), calendarIds])
       const nextEvents = Array.isArray(payload?.eventos) ? payload.eventos : []
       setState(current => ({ ...current, events: nextEvents }))
@@ -215,16 +217,16 @@ export function MaiV2App() {
     setSidebarOpen(false)
     setSelectedTaskId(null)
     setShowCompleted(false)
-    if (next === 'today') setDraftDate(today)
-    else if (next === 'upcoming') setDraftDate(addDays(today, 1))
+    if (next === 'today') setDraftDate(today || dateKey())
+    else if (next === 'upcoming') setDraftDate(addDays(today || dateKey(), 1))
     else setDraftDate('')
     if (next.startsWith('project:')) setDraftProject(next.slice(8))
     else setDraftProject('entrada')
   }
 
   function openComposer() {
-    if (view === 'today' && !draftDate) setDraftDate(today)
-    if (view === 'upcoming' && !draftDate) setDraftDate(addDays(today, 1))
+    if (view === 'today' && !draftDate) setDraftDate(today || dateKey())
+    if (view === 'upcoming' && !draftDate) setDraftDate(addDays(today || dateKey(), 1))
     if (view.startsWith('project:')) setDraftProject(view.slice(8))
     setComposerOpen(true)
     requestAnimationFrame(() => quickInput.current?.focus())
@@ -313,7 +315,7 @@ export function MaiV2App() {
   const activeProject = projects.find(project => project.id === projectId)
   const areaLabel = secondaryAreas.find(area => area.id === view)?.label
   const viewTitle = view === 'inbox' ? 'Entrada' : view === 'today' ? 'Hoje' : view === 'upcoming' ? 'Em breve' : areaLabel || activeProject?.name || 'Projeto'
-  const viewSubtitle = view === 'today'
+  const viewSubtitle = view === 'today' && today
     ? formatDate(today, { weekday: 'long', day: 'numeric', month: 'long' })
     : view === 'upcoming' ? 'Próximos 14 dias' : ''
   const inboxTasks = openTasks.filter(task => sameProject(task, 'entrada'))
@@ -328,7 +330,7 @@ export function MaiV2App() {
     return taskDate(task) > today && taskDate(task) <= addDays(today, 14)
   })
 
-  const upcomingDays = Array.from({ length: 14 }, (_, index) => addDays(today, index + 1))
+  const upcomingDays = today ? Array.from({ length: 14 }, (_, index) => addDays(today, index + 1)) : []
   const habitRows = rows(state.habits).filter(habit => habit.ativo !== false && habit.ocultar_agenda !== true)
   const habitEntryRows = rows(state.habitEntries)
   const goalRows = rows(state.goals).filter(goal => goal.status !== 'Concluída')
