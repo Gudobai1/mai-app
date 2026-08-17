@@ -190,25 +190,23 @@
   .newButton { padding: 0 11px; }
 }
 
-/* Google-inspired rounded direction */
+/* Balanced Material direction: neutral surfaces, green accents */
 .app {
-  --ink: #1f241f;
-  --muted: #70776f;
-  --line: #e0e6dd;
+  --ink: #20221f;
+  --muted: #737773;
+  --line: #e4e6e2;
   --surface: #ffffff;
-  --canvas: #f7faf6;
-  --accent: #506b52;
-  --accent-soft: #e3eee1;
-  background:
-    radial-gradient(circle at 85% -10%, rgba(197, 220, 193, .34), transparent 29%),
-    var(--canvas);
+  --canvas: #f7f8f6;
+  --accent: #5c705c;
+  --accent-soft: #edf1ec;
+  background: var(--canvas);
 }
 
 .sidebar {
   width: 248px;
   padding: 20px 14px 15px;
-  background: rgba(251,253,249,.96);
-  border-right-color: #e1e7df;
+  background: #fbfbfa;
+  border-right-color: #e4e5e2;
 }
 
 .main { margin-left: 248px; }
@@ -218,16 +216,16 @@
   width: 36px;
   height: 36px;
   border-radius: 12px;
-  background: #405842;
-  box-shadow: 0 4px 12px rgba(64,88,66,.15);
+  background: #2d312d;
+  box-shadow: 0 3px 10px rgba(30,34,30,.1);
 }
 .brand strong { font-size: 15px; }
-.brand span, .account span { color: #7c847b; }
+.brand span, .account span { color: #858985; }
 
 .nav { gap: 3px; }
 .navCaption {
   margin: 18px 11px 7px;
-  color: #969e95;
+  color: #9a9d99;
   font-size: 9px;
   letter-spacing: .11em;
 }
@@ -235,17 +233,17 @@
   height: 42px;
   padding: 0 13px;
   border-radius: 21px;
-  color: #616860;
+  color: #626662;
   font-size: 12px;
   font-weight: 600;
 }
 .nav button:hover {
-  color: #354136;
-  background: #edf3eb;
+  color: #303530;
+  background: #f0f1ef;
 }
 .nav button.navActive {
-  color: #304b34;
-  background: #dcebd9;
+  color: #405442;
+  background: #e9eee8;
   box-shadow: none;
   font-weight: 700;
 }
@@ -258,15 +256,15 @@
   width: 34px;
   height: 34px;
   border-radius: 12px;
-  background: #e3ebe0;
-  color: #405842;
+  background: #ececea;
+  color: #444844;
 }
 
 .topbar {
   height: 64px;
   padding: 0 32px;
-  background: rgba(247,250,246,.84);
-  border-bottom: 1px solid rgba(221,229,219,.84);
+  background: rgba(247,248,246,.9);
+  border-bottom: 1px solid rgba(226,228,224,.9);
   backdrop-filter: blur(18px);
 }
 .searchButton, .newButton, .menuButton {
@@ -276,14 +274,14 @@
 .searchButton {
   width: 184px;
   padding: 0 13px;
-  background: rgba(255,255,255,.76);
+  background: rgba(255,255,255,.88);
 }
 .searchButton kbd { border-radius: 6px; }
 .newButton {
   padding: 0 17px;
-  background: #405842;
-  border-color: #405842;
-  box-shadow: 0 3px 10px rgba(64,88,66,.16);
+  background: #303530;
+  border-color: #303530;
+  box-shadow: 0 3px 10px rgba(35,40,35,.12);
 }
 .menuButton { background: #fff; }
 
@@ -295,7 +293,7 @@
 .welcome { margin-bottom: 31px; }
 .welcome p {
   margin-bottom: 8px;
-  color: #557057;
+  color: #687268;
   font-size: 10px;
   letter-spacing: .055em;
 }
@@ -303,16 +301,17 @@
   font-size: clamp(31px, 3.8vw, 42px);
   font-weight: 700;
 }
-.welcome > div > span { color: #727a71; font-size: 14px; }
+.welcome > div > span { color: #747874; font-size: 14px; }
 .syncStatus {
   padding: 8px 12px;
   border-radius: 18px;
-  background: rgba(255,255,255,.72);
+  background: #fff;
+  border: 1px solid #e5e7e3;
 }
 .syncStatus i {
   border-radius: 50%;
-  background: #5b925c;
-  box-shadow: 0 0 0 4px #e3f0e1;
+  background: #639067;
+  box-shadow: 0 0 0 4px #e9f1e8;
 }
 
 .metrics {
@@ -324,11 +323,11 @@
   min-height: 128px;
   padding: 20px;
   border-radius: 20px;
-  background: rgba(255,255,255,.86);
-  box-shadow: 0 1px 2px rgba(43,55,43,.025);
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(35,40,35,.025);
 }
 .metrics span, .panelHead span, .quote > span {
-  color: #747c73;
+  color: #777b77;
   font-size: 9px;
   letter-spacing: .09em;
 }
@@ -340,25 +339,26 @@
 .progress {
   height: 6px;
   border-radius: 6px;
-  background: #e7ece5;
+  background: #e9ebe8;
 }
 .progress i {
   border-radius: 6px;
-  background: #587358;
+  background: #657965;
 }
 .metrics .focusCard {
-  color: #f8fbf7;
-  background: linear-gradient(135deg, #425b44, #334a36);
-  border-color: transparent;
-  box-shadow: 0 8px 24px rgba(51,74,54,.12);
+  color: #fff;
+  background: #303530;
+  border-color: #303530;
+  box-shadow: 0 7px 20px rgba(35,40,35,.09);
 }
-.focusCard span, .focusCard small { color: #c9d7c7; }
+.focusCard span, .focusCard small { color: #c9ceca; }
 .focusCard strong { font-size: 18px; }
 
 .grid { gap: 14px; }
 .panel, .miniPanel, .quote {
   border-radius: 22px;
-  box-shadow: 0 1px 3px rgba(40,55,41,.03);
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(35,40,35,.025);
 }
 .panelHead { padding: 21px 22px 16px; }
 .panelHead h2 { font-size: 18px; font-weight: 690; }
@@ -366,19 +366,19 @@
   padding: 8px 13px;
   border: 0;
   border-radius: 17px;
-  background: #edf3eb;
-  color: #4f6350;
+  background: #f0f1ef;
+  color: #575d57;
 }
 
 .quickAdd {
   height: 50px;
   margin: 0 16px 9px;
   border-radius: 16px;
-  background: #f7faf5;
+  background: #f8f9f7;
 }
 .quickAdd:focus-within {
-  border-color: #91a88e;
-  box-shadow: 0 0 0 3px rgba(80,107,82,.1);
+  border-color: #9ba89b;
+  box-shadow: 0 0 0 3px rgba(92,112,92,.09);
 }
 .quickAdd kbd { border-radius: 6px; }
 
@@ -388,15 +388,15 @@
   padding-right: 9px;
   padding-left: 9px;
 }
-.task:hover { background: #f8faf7; border-radius: 14px; }
+.task:hover { background: #f7f8f6; border-radius: 14px; }
 .task > i {
   width: 18px;
   height: 18px;
   border-radius: 7px;
 }
 .task[data-done="true"] > i {
-  border-color: #587358;
-  background: #587358;
+  border-color: #607360;
+  background: #607360;
   box-shadow: inset 0 0 0 4px #fff;
 }
 
@@ -405,24 +405,24 @@
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: #5f7b60;
+  background: #687968;
 }
 .quote {
   padding: 23px;
-  background: #edf2e9;
-  border-color: #e1e8dc;
+  background: #f2f1ee;
+  border-color: #e8e5df;
 }
 .quote p {
   margin: 14px 0 20px;
-  color: #3d493d;
+  color: #444440;
   font-family: inherit;
   font-size: 17px;
   font-weight: 570;
   line-height: 1.45;
 }
 .quote button {
-  background: rgba(255,255,255,.72);
-  color: #526452;
+  background: rgba(255,255,255,.8);
+  color: #5e625e;
 }
 
 .moduleIntro h1 {
