@@ -9,5 +9,8 @@ export function MaiV2ParityShell() {
   return <>
     <MaiV2App key={revision} />
     <TaskProjectParity onChanged={() => setRevision(value => value + 1)} />
+    <style jsx global>{`
+      button[style*="z-index: 8050"] { bottom: 132px !important; }
+    `}</style>
   </>
 }
