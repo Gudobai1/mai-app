@@ -1,5 +1,5 @@
-import { MaiV2App } from './MaiV2App'
+import { MaiV2ParityShell } from './MaiV2ParityShell'
 
 export default function V2Page() {
-  return <MaiV2App />
+  return <MaiV2ParityShell />
 }

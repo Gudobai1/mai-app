@@ -6,11 +6,43 @@ const q = (value: unknown) => encodeURIComponent(String(value ?? ''))
 const dateOnly = (value: unknown) => String(value || '').slice(0, 10)
 
 async function drive(method: string, args: unknown[], g: Awaited<ReturnType<typeof authorizedGoogle>>) {
+  if (method === 'getDriveStorage') {
+    const response = await g.fetch('https://www.googleapis.com/drive/v3/about?fields=storageQuota')
+    const data = await response.json()
+    if (!response.ok) throw new Error(data.error?.message || 'Erro ao consultar armazenamento do Drive')
+    const quota = data.storageQuota || {}
+    return {
+      ok: true,
+      used: Number(quota.usage || 0),
+      usedInDrive: Number(quota.usageInDrive || 0),
+      usedInTrash: Number(quota.usageInDriveTrash || 0),
+      limit: Number(quota.limit || 0),
+    }
+  }
+
   if (method === 'getDriveContent') {
     const folderId = String(args[0] || 'root')
-    const parent = folderId === 'root' ? 'root' : folderId
-    const fields = 'files(id,name,mimeType,size,modifiedTime,webViewLink,parents),nextPageToken'
-    const url = `https://www.googleapis.com/drive/v3/files?q=${q(`'${parent}' in parents and trashed=false`)}&orderBy=folder,name&pageSize=200&fields=${q(fields)}`
+    const view = String(args[1] || 'meudrive')
+    const fields = 'files(id,name,mimeType,size,modifiedTime,webViewLink,parents,starred,shared,trashed,owners(displayName,emailAddress)),nextPageToken'
+    let query = `'${folderId === 'root' ? 'root' : folderId}' in parents and trashed=false`
+    let orderBy = 'folder,name'
+
+    if (view === 'compartilhados') {
+      query = 'sharedWithMe=true and trashed=false'
+    } else if (view === 'estrelas') {
+      query = 'starred=true and trashed=false'
+    } else if (view === 'lixeira') {
+      query = 'trashed=true'
+      orderBy = 'modifiedTime desc'
+    } else if (view === 'computadores') {
+      // A API Drive não expõe a aba "Computadores" como uma collection própria.
+      // A aproximação correta para o Hub é mostrar itens do usuário fora da lixeira,
+      // preservando navegação quando houver parents conhecidos.
+      query = "'me' in owners and trashed=false"
+      orderBy = 'modifiedTime desc'
+    }
+
+    const url = `https://www.googleapis.com/drive/v3/files?q=${q(query)}&orderBy=${q(orderBy)}&pageSize=200&fields=${q(fields)}`
     const response = await g.fetch(url)
     const data = await response.json()
     if (!response.ok) throw new Error(data.error?.message || 'Erro ao consultar o Drive')
@@ -22,9 +54,14 @@ async function drive(method: string, args: unknown[], g: Awaited<ReturnType<type
       tamanho: Number(file.size || 0),
       modificado: file.modifiedTime,
       url: file.webViewLink,
+      starred: file.starred === true,
+      shared: file.shared === true,
+      trashed: file.trashed === true,
+      parents: file.parents || [],
+      owners: file.owners || [],
     }))
     const path:any[] = []
-    if (folderId !== 'root') {
+    if (view === 'meudrive' && folderId !== 'root') {
       let cursor = folderId
       for (let depth = 0; cursor && cursor !== 'root' && depth < 12; depth += 1) {
         const folderResponse = await g.fetch(`https://www.googleapis.com/drive/v3/files/${q(cursor)}?fields=id,name,parents`)
@@ -34,7 +71,7 @@ async function drive(method: string, args: unknown[], g: Awaited<ReturnType<type
         cursor = folder.parents?.[0] || 'root'
       }
     }
-    return { ok: true, items, folders: items.filter((x:any) => x.tipo === 'folder'), files: items.filter((x:any) => x.tipo !== 'folder'), path }
+    return { ok: true, view, items, folders: items.filter((x:any) => x.tipo === 'folder'), files: items.filter((x:any) => x.tipo !== 'folder'), path }
   }
 
   if (method === 'criarPastaDriveHub' || method === 'criarArquivoTextoDriveHub') {
@@ -75,6 +112,26 @@ async function drive(method: string, args: unknown[], g: Awaited<ReturnType<type
     if (!response.ok) throw new Error('Erro ao mover item para a lixeira')
     return { ok:true }
   }
+  if (method === 'restoreDriveItem') {
+    const response = await g.fetch(`https://www.googleapis.com/drive/v3/files/${q(args[0])}`, {
+      method:'PATCH', headers:{'content-type':'application/json'}, body:JSON.stringify({trashed:false}),
+    })
+    if (!response.ok) throw new Error('Erro ao restaurar item')
+    return { ok:true }
+  }
+  if (method === 'toggleStarDriveItem') {
+    const response = await g.fetch(`https://www.googleapis.com/drive/v3/files/${q(args[0])}?fields=id,starred`, {
+      method:'PATCH', headers:{'content-type':'application/json'}, body:JSON.stringify({starred:Boolean(args[1])}),
+    })
+    const item = await response.json()
+    if (!response.ok) throw new Error(item.error?.message || 'Erro ao alterar estrela')
+    return { ok:true, item }
+  }
+  if (method === 'deleteDriveItemForever') {
+    const response = await g.fetch(`https://www.googleapis.com/drive/v3/files/${q(args[0])}`, { method:'DELETE' })
+    if (!response.ok && response.status !== 404) throw new Error('Erro ao excluir item definitivamente')
+    return { ok:true }
+  }
   if (method === 'renomearDriveItem') {
     const response = await g.fetch(`https://www.googleapis.com/drive/v3/files/${q(args[0])}?fields=id,name,mimeType,size,modifiedTime,webViewLink`, {
       method:'PATCH', headers:{'content-type':'application/json'}, body:JSON.stringify({name:String(args[1] || '').trim()}),
@@ -102,13 +159,7 @@ async function calendar(method:string, args:unknown[], g:Awaited<ReturnType<type
     const response = await g.fetch('https://www.googleapis.com/calendar/v3/users/me/calendarList?maxResults=250')
     const data = await response.json()
     if (!response.ok) throw new Error(data.error?.message || 'Erro ao consultar calendários')
-    return (data.items || []).map((cal:any) => ({
-      id:cal.id,
-      nome:cal.summary,
-      cor:cal.backgroundColor || '#4285f4',
-      primary:cal.primary === true,
-      acesso:cal.accessRole || '',
-    }))
+    return (data.items || []).map((cal:any) => ({ id:cal.id, nome:cal.summary, cor:cal.backgroundColor || '#4285f4', primary:cal.primary === true, acesso:cal.accessRole || '' }))
   }
 
   if (method === 'getGoogleCalendarPeriodo' || method === 'getDadosAgendaCompleta') {
@@ -123,21 +174,7 @@ async function calendar(method:string, args:unknown[], g:Awaited<ReturnType<type
       return (data.items || []).map((event:any) => {
         const start = event.start?.dateTime || event.start?.date || ''
         const end = event.end?.dateTime || event.end?.date || ''
-        return {
-          id:`${calendarId}::${event.id}`,
-          google_event_id:event.id,
-          calendario_id:calendarId,
-          titulo:event.summary||'Compromisso',
-          descricao:event.description||'',
-          data_inicio:dateOnly(start),
-          hora_inicio:start.includes('T')?start.slice(11,16):'',
-          hora_fim:end.includes('T')?end.slice(11,16):'',
-          dia_inteiro:!start.includes('T'),
-          repeticao:event.recurrence?.[0]||'',
-          cor:event.colorId||'',
-          tipo:'google',
-          url:event.htmlLink,
-        }
+        return { id:`${calendarId}::${event.id}`, google_event_id:event.id, calendario_id:calendarId, titulo:event.summary||'Compromisso', descricao:event.description||'', data_inicio:dateOnly(start), hora_inicio:start.includes('T')?start.slice(11,16):'', hora_fim:end.includes('T')?end.slice(11,16):'', dia_inteiro:!start.includes('T'), repeticao:event.recurrence?.[0]||'', cor:event.colorId||'', tipo:'google', url:event.htmlLink }
       })
     }))
     return {ok:true,eventos:results.flat()}
@@ -185,9 +222,8 @@ export async function POST(request:NextRequest) {
     const method = String(body?.method || '')
     const args = Array.isArray(body?.args) ? body.args : []
     const g = await authorizedGoogle(request)
-    const payload = method.includes('Drive') || ['getDriveContent','uploadToDriveHub','trashDriveItem','criarPastaDriveHub','criarArquivoTextoDriveHub','salvarAnexoDrive','deletarArquivoDrive','renomearDriveItem','moverDriveItem'].includes(method)
-      ? await drive(method,args,g)
-      : await calendar(method,args,g)
+    const driveMethods = ['getDriveContent','getDriveStorage','uploadToDriveHub','trashDriveItem','criarPastaDriveHub','criarArquivoTextoDriveHub','salvarAnexoDrive','deletarArquivoDrive','renomearDriveItem','moverDriveItem','restoreDriveItem','toggleStarDriveItem','deleteDriveItemForever']
+    const payload = method.includes('Drive') || driveMethods.includes(method) ? await drive(method,args,g) : await calendar(method,args,g)
     const response = json({payload})
     response.cookies.set(GOOGLE_COOKIE, sealTokens(g.tokens), {httpOnly:true,secure:true,sameSite:'lax',path:'/',maxAge:60*60*24*365})
     return response
