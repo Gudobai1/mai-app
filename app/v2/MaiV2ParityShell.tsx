@@ -1,11 +1,11 @@
 'use client'
 
-import { UnifiedApp } from './UnifiedApp'
+import { UnifiedAppUx } from './UnifiedAppUx'
 import { UxController } from './UxController'
 
 export function MaiV2ParityShell() {
   return <>
-    <UnifiedApp />
+    <UnifiedAppUx />
     <UxController />
   </>
 }
