@@ -2,10 +2,12 @@ import type { Metadata } from 'next'
 import { PwaRegister } from './PwaRegister'
 import './ux-polish.css'
 import './ux-shell.css'
+import './ux-navigation-v2.css'
+import './ux-final-overrides.css'
 
 export const metadata: Metadata = {
   title: 'MAI — Meu Sistema',
-  description: 'Organize tarefas, agenda, rotinas, finanças, notas e bem-estar.',
+  description: 'Organize tarefas, compromissos, rotinas, finanças, notas e bem-estar.',
   manifest: '/manifest.webmanifest',
   appleWebApp: { capable: true, title: 'MAI', statusBarStyle: 'default' },
 }

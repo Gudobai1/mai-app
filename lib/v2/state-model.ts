@@ -37,9 +37,8 @@ export type MaiState = {
 }
 
 const NEW_TODAY_SECTIONS = ['summary', 'flow', 'goals', 'notes', 'health']
-const TODAY_BLOCKS = ['flow', 'goals', 'notes', 'health', 'finance']
-const DEFAULT_MAIN = ['flow']
-const DEFAULT_SIDE = ['goals', 'notes', 'health', 'finance']
+const TODAY_BLOCKS = ['habits', 'goals', 'notes', 'finance', 'health']
+const DEFAULT_SIDE = ['habits', 'goals', 'notes', 'finance', 'health']
 
 export function dateKey(date = new Date()) {
   const year = date.getFullYear()
@@ -57,11 +56,11 @@ export function emptyState(): MaiState {
       theme: 'light',
       accentPalette: 'sage',
       todaySections: [...NEW_TODAY_SECTIONS],
-      todayMainSections: [...DEFAULT_MAIN],
+      todayMainSections: [],
       todaySideSections: [...DEFAULT_SIDE],
       todayHiddenSections: [],
       todayGroup: 'type',
-      upcomingView: 'week',
+      upcomingView: 'list',
     },
     tasks: [],
     projects: [],
@@ -97,10 +96,12 @@ function normalizeTodaySections(value: unknown) {
   return next.length ? next : [...NEW_TODAY_SECTIONS]
 }
 
-function normalizeBlocks(value: unknown, fallback: string[]) {
+function normalizeSideBlocks(value: unknown) {
   const allowed = new Set(TODAY_BLOCKS)
-  const next = stateRows(value).map(String).filter(item => allowed.has(item))
-  return next.length ? [...new Set(next)] : [...fallback]
+  const saved = stateRows(value).map(String).filter(item => allowed.has(item))
+  const migrated = saved.length ? saved : DEFAULT_SIDE
+  if (!migrated.includes('habits')) migrated.unshift('habits')
+  return [...new Set(migrated)]
 }
 
 export function normalizeState(value: unknown): MaiState {
@@ -110,9 +111,7 @@ export function normalizeState(value: unknown): MaiState {
   const health = saved.health && typeof saved.health === 'object' ? saved.health : {}
   const drive = saved.drive && typeof saved.drive === 'object' ? saved.drive : {}
   const legacySections = normalizeTodaySections(saved.configs?.todaySections)
-  const legacySide = DEFAULT_SIDE.filter(item => item === 'finance' || legacySections.includes(item))
-  const mainSections = normalizeBlocks(saved.configs?.todayMainSections, DEFAULT_MAIN)
-  const sideSections = normalizeBlocks(saved.configs?.todaySideSections, legacySide.length ? legacySide : DEFAULT_SIDE).filter(item => !mainSections.includes(item))
+  const sideSections = normalizeSideBlocks(saved.configs?.todaySideSections)
   const hiddenSections = stateRows(saved.configs?.todayHiddenSections).map(String).filter(item => TODAY_BLOCKS.includes(item))
   return {
     ...fallback,
@@ -123,10 +122,11 @@ export function normalizeState(value: unknown): MaiState {
       ...(saved.configs || {}),
       calendarios: stateRows(saved.configs?.calendarios).map(String),
       todaySections: legacySections,
-      todayMainSections: mainSections,
+      todayMainSections: [],
       todaySideSections: sideSections,
       todayHiddenSections: [...new Set(hiddenSections)],
       accentPalette: String(saved.configs?.accentPalette || 'sage'),
+      upcomingView: 'list',
     },
     tasks: stateRows(saved.tasks) as LegacyTask[],
     projects: stateRows(saved.projects),

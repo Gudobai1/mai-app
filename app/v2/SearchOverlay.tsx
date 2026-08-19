@@ -28,7 +28,7 @@ export function SearchOverlay({ state, query, setQuery, onClose, inspect, naviga
     return [
       ...state.tasks.filter(item => matches(item.titulo, item.descricao)).map(item => ({ kind: 'task', id: item.id, title: item.titulo, meta: String(item.data_vencimento || 'Sem data').slice(0, 10), raw: item as Row })),
       ...projects.filter(item => matches(item.nome)).map(item => ({ kind: 'project', id: String(item.id), title: String(item.nome), meta: 'Projeto', raw: item })),
-      ...rows(state.events).filter(item => matches(item.titulo, item.descricao)).map(item => ({ kind: 'event', id: String(item.id), title: String(item.titulo || 'Compromisso'), meta: `${String(item.data_inicio || '').slice(0, 10)} · Agenda`, raw: item })),
+      ...rows(state.events).filter(item => matches(item.titulo, item.descricao)).map(item => ({ kind: 'event', id: String(item.id), title: String(item.titulo || 'Compromisso'), meta: `${String(item.data_inicio || '').slice(0, 10)} · Em breve`, raw: item })),
       ...rows(state.habits).filter(item => matches(item.nome)).map(item => ({ kind: 'habit', id: String(item.id), title: String(item.nome), meta: 'Rotina', raw: item })),
       ...rows(state.goals).filter(item => matches(item.titulo, item.descricao)).map(item => ({ kind: 'goal', id: String(item.id), title: String(item.titulo || 'Meta'), meta: 'Meta', raw: item })),
       ...rows(state.notes).filter(item => matches(item.titulo, item.conteudo)).map(item => ({ kind: 'note', id: String(item.id), title: String(item.titulo || 'Nota'), meta: 'Nota', raw: item })),
