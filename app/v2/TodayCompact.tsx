@@ -1,16 +1,14 @@
 'use client'
 
 import { useMemo } from 'react'
-import { plannerItems } from '../../lib/v2/planner'
-import type { MaiState } from '../../lib/v2/state'
-import type { AppView, TodayBlock } from './app-types'
+import { plannerItems, type PlannerItem } from '../../lib/v2/planner'
+import { nextRepeat, type MaiState } from '../../lib/v2/state'
+import type { AppView, Row, TodayBlock } from './app-types'
 import type { InspectableItem } from './ContextDrawer'
 import { MaiIcon } from './MaiIcons'
 import { TodayBlockView } from './TodayBlocks'
-import { TodayFlow } from './TodayFlow'
-import styles from './unified.module.css'
 
-const money = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' })
+const rows = (value: unknown): Row[] => Array.isArray(value) ? value as Row[] : []
 
 type Props = {
   state: MaiState
@@ -19,27 +17,54 @@ type Props = {
   navigate: (view: AppView) => void
   inspect: (item: InspectableItem) => void
   onPersonalize: () => void
-  onNewTask: () => void
 }
 
-export function TodayCompact({ state, today, commit, navigate, inspect, onPersonalize, onNewTask }: Props) {
+export function TodayCompact({ state, today, commit, navigate, inspect, onPersonalize }: Props) {
   const plan = useMemo(() => plannerItems(state, today, today), [state, today])
-  const overdue = useMemo(() => state.tasks.filter(task => !task.concluida && String(task.data_vencimento || '').slice(0, 10) && String(task.data_vencimento || '').slice(0, 10) < today), [state.tasks, today])
+  const events = useMemo(() => plan.filter(item => item.kind === 'event').sort((a,b) => `${a.time || '99:99'} ${a.title}`.localeCompare(`${b.time || '99:99'} ${b.title}`)), [plan])
+  const dayTasks = useMemo(() => plan.filter(item => item.kind === 'task').sort((a,b) => `${a.time || '99:99'} ${a.title}`.localeCompare(`${b.time || '99:99'} ${b.title}`)), [plan])
+  const overdue = useMemo(() => state.tasks.filter(task => !task.concluida && String(task.data_vencimento || '').slice(0,10) && String(task.data_vencimento || '').slice(0,10) < today), [state.tasks, today])
   const financeToday = plan.filter(item => item.kind === 'finance')
-  const legacy = Array.isArray(state.configs.todaySections) ? state.configs.todaySections.map(String) : []
-  const main = (Array.isArray(state.configs.todayMainSections) ? state.configs.todayMainSections : ['flow']).map(String) as TodayBlock[]
-  const side = (Array.isArray(state.configs.todaySideSections) ? state.configs.todaySideSections : ['goals', 'notes', 'health', 'finance'].filter(id => !legacy.length || legacy.includes(id) || id === 'finance')).map(String) as TodayBlock[]
+  const side = (Array.isArray(state.configs.todaySideSections) ? state.configs.todaySideSections : ['habits','goals','notes','finance','health']).map(String) as TodayBlock[]
   const hidden = (Array.isArray(state.configs.todayHiddenSections) ? state.configs.todayHiddenSections : []).map(String)
-  const visibleMain = main.filter(id => !hidden.includes(id))
-  const visibleSide = side.filter(id => !hidden.includes(id) && !visibleMain.includes(id))
+  const visibleSide = side.filter((id, index) => !hidden.includes(id) && side.indexOf(id) === index)
 
-  const render = (id: TodayBlock) => id === 'flow'
-    ? <TodayFlow items={plan} overdue={overdue} commit={commit} inspect={inspect} />
-    : <TodayBlockView id={id} state={state} today={today} financeToday={financeToday} navigate={navigate} inspect={inspect} />
+  function toggleEvent(item: PlannerItem) {
+    const key = `${item.sourceId}|${item.date}|${item.time || ''}`
+    commit(current => {
+      const list = rows(current.eventCompletions)
+      const exists = list.some(entry => entry.chave === key)
+      return { ...current, eventCompletions: exists ? list.filter(entry => entry.chave !== key) : [...list, { chave:key, evento_id:item.sourceId, data:item.date, hora:item.time, concluida:true, atualizado_em:new Date().toISOString() }] }
+    })
+  }
 
-  return <div className={styles.todayView}>
-    <div className={styles.moduleHeadline}><div><div><h1>Hoje</h1><p>{new Date(`${today}T12:00:00`).toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}</p></div></div><div><button className={styles.secondaryButton} onClick={onPersonalize}><MaiIcon name="settings" size={15} /> Personalizar</button><button className={styles.primaryButton} onClick={onNewTask}>＋ Tarefa</button></div></div>
-    <div className="mai-today-strip"><div><span>A fazer</span><strong>{plan.filter(item => !item.completed).length}</strong><small>{overdue.length ? `${overdue.length} atrasada${overdue.length === 1 ? '' : 's'}` : 'Sem atrasos'}</small></div><div><span>Compromissos</span><strong>{plan.filter(item => item.kind === 'event' && !item.completed).length}</strong><small>{plan.filter(item => item.kind === 'event' && item.time).sort((a, b) => a.time.localeCompare(b.time))[0]?.time || 'Agenda livre'}</small></div><div><span>Rotinas</span><strong>{plan.filter(item => item.kind === 'habit' && item.completed).length}/{plan.filter(item => item.kind === 'habit').length}</strong><small>Concluídas</small></div><div><span>Finanças</span><strong>{financeToday.length}</strong><small>{money.format(financeToday.reduce((sum, item) => sum + (item.raw.tipo === 'receita' ? Number(item.raw.valor_real || item.raw.valor || 0) : -Number(item.raw.valor_real || item.raw.valor || 0)), 0))}</small></div></div>
-    <div className="mai-today-grid"><main>{visibleMain.map(id => <div key={id}>{render(id)}</div>)}</main>{visibleSide.length ? <aside className={styles.todaySide}>{visibleSide.map(id => <div key={id}>{render(id)}</div>)}</aside> : null}</div>
+  function toggleTask(id: string) {
+    commit(current => ({ ...current, tasks: current.tasks.map(task => {
+      if (task.id !== id) return task
+      if (!task.concluida && task.repeticao && task.data_vencimento) return { ...task, data_vencimento: nextRepeat(task.data_vencimento, task.repeticao), concluida:false, concluida_em:'' }
+      return { ...task, concluida:!task.concluida, concluida_em:!task.concluida ? new Date().toISOString() : '' }
+    }) }))
+  }
+
+  const inspectPlanner = (item: PlannerItem) => inspect({ kind:item.kind, sourceId:item.sourceId, title:item.title, date:item.date, time:item.time, raw:item.raw })
+  const dateLabel = new Date(`${today}T12:00:00`).toLocaleDateString('pt-BR', { weekday:'long', day:'numeric', month:'long' })
+
+  return <div className="mai-today-page">
+    <div className="mai-page-bar"><div><strong>Hoje</strong><span>{dateLabel}</span></div><button title="Personalizar lateral" onClick={onPersonalize}><MaiIcon name="settings" size={16}/></button></div>
+    <div className="mai-today-layout-v2">
+      <main className="mai-today-main-v2">
+        <section className="mai-today-section">
+          <header><strong>Compromissos</strong><span>{events.filter(item => !item.completed).length}</span></header>
+          <div>{events.map(item => <article className="mai-today-item" key={item.id} data-completed={item.completed}><button className="mai-round-check" style={{borderColor:item.color,background:item.completed ? item.color : ''}} onClick={() => toggleEvent(item)}>{item.completed ? '✓' : ''}</button><button className="mai-item-body" onClick={() => inspectPlanner(item)}><strong>{item.title}</strong><small>{item.subtitle || 'Compromisso'}</small></button><time>{item.time || 'Dia todo'}</time></article>)}{!events.length ? <div className="mai-section-empty">Nenhum compromisso para hoje.</div> : null}</div>
+        </section>
+
+        <section className="mai-today-section">
+          <header><strong>Tarefas</strong><span>{dayTasks.filter(item => !item.completed).length + overdue.length}</span></header>
+          <div>{overdue.map(task => <article className="mai-today-item" key={`over-${task.id}`}><button className="mai-round-check" data-overdue="true" onClick={() => toggleTask(task.id)}/><button className="mai-item-body" onClick={() => inspect({ kind:'task', sourceId:task.id, title:task.titulo, date:String(task.data_vencimento || '').slice(0,10), raw:task as Row })}><strong>{task.titulo}</strong><small className="mai-overdue-text">Atrasada · {String(task.data_vencimento || '').slice(0,10)}</small></button><time>!</time></article>)}{dayTasks.map(item => <article className="mai-today-item" key={item.id} data-completed={item.completed}><button className="mai-round-check" style={{borderColor:item.color,background:item.completed ? item.color : ''}} onClick={() => toggleTask(item.sourceId)}>{item.completed ? '✓' : ''}</button><button className="mai-item-body" onClick={() => inspectPlanner(item)}><strong>{item.title}</strong><small>{item.subtitle}{item.recurring ? ' · recorrente' : ''}</small></button><time>{item.time || ''}</time></article>)}{!dayTasks.length && !overdue.length ? <div className="mai-section-empty">Nenhuma tarefa para hoje.</div> : null}</div>
+        </section>
+      </main>
+
+      <aside className="mai-today-side-v2">{visibleSide.map(id => <TodayBlockView key={id} id={id} state={state} today={today} financeToday={financeToday} navigate={navigate} inspect={inspect}/>)}</aside>
+    </div>
   </div>
 }
