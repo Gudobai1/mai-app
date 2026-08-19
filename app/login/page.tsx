@@ -1,8 +1,8 @@
 'use client'
 
 import { FormEvent, useState } from 'react'
-import { createClient } from '@supabase/supabase-js'
 import { flushRemoteSync, getSyncStatus, hydrateRemoteState, loadState } from '../../lib/v2/state'
+import { createStatelessSupabaseClient, saveSupabaseSession } from '../../lib/supabase/browser'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -12,14 +12,12 @@ export default function LoginPage() {
 
   async function submit(e: FormEvent) {
     e.preventDefault()
-    const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-    const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
-    if (!url || !key) { setMessage('Supabase não configurado neste ambiente.'); return }
+    const supabase = createStatelessSupabaseClient()
+    if (!supabase) { setMessage('Supabase não configurado neste ambiente.'); return }
 
     setLoading(true)
     setMessage('Entrando…')
 
-    const supabase = createClient(url, key)
     const { data, error } = await supabase.auth.signInWithPassword({ email, password })
     if (error || !data.session) {
       setLoading(false)
@@ -27,8 +25,7 @@ export default function LoginPage() {
       return
     }
 
-    localStorage.setItem('mai-supabase-access-token', data.session.access_token)
-    localStorage.setItem('mai-supabase-refresh-token', data.session.refresh_token)
+    saveSupabaseSession(data.session)
     setMessage('Conta conectada. Salvando seus dados…')
 
     const local = loadState()
