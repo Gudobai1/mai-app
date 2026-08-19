@@ -1,0 +1,9 @@
+/* Última camada: o MAI usa um único padrão de criação contextual. */
+[class*="moduleHeadline"] > div:last-child { display:none !important; }
+[class*="addWrap"] { display:none !important; }
+
+/* Mantém controles funcionais específicos fora dos cabeçalhos. */
+.mai-page-bar > div:last-child,
+.mai-view-switch,
+.mai-projects-panel > header button,
+.mai-floating-add { display:flex; }
