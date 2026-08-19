@@ -1,18 +1,12 @@
 import { createClient } from '@supabase/supabase-js'
-
-function env() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const publishable = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
-  if (!url || !publishable) return null
-  return { url, publishable }
-}
+import { getSupabasePublicConfig } from '../../../lib/supabase/config'
 
 async function scopedClient(request: Request) {
-  const config = env()
+  const config = getSupabasePublicConfig()
   if (!config) return { error: 'Supabase não configurado', status: 503 as const }
   const token = (request.headers.get('authorization') || '').replace(/^Bearer\s+/i, '').trim()
   if (!token) return { error: 'Não autenticado', status: 401 as const }
-  const client = createClient(config.url, config.publishable, {
+  const client = createClient(config.url, config.publishableKey, {
     global: { headers: { Authorization: `Bearer ${token}` } },
     auth: { persistSession: false, autoRefreshToken: false },
   })
