@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { PwaRegister } from './PwaRegister'
+import './ux-polish.css'
 
 export const metadata: Metadata = {
   title: 'MAI — Meu Sistema',
