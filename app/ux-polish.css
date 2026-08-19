@@ -1,0 +1,152 @@
+/* Camada de UX do MAI: compacta, contextual e sem navegação desnecessária. */
+
+/* Paletas do aplicativo */
+:root[data-mai-accent="sage"] [class*="appShell"] { --accent:#60765a; --accent-strong:#496244; --accent-soft:#e7eee3; }
+:root[data-mai-accent="blue"] [class*="appShell"] { --accent:#486b8a; --accent-strong:#365875; --accent-soft:#e6edf3; }
+:root[data-mai-accent="graphite"] [class*="appShell"] { --accent:#4f5b57; --accent-strong:#3d4844; --accent-soft:#e9eceb; }
+:root[data-mai-accent="sand"] [class*="appShell"] { --accent:#9b7757; --accent-strong:#7c5e44; --accent-soft:#f3ece5; }
+:root[data-mai-accent="plum"] [class*="appShell"] { --accent:#765d82; --accent-strong:#5e4869; --accent-soft:#eee8f1; }
+:root[data-mai-accent="terracotta"] [class*="appShell"] { --accent:#a85f4f; --accent-strong:#88493c; --accent-soft:#f5e9e6; }
+:root[data-mai-accent="teal"] [class*="appShell"] { --accent:#397b78; --accent-strong:#2d625f; --accent-soft:#e3f0ef; }
+:root[data-mai-accent="rose"] [class*="appShell"] { --accent:#a26373; --accent-strong:#824d5b; --accent-soft:#f3e8ec; }
+
+/* Cabeçalhos: sem textos gigantes e repetitivos */
+[class*="moduleHeadline"] { min-height:40px !important; margin-bottom:10px !important; }
+[class*="moduleHeadline"] p { display:none !important; }
+[class*="moduleHeadline"] h1 { display:none !important; }
+[class*="todayView"] [class*="moduleHeadline"] h1,
+[class*="taskWorkspace"] [class*="moduleHeadline"] h1 { display:block !important; font-size:20px !important; letter-spacing:-.02em !important; }
+[class*="taskWorkspace"] [class*="moduleHeadline"] p { display:none !important; }
+
+/* Hoje: resumo vira uma faixa compacta, não quatro cartões grandes */
+[class*="todaySummary"] {
+  display:flex !important;
+  flex-wrap:wrap !important;
+  gap:0 !important;
+  margin:0 0 14px !important;
+  padding:6px 0 !important;
+  border-top:1px solid var(--line) !important;
+  border-bottom:1px solid var(--line) !important;
+}
+[class*="todaySummary"] > button {
+  min-height:42px !important;
+  display:flex !important;
+  align-items:center !important;
+  gap:7px !important;
+  padding:0 16px !important;
+  border:0 !important;
+  border-right:1px solid var(--line) !important;
+  border-radius:0 !important;
+  background:transparent !important;
+  transform:none !important;
+}
+[class*="todaySummary"] > button:first-child { padding-left:2px !important; }
+[class*="todaySummary"] > button:last-child { border-right:0 !important; }
+[class*="todaySummary"] span { font-size:9px !important; letter-spacing:.03em !important; }
+[class*="todaySummary"] strong { margin:0 !important; font-size:16px !important; }
+[class*="todaySummary"] small { margin:0 !important; font-size:9px !important; }
+
+/* Lateral direita mais leve */
+[class*="todayLayout"] { grid-template-columns:minmax(0,1fr) minmax(230px,300px) !important; gap:18px !important; }
+[class*="todaySide"] { gap:8px !important; position:sticky; top:20px; }
+[class*="todaySide"] > section {
+  padding:10px 0 !important;
+  border:0 !important;
+  border-bottom:1px solid var(--line) !important;
+  border-radius:0 !important;
+  background:transparent !important;
+}
+[class*="todaySide"] > section:last-child { border-bottom:0 !important; }
+
+/* Todos os editores modais passam a funcionar como painel lateral direito */
+[class*="modalLayer"] {
+  display:flex !important;
+  align-items:stretch !important;
+  justify-content:flex-end !important;
+  padding:0 !important;
+  background:rgba(20,23,20,.22) !important;
+  backdrop-filter:blur(1px) !important;
+}
+[class*="modalCard"] {
+  width:min(520px,100vw) !important;
+  max-height:100vh !important;
+  height:100vh !important;
+  border-radius:0 !important;
+  border-width:0 0 0 1px !important;
+  box-shadow:-18px 0 55px rgba(0,0,0,.16) !important;
+  animation:mai-drawer-in .16s ease-out;
+}
+[class*="modalWide"] { width:min(760px,100vw) !important; }
+[class*="modalHeader"] { min-height:54px !important; padding:11px 14px !important; align-items:center !important; }
+[class*="modalHeader"] p { display:none !important; }
+[class*="taskEditor"] { grid-template-columns:minmax(0,1fr) 230px !important; }
+[class*="taskEditor"] > main { padding:18px !important; }
+[class*="taskEditor"] > aside { padding:15px 12px !important; }
+[class*="goalEditor"], [class*="financeEditor"], [class*="noteEditor"] { min-height:calc(100vh - 55px); }
+@keyframes mai-drawer-in { from { transform:translateX(18px); opacity:.75 } to { transform:none; opacity:1 } }
+
+/* Inputs mais discretos */
+[class*="appShell"] input,
+[class*="appShell"] select,
+[class*="appShell"] textarea { border-color:var(--line) !important; }
+[class*="appShell"] input:focus,
+[class*="appShell"] select:focus,
+[class*="appShell"] textarea:focus { border-color:color-mix(in srgb,var(--accent) 55%,var(--line)) !important; box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 12%,transparent); }
+
+/* Painel contextual usado por Hoje/Em breve/busca */
+.mai-context-layer { position:fixed; inset:0; z-index:1300; background:rgba(20,23,20,.18); display:flex; justify-content:flex-end; }
+.mai-context-drawer { width:min(430px,100vw); height:100vh; overflow:auto; background:var(--bg-card,#fff); color:var(--text,#202321); border-left:1px solid var(--line,#e6e9e4); box-shadow:-16px 0 50px rgba(0,0,0,.14); animation:mai-drawer-in .15s ease-out; }
+.mai-context-drawer > header { min-height:58px; display:flex; align-items:center; justify-content:space-between; gap:12px; padding:11px 14px; border-bottom:1px solid var(--line,#e6e9e4); position:sticky; top:0; background:var(--bg-card,#fff); z-index:2; }
+.mai-context-drawer > header span { display:block; color:var(--muted,#687069); font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; }
+.mai-context-drawer > header strong { display:block; margin-top:2px; font-size:13px; max-width:310px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.mai-context-drawer > header button { width:30px; height:30px; border:0; border-radius:8px; background:transparent; font-size:20px; }
+.mai-context-drawer > header button:hover { background:var(--bg-hover,#eef1ec); }
+.mai-context-drawer form { padding:15px; display:grid; gap:12px; }
+.mai-context-drawer label { display:grid; gap:5px; }
+.mai-context-drawer label > span { color:var(--muted,#687069); font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; }
+.mai-context-drawer input,.mai-context-drawer select,.mai-context-drawer textarea { width:100%; min-height:36px; padding:7px 9px; border:1px solid var(--line,#e6e9e4); border-radius:8px; background:var(--bg-primary,#fff); color:inherit; font:inherit; outline:0; }
+.mai-context-drawer textarea { resize:vertical; line-height:1.5; }
+.mai-context-grid { display:grid; grid-template-columns:1fr 1fr; gap:9px; }
+.mai-context-drawer footer { position:sticky; bottom:-15px; display:flex; justify-content:space-between; align-items:center; gap:8px; margin:8px -15px -15px; padding:11px 14px; border-top:1px solid var(--line,#e6e9e4); background:var(--bg-card,#fff); }
+.mai-context-drawer footer div { display:flex; gap:6px; }
+.mai-context-drawer footer button { min-height:34px; padding:0 11px; border:1px solid var(--line,#e6e9e4); border-radius:8px; background:var(--bg-card,#fff); }
+.mai-context-drawer footer div button:last-child { border-color:var(--accent,#60765a); background:var(--accent,#60765a); color:#fff; font-weight:650; }
+.mai-context-delete { color:var(--danger,#c84c40) !important; }
+.mai-context-error { margin:0; padding:8px; border-radius:8px; background:color-mix(in srgb,var(--danger,#c84c40) 8%,transparent); color:var(--danger,#c84c40); font-size:10px; }
+
+/* Paleta fechada para qualquer seletor de cor existente */
+.mai-preset-layer { position:fixed; inset:0; z-index:1800; }
+.mai-preset-popover { position:fixed; width:255px; padding:8px; border:1px solid #dde2dc; border-radius:12px; background:#fff; color:#202321; box-shadow:0 16px 45px rgba(0,0,0,.18); }
+:root[data-mai-theme="dark"] .mai-preset-popover { background:#1d211d; color:#e5e9e3; border-color:#303630; }
+.mai-preset-popover header { display:flex; align-items:center; justify-content:space-between; min-height:30px; padding:0 3px 5px; }
+.mai-preset-popover header strong { font-size:11px; }
+.mai-preset-popover header button { width:26px; height:26px; border:0; border-radius:7px; background:transparent; color:inherit; }
+.mai-preset-popover > div { display:grid; grid-template-columns:1fr 1fr; gap:4px; }
+.mai-preset-popover > div button { min-height:36px; display:flex; align-items:center; gap:7px; padding:0 7px; border:1px solid transparent; border-radius:8px; background:transparent; color:inherit; font:inherit; font-size:9px; text-align:left; }
+.mai-preset-popover > div button:hover,.mai-preset-popover > div button[data-active="true"] { border-color:#d9ded8; background:#f3f5f2; }
+:root[data-mai-theme="dark"] .mai-preset-popover > div button:hover,:root[data-mai-theme="dark"] .mai-preset-popover > div button[data-active="true"] { border-color:#384038; background:#262c26; }
+.mai-preset-popover i { width:18px; height:18px; border-radius:50%; box-shadow:inset 0 0 0 1px rgba(0,0,0,.08); }
+
+/* Paleta do aplicativo nas configurações */
+.mai-app-palettes { display:flex; flex-wrap:wrap; gap:7px; }
+.mai-app-palettes button { width:34px; height:34px; padding:4px; border:1px solid var(--line); border-radius:10px; background:var(--bg-card); }
+.mai-app-palettes button i { display:block; width:100%; height:100%; border-radius:7px; }
+.mai-app-palettes button[data-active="true"] { border-color:var(--accent); box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 16%,transparent); }
+
+/* Personalização do Hoje */
+.mai-today-config { display:grid; gap:6px; }
+.mai-today-config > div { min-height:42px; display:grid; grid-template-columns:minmax(0,1fr) 95px auto; align-items:center; gap:8px; padding:0 8px; border:1px solid var(--line); border-radius:9px; }
+.mai-today-config strong { font-size:10px; }
+.mai-today-config select { min-height:30px; border:1px solid var(--line); border-radius:7px; background:var(--bg-card); font-size:9px; }
+.mai-today-config span { display:flex; gap:3px; }
+.mai-today-config span button { width:28px; height:28px; border:1px solid var(--line); border-radius:7px; background:var(--bg-card); }
+
+@media (max-width:850px) {
+  [class*="todayLayout"] { grid-template-columns:1fr !important; }
+  [class*="todaySide"] { position:static; }
+  [class*="modalCard"], [class*="modalWide"], .mai-context-drawer { width:100vw !important; }
+  [class*="taskEditor"] { grid-template-columns:1fr !important; }
+  [class*="taskEditor"] > aside { border-left:0 !important; border-top:1px solid var(--line) !important; }
+  .mai-context-grid { grid-template-columns:1fr; }
+  [class*="todaySummary"] > button { flex:1 1 48%; border-right:0 !important; padding-left:6px !important; }
+}
