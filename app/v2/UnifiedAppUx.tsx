@@ -23,6 +23,7 @@ import { useMaiRuntime } from './useMaiRuntime'
 import styles from './unified.module.css'
 
 const secondary: SecondaryView[] = ['habits', 'goals', 'notes', 'finance', 'health', 'files']
+type ProjectDialog = { projectId?: string; parentId?: string; tab?: 'details' | 'sections' } | null
 
 export function UnifiedAppUx() {
   const runtime = useMaiRuntime()
@@ -33,7 +34,7 @@ export function UnifiedAppUx() {
   const [search, setSearch] = useState('')
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [todaySettingsOpen, setTodaySettingsOpen] = useState(false)
-  const [projectOpen, setProjectOpen] = useState(false)
+  const [projectDialog, setProjectDialog] = useState<ProjectDialog>(null)
   const [selected, setSelected] = useState<InspectableItem | null>(null)
   const [creating, setCreating] = useState<'task' | 'event' | null>(null)
   const [healthCreating, setHealthCreating] = useState(false)
@@ -50,7 +51,7 @@ export function UnifiedAppUx() {
       if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') { event.preventDefault(); setSearchOpen(true) }
       if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'z' && !editing) { event.preventDefault(); runtime.undo() }
       if (!event.ctrlKey && !event.metaKey && !event.altKey && event.key.toLowerCase() === 'q' && !editing) { event.preventDefault(); contextualAdd() }
-      if (event.key === 'Escape') { setSearchOpen(false); setSettingsOpen(false); setTodaySettingsOpen(false); setProjectOpen(false); setSelected(null); setCreating(null); setHealthCreating(false) }
+      if (event.key === 'Escape') { setSearchOpen(false); setSettingsOpen(false); setTodaySettingsOpen(false); setProjectDialog(null); setSelected(null); setCreating(null); setHealthCreating(false) }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
@@ -81,7 +82,7 @@ export function UnifiedAppUx() {
       <div className={styles.workspace}>
         {!runtime.ready ? <div className={styles.loadingState}>Carregando seu MAI…</div> : <>
           {view === 'today' ? <TodayCompact state={runtime.state} today={runtime.today} commit={runtime.commit} navigate={navigate} inspect={setSelected} onPersonalize={() => setTodaySettingsOpen(true)} /> : null}
-          {view === 'inbox' || view.startsWith('project:') ? <div className="mai-task-module-layout"><div className="mai-task-module-main"><UnifiedTasks state={runtime.state} today={runtime.today} view={view as TaskWorkspaceView} commit={runtime.commit} googleRpc={runtime.googleRpc} onOpenAgenda={() => navigate('upcoming')} /></div><ProjectsPanel state={runtime.state} view={view} navigate={navigate} onNewProject={() => setProjectOpen(true)} /></div> : null}
+          {view === 'inbox' || view.startsWith('project:') ? <div className="mai-task-module-layout"><div className="mai-task-module-main"><UnifiedTasks state={runtime.state} today={runtime.today} view={view as TaskWorkspaceView} commit={runtime.commit} googleRpc={runtime.googleRpc} onOpenAgenda={() => navigate('upcoming')} /></div><ProjectsPanel state={runtime.state} view={view} navigate={navigate} commit={runtime.commit} onNewProject={() => setProjectDialog({})} onEditProject={id => setProjectDialog({ projectId: id, tab: 'details' })} onManageSections={id => setProjectDialog({ projectId: id, tab: 'sections' })} onNewSubproject={parentId => setProjectDialog({ parentId, tab: 'details' })} /></div> : null}
           {view === 'upcoming' ? <UpcomingCompact state={runtime.state} today={runtime.today} inspect={setSelected} /> : null}
           {secondary.includes(view as SecondaryView) ? <UnifiedAreas view={view as SecondaryView} state={runtime.state} today={runtime.today} commit={runtime.commit} googleRpc={runtime.googleRpc} createRequest={areaCreateRequest} /> : null}
         </>}
@@ -90,7 +91,7 @@ export function UnifiedAppUx() {
 
     <FloatingAddButton view={view} onAdd={addByType}/>
     {searchOpen ? <SearchOverlay state={runtime.state} query={search} setQuery={setSearch} onClose={() => setSearchOpen(false)} inspect={setSelected} navigate={navigate} /> : null}
-    {projectOpen ? <ProjectDrawer state={runtime.state} commit={runtime.commit} onClose={() => setProjectOpen(false)} onCreated={id => { setProjectOpen(false); navigate(`project:${id}`) }} /> : null}
+    {projectDialog ? <ProjectDrawer state={runtime.state} commit={runtime.commit} projectId={projectDialog.projectId} parentId={projectDialog.parentId} initialTab={projectDialog.tab} onClose={() => setProjectDialog(null)} onSaved={id => { const wasCreating = !projectDialog.projectId; setProjectDialog(null); if (wasCreating) navigate(`project:${id}`) }} onRemoved={() => { setProjectDialog(null); navigate('inbox') }} /> : null}
     {todaySettingsOpen ? <TodaySettingsDrawer state={runtime.state} commit={runtime.commit} onClose={() => setTodaySettingsOpen(false)} /> : null}
     {settingsOpen ? <AppSettingsDrawer state={runtime.state} commit={runtime.commit} onClose={() => setSettingsOpen(false)} onPersonalizeToday={() => { setSettingsOpen(false); setTodaySettingsOpen(true) }} googleConnected={runtime.googleConnected} calendars={runtime.calendars} calendarDraft={runtime.calendarDraft} setCalendarDraft={runtime.setCalendarDraft} calendarBusy={runtime.calendarBusy} saveCalendars={runtime.saveCalendars} disconnectGoogle={runtime.disconnectGoogle} requestNotifications={runtime.requestNotifications} installPrompt={runtime.installPrompt} install={runtime.install} exportData={runtime.exportData} importData={runtime.importData} importRef={runtime.importRef} syncStatus={runtime.syncStatus} flushRemoteSync={runtime.flushRemoteSync} logout={runtime.logout} /> : null}
     {creating ? <QuickCreateDrawer kind={creating} state={runtime.state} today={runtime.today} defaultProjectId={creating === 'task' ? activeProjectId : undefined} defaultDate={creating === 'task' ? (view === 'today' ? runtime.today : '') : runtime.today} commit={runtime.commit} onClose={() => setCreating(null)} /> : null}
