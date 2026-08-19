@@ -39,6 +39,7 @@ export function UnifiedAppUx() {
 
   const todayPlan = runtime.today ? plannerItems(runtime.state, runtime.today, runtime.today) : []
   const overdue = runtime.state.tasks.filter(task => !task.concluida && String(task.data_vencimento || '').slice(0, 10) && String(task.data_vencimento || '').slice(0, 10) < runtime.today)
+  const activeProjectId = view.startsWith('project:') ? view.slice(8) : 'entrada'
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -89,7 +90,7 @@ export function UnifiedAppUx() {
     {projectOpen ? <ProjectDrawer state={runtime.state} commit={runtime.commit} onClose={() => setProjectOpen(false)} onCreated={id => { setProjectOpen(false); navigate(`project:${id}`) }} /> : null}
     {todaySettingsOpen ? <TodaySettingsDrawer state={runtime.state} commit={runtime.commit} onClose={() => setTodaySettingsOpen(false)} /> : null}
     {settingsOpen ? <AppSettingsDrawer state={runtime.state} commit={runtime.commit} onClose={() => setSettingsOpen(false)} onPersonalizeToday={() => { setSettingsOpen(false); setTodaySettingsOpen(true) }} googleConnected={runtime.googleConnected} calendars={runtime.calendars} calendarDraft={runtime.calendarDraft} setCalendarDraft={runtime.setCalendarDraft} calendarBusy={runtime.calendarBusy} saveCalendars={runtime.saveCalendars} disconnectGoogle={runtime.disconnectGoogle} requestNotifications={runtime.requestNotifications} installPrompt={runtime.installPrompt} install={runtime.install} exportData={runtime.exportData} importData={runtime.importData} importRef={runtime.importRef} syncStatus={runtime.syncStatus} flushRemoteSync={runtime.flushRemoteSync} logout={runtime.logout} /> : null}
-    {creating ? <QuickCreateDrawer kind={creating} state={runtime.state} today={runtime.today} commit={runtime.commit} onClose={() => setCreating(null)} /> : null}
+    {creating ? <QuickCreateDrawer kind={creating} state={runtime.state} today={runtime.today} defaultProjectId={creating === 'task' ? activeProjectId : undefined} defaultDate={creating === 'task' ? (view === 'today' ? runtime.today : '') : runtime.today} commit={runtime.commit} onClose={() => setCreating(null)} /> : null}
     <ContextDrawer item={selected} state={runtime.state} today={runtime.today} commit={runtime.commit} googleRpc={runtime.googleRpc} refreshEvents={() => runtime.syncCalendar(runtime.state.configs.calendarios || [])} onClose={() => setSelected(null)} />
   </div>
 }
