@@ -36,6 +36,8 @@ export type MaiState = {
   [key: string]: unknown
 }
 
+const NEW_TODAY_SECTIONS = ['summary', 'flow', 'goals', 'notes', 'health']
+
 export function dateKey(date = new Date()) {
   const year = date.getFullYear()
   const month = String(date.getMonth() + 1).padStart(2, '0')
@@ -50,9 +52,9 @@ export function emptyState(): MaiState {
     configs: {
       calendarios: [],
       theme: 'light',
-      todaySections: ['tasks', 'events', 'habits', 'finance', 'goals', 'health'],
+      todaySections: [...NEW_TODAY_SECTIONS],
       todayGroup: 'type',
-      upcomingView: 'month',
+      upcomingView: 'week',
     },
     tasks: [],
     projects: [],
@@ -79,6 +81,15 @@ export function stateRows(value: unknown) {
   return Array.isArray(value) ? value : []
 }
 
+function normalizeTodaySections(value: unknown) {
+  const saved = stateRows(value).map(String)
+  const usesNewLayout = saved.some(item => ['summary', 'flow', 'notes'].includes(item))
+  if (!usesNewLayout) return [...NEW_TODAY_SECTIONS]
+  const allowed = new Set(NEW_TODAY_SECTIONS)
+  const next = saved.filter(item => allowed.has(item))
+  return next.length ? next : [...NEW_TODAY_SECTIONS]
+}
+
 export function normalizeState(value: unknown): MaiState {
   const saved = value && typeof value === 'object' ? value as Partial<MaiState> : {}
   const fallback = emptyState()
@@ -89,7 +100,12 @@ export function normalizeState(value: unknown): MaiState {
     ...fallback,
     ...saved,
     version: Number(saved.version || fallback.version),
-    configs: { ...fallback.configs, ...(saved.configs || {}), calendarios: stateRows(saved.configs?.calendarios).map(String) },
+    configs: {
+      ...fallback.configs,
+      ...(saved.configs || {}),
+      calendarios: stateRows(saved.configs?.calendarios).map(String),
+      todaySections: normalizeTodaySections(saved.configs?.todaySections),
+    },
     tasks: stateRows(saved.tasks) as LegacyTask[],
     projects: stateRows(saved.projects),
     habits: stateRows(saved.habits),
