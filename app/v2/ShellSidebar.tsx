@@ -26,6 +26,7 @@ type Props = {
   onSearch: () => void
   undo: () => void
   undoCount: number
+  onSettings: () => void
   onGoogle: () => void
   googleConnected: boolean | null
   syncStatus: SyncStatus
@@ -52,6 +53,7 @@ export function ShellSidebar(props: Props) {
 
       <div className={styles.sidebarBottom}>
         <button onClick={props.undo} disabled={!props.undoCount}><span>↶</span><span>Desfazer</span><kbd>Ctrl Z</kbd></button>
+        <button onClick={props.onSettings}><MaiIcon name="settings" size={18}/><span><strong>Configurações</strong><small>Aparência e preferências</small></span><span/></button>
         <button onClick={props.onGoogle}><span className={styles.googleMark}>G</span><span><strong>Google</strong><small>{props.googleConnected === null ? 'Verificando' : props.googleConnected ? 'Agenda e Drive conectados' : 'Conectar Agenda e Drive'}</small></span><MaiIcon name="settings" size={16} /></button>
         <button className={styles.syncButtonSide} data-phase={props.syncStatus.phase} onClick={props.onSyncClick}><i /><span>{props.syncStatus.message}</span></button>
       </div>
