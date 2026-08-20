@@ -28,6 +28,7 @@ type Props = {
   onSettings: () => void
   onNewProject: () => void
   onEditProject: (id: string) => void
+  onManageSections: (id: string) => void
   commit: (change: (current: MaiState) => MaiState) => void
 }
 
@@ -132,6 +133,7 @@ export function ShellSidebar(props: Props) {
                 <button onClick={() => toggleFavorite(id)}>{project.fixado === true ? 'Desafixar do topo' : 'Fixar no topo'}</button>
                 <button disabled={index === 0} onClick={() => move(id, -1)}>Mover para cima</button>
                 <button disabled={index === projects.length - 1} onClick={() => move(id, 1)}>Mover para baixo</button>
+                <button onClick={() => { setMenuId(''); props.onManageSections(id) }}>Gerenciar seções</button>
                 <button onClick={() => { setMenuId(''); props.onEditProject(id) }}>Editar projeto</button>
               </div> : null}
             </div>
