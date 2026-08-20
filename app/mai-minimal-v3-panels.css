@@ -1,0 +1,57 @@
+/* Complementos do drawer/contexto do MAI Minimal V3 */
+.mai-v3-context-head-copy{min-width:0;flex:1}
+.mai-v3-breadcrumbs{display:flex;align-items:center;gap:5px;min-width:0;overflow:hidden;white-space:nowrap}
+.mai-v3-breadcrumbs span{display:flex;align-items:center;gap:5px;min-width:0}
+.mai-v3-breadcrumbs i{font-style:normal;color:#a0a79d;font-size:11px}
+.mai-v3-breadcrumbs button{border:0;background:transparent;padding:3px 2px;color:#8d958b;font-size:10px;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mai-v3-breadcrumbs button[data-current="true"]{color:#4f5d4b;font-weight:700}
+
+.mai-v3-context-section{padding:17px 0;border-bottom:1px solid #f1f3ef}
+.mai-v3-context-label{display:block;margin-bottom:9px;color:#969d93;font-size:10.5px}
+.mai-v3-context-section-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px}
+.mai-v3-context-section-head strong{font-size:11px;font-weight:700;color:#424a40}
+.mai-v3-context-section-head small{font-size:9px;color:#9aa198}
+.mai-v3-context-empty{display:block;color:#a1a79f;font-size:10px;padding:5px 0}
+
+.mai-v3-light-editor{border:1px solid #eef1ec;border-radius:13px;overflow:hidden;background:#fbfcfa}
+.mai-v3-light-toolbar{height:36px;display:flex;align-items:center;gap:2px;padding:0 7px;border-bottom:1px solid #eef1ec;background:#f7f9f6}
+.mai-v3-light-toolbar button{width:28px;height:27px;border:0;border-radius:7px;background:transparent;color:#70786e;font-size:11px}
+.mai-v3-light-toolbar button:hover{background:#e9eee7;color:#4f5d4b}
+.mai-v3-light-surface{min-height:92px;padding:11px 12px;outline:0;font-size:12px;line-height:1.55;color:#586056}
+.mai-v3-light-surface:empty:before{content:'Adicionar descrição';color:#a2a9a0}
+
+.mai-v3-subtask-list{display:grid}
+.mai-v3-subtask-row{min-height:45px;width:100%;border:0;border-top:1px solid #f1f3ef;background:transparent;display:grid;grid-template-columns:24px minmax(0,1fr) 18px;align-items:center;gap:8px;text-align:left;padding:0 3px;color:#4f574d}
+.mai-v3-subtask-row:first-child{border-top:0}
+.mai-v3-subtask-row:hover{background:#f8f9f7;border-radius:9px}
+.mai-v3-subtask-row>i{width:17px;height:17px;border:1.5px solid #b8beb7;border-radius:50%;display:grid;place-items:center;font-style:normal;font-size:9px;color:#fff}
+.mai-v3-subtask-row>i[data-completed="true"]{background:#6f8168!important;border-color:#6f8168!important}
+.mai-v3-subtask-row>span{min-width:0}
+.mai-v3-subtask-row strong{display:block;font-size:11.5px;font-weight:560;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mai-v3-subtask-row small{display:block;margin-top:3px;font-size:9px;color:#979e95}
+.mai-v3-subtask-row svg{color:#a1a79f}
+.mai-v3-subtask-add{display:grid;grid-template-columns:1fr 32px;align-items:center;gap:6px;margin-top:8px}
+.mai-v3-subtask-add input{height:36px!important;border:1px dashed #dfe4dc!important;border-radius:10px!important;padding:0 10px!important;background:#fbfcfa!important;font-size:10.5px!important}
+.mai-v3-subtask-add button{width:32px;height:32px;border:0;border-radius:9px;background:#edf2eb;color:#52614d}
+
+.mai-v3-reminders{display:flex;flex-wrap:wrap;gap:6px}
+.mai-v3-reminders button,.mai-v3-reminders select{min-height:30px;border:1px solid #e4e8e2;border-radius:9px;background:#f8faf7;color:#687165;padding:0 9px;font-size:9.5px}
+.mai-v3-reminders button:hover{background:#eef2ec}
+.mai-v3-attachment-list{display:grid;gap:6px}
+.mai-v3-attachment-list>div{min-height:34px;border:1px solid #edf0eb;border-radius:9px;display:flex;align-items:center;padding:0 9px;font-size:10px;color:#626a60;background:#fafbf9}
+
+.mai-v3-time-duration{display:flex;align-items:center;gap:7px}
+.mai-v3-time-duration input{width:90px!important}
+.mai-v3-time-duration select{width:auto!important;min-width:88px}
+.mai-v3-time-duration i{font-style:normal;color:#aaa}
+.mai-v3-switch-field input[type="checkbox"]{justify-self:end;width:18px!important;height:18px!important}
+
+.mai-context-drawer form>section textarea{width:100%;border:1px solid #eef1ec!important;border-radius:12px!important;background:#fbfcfa!important;padding:10px 11px!important;min-height:96px;line-height:1.55}
+.mai-context-drawer .mai-v3-category-field{width:100%;display:grid;grid-template-columns:28px 1fr;align-items:center;gap:8px}
+.mai-context-drawer .mai-v3-category-field input[type="color"]{width:24px!important;height:24px!important;border-radius:7px!important;padding:0!important}
+.mai-context-drawer .mai-v3-category-field input:not([type="color"]){width:100%}
+
+@media(max-width:560px){
+  .mai-v3-breadcrumbs button{max-width:95px}
+  .mai-v3-context-section{padding:15px 0}
+}
