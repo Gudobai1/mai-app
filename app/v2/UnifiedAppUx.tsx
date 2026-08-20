@@ -8,12 +8,13 @@ import { FloatingAddButton } from './FloatingAddButton'
 import { HealthQuickAddDrawer } from './HealthQuickAddDrawer'
 import { MaiIcon } from './MaiIcons'
 import { MinimalAreas, type SecondaryView } from './MinimalAreas'
+import { MinimalTaskWorkspace } from './MinimalTaskWorkspace'
 import { ProjectDrawer } from './ProjectDrawer'
 import { QuickCreateDrawer } from './QuickCreateDrawer'
 import { SearchOverlay } from './SearchOverlay'
 import { ShellSidebar } from './ShellSidebar'
 import { TodayCompact } from './TodayCompact'
-import { UnifiedTasks, type TaskWorkspaceView } from './UnifiedTasks'
+import type { TaskWorkspaceView } from './UnifiedTasks'
 import { UpcomingCompact } from './UpcomingCompact'
 import { useMaiRuntime } from './useMaiRuntime'
 import styles from './unified.module.css'
@@ -40,7 +41,6 @@ export function UnifiedAppUx() {
   const [creating, setCreating] = useState<CreateState>(null)
   const [healthCreating, setHealthCreating] = useState(false)
   const [areaCreateRequest, setAreaCreateRequest] = useState('')
-
   const activeProjectId = view.startsWith('project:') ? view.slice(8) : 'entrada'
 
   useEffect(() => {
@@ -64,9 +64,7 @@ export function UnifiedAppUx() {
   }, [view])
 
   function navigate(next: AppView) {
-    setView(next)
-    setSidebarOpen(false)
-    setSelected(null)
+    setView(next); setSidebarOpen(false); setSelected(null)
     runtime.commit(current => ({ ...current, configs: { ...current.configs, lastView: next } }))
   }
 
@@ -77,10 +75,7 @@ export function UnifiedAppUx() {
     }
     if (type === 'task' || type === 'event') { setCreating({ kind: type }); return }
     if (type === 'health') { if (view !== 'health') navigate('health'); setHealthCreating(true); return }
-    if (secondary.includes(type as SecondaryView)) {
-      if (view !== type) navigate(type as SecondaryView)
-      setAreaCreateRequest(`${type}:${Date.now()}`)
-    }
+    if (secondary.includes(type as SecondaryView)) { if (view !== type) navigate(type as SecondaryView); setAreaCreateRequest(`${type}:${Date.now()}`) }
   }
 
   function contextualAdd() {
@@ -89,32 +84,15 @@ export function UnifiedAppUx() {
   }
 
   return <div className={`${styles.appShell} mai-v3-shell`}>
-    <ShellSidebar
-      state={runtime.state}
-      view={view}
-      sidebarOpen={sidebarOpen}
-      setSidebarOpen={setSidebarOpen}
-      navigate={navigate}
-      onSearch={() => setSearchOpen(true)}
-      onSettings={() => setSettingsOpen(true)}
-      onNewProject={() => setProjectDialog({})}
-      onEditProject={id => setProjectDialog({ projectId: id, tab: 'details' })}
-      onManageSections={id => setProjectDialog({ projectId: id, tab: 'sections' })}
-      commit={runtime.commit}
-    />
-
-    <main className={`${styles.main} mai-v3-main`}>
-      <div className={styles.mobileTop}><button onClick={() => setSidebarOpen(true)}><MaiIcon name="menu" /></button><strong>MAI</strong><span /></div>
-      <div className={`${styles.workspace} mai-v3-workspace`}>
-        {!runtime.ready ? <div className={styles.loadingState}>Carregando seu MAI…</div> : <>
-          {view === 'today' ? <TodayCompact state={runtime.state} today={runtime.today} commit={runtime.commit} navigate={navigate} inspect={setSelected} onSearch={() => setSearchOpen(true)} onMore={() => setSettingsOpen(true)} /> : null}
-          {view === 'inbox' || view.startsWith('project:') ? <UnifiedTasks state={runtime.state} today={runtime.today} view={view as TaskWorkspaceView} commit={runtime.commit} googleRpc={runtime.googleRpc} onOpenAgenda={() => navigate('upcoming')} /> : null}
-          {view === 'upcoming' ? <UpcomingCompact state={runtime.state} today={runtime.today} inspect={setSelected} commit={runtime.commit} /> : null}
-          {secondary.includes(view as SecondaryView) ? <MinimalAreas view={view as SecondaryView} state={runtime.state} today={runtime.today} commit={runtime.commit} googleRpc={runtime.googleRpc} createRequest={areaCreateRequest} inspect={setSelected} /> : null}
-        </>}
-      </div>
-    </main>
-
+    <ShellSidebar state={runtime.state} view={view} sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} navigate={navigate} onSearch={() => setSearchOpen(true)} onSettings={() => setSettingsOpen(true)} onNewProject={() => setProjectDialog({})} onEditProject={id => setProjectDialog({ projectId: id, tab: 'details' })} onManageSections={id => setProjectDialog({ projectId: id, tab: 'sections' })} commit={runtime.commit}/>
+    <main className={`${styles.main} mai-v3-main`}><div className={styles.mobileTop}><button onClick={() => setSidebarOpen(true)}><MaiIcon name="menu" /></button><strong>MAI</strong><span /></div><div className={`${styles.workspace} mai-v3-workspace`}>
+      {!runtime.ready ? <div className={styles.loadingState}>Carregando seu MAI…</div> : <>
+        {view === 'today' ? <TodayCompact state={runtime.state} today={runtime.today} commit={runtime.commit} navigate={navigate} inspect={setSelected} onSearch={() => setSearchOpen(true)} onMore={() => setSettingsOpen(true)} /> : null}
+        {view === 'inbox' || view.startsWith('project:') ? <MinimalTaskWorkspace state={runtime.state} today={runtime.today} view={view as TaskWorkspaceView} commit={runtime.commit} googleRpc={runtime.googleRpc} onOpenAgenda={() => navigate('upcoming')} inspect={setSelected} selectedId={selected?.kind === 'task' ? selected.sourceId : ''} onManageSections={id => setProjectDialog({ projectId:id, tab:'sections' })}/> : null}
+        {view === 'upcoming' ? <UpcomingCompact state={runtime.state} today={runtime.today} inspect={setSelected} commit={runtime.commit} /> : null}
+        {secondary.includes(view as SecondaryView) ? <MinimalAreas view={view as SecondaryView} state={runtime.state} today={runtime.today} commit={runtime.commit} googleRpc={runtime.googleRpc} createRequest={areaCreateRequest} inspect={setSelected} /> : null}
+      </>}
+    </div></main>
     <FloatingAddButton view={view} onAdd={addByType}/>
     {searchOpen ? <SearchOverlay state={runtime.state} query={search} setQuery={setSearch} onClose={() => setSearchOpen(false)} inspect={setSelected} navigate={navigate} /> : null}
     {projectDialog ? <ProjectDrawer state={runtime.state} commit={runtime.commit} projectId={projectDialog.projectId} parentId={projectDialog.parentId} initialTab={projectDialog.tab} onClose={() => setProjectDialog(null)} onSaved={id => { const wasCreating = !projectDialog.projectId; setProjectDialog(null); if (wasCreating) navigate(`project:${id}`) }} onRemoved={() => { setProjectDialog(null); navigate('inbox') }} /> : null}
