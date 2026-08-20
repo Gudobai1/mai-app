@@ -1,0 +1,254 @@
+/* Ajustes finais da V3 para produção */
+
+.mai-v3-shell {
+  --v3-accent:#60765a;
+  --v3-accent-strong:#4d6348;
+  --v3-accent-soft:#e8eee5;
+  --v3-bg:#ffffff;
+  --v3-card:#ffffff;
+  --v3-sidebar:#f6f7f4;
+  --v3-hover:#f3f6f2;
+  --v3-text:#202420;
+  --v3-muted:#788177;
+  --v3-faint:#9ea69c;
+  --v3-line:#e7ebe5;
+  --v3-line-strong:#d8ded6;
+
+  --v3-sage:var(--v3-accent);
+  --v3-sage-dark:var(--v3-accent-strong);
+  --v3-sage-soft:var(--v3-accent-soft);
+
+  --text:var(--v3-text);
+  --muted:var(--v3-muted);
+  --faint:var(--v3-faint);
+  --line:var(--v3-line);
+  --line-strong:var(--v3-line-strong);
+  --bg-primary:var(--v3-bg);
+  --bg-card:var(--v3-card);
+  --bg-soft:var(--v3-sidebar);
+  --bg-hover:var(--v3-hover);
+  --sidebar:var(--v3-sidebar);
+  --accent:var(--v3-accent);
+  --accent-strong:var(--v3-accent-strong);
+  --accent-soft:var(--v3-accent-soft);
+}
+
+html[data-mai-accent="blue"] .mai-v3-shell {
+  --v3-accent:#557da1; --v3-accent-strong:#3d6588; --v3-accent-soft:#e5edf4; --v3-sidebar:#f4f7fa;
+}
+html[data-mai-accent="graphite"] .mai-v3-shell {
+  --v3-accent:#56625e; --v3-accent-strong:#414b47; --v3-accent-soft:#e9eceb; --v3-sidebar:#f5f6f5;
+}
+html[data-mai-accent="sand"] .mai-v3-shell {
+  --v3-accent:#9b7757; --v3-accent-strong:#7b5c41; --v3-accent-soft:#f1e8df; --v3-sidebar:#faf7f3;
+}
+html[data-mai-accent="plum"] .mai-v3-shell {
+  --v3-accent:#765d82; --v3-accent-strong:#5d4668; --v3-accent-soft:#eee7f1; --v3-sidebar:#f8f5f9;
+}
+html[data-mai-accent="terracotta"] .mai-v3-shell {
+  --v3-accent:#a85f4f; --v3-accent-strong:#88493c; --v3-accent-soft:#f3e5e1; --v3-sidebar:#faf5f3;
+}
+html[data-mai-accent="teal"] .mai-v3-shell {
+  --v3-accent:#397b78; --v3-accent-strong:#2c615e; --v3-accent-soft:#e1efed; --v3-sidebar:#f3f8f7;
+}
+html[data-mai-accent="rose"] .mai-v3-shell {
+  --v3-accent:#a26373; --v3-accent-strong:#844d5d; --v3-accent-soft:#f2e5ea; --v3-sidebar:#faf5f7;
+}
+
+html[data-mai-theme="dark"] .mai-v3-shell {
+  --v3-bg:#151815;
+  --v3-card:#1c201c;
+  --v3-sidebar:#121512;
+  --v3-hover:#242a24;
+  --v3-text:#edf0ec;
+  --v3-muted:#a1aaa0;
+  --v3-faint:#727b72;
+  --v3-line:#2c332d;
+  --v3-line-strong:#3b443c;
+  --v3-accent-soft:color-mix(in srgb, var(--v3-accent) 20%, #161a16);
+}
+
+.mai-v3-shell,
+.mai-v3-main {
+  background:var(--v3-bg) !important;
+  color:var(--v3-text) !important;
+}
+
+.mai-v3-sidebar {
+  background:var(--v3-sidebar) !important;
+  border-color:var(--v3-line) !important;
+}
+
+.mai-v3-brand strong,
+.mai-v3-page-header h1,
+.mai-v3-today-section h2,
+.mai-v3-task-body strong {
+  color:var(--v3-text) !important;
+}
+
+.mai-v3-search {
+  background:var(--v3-card) !important;
+  border-color:var(--v3-line) !important;
+  color:var(--v3-muted) !important;
+}
+.mai-v3-search:hover { background:var(--v3-hover) !important; }
+
+/* item ativo ocupa a linha toda */
+.mai-v3-nav-button {
+  width:100% !important;
+  padding:0 8px !important;
+  border:1px solid transparent !important;
+  border-radius:12px !important;
+}
+.mai-v3-nav-label {
+  width:100% !important;
+  min-width:0 !important;
+  background:transparent !important;
+  color:inherit !important;
+}
+.mai-v3-nav-button:hover {
+  background:var(--v3-hover) !important;
+  color:var(--v3-text) !important;
+}
+.mai-v3-nav-button[data-active="true"] {
+  background:var(--v3-accent-soft) !important;
+  color:var(--v3-accent-strong) !important;
+  border-color:color-mix(in srgb, var(--v3-accent) 28%, var(--v3-line)) !important;
+  font-weight:680 !important;
+}
+.mai-v3-nav-button[data-active="true"] .mai-v3-nav-label {
+  background:transparent !important;
+  color:inherit !important;
+}
+
+/* usar a largura disponível da tela */
+.mai-v3-workspace {
+  width:100% !important;
+  max-width:none !important;
+  margin:0 !important;
+  padding:44px clamp(28px, 3.4vw, 72px) 100px !important;
+  box-sizing:border-box !important;
+}
+
+.mai-v3-page-header { max-width:none !important; }
+.mai-v3-today,
+.mai-v3-task-workspace,
+.mai-v3-upcoming-page,
+.mai-v3-minimal-area { width:100% !important; max-width:none !important; }
+
+.mai-v3-page-actions button:hover,
+.mai-v3-footer-button:hover,
+.mai-v3-profile-button:hover,
+.mai-v3-task-row:hover,
+.mai-v3-appointment:hover {
+  background:var(--v3-hover) !important;
+}
+
+.mai-v3-appointment,
+.mai-v3-task-row {
+  border-color:var(--v3-line) !important;
+  color:var(--v3-text) !important;
+}
+.mai-v3-task-check { background:var(--v3-card) !important; }
+.mai-v3-task-check[data-completed="true"] { background:var(--v3-accent) !important; border-color:var(--v3-accent) !important; }
+
+.mai-v3-filter-popover,
+.mai-v3-task-menu,
+.mai-v3-task-row-menu,
+.mai-v3-project-menu,
+.mai-v3-create-drawer,
+.mai-context-drawer,
+.mai-v3-inbox-projects {
+  background:var(--v3-card) !important;
+  color:var(--v3-text) !important;
+  border-color:var(--v3-line) !important;
+}
+.mai-v3-drawer-header,
+.mai-context-drawer > header {
+  background:var(--v3-card) !important;
+  border-color:var(--v3-line) !important;
+}
+
+.mai-v3-shell input,
+.mai-v3-shell textarea,
+.mai-v3-shell select {
+  background:var(--v3-card) !important;
+  color:var(--v3-text) !important;
+  border-color:var(--v3-line) !important;
+}
+.mai-v3-shell input::placeholder,
+.mai-v3-shell textarea::placeholder { color:var(--v3-faint) !important; }
+
+/* Entrada: tarefas à esquerda e projetos dentro do módulo, à direita */
+.mai-v3-inbox-layout {
+  display:grid;
+  grid-template-columns:minmax(0, 1fr) minmax(270px, 340px);
+  gap:clamp(32px, 4vw, 72px);
+  align-items:start;
+}
+.mai-v3-inbox-tasks { min-width:0; }
+.mai-v3-inbox-projects {
+  position:sticky;
+  top:28px;
+  border-left:1px solid var(--v3-line);
+  padding:4px 0 4px 28px;
+}
+.mai-v3-inbox-projects > header {
+  min-height:44px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  margin-bottom:10px;
+}
+.mai-v3-inbox-projects > header > div { display:grid; gap:3px; }
+.mai-v3-inbox-projects > header strong { font-size:14px; color:var(--v3-text); }
+.mai-v3-inbox-projects > header span { font-size:10px; color:var(--v3-muted); }
+.mai-v3-inbox-projects > header > button {
+  width:32px; height:32px; display:grid; place-items:center;
+  border:1px solid var(--v3-line); border-radius:10px;
+  background:var(--v3-card); color:var(--v3-accent-strong);
+}
+.mai-v3-inbox-projects > header > button:hover { background:var(--v3-accent-soft); }
+.mai-v3-inbox-project-list { display:grid; gap:4px; }
+.mai-v3-inbox-project-list > article { position:relative; }
+.mai-v3-inbox-project-card {
+  width:100%; min-height:48px; display:grid; grid-template-columns:28px minmax(0,1fr); align-items:center; gap:10px;
+  padding:5px 38px 5px 7px; border:1px solid transparent; border-radius:12px;
+  background:transparent; color:var(--v3-text); text-align:left;
+}
+.mai-v3-inbox-project-card:hover { background:var(--v3-hover); border-color:var(--v3-line); }
+.mai-v3-inbox-project-card > i,
+.mai-v3-inbox-project-card > img {
+  width:27px; height:27px; border-radius:8px; display:grid; place-items:center; object-fit:cover; color:#fff;
+}
+.mai-v3-inbox-project-card > span { min-width:0; display:grid; gap:2px; }
+.mai-v3-inbox-project-card strong { font-size:12.5px; font-weight:620; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.mai-v3-inbox-project-card small { font-size:9px; color:var(--v3-muted); }
+.mai-v3-inbox-project-more {
+  position:absolute; right:4px; top:9px; width:30px; height:30px;
+  border:0; border-radius:8px; background:transparent; color:var(--v3-muted); opacity:0;
+}
+.mai-v3-inbox-project-list > article:hover .mai-v3-inbox-project-more { opacity:1; }
+.mai-v3-inbox-project-more:hover { background:var(--v3-hover); color:var(--v3-text); }
+.mai-v3-inbox-project-empty { padding:14px 8px; color:var(--v3-muted); font-size:11px; }
+
+/* Dark mode: remover os fundos claros restantes da camada V3 */
+html[data-mai-theme="dark"] .mai-v3-shell button { color:inherit; }
+html[data-mai-theme="dark"] .mai-v3-filter-popover select,
+html[data-mai-theme="dark"] .mai-v3-more-filter,
+html[data-mai-theme="dark"] .mai-v3-kind-switch,
+html[data-mai-theme="dark"] .mai-v3-kind-switch button[data-active="true"] {
+  background:var(--v3-hover) !important;
+  color:var(--v3-text) !important;
+}
+html[data-mai-theme="dark"] .mai-v3-task-check:hover { box-shadow:0 0 0 4px color-mix(in srgb, var(--v3-accent) 17%, transparent) !important; }
+
+@media (max-width: 980px) {
+  .mai-v3-inbox-layout { grid-template-columns:1fr; gap:34px; }
+  .mai-v3-inbox-projects { position:static; border-left:0; border-top:1px solid var(--v3-line); padding:24px 0 0; }
+}
+
+@media (max-width: 760px) {
+  .mai-v3-workspace { padding:26px 18px 92px !important; }
+}
