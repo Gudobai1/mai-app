@@ -6,12 +6,15 @@ export type LegacyTask = {
   prioridade?: number
   concluida?: boolean
   projeto_id?: string
+  parent_id?: string
   criado_em?: string
   concluida_em?: string
   ordem?: number
   notas?: unknown[]
   anexos?: unknown[]
   subtarefas?: unknown[]
+  lembretes?: unknown[]
+  etiquetas?: string[]
   repeticao?: string
   secao?: string
   ocultar_agenda?: boolean
@@ -55,6 +58,9 @@ export function emptyState(): MaiState {
       calendarios: [],
       theme: 'light',
       accentPalette: 'sage',
+      lastView: 'today',
+      sidebarProjectsOpen: true,
+      todayFilters: { project: 'all', priority: 'all', status: 'open', overdueOnly: false },
       todaySections: [...NEW_TODAY_SECTIONS],
       todayMainSections: [],
       todaySideSections: [...DEFAULT_SIDE],
@@ -126,7 +132,7 @@ export function normalizeState(value: unknown): MaiState {
       todaySideSections: sideSections,
       todayHiddenSections: [...new Set(hiddenSections)],
       accentPalette: String(saved.configs?.accentPalette || 'sage'),
-      upcomingView: 'list',
+      upcomingView: saved.configs?.upcomingView === 'month' ? 'month' : 'list',
     },
     tasks: stateRows(saved.tasks) as LegacyTask[],
     projects: stateRows(saved.projects),
