@@ -1,0 +1,272 @@
+/* MAI Minimal V3 — interface definida em conjunto com o usuário */
+
+.mai-v3-shell {
+  --v3-text:#202420;
+  --v3-muted:#7b8379;
+  --v3-faint:#a0a79d;
+  --v3-line:#e8ebe6;
+  --v3-line-strong:#dce1da;
+  --v3-sidebar:#f6f7f4;
+  --v3-hover:#f6f8f5;
+  --v3-sage:#6f8168;
+  --v3-sage-dark:#53634e;
+  --v3-sage-soft:#e8eee5;
+  --v3-white:#fff;
+  background:#fff !important;
+}
+
+.mai-v3-sidebar {
+  width:256px !important;
+  padding:18px 13px 14px !important;
+  background:var(--v3-sidebar) !important;
+  border-right:1px solid var(--v3-line) !important;
+  overflow:visible !important;
+}
+
+.mai-v3-brand {
+  min-height:46px !important;
+  padding:0 8px 10px !important;
+  grid-template-columns:32px 1fr 32px !important;
+}
+.mai-v3-brand > span {
+  width:30px !important;height:30px !important;border-radius:10px !important;
+  background:var(--v3-sage) !important;color:#fff !important;
+  box-shadow:none !important;
+}
+.mai-v3-brand strong {font-size:15px !important;font-weight:720 !important;letter-spacing:-.02em !important}
+
+.mai-v3-search {
+  min-height:42px !important;
+  margin:0 1px 17px !important;
+  border:1px solid var(--v3-line) !important;
+  border-radius:13px !important;
+  padding:0 12px !important;
+  background:#fff !important;
+  color:#727a70 !important;
+  box-shadow:0 1px 1px rgba(31,40,29,.02) !important;
+}
+.mai-v3-search:hover {border-color:var(--v3-line-strong) !important;background:#fff !important}
+.mai-v3-search span {font-size:13px}
+.mai-v3-search kbd {font-size:9px;color:var(--v3-faint)}
+
+.mai-v3-nav {display:flex;flex-direction:column;gap:4px}
+.mai-v3-nav-button,.mai-v3-project-button {
+  min-height:44px;border:0;background:transparent;color:#687066;
+  display:flex;align-items:center;width:100%;padding:0 3px;text-align:left;border-radius:12px;
+}
+.mai-v3-nav-button:hover,.mai-v3-project-button:hover {color:var(--v3-text)}
+.mai-v3-nav-label {
+  min-height:36px;display:inline-flex;align-items:center;gap:10px;
+  padding:0 10px;border-radius:11px;font-size:13px;font-weight:510;
+}
+.mai-v3-nav-button[data-active="true"] .mai-v3-nav-label {
+  background:var(--v3-sage-soft);color:var(--v3-sage-dark);font-weight:680;
+}
+.mai-v3-nav-label svg {flex:0 0 auto}
+
+.mai-v3-inbox-row {display:grid;grid-template-columns:1fr 30px 30px;align-items:center;position:relative}
+.mai-v3-project-toggle,.mai-v3-project-add {
+  width:30px;height:30px;border:0;border-radius:9px;background:transparent;color:#90978d;display:grid;place-items:center;
+}
+.mai-v3-project-toggle:hover,.mai-v3-project-add:hover {background:#ecefea;color:#596256}
+.mai-v3-project-toggle svg {transform:rotate(90deg)}
+
+.mai-v3-project-list {display:flex;flex-direction:column;gap:2px;margin:1px 0 6px}
+.mai-v3-project-row {position:relative;padding-left:calc(17px + (var(--mai-project-depth, 0) * 14px))}
+.mai-v3-project-row[draggable="true"] {cursor:grab}
+.mai-v3-project-row:active {cursor:grabbing}
+.mai-v3-project-button {min-height:39px;padding-right:30px}
+.mai-v3-project-label {
+  min-height:34px;display:inline-flex;align-items:center;gap:9px;padding:0 8px;border-radius:10px;min-width:0;max-width:100%;
+}
+.mai-v3-project-button[data-active="true"] .mai-v3-project-label {background:var(--v3-sage-soft);color:var(--v3-sage-dark);font-weight:670}
+.mai-v3-project-label > i,.mai-v3-project-label > img {
+  width:22px;height:22px;border-radius:7px;flex:0 0 auto;display:grid;place-items:center;object-fit:cover;color:#fff;
+}
+.mai-v3-project-label > span {font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mai-v3-project-more {position:absolute;right:3px;top:5px;width:28px;height:28px;border:0;border-radius:8px;background:transparent;color:#959c92;opacity:0}
+.mai-v3-project-row:hover .mai-v3-project-more {opacity:1}
+.mai-v3-project-more:hover {background:#e9ece7;color:#596256}
+.mai-v3-project-menu {
+  position:absolute;z-index:300;right:2px;top:36px;width:176px;padding:6px;background:#fff;border:1px solid var(--v3-line);border-radius:13px;
+  box-shadow:0 16px 45px rgba(37,44,35,.13);
+}
+.mai-v3-project-menu button {width:100%;min-height:34px;border:0;background:transparent;border-radius:8px;text-align:left;padding:0 9px;font-size:11px;color:#596056}
+.mai-v3-project-menu button:hover {background:#f3f5f1}
+.mai-v3-project-menu button:disabled {opacity:.35}
+
+.mai-v3-section-title {margin:21px 10px 8px;font-size:10px;font-weight:750;letter-spacing:.07em;text-transform:uppercase;color:#9aa198}
+.mai-v3-area-nav {min-height:0;overflow:auto}
+
+.mai-v3-sidebar-footer {margin-top:auto;padding-top:12px;border-top:1px solid var(--v3-line);display:grid;gap:5px}
+.mai-v3-footer-button,.mai-v3-profile-button {
+  min-height:43px;border:0;background:transparent;border-radius:12px;display:flex;align-items:center;gap:10px;padding:0 10px;color:#626a60;text-align:left;
+}
+.mai-v3-footer-button:hover,.mai-v3-profile-button:hover {background:#ecefea;color:var(--v3-text)}
+.mai-v3-footer-button span,.mai-v3-profile-button > span:last-child {font-size:12.5px}
+.mai-v3-avatar {width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:#dfe7dc;color:#53614f;font-size:11px;font-weight:750}
+
+.mai-v3-main {margin-left:256px !important;background:#fff !important}
+.mai-v3-workspace {width:min(900px,100%) !important;margin:0 auto !important;padding:48px 28px 100px !important}
+
+.mai-v3-page-header {display:flex;align-items:flex-start;justify-content:space-between;gap:24px;margin-bottom:54px}
+.mai-v3-page-header h1 {margin:0;font-size:31px;line-height:1.1;letter-spacing:-.04em;font-weight:720;color:var(--v3-text)}
+.mai-v3-page-header p {margin:9px 0 0;color:var(--v3-muted);font-size:12px;text-transform:none}
+.mai-v3-page-actions {display:flex;align-items:center;gap:4px}
+.mai-v3-page-actions > button,.mai-v3-filter-wrap > button {
+  width:36px;height:36px;border:0;border-radius:11px;background:transparent;color:#717970;display:grid;place-items:center;
+}
+.mai-v3-page-actions button:hover {background:#f2f4f1;color:#4e594a}
+.mai-v3-page-actions button[data-active="true"] {color:var(--v3-sage-dark);background:var(--v3-sage-soft)}
+.mai-v3-page-actions .material-symbols-rounded {font-size:19px}
+
+.mai-v3-filter-wrap {position:relative}
+.mai-v3-filter-popover {
+  position:absolute;right:0;top:42px;z-index:220;width:240px;padding:13px;background:#fff;border:1px solid var(--v3-line);border-radius:15px;
+  box-shadow:0 18px 50px rgba(37,44,35,.13);display:grid;gap:11px;
+}
+.mai-v3-filter-popover label {display:grid;gap:5px}
+.mai-v3-filter-popover label > span {font-size:9px;text-transform:uppercase;letter-spacing:.06em;font-weight:750;color:#989f95}
+.mai-v3-filter-popover select {height:36px;border:1px solid var(--v3-line);border-radius:10px;background:#fafbf9;padding:0 9px;font-size:11px}
+.mai-v3-more-filter {height:36px;border:0;border-radius:10px;background:#f5f7f4;color:#687265;font-size:11px;text-align:left;padding:0 10px}
+.mai-v3-more-filter[data-active="true"] {background:var(--v3-sage-soft);color:var(--v3-sage-dark)}
+
+.mai-v3-today-section h2 {margin:0 0 18px;font-size:15px;letter-spacing:-.015em;font-weight:720;color:#2e342d}
+.mai-v3-appointments {margin-bottom:68px}
+.mai-v3-appointment-list,.mai-v3-task-list {display:grid}
+.mai-v3-appointment {
+  width:100%;min-height:54px;border:0;border-top:1px solid #f0f2ee;background:transparent;border-radius:11px;
+  display:grid;grid-template-columns:88px 25px minmax(0,1fr);align-items:center;gap:9px;text-align:left;padding:0 8px;color:var(--v3-text);
+}
+.mai-v3-appointment:first-child {border-top:0}
+.mai-v3-appointment:hover {background:#f8f9f7;border-color:transparent}
+.mai-v3-appointment[data-passed="true"] {opacity:.43}
+.mai-v3-appointment time {font-size:11px;color:#8c9489;font-variant-numeric:tabular-nums}
+.mai-v3-appointment strong {font-size:13px;font-weight:540;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mai-v3-event-icon {width:22px;height:22px;border-radius:7px;display:grid;place-items:center}
+
+.mai-v3-task-row {
+  min-height:66px;border-top:1px solid #f0f2ee;border-radius:12px;display:grid;grid-template-columns:31px minmax(0,1fr) 34px;align-items:center;padding:0 5px 0 4px;position:relative;
+}
+.mai-v3-task-row:first-child {border-top:0}
+.mai-v3-task-row:hover {background:#f8f9f7;border-color:transparent}
+.mai-v3-task-check {width:19px;height:19px;border:1.7px solid #b8beb7;border-radius:50%;background:#fff;padding:0;display:grid;place-items:center;color:#fff;font-size:10px}
+.mai-v3-task-check:hover {box-shadow:0 0 0 4px #eef2eb}
+.mai-v3-task-check[data-completed="true"] {background:var(--v3-sage);border-color:var(--v3-sage)}
+.mai-v3-task-body {min-width:0;border:0;background:transparent;text-align:left;padding:10px 0}
+.mai-v3-task-body strong {display:block;font-size:13.5px;font-weight:560;letter-spacing:-.008em;color:#30352f;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mai-v3-task-body small {display:flex;align-items:center;gap:6px;margin-top:5px;color:#929990;font-size:10.5px;white-space:nowrap;overflow:hidden}
+.mai-v3-task-project {display:inline-flex;align-items:center;gap:5px;min-width:0}
+.mai-v3-task-project i,.mai-v3-task-project img {width:14px;height:14px;border-radius:5px;display:grid;place-items:center;object-fit:cover;color:#fff;flex:0 0 auto}
+.mai-v3-task-more {width:30px;height:30px;border:0;border-radius:8px;background:transparent;color:#969d94;opacity:0}
+.mai-v3-task-row:hover .mai-v3-task-more {opacity:1}
+.mai-v3-task-more:hover {background:#ecefea;color:#596256}
+.mai-v3-empty-line {min-height:56px;display:flex;align-items:center;color:#a0a79d;font-size:11px}
+.mai-v3-completed-wrap {margin-top:18px}
+.mai-v3-completed-toggle {height:34px;border:0;background:transparent;display:flex;align-items:center;gap:7px;color:#929991;font-size:11px;padding:0 3px}
+.mai-v3-completed-toggle svg {transform:rotate(0deg)}
+.mai-v3-completed-list {margin-top:5px}
+.mai-v3-completed-list .mai-v3-task-body strong,.mai-v3-completed-list .mai-v3-task-body small {color:#a2a8a0}
+
+.mai-v3-floating-add {
+  position:fixed !important;right:30px !important;bottom:28px !important;z-index:120 !important;
+  width:52px !important;height:52px !important;min-width:52px !important;padding:0 !important;border:0 !important;border-radius:50% !important;
+  display:grid !important;place-items:center !important;background:var(--v3-sage) !important;color:#fff !important;
+  box-shadow:0 12px 30px rgba(72,91,67,.22) !important;
+}
+.mai-v3-floating-add:hover {background:var(--v3-sage-dark) !important;transform:translateY(-1px)}
+.mai-v3-floating-add span {font-size:25px !important;line-height:1 !important;font-weight:350 !important}
+.mai-v3-floating-add strong {display:none !important}
+
+.mai-v3-create-layer,.mai-context-layer {
+  position:fixed !important;inset:0 !important;z-index:500 !important;background:rgba(28,34,27,.13) !important;
+}
+.mai-v3-create-drawer,.mai-context-drawer {
+  position:absolute !important;top:14px !important;right:14px !important;bottom:14px !important;width:min(470px,calc(100vw - 28px)) !important;
+  border:1px solid var(--v3-line) !important;border-radius:20px !important;background:#fff !important;box-shadow:0 22px 70px rgba(30,38,29,.16) !important;
+  overflow:hidden !important;display:flex !important;flex-direction:column !important;
+}
+.mai-v3-drawer-header,.mai-context-drawer > header {
+  min-height:62px !important;display:flex !important;align-items:center !important;justify-content:space-between !important;gap:12px !important;padding:0 18px !important;
+  border-bottom:1px solid var(--v3-line) !important;background:#fff !important;
+}
+.mai-v3-close,.mai-context-drawer > header > button {width:32px !important;height:32px !important;border:0 !important;border-radius:10px !important;background:transparent !important;color:#7c8479 !important;font-size:21px !important}
+.mai-v3-close:hover,.mai-context-drawer > header > button:hover {background:#f2f4f1 !important}
+.mai-v3-kind-switch {display:flex;align-items:center;gap:4px;background:#f4f6f3;padding:3px;border-radius:11px}
+.mai-v3-kind-switch button {height:30px;border:0;border-radius:8px;background:transparent;padding:0 11px;color:#7c8479;font-size:11px}
+.mai-v3-kind-switch button[data-active="true"] {background:#fff;color:#384334;font-weight:680;box-shadow:0 1px 3px rgba(25,35,23,.08)}
+.mai-v3-drawer-body {padding:23px 22px 30px;overflow:auto;display:grid;gap:5px}
+.mai-v3-title-input {border:0 !important;background:transparent !important;padding:0 !important;margin-bottom:7px;font-size:23px !important;font-weight:680 !important;letter-spacing:-.03em;color:var(--v3-text)}
+.mai-v3-description-input {border:0 !important;background:transparent !important;padding:3px 0 17px !important;resize:vertical;color:#6e766b;line-height:1.55;font-size:12px;border-bottom:1px solid var(--v3-line) !important}
+.mai-v3-field-line,.mai-v3-switch-line {min-height:45px;display:grid;grid-template-columns:112px minmax(0,1fr);align-items:center;gap:10px;border-bottom:1px solid #f1f3ef}
+.mai-v3-field-line > span,.mai-v3-switch-line > span {font-size:11px;color:#929990}
+.mai-v3-field-line input:not([type="color"]),.mai-v3-field-line select {width:100%;height:38px;border:0;background:transparent;text-align:left;padding:0;color:#50594d;font-size:12px}
+.mai-v3-switch-line input {justify-self:end}
+.mai-v3-inline-times {display:flex;align-items:center;gap:6px}
+.mai-v3-inline-times input {width:92px !important}
+.mai-v3-category-field {display:grid;grid-template-columns:28px 1fr;align-items:center;gap:7px}
+.mai-v3-category-field input[type="color"] {width:24px;height:24px;padding:0;border:0;background:transparent}
+.mai-v3-drawer-footer {margin-top:auto;min-height:62px;border-top:1px solid var(--v3-line);display:flex;align-items:center;justify-content:flex-end;gap:8px;padding:0 18px;background:#fff}
+
+.mai-context-drawer > header > div span {display:block;color:#969d93;font-size:9px;text-transform:uppercase;letter-spacing:.06em;font-weight:750}
+.mai-context-drawer > header > div strong {display:none !important}
+.mai-context-drawer form {display:flex !important;flex-direction:column !important;min-height:0 !important;flex:1 !important;overflow:auto !important;padding:20px 22px 0 !important}
+.mai-context-drawer form > label,.mai-context-grid label {min-height:48px !important;display:grid !important;grid-template-columns:105px minmax(0,1fr) !important;align-items:center !important;gap:8px !important;border-bottom:1px solid #f1f3ef !important;margin:0 !important}
+.mai-context-drawer form > label:first-child {display:block !important;min-height:auto !important;border:0 !important}
+.mai-context-drawer form > label:first-child > span {display:none !important}
+.mai-context-drawer form > label:first-child input {font-size:23px !important;font-weight:680 !important;letter-spacing:-.03em !important;padding:0 0 12px !important}
+.mai-context-drawer label > span {font-size:10.5px !important;color:#969d93 !important}
+.mai-context-drawer input,.mai-context-drawer textarea,.mai-context-drawer select {border:0 !important;background:transparent !important;border-radius:0 !important;box-shadow:none !important;padding-left:0 !important;padding-right:0 !important;font-size:12px !important}
+.mai-context-drawer textarea {min-height:96px;line-height:1.55;padding-top:10px !important;resize:vertical}
+.mai-context-grid {display:block !important}
+.mai-context-drawer form > footer {position:sticky !important;bottom:0 !important;margin:20px -22px 0 !important;min-height:64px !important;background:#fff !important;border-top:1px solid var(--v3-line) !important;padding:0 18px !important;display:flex !important;align-items:center !important;justify-content:space-between !important}
+
+.mai-v3-upcoming-header {margin-bottom:30px}
+.mai-v3-view-switch {display:inline-flex;gap:3px;background:#f4f6f3;padding:3px;border-radius:11px}
+.mai-v3-view-switch button {height:31px;border:0;border-radius:8px;background:transparent;padding:0 11px;color:#7f877d;font-size:11px}
+.mai-v3-view-switch button[data-active="true"] {background:#fff;color:#3d4939;font-weight:680;box-shadow:0 1px 3px rgba(30,40,28,.08)}
+.mai-v3-upcoming-scroll {display:grid !important;gap:38px !important;max-height:none !important;overflow:visible !important}
+.mai-v3-upcoming-scroll > section > header {margin-bottom:7px !important;border:0 !important;padding:0 !important}
+.mai-v3-upcoming-scroll > section > header strong {font-size:13px !important}
+.mai-v3-upcoming-item {min-height:54px !important;border-bottom:1px solid #f0f2ee !important}
+.mai-v3-upcoming-item > i {width:7px !important;height:7px !important;border-radius:50% !important}
+.mai-v3-upcoming-item button strong {font-size:12.5px !important;font-weight:560 !important}
+.mai-v3-upcoming-item button small {font-size:10px !important;color:#939a90 !important}
+.mai-v3-infinite-sentinel {height:30px}
+
+.mai-v3-month-layout {display:grid !important;grid-template-columns:minmax(0,1fr) 270px !important;gap:24px !important}
+.mai-v3-month-calendar {min-width:0}
+.mai-v3-month-grid > button {min-height:96px !important;padding:7px !important;align-content:start !important;text-align:left !important;overflow:hidden !important}
+.mai-v3-month-grid > button > strong {display:block !important;margin-bottom:5px !important;font-size:10px !important}
+.mai-v3-month-grid > button > div {display:grid;gap:3px}
+.mai-v3-month-grid > button > div > span {display:flex;align-items:center;gap:4px;min-width:0;font-size:8px;color:#626a60}
+.mai-v3-month-grid > button > div i {width:5px;height:5px;border-radius:50%;flex:0 0 auto}
+.mai-v3-month-grid > button > div b {font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mai-v3-month-grid > button > small {display:block;margin-top:4px;font-size:8px;color:#929990}
+.mai-v3-month-list {max-height:650px !important;overflow:auto !important;padding-left:16px !important;border-left:1px solid var(--v3-line) !important}
+.mai-v3-month-list section {padding:0 0 25px !important}
+
+/* Harmoniza módulos legados com o novo shell sem remover funcionalidades. */
+.mai-v3-shell [class*="moduleHeadline"] {margin-bottom:30px !important;min-height:54px !important}
+.mai-v3-shell [class*="moduleHeadline"] h1 {font-size:28px !important;font-weight:720 !important;letter-spacing:-.035em !important}
+.mai-v3-shell [class*="moduleHeadline"] p {font-size:11px !important;color:#8a9287 !important}
+.mai-v3-shell [class*="primaryButton"],.mai-v3-shell [class*="secondaryButton"] {border-radius:12px !important}
+
+@media (max-width:900px) {
+  .mai-v3-sidebar {transform:translateX(-100%);transition:transform .2s ease;box-shadow:0 18px 50px rgba(30,38,29,.15)}
+  .mai-v3-sidebar[data-open="true"] {transform:translateX(0)}
+  .mai-v3-main {margin-left:0 !important}
+  .mai-v3-workspace {padding:26px 18px 100px !important}
+  .mai-v3-page-header {margin-bottom:38px}
+  .mai-v3-month-layout {grid-template-columns:1fr !important}
+  .mai-v3-month-list {border-left:0 !important;border-top:1px solid var(--v3-line) !important;padding:20px 0 0 !important}
+  .mai-v3-floating-add {right:20px !important;bottom:20px !important}
+}
+
+@media (max-width:560px) {
+  .mai-v3-page-header h1 {font-size:27px}
+  .mai-v3-appointment {grid-template-columns:72px 24px minmax(0,1fr)}
+  .mai-v3-create-drawer,.mai-context-drawer {top:0 !important;right:0 !important;bottom:0 !important;width:100vw !important;border-radius:0 !important;border:0 !important}
+  .mai-v3-month-grid > button {min-height:76px !important}
+  .mai-v3-month-grid > button > div > span:nth-child(n+2) {display:none}
+}
