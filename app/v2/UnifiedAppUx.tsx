@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { plannerItems } from '../../lib/v2/planner'
 import { AppSettingsDrawer } from './AppSettingsDrawer'
@@ -10,12 +10,10 @@ import { FloatingAddButton } from './FloatingAddButton'
 import { HealthQuickAddDrawer } from './HealthQuickAddDrawer'
 import { MaiIcon } from './MaiIcons'
 import { ProjectDrawer } from './ProjectDrawer'
-import { ProjectsPanel } from './ProjectsPanel'
 import { QuickCreateDrawer } from './QuickCreateDrawer'
 import { SearchOverlay } from './SearchOverlay'
 import { ShellSidebar } from './ShellSidebar'
 import { TodayCompact } from './TodayCompact'
-import { TodaySettingsDrawer } from './TodaySettingsDrawer'
 import { UnifiedAreas, type SecondaryView } from './UnifiedAreas'
 import { UnifiedTasks, type TaskWorkspaceView } from './UnifiedTasks'
 import { UpcomingCompact } from './UpcomingCompact'
@@ -24,19 +22,25 @@ import styles from './unified.module.css'
 
 const secondary: SecondaryView[] = ['habits', 'goals', 'notes', 'finance', 'health', 'files']
 type ProjectDialog = { projectId?: string; parentId?: string; tab?: 'details' | 'sections' } | null
+type CreateState = { kind: 'task' | 'event'; switchable?: boolean } | null
+
+const validView = (value: unknown): value is AppView => {
+  const text = String(value || '')
+  return ['today', 'inbox', 'upcoming', ...secondary].includes(text as any) || text.startsWith('project:')
+}
 
 export function UnifiedAppUx() {
   const runtime = useMaiRuntime()
   const router = useRouter()
+  const restoredView = useRef(false)
   const [view, setView] = useState<AppView>('today')
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
   const [search, setSearch] = useState('')
   const [settingsOpen, setSettingsOpen] = useState(false)
-  const [todaySettingsOpen, setTodaySettingsOpen] = useState(false)
   const [projectDialog, setProjectDialog] = useState<ProjectDialog>(null)
   const [selected, setSelected] = useState<InspectableItem | null>(null)
-  const [creating, setCreating] = useState<'task' | 'event' | null>(null)
+  const [creating, setCreating] = useState<CreateState>(null)
   const [healthCreating, setHealthCreating] = useState(false)
   const [areaCreateRequest, setAreaCreateRequest] = useState('')
 
@@ -45,22 +49,38 @@ export function UnifiedAppUx() {
   const activeProjectId = view.startsWith('project:') ? view.slice(8) : 'entrada'
 
   useEffect(() => {
+    if (!runtime.ready || restoredView.current) return
+    restoredView.current = true
+    const saved = runtime.state.configs.lastView
+    if (validView(saved)) setView(saved)
+  }, [runtime.ready, runtime.state.configs.lastView])
+
+  useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       const target = event.target as HTMLElement | null
       const editing = target?.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target?.tagName || '')
       if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') { event.preventDefault(); setSearchOpen(true) }
       if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'z' && !editing) { event.preventDefault(); runtime.undo() }
       if (!event.ctrlKey && !event.metaKey && !event.altKey && event.key.toLowerCase() === 'q' && !editing) { event.preventDefault(); contextualAdd() }
-      if (event.key === 'Escape') { setSearchOpen(false); setSettingsOpen(false); setTodaySettingsOpen(false); setProjectDialog(null); setSelected(null); setCreating(null); setHealthCreating(false) }
+      if (event.key === 'Escape') { setSearchOpen(false); setSettingsOpen(false); setProjectDialog(null); setSelected(null); setCreating(null); setHealthCreating(false) }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [view])
 
-  function navigate(next: AppView) { setView(next); setSidebarOpen(false); setSelected(null) }
+  function navigate(next: AppView) {
+    setView(next)
+    setSidebarOpen(false)
+    setSelected(null)
+    runtime.commit(current => ({ ...current, configs: { ...current.configs, lastView: next } }))
+  }
 
   function addByType(type: string) {
-    if (type === 'task' || type === 'event') { setCreating(type); return }
+    if (type === 'context') {
+      if (view === 'today' || view === 'upcoming') { setCreating({ kind: 'task', switchable: true }); return }
+      if (view === 'inbox' || view.startsWith('project:')) { setCreating({ kind: 'task' }); return }
+    }
+    if (type === 'task' || type === 'event') { setCreating({ kind: type }); return }
     if (type === 'health') { if (view !== 'health') navigate('health'); setHealthCreating(true); return }
     if (secondary.includes(type as SecondaryView)) {
       if (view !== type) navigate(type as SecondaryView)
@@ -69,21 +89,31 @@ export function UnifiedAppUx() {
   }
 
   function contextualAdd() {
-    if (view === 'today' || view === 'inbox' || view.startsWith('project:')) return addByType('task')
-    if (view === 'upcoming') return addByType('event')
+    if (view === 'today' || view === 'upcoming' || view === 'inbox' || view.startsWith('project:')) return addByType('context')
     return addByType(view)
   }
 
-  return <div className={styles.appShell}>
-    <ShellSidebar state={runtime.state} view={view} todayCount={todayPlan.filter(item => !item.completed).length} overdueCount={overdue.length} sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} navigate={navigate} onSearch={() => setSearchOpen(true)} undo={runtime.undo} undoCount={runtime.undoCount} onSettings={() => setSettingsOpen(true)} onGoogle={() => { setSettingsOpen(true); void runtime.openGoogle() }} googleConnected={runtime.googleConnected} syncStatus={runtime.syncStatus} onSyncClick={() => runtime.syncStatus.phase === 'local' ? router.push('/login') : runtime.syncStatus.phase === 'error' ? void runtime.flushRemoteSync() : setSettingsOpen(true)} />
+  return <div className={`${styles.appShell} mai-v3-shell`}>
+    <ShellSidebar
+      state={runtime.state}
+      view={view}
+      sidebarOpen={sidebarOpen}
+      setSidebarOpen={setSidebarOpen}
+      navigate={navigate}
+      onSearch={() => setSearchOpen(true)}
+      onSettings={() => setSettingsOpen(true)}
+      onNewProject={() => setProjectDialog({})}
+      onEditProject={id => setProjectDialog({ projectId: id, tab: 'details' })}
+      commit={runtime.commit}
+    />
 
-    <main className={styles.main}>
+    <main className={`${styles.main} mai-v3-main`}>
       <div className={styles.mobileTop}><button onClick={() => setSidebarOpen(true)}><MaiIcon name="menu" /></button><strong>MAI</strong><span /></div>
-      <div className={styles.workspace}>
+      <div className={`${styles.workspace} mai-v3-workspace`}>
         {!runtime.ready ? <div className={styles.loadingState}>Carregando seu MAI…</div> : <>
-          {view === 'today' ? <TodayCompact state={runtime.state} today={runtime.today} commit={runtime.commit} navigate={navigate} inspect={setSelected} onPersonalize={() => setTodaySettingsOpen(true)} /> : null}
-          {view === 'inbox' || view.startsWith('project:') ? <div className="mai-task-module-layout"><div className="mai-task-module-main"><UnifiedTasks state={runtime.state} today={runtime.today} view={view as TaskWorkspaceView} commit={runtime.commit} googleRpc={runtime.googleRpc} onOpenAgenda={() => navigate('upcoming')} /></div><ProjectsPanel state={runtime.state} view={view} navigate={navigate} commit={runtime.commit} onNewProject={() => setProjectDialog({})} onEditProject={id => setProjectDialog({ projectId: id, tab: 'details' })} onManageSections={id => setProjectDialog({ projectId: id, tab: 'sections' })} onNewSubproject={parentId => setProjectDialog({ parentId, tab: 'details' })} /></div> : null}
-          {view === 'upcoming' ? <UpcomingCompact state={runtime.state} today={runtime.today} inspect={setSelected} /> : null}
+          {view === 'today' ? <TodayCompact state={runtime.state} today={runtime.today} commit={runtime.commit} navigate={navigate} inspect={setSelected} onSearch={() => setSearchOpen(true)} onMore={() => setSettingsOpen(true)} /> : null}
+          {view === 'inbox' || view.startsWith('project:') ? <UnifiedTasks state={runtime.state} today={runtime.today} view={view as TaskWorkspaceView} commit={runtime.commit} googleRpc={runtime.googleRpc} onOpenAgenda={() => navigate('upcoming')} /> : null}
+          {view === 'upcoming' ? <UpcomingCompact state={runtime.state} today={runtime.today} inspect={setSelected} commit={runtime.commit} /> : null}
           {secondary.includes(view as SecondaryView) ? <UnifiedAreas view={view as SecondaryView} state={runtime.state} today={runtime.today} commit={runtime.commit} googleRpc={runtime.googleRpc} createRequest={areaCreateRequest} /> : null}
         </>}
       </div>
@@ -92,9 +122,8 @@ export function UnifiedAppUx() {
     <FloatingAddButton view={view} onAdd={addByType}/>
     {searchOpen ? <SearchOverlay state={runtime.state} query={search} setQuery={setSearch} onClose={() => setSearchOpen(false)} inspect={setSelected} navigate={navigate} /> : null}
     {projectDialog ? <ProjectDrawer state={runtime.state} commit={runtime.commit} projectId={projectDialog.projectId} parentId={projectDialog.parentId} initialTab={projectDialog.tab} onClose={() => setProjectDialog(null)} onSaved={id => { const wasCreating = !projectDialog.projectId; setProjectDialog(null); if (wasCreating) navigate(`project:${id}`) }} onRemoved={() => { setProjectDialog(null); navigate('inbox') }} /> : null}
-    {todaySettingsOpen ? <TodaySettingsDrawer state={runtime.state} commit={runtime.commit} onClose={() => setTodaySettingsOpen(false)} /> : null}
-    {settingsOpen ? <AppSettingsDrawer state={runtime.state} commit={runtime.commit} onClose={() => setSettingsOpen(false)} onPersonalizeToday={() => { setSettingsOpen(false); setTodaySettingsOpen(true) }} googleConnected={runtime.googleConnected} calendars={runtime.calendars} calendarDraft={runtime.calendarDraft} setCalendarDraft={runtime.setCalendarDraft} calendarBusy={runtime.calendarBusy} saveCalendars={runtime.saveCalendars} disconnectGoogle={runtime.disconnectGoogle} requestNotifications={runtime.requestNotifications} installPrompt={runtime.installPrompt} install={runtime.install} exportData={runtime.exportData} importData={runtime.importData} importRef={runtime.importRef} syncStatus={runtime.syncStatus} flushRemoteSync={runtime.flushRemoteSync} logout={runtime.logout} /> : null}
-    {creating ? <QuickCreateDrawer kind={creating} state={runtime.state} today={runtime.today} defaultProjectId={creating === 'task' ? activeProjectId : undefined} defaultDate={creating === 'task' ? (view === 'today' ? runtime.today : '') : runtime.today} commit={runtime.commit} onClose={() => setCreating(null)} /> : null}
+    {settingsOpen ? <AppSettingsDrawer state={runtime.state} commit={runtime.commit} onClose={() => setSettingsOpen(false)} onPersonalizeToday={() => setSettingsOpen(false)} googleConnected={runtime.googleConnected} calendars={runtime.calendars} calendarDraft={runtime.calendarDraft} setCalendarDraft={runtime.setCalendarDraft} calendarBusy={runtime.calendarBusy} saveCalendars={runtime.saveCalendars} disconnectGoogle={runtime.disconnectGoogle} requestNotifications={runtime.requestNotifications} installPrompt={runtime.installPrompt} install={runtime.install} exportData={runtime.exportData} importData={runtime.importData} importRef={runtime.importRef} syncStatus={runtime.syncStatus} flushRemoteSync={runtime.flushRemoteSync} logout={runtime.logout} /> : null}
+    {creating ? <QuickCreateDrawer kind={creating.kind} allowKindSwitch={creating.switchable} state={runtime.state} today={runtime.today} defaultProjectId={creating.kind === 'task' ? activeProjectId : undefined} defaultDate={view === 'today' ? runtime.today : ''} commit={runtime.commit} onClose={() => setCreating(null)} /> : null}
     {healthCreating ? <HealthQuickAddDrawer state={runtime.state} today={runtime.today} commit={runtime.commit} onClose={() => setHealthCreating(false)}/> : null}
     <ContextDrawer item={selected} state={runtime.state} today={runtime.today} commit={runtime.commit} googleRpc={runtime.googleRpc} refreshEvents={() => runtime.syncCalendar(runtime.state.configs.calendarios || [])} onClose={() => setSelected(null)} />
   </div>
