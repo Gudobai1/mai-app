@@ -50,7 +50,7 @@ export function TodayCompact({ state, today, commit, inspect, onSearch, onMore }
   const plan = useMemo(() => plannerItems(state, today, today), [state, today])
   const projects = useMemo(() => rows(state.projects).filter(item => item.ativo !== false), [state.projects])
   const projectMap = useMemo(() => new Map(projects.map(project => [String(project.id), project])), [projects])
-  const savedFilters = state.configs.todayFilters && typeof state.configs.todayFilters === 'object' ? state.configs.todayFilters as Partial<TodayFilters> : {}
+  const savedFilters: Partial<TodayFilters> = state.configs.todayFilters && typeof state.configs.todayFilters === 'object' ? state.configs.todayFilters as Partial<TodayFilters> : {}
   const filters: TodayFilters = {
     project: String(savedFilters.project || 'all'),
     priority: String(savedFilters.priority || 'all'),
