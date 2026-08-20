@@ -5,7 +5,12 @@ import { addDays, type PlannerItem, plannerItems } from '../../lib/v2/planner'
 import type { MaiState } from '../../lib/v2/state'
 import type { InspectableItem } from './ContextDrawer'
 
-type Props = { state: MaiState; today: string; inspect: (item: InspectableItem) => void }
+type Props = {
+  state: MaiState
+  today: string
+  inspect: (item: InspectableItem) => void
+  commit: (change: (current: MaiState) => MaiState) => void
+}
 type Mode = 'list' | 'month'
 
 const firstOfMonth = (day: string) => `${day.slice(0,7)}-01`
@@ -14,13 +19,28 @@ const moveMonth = (day:string, amount:number) => { const d = new Date(`${day}T12
 const formatDay = (key:string) => new Date(`${key}T12:00:00`).toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'})
 
 function ItemRow({ item, inspect }: { item: PlannerItem; inspect: Props['inspect'] }) {
-  return <article className="mai-upcoming-item"><i style={{background:item.color}}/><button onClick={() => inspect({kind:item.kind,sourceId:item.sourceId,title:item.title,date:item.date,time:item.time,raw:item.raw})}><strong>{item.title}</strong><small>{item.subtitle}{item.recurring ? ' · recorrente' : ''}</small></button><time>{item.time || 'Dia todo'}</time></article>
+  return <article className="mai-upcoming-item mai-v3-upcoming-item"><i style={{background:item.color}}/><button onClick={() => inspect({kind:item.kind,sourceId:item.sourceId,title:item.title,date:item.date,time:item.time,raw:item.raw})}><strong>{item.title}</strong><small>{item.subtitle}</small></button><time>{item.time || 'Dia inteiro'}</time></article>
 }
 
-export function UpcomingCompact({ state, today, inspect }: Props) {
-  const [mode,setMode] = useState<Mode>('list')
-  const [anchor,setAnchor] = useState(today)
-  const listItems = useMemo(() => plannerItems(state,today,addDays(today,120)).filter(item => !item.completed),[state,today])
+export function UpcomingCompact({ state, today, inspect, commit }: Props) {
+  const persistedMode: Mode = state.configs.upcomingView === 'month' ? 'month' : 'list'
+  const [mode,setMode] = useState<Mode>(persistedMode)
+  const [anchor,setAnchor] = useState(String(state.configs.upcomingAnchor || today))
+  const [rangeDays,setRangeDays] = useState(180)
+  const listRef = useRef<HTMLDivElement>(null)
+  const sentinelRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => { setMode(state.configs.upcomingView === 'month' ? 'month' : 'list') }, [state.configs.upcomingView])
+  useEffect(() => {
+    if (mode !== 'list' || !sentinelRef.current) return
+    const observer = new IntersectionObserver(entries => {
+      if (entries.some(entry => entry.isIntersecting)) setRangeDays(value => Math.min(value + 180, 1800))
+    }, { rootMargin: '500px' })
+    observer.observe(sentinelRef.current)
+    return () => observer.disconnect()
+  }, [mode])
+
+  const listItems = useMemo(() => plannerItems(state,today,addDays(today,rangeDays)).filter(item => !item.completed),[state,today,rangeDays])
   const listGroups = useMemo(() => { const map = new Map<string,PlannerItem[]>(); listItems.forEach(item => { if(!map.has(item.date)) map.set(item.date,[]); map.get(item.date)!.push(item) }); map.forEach(items => items.sort((a,b)=>`${a.time || '99:99'} ${a.title}`.localeCompare(`${b.time || '99:99'} ${b.title}`))); return [...map.entries()] },[listItems])
 
   const monthStart = firstOfMonth(anchor || today)
@@ -32,7 +52,6 @@ export function UpcomingCompact({ state, today, inspect }: Props) {
   const firstWeekday = new Date(`${monthStart}T12:00:00`).getDay()
   const gridDays = [...Array(firstWeekday).fill(''), ...monthDays]
   while(gridDays.length % 7) gridDays.push('')
-  const listRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     if(mode !== 'month') return
@@ -40,15 +59,23 @@ export function UpcomingCompact({ state, today, inspect }: Props) {
     requestAnimationFrame(() => listRef.current?.querySelector(`[data-day="${target}"]`)?.scrollIntoView({block:'start'}))
   },[mode,monthStart,today])
 
+  function setView(next: Mode) {
+    setMode(next)
+    commit(current => ({ ...current, configs: { ...current.configs, upcomingView: next } }))
+  }
+  function changeAnchor(next: string) {
+    setAnchor(next)
+    commit(current => ({ ...current, configs: { ...current.configs, upcomingAnchor: next } }))
+  }
   function focusDay(day:string){ listRef.current?.querySelector(`[data-day="${day}"]`)?.scrollIntoView({behavior:'smooth',block:'start'}) }
   const monthLabel = new Date(`${monthStart}T12:00:00`).toLocaleDateString('pt-BR',{month:'long',year:'numeric'})
 
-  return <div className="mai-upcoming-page">
-    <div className="mai-page-bar"><div><strong>Em breve</strong><span>{mode === 'list' ? 'Planejamento contínuo' : monthLabel}</span></div><div className="mai-view-switch"><button data-active={mode==='list'} onClick={() => setMode('list')}>Lista</button><button data-active={mode==='month'} onClick={() => { setAnchor(today); setMode('month') }}>Mês</button></div></div>
+  return <div className="mai-upcoming-page mai-v3-upcoming-page">
+    <div className="mai-v3-page-header mai-v3-upcoming-header"><div><h1>Em breve</h1><p>{mode === 'list' ? 'Planejamento contínuo' : monthLabel}</p></div><div className="mai-view-switch mai-v3-view-switch"><button data-active={mode==='list'} onClick={() => setView('list')}>Lista</button><button data-active={mode==='month'} onClick={() => { changeAnchor(today); setView('month') }}>Calendário</button></div></div>
 
-    {mode === 'list' ? <div className="mai-upcoming-scroll">{listGroups.map(([day,items]) => <section key={day}><header><strong>{day === today ? 'Hoje' : formatDay(day)}</strong><span>{items.length}</span></header>{items.map(item => <ItemRow key={item.id} item={item} inspect={inspect}/>)}</section>)}{!listGroups.length ? <div className="mai-section-empty">Nada programado nos próximos meses.</div> : null}</div> : <div className="mai-month-layout">
-      <main className="mai-month-calendar"><header><button onClick={() => setAnchor(moveMonth(anchor,-1))}>‹</button><button onClick={() => setAnchor(today)}>Hoje</button><strong>{monthLabel}</strong><button onClick={() => setAnchor(moveMonth(anchor,1))}>›</button></header><div className="mai-week-head">{['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'].map(day => <span key={day}>{day}</span>)}</div><div className="mai-month-grid">{gridDays.map((day,index) => day ? <button key={day} data-today={day===today} onClick={() => focusDay(day)}><strong>{Number(day.slice(8))}</strong><span>{(monthMap.get(day)||[]).slice(0,3).map(item => <i key={item.id} style={{background:item.color}}/> )}</span><small>{monthMap.get(day)?.length || ''}</small></button> : <span key={`blank-${index}`}/>)}</div></main>
-      <aside className="mai-month-list" ref={listRef}>{monthDays.filter(day => monthMap.has(day) || day === today || day === monthStart).map(day => <section key={day} data-day={day} data-today={day===today}><header><strong>{day === today ? 'Hoje' : formatDay(day)}</strong><span>{monthMap.get(day)?.length || 0}</span></header>{(monthMap.get(day)||[]).map(item => <ItemRow key={item.id} item={item} inspect={inspect}/>)}{!(monthMap.get(day)||[]).length ? <small className="mai-empty-day">Nenhum item.</small> : null}</section>)}</aside>
+    {mode === 'list' ? <div className="mai-upcoming-scroll mai-v3-upcoming-scroll">{listGroups.map(([day,items]) => <section key={day}><header><strong>{day === today ? 'Hoje' : formatDay(day)}</strong></header>{items.map(item => <ItemRow key={item.id} item={item} inspect={inspect}/>)}</section>)}{!listGroups.length ? <div className="mai-v3-empty-line">Nada programado.</div> : null}<div ref={sentinelRef} className="mai-v3-infinite-sentinel" /></div> : <div className="mai-month-layout mai-v3-month-layout">
+      <main className="mai-month-calendar mai-v3-month-calendar"><header><button onClick={() => changeAnchor(moveMonth(anchor,-1))}>‹</button><button onClick={() => changeAnchor(today)}>Hoje</button><strong>{monthLabel}</strong><button onClick={() => changeAnchor(moveMonth(anchor,1))}>›</button></header><div className="mai-week-head">{['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'].map(day => <span key={day}>{day}</span>)}</div><div className="mai-month-grid mai-v3-month-grid">{gridDays.map((day,index) => day ? <button key={day} data-today={day===today} onClick={() => focusDay(day)}><strong>{Number(day.slice(8))}</strong><div>{(monthMap.get(day)||[]).slice(0,3).map(item => <span key={item.id}><i style={{background:item.color}}/><b>{item.time ? `${item.time} ` : ''}{item.title}</b></span>)}</div>{(monthMap.get(day)||[]).length > 3 ? <small>+ {(monthMap.get(day)||[]).length - 3} itens</small> : null}</button> : <span key={`blank-${index}`}/>)}</div></main>
+      <aside className="mai-month-list mai-v3-month-list" ref={listRef}>{monthDays.filter(day => monthMap.has(day) || day === today || day === monthStart).map(day => <section key={day} data-day={day} data-today={day===today}><header><strong>{day === today ? 'Hoje' : formatDay(day)}</strong></header>{(monthMap.get(day)||[]).map(item => <ItemRow key={item.id} item={item} inspect={inspect}/>)}{!(monthMap.get(day)||[]).length ? <small className="mai-empty-day">Nenhum item.</small> : null}</section>)}</aside>
     </div>}
   </div>
 }
