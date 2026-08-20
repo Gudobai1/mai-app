@@ -79,25 +79,25 @@ export function ContextDrawer({ item, state, today, commit, googleRpc, refreshEv
 
   const taskMap = useMemo(() => new Map(state.tasks.map(task => [String(task.id), task])), [state.tasks])
   const focusedTask = item?.kind === 'task' ? taskMap.get(focusId || item.sourceId) : undefined
-  const active: InspectableItem | null = item?.kind === 'task' && focusedTask
+  const active: InspectableItem = item?.kind === 'task' && focusedTask
     ? { kind: 'task', sourceId: String(focusedTask.id), title: focusedTask.titulo, date: dateOnly(focusedTask.data_vencimento), time: timeOnly(focusedTask.data_vencimento), raw: focusedTask as Row }
-    : item
+    : item || { kind: 'task', sourceId: '', title: '', raw: {} }
 
   useEffect(() => {
-    if (!active) { setDraft({}); return }
+    if (!item) { setDraft({}); return }
     const next = { ...active.raw }
     if (active.kind === 'event') next._duracao = durationMinutes(String(next.hora_inicio || ''), String(next.hora_fim || ''))
     setDraft(next)
     setSubtaskTitle('')
     setMessage('')
-  }, [active?.kind, active?.sourceId, active?.date])
+  }, [item, active.kind, active.sourceId, active.date])
 
   const projects = useMemo(() => rows(state.projects).filter(project => project.ativo !== false), [state.projects])
-  const habitEntry = useMemo(() => active?.kind === 'habit' ? rows(state.habitEntries).find(entry => String(entry.habito_id) === active.sourceId && dateOnly(entry.data) === (active.date || today)) : undefined, [active, state.habitEntries, today])
-  const directChildren = useMemo(() => active?.kind === 'task' ? state.tasks.filter(task => String(task.parent_id || '') === active.sourceId) : [], [active?.kind, active?.sourceId, state.tasks])
+  const habitEntry = useMemo(() => active.kind === 'habit' ? rows(state.habitEntries).find(entry => String(entry.habito_id) === active.sourceId && dateOnly(entry.data) === (active.date || today)) : undefined, [active.kind, active.sourceId, active.date, state.habitEntries, today])
+  const directChildren = useMemo(() => active.kind === 'task' ? state.tasks.filter(task => String(task.parent_id || '') === active.sourceId) : [], [active.kind, active.sourceId, state.tasks])
 
   const breadcrumbs = useMemo(() => {
-    if (!active || active.kind !== 'task') return [] as { id: string; title: string }[]
+    if (active.kind !== 'task') return [] as { id: string; title: string }[]
     const chain: { id: string; title: string }[] = []
     const seen = new Set<string>()
     let cursor = taskMap.get(active.sourceId)
@@ -107,9 +107,9 @@ export function ContextDrawer({ item, state, today, commit, googleRpc, refreshEv
       cursor = cursor.parent_id ? taskMap.get(String(cursor.parent_id)) : undefined
     }
     return chain
-  }, [active, taskMap])
+  }, [active.kind, active.sourceId, taskMap])
 
-  if (!active) return null
+  if (!item) return null
   const label = ({ task: 'Tarefa', event: 'Compromisso', habit: 'Rotina', finance: 'Finanças', goal: 'Meta', note: 'Nota' } as const)[active.kind]
   const set = (patch: Row) => setDraft(current => ({ ...current, ...patch }))
   const reminders = values(draft.lembretes).map(String)
@@ -125,7 +125,7 @@ export function ContextDrawer({ item, state, today, commit, googleRpc, refreshEv
       commit(current => ({ ...current, tasks: current.tasks.map(task => task.id === active.sourceId ? { ...task, ...draft, titulo: String(draft.titulo || '').trim(), data_vencimento: due, prioridade: Number(draft.prioridade || 4), projeto_id: draft.projeto_id || 'entrada', lembretes: reminders, etiquetas: values(draft.etiquetas).map(String) } : task) }))
     } else if (active.kind === 'event') {
       const duration = Math.max(5, Number(draft._duracao || 60))
-      const next = {
+      const next: Row = {
         ...draft,
         titulo: String(draft.titulo || '').trim(),
         data_inicio: dateOnly(draft.data_inicio) || active.date || today,
