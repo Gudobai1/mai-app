@@ -7,6 +7,7 @@ import './ux-final-overrides.css'
 import './project-settings.css'
 import './mai-minimal-v3.css'
 import './mai-minimal-v3-panels.css'
+import './mai-minimal-v3-modules.css'
 
 export const metadata: Metadata = {
   title: 'MAI — Meu Sistema',
