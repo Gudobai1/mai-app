@@ -5,6 +5,7 @@ import './ux-shell.css'
 import './ux-navigation-v2.css'
 import './ux-final-overrides.css'
 import './project-settings.css'
+import './mai-minimal-v3.css'
 
 export const metadata: Metadata = {
   title: 'MAI — Meu Sistema',
