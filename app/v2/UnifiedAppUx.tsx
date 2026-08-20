@@ -104,6 +104,7 @@ export function UnifiedAppUx() {
       onSettings={() => setSettingsOpen(true)}
       onNewProject={() => setProjectDialog({})}
       onEditProject={id => setProjectDialog({ projectId: id, tab: 'details' })}
+      onManageSections={id => setProjectDialog({ projectId: id, tab: 'sections' })}
       commit={runtime.commit}
     />
 
