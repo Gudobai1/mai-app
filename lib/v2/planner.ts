@@ -26,7 +26,7 @@ export function addDays(key: string, amount: number) {
 export function daysBetween(start: string, end: string) {
   const result: string[] = []
   let cursor = start
-  while (cursor <= end && result.length < 800) {
+  while (cursor <= end && result.length < 1800) {
     result.push(cursor)
     cursor = addDays(cursor, 1)
   }
@@ -58,6 +58,13 @@ export function occursOn(item: Record<string, any>, day: string, dateField = 'da
     if (frequency === 'YEARLY') return day.slice(5) === base.slice(5)
   }
   return day === base
+}
+
+function eventOccursOn(event: Record<string, any>, day: string) {
+  const start = String(event.data_inicio || '').slice(0, 10)
+  const end = String(event.data_fim || event.data_termino || event.end || '').slice(0, 10)
+  if (!event.repeticao && start && end && end >= start) return day >= start && day <= end
+  return occursOn(event, day, 'data_inicio')
 }
 
 function eventCompleted(state: MaiState, event: Record<string, any>, day: string) {
@@ -97,7 +104,7 @@ export function plannerItems(state: MaiState, start: string, end: string): Plann
         time: String(task.data_vencimento || '').includes('T') ? String(task.data_vencimento).slice(11, 16) : '',
         title: task.titulo,
         subtitle: String(project?.nome || project?.name || (task.projeto_id === 'entrada' ? 'Entrada' : 'Tarefa')),
-        color: ['#d1453b', '#d88931', '#4f78b8', '#7a7a7a'][Math.max(0, Math.min(3, Number(task.prioridade || 4) - 1))],
+        color: ['#c85b52', '#c28a3d', '#7c9274', '#b8beb7'][Math.max(0, Math.min(3, Number(task.prioridade || 4) - 1))],
         completed: task.concluida === true,
         recurring: Boolean(task.repeticao),
         raw: source,
@@ -106,17 +113,20 @@ export function plannerItems(state: MaiState, start: string, end: string): Plann
   }
 
   for (const event of rows(state.events)) {
+    const eventStart = String(event.data_inicio || '').slice(0, 10)
+    const eventEnd = String(event.data_fim || event.data_termino || event.end || '').slice(0, 10)
     for (const day of days) {
-      if (!occursOn(event, day, 'data_inicio')) continue
+      if (!eventOccursOn(event, day)) continue
+      const spanning = !event.repeticao && eventStart && eventEnd && eventEnd > eventStart
       result.push({
         id: `event:${event.id}:${day}`,
         sourceId: String(event.id),
         kind: 'event',
         date: day,
-        time: String(event.hora_inicio || ''),
+        time: spanning && day > eventStart ? '' : String(event.hora_inicio || ''),
         title: String(event.titulo || 'Compromisso'),
-        subtitle: event.tipo === 'google' || event.tipo === 'gcalendar' ? 'Google Agenda' : 'Compromisso',
-        color: String(event.calendarColor || event.cor || '#4285f4'),
+        subtitle: spanning && day > eventStart && day <= eventEnd ? 'Em andamento' : event.tipo === 'google' || event.tipo === 'gcalendar' ? 'Google Agenda' : String(event.categoria || 'Compromisso'),
+        color: String(event.categoria_cor || event.calendarColor || event.cor || '#6f8168'),
         completed: eventCompleted(state, event, day),
         recurring: Boolean(event.repeticao),
         raw: event,
