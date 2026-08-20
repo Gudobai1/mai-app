@@ -1,0 +1,21 @@
+/* Entrada e Projetos do MAI Minimal V3 */
+.mai-v3-task-workspace{min-width:0}
+.mai-v3-task-header{position:relative;margin-bottom:48px}
+.mai-v3-task-title-wrap{display:flex;align-items:flex-start;gap:12px;min-width:0}
+.mai-v3-task-title-wrap>i,.mai-v3-task-title-wrap>img{width:36px;height:36px;border-radius:11px;display:grid;place-items:center;object-fit:cover;color:#fff;flex:0 0 auto;margin-top:-2px}
+.mai-v3-task-menu{position:absolute;right:0;top:42px;z-index:220;width:190px;padding:7px;background:#fff;border:1px solid #e8ebe6;border-radius:13px;box-shadow:0 16px 45px rgba(37,44,35,.13);display:grid;gap:2px}
+.mai-v3-task-menu>span{padding:5px 8px 4px;color:#9aa198;font-size:9px;text-transform:uppercase;letter-spacing:.06em;font-weight:750}
+.mai-v3-task-menu button{min-height:33px;border:0;border-radius:8px;background:transparent;text-align:left;padding:0 9px;color:#626a60;font-size:10.5px}
+.mai-v3-task-menu button:hover,.mai-v3-task-menu button[data-active="true"]{background:#f3f6f1;color:#52614d}
+.mai-v3-task-menu hr{width:100%;border:0;border-top:1px solid #edf0eb;margin:4px 0}
+.mai-v3-project-sections{display:grid;gap:58px}
+.mai-v3-project-sections>section>h2{margin:0 0 12px;font-size:15px;font-weight:720;color:#303630}
+.mai-v3-task-row[data-selected="true"]{background:#f4f7f2;border-left:2px solid #6f8168;padding-left:2px}
+.mai-v3-task-row-menu{position:absolute;right:5px;top:48px;z-index:160;width:165px;padding:6px;background:#fff;border:1px solid #e8ebe6;border-radius:12px;box-shadow:0 14px 38px rgba(37,44,35,.12);display:grid}
+.mai-v3-task-row-menu>span{padding:7px 8px 3px;font-size:8.5px;text-transform:uppercase;letter-spacing:.06em;color:#a0a79d;font-weight:750}
+.mai-v3-task-row-menu button{min-height:32px;border:0;border-radius:7px;background:transparent;text-align:left;padding:0 8px;color:#616a5e;font-size:10px}
+.mai-v3-task-row-menu button:hover{background:#f3f6f1}
+.mai-v3-task-row[draggable="true"]{cursor:grab}
+.mai-v3-task-row[draggable="true"]:active{cursor:grabbing}
+.mai-v3-task-advanced{min-width:0}
+@media(max-width:560px){.mai-v3-project-sections{gap:42px}.mai-v3-task-title-wrap>i,.mai-v3-task-title-wrap>img{width:32px;height:32px}}
