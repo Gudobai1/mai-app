@@ -1,20 +1,18 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { plannerItems } from '../../lib/v2/planner'
 import { AppSettingsDrawer } from './AppSettingsDrawer'
 import type { AppView } from './app-types'
 import { ContextDrawer, type InspectableItem } from './ContextDrawer'
 import { FloatingAddButton } from './FloatingAddButton'
 import { HealthQuickAddDrawer } from './HealthQuickAddDrawer'
 import { MaiIcon } from './MaiIcons'
+import { MinimalAreas, type SecondaryView } from './MinimalAreas'
 import { ProjectDrawer } from './ProjectDrawer'
 import { QuickCreateDrawer } from './QuickCreateDrawer'
 import { SearchOverlay } from './SearchOverlay'
 import { ShellSidebar } from './ShellSidebar'
 import { TodayCompact } from './TodayCompact'
-import { UnifiedAreas, type SecondaryView } from './UnifiedAreas'
 import { UnifiedTasks, type TaskWorkspaceView } from './UnifiedTasks'
 import { UpcomingCompact } from './UpcomingCompact'
 import { useMaiRuntime } from './useMaiRuntime'
@@ -31,7 +29,6 @@ const validView = (value: unknown): value is AppView => {
 
 export function UnifiedAppUx() {
   const runtime = useMaiRuntime()
-  const router = useRouter()
   const restoredView = useRef(false)
   const [view, setView] = useState<AppView>('today')
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -44,8 +41,6 @@ export function UnifiedAppUx() {
   const [healthCreating, setHealthCreating] = useState(false)
   const [areaCreateRequest, setAreaCreateRequest] = useState('')
 
-  const todayPlan = runtime.today ? plannerItems(runtime.state, runtime.today, runtime.today) : []
-  const overdue = runtime.state.tasks.filter(task => !task.concluida && String(task.data_vencimento || '').slice(0, 10) && String(task.data_vencimento || '').slice(0, 10) < runtime.today)
   const activeProjectId = view.startsWith('project:') ? view.slice(8) : 'entrada'
 
   useEffect(() => {
@@ -115,7 +110,7 @@ export function UnifiedAppUx() {
           {view === 'today' ? <TodayCompact state={runtime.state} today={runtime.today} commit={runtime.commit} navigate={navigate} inspect={setSelected} onSearch={() => setSearchOpen(true)} onMore={() => setSettingsOpen(true)} /> : null}
           {view === 'inbox' || view.startsWith('project:') ? <UnifiedTasks state={runtime.state} today={runtime.today} view={view as TaskWorkspaceView} commit={runtime.commit} googleRpc={runtime.googleRpc} onOpenAgenda={() => navigate('upcoming')} /> : null}
           {view === 'upcoming' ? <UpcomingCompact state={runtime.state} today={runtime.today} inspect={setSelected} commit={runtime.commit} /> : null}
-          {secondary.includes(view as SecondaryView) ? <UnifiedAreas view={view as SecondaryView} state={runtime.state} today={runtime.today} commit={runtime.commit} googleRpc={runtime.googleRpc} createRequest={areaCreateRequest} /> : null}
+          {secondary.includes(view as SecondaryView) ? <MinimalAreas view={view as SecondaryView} state={runtime.state} today={runtime.today} commit={runtime.commit} googleRpc={runtime.googleRpc} createRequest={areaCreateRequest} inspect={setSelected} /> : null}
         </>}
       </div>
     </main>
