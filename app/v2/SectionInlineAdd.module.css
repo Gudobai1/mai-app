@@ -49,6 +49,10 @@
   color:var(--v3-accent-strong);
 }
 
+:global([data-mai-empty-hidden="true"]){
+  display:none!important;
+}
+
 @media(max-width:900px){
   .host{margin-bottom:12px}
   .button{min-height:32px}
