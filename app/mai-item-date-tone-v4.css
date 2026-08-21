@@ -1,0 +1,53 @@
+/* MAI — datas dos itens: alinhamento e estado visual */
+:root{
+  --mai-date-overdue:#c94f45;
+  --mai-date-today:#b77a00;
+  --mai-date-future:#4b78c2;
+  --mai-date-neutral:var(--v3-muted);
+}
+
+html[data-mai-theme="dark"]{
+  --mai-date-overdue:#ef8177;
+  --mai-date-today:#e3b94e;
+  --mai-date-future:#82a9eb;
+  --mai-date-neutral:var(--v3-muted);
+}
+
+.mai-item-subline-v2{
+  min-height:21px!important;
+  align-items:center!important;
+  line-height:1!important;
+}
+
+/* A data fica ancorada no canto direito e centrada verticalmente. */
+.mai-item-subline-v2>.mai-item-date-v4,
+.mai-item-subline-v2>:first-child{
+  min-height:20px!important;
+  height:20px!important;
+  display:inline-flex!important;
+  align-items:center!important;
+  justify-content:flex-end!important;
+  align-self:center!important;
+  padding:0 1px!important;
+  margin-top:0!important;
+  margin-bottom:0!important;
+  opacity:1!important;
+  font-size:10.5px!important;
+  font-weight:680!important;
+  line-height:20px!important;
+  letter-spacing:.005em!important;
+  color:var(--mai-date-neutral)!important;
+}
+
+.mai-item-date-v4[data-mai-date-tone="overdue"]{color:var(--mai-date-overdue)!important}
+.mai-item-date-v4[data-mai-date-tone="today"]{color:var(--mai-date-today)!important}
+.mai-item-date-v4[data-mai-date-tone="future"]{color:var(--mai-date-future)!important}
+.mai-item-date-v4[data-mai-date-tone="neutral"]{color:var(--mai-date-neutral)!important}
+
+@media(max-width:720px){
+  .mai-item-subline-v2>.mai-item-date-v4,
+  .mai-item-subline-v2>:first-child{
+    font-size:10.75px!important;
+    font-weight:700!important;
+  }
+}
