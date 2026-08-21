@@ -110,11 +110,44 @@ button.mai-item-row-v2{
   white-space:nowrap!important;
 }
 
+/* Projeto sempre fica como uma unidade horizontal ao lado da data. */
+.mai-item-project-tag{
+  min-width:0!important;
+  max-width:min(48%,260px)!important;
+  display:inline-flex!important;
+  align-items:center!important;
+  justify-content:flex-start!important;
+  gap:4px!important;
+  flex:0 1 auto!important;
+  overflow:hidden!important;
+  white-space:nowrap!important;
+  vertical-align:middle!important;
+  color:var(--v3-muted)!important;
+  font-size:10.5px!important;
+  line-height:13px!important;
+  font-weight:500!important;
+}
+
+.mai-item-subline-v2>.mai-item-project-tag{
+  align-self:center!important;
+}
+
+.mai-item-project-tag>span{
+  min-width:0!important;
+  display:block!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+  white-space:nowrap!important;
+  line-height:13px!important;
+}
+
 .mai-item-project-tag>i,
 .mai-item-project-tag>img{
   width:13px!important;
   height:13px!important;
   min-width:13px!important;
+  flex:0 0 13px!important;
+  align-self:center!important;
   border-radius:4px!important;
   display:inline-grid!important;
   place-items:center!important;
@@ -260,5 +293,6 @@ button.mai-item-row-v2{
     padding:7px 4px!important;
   }
   .mai-item-inline-tag{max-width:38%!important}
+  .mai-item-project-tag{max-width:44%!important}
   .mai-item-titleline-v2{gap:6px!important}
 }
