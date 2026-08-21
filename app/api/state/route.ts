@@ -1,7 +1,14 @@
 import { createClient } from '@supabase/supabase-js'
+import { cookies } from 'next/headers'
+import { allowedGoogleEmail, GOOGLE_COOKIE, hasAllowedGoogleCookie } from '../../../lib/google'
 import { getSupabasePublicConfig } from '../../../lib/supabase/config'
 
 async function scopedClient(request: Request) {
+  const cookieStore = await cookies()
+  if (!hasAllowedGoogleCookie(cookieStore.get(GOOGLE_COOKIE)?.value)) {
+    return { error: 'Login Google obrigatório', status: 401 as const }
+  }
+
   const config = getSupabasePublicConfig()
   if (!config) return { error: 'Supabase não configurado', status: 503 as const }
   const token = (request.headers.get('authorization') || '').replace(/^Bearer\s+/i, '').trim()
@@ -12,6 +19,9 @@ async function scopedClient(request: Request) {
   })
   const { data, error } = await client.auth.getUser(token)
   if (error || !data.user) return { error: 'Sessão inválida', status: 401 as const }
+  if (String(data.user.email || '').trim().toLowerCase() !== allowedGoogleEmail()) {
+    return { error: 'Conta não autorizada', status: 403 as const }
+  }
   return { client, user: data.user }
 }
 
