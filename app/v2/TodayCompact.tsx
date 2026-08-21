@@ -36,7 +36,6 @@ const timeKey = (value: unknown) => String(value || '').includes('T') ? String(v
 
 export function TodayCompact({ state, today, commit, inspect, onMore, part = 'all' }: Props) {
   const [filterOpen, setFilterOpen] = useState(false)
-  const [completedOpen, setCompletedOpen] = useState(false)
   const plan = useMemo(() => plannerItems(state, today, today), [state, today])
   const projects = useMemo(() => rows(state.projects).filter(item => item.ativo !== false), [state.projects])
   const projectMap = useMemo(() => new Map(projects.map(project => [String(project.id), project])), [projects])
@@ -47,11 +46,12 @@ export function TodayCompact({ state, today, commit, inspect, onMore, part = 'al
     status: savedFilters.status === 'all' ? 'all' : 'open',
   }
 
-  const plannedEvents = useMemo(() => plan.filter(item => item.kind === 'event'), [plan])
+  const eventDone = (eventId: unknown) => rows(state.eventCompletions).some(entry => String(entry.evento_id || String(entry.chave || '').split('|')[0]) === String(eventId) && dateKey(entry.data || String(entry.chave || '').split('|')[1]) === today && entry.concluida !== false)
+  const plannedEvents = useMemo(() => plan.filter(item => item.kind === 'event' && !item.completed), [plan])
   const spanningEvents = useMemo(() => rows(state.events).filter(event => {
     const start = dateKey(event.data_inicio)
     const end = dateKey(event.data_fim || event.data_termino || event.end)
-    return start && end && start < today && end >= today
+    return start && end && start < today && end >= today && !eventDone(event.id)
   }).map(event => ({
     id: `span:${event.id}:${today}`,
     sourceId: String(event.id),
@@ -64,7 +64,7 @@ export function TodayCompact({ state, today, commit, inspect, onMore, part = 'al
     completed: false,
     recurring: Boolean(event.repeticao),
     raw: event,
-  })), [state.events, today])
+  })), [state.events, state.eventCompletions, today])
   const events = useMemo(() => {
     const seen = new Set<string>()
     return [...spanningEvents, ...plannedEvents].filter(item => {
@@ -80,7 +80,6 @@ export function TodayCompact({ state, today, commit, inspect, onMore, part = 'al
   }, [plannedEvents, spanningEvents])
 
   const todayTasks = useMemo(() => state.tasks.filter(task => !task.concluida && dateKey(task.data_vencimento) === today), [state.tasks, today])
-  const completedToday = useMemo(() => state.tasks.filter(task => task.concluida && dateKey(task.data_vencimento) === today), [state.tasks, today])
   const filteredTasks = useMemo(() => todayTasks.filter(task => {
     if (filters.project !== 'all' && String(task.projeto_id || 'entrada') !== filters.project) return false
     if (filters.priority !== 'all' && String(Number(task.prioridade || 4)) !== filters.priority) return false
@@ -154,17 +153,6 @@ export function TodayCompact({ state, today, commit, inspect, onMore, part = 'al
         <span className="mai-item-copy-v2"><span className="mai-item-titleline-v2"><strong>{task.titulo}</strong></span><span className="mai-item-subline-v2"><span>Hoje</span><span>·</span>{projectBadge(project)}</span></span>
       </article>
     })}{!filteredTasks.length ? <div className="mai-v3-empty-line">Nenhuma tarefa para hoje.</div> : null}</div>
-
-    {filters.status === 'all' || completedToday.length ? <div className="mai-v3-completed-wrap">
-      <button className="mai-v3-completed-toggle" onClick={() => setCompletedOpen(value => !value)}><MaiIcon name="chevron" size={14}/><span>Concluídas · {completedToday.length}</span></button>
-      {completedOpen ? <div className="mai-today-unified-list mai-v3-completed-list">{completedToday.map(task => {
-        const project = projectIdentity(task.projeto_id)
-        return <article className="mai-today-unified-row mai-item-row-v2" key={`done-${task.id}`} onClick={() => inspectTask(task)}>
-          <button className="mai-today-unified-dot" data-done="true" onClick={event => { event.stopPropagation(); toggleTask(task.id) }}>✓</button>
-          <span className="mai-item-copy-v2"><span className="mai-item-titleline-v2"><strong>{task.titulo}</strong></span><span className="mai-item-subline-v2"><span>Hoje</span><span>·</span>{projectBadge(project)}</span></span>
-        </article>
-      })}</div> : null}
-    </div> : null}
   </section>
 
   if (part === 'header') return header
