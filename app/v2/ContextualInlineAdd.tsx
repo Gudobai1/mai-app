@@ -34,6 +34,7 @@ function findAnchor(view: AppView): Element | null {
     || workspace.querySelector('.mai-v3-advanced-banner')
 }
 
+// O host é inserido no fluxo do módulo para substituir o antigo FAB global.
 export function ContextualInlineAdd({ view, onAdd }: Props) {
   const [host, setHost] = useState<HTMLElement | null>(null)
 
