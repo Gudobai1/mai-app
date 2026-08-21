@@ -10,10 +10,11 @@ import './mai-minimal-v3-panels.css'
 import './mai-minimal-v3-modules.css'
 import './mai-minimal-v3-tasks.css'
 import './mai-production-polish.css'
+import './mai-clean-v4.css'
 
 export const metadata: Metadata = {
   title: 'MAI — Meu Sistema',
-  description: 'Organize tarefas, compromissos, rotinas, finanças, notas e bem-estar.',
+  description: 'Organize tarefas, compromissos, hábitos, finanças, notas e bem-estar.',
   manifest: '/manifest.webmanifest',
   appleWebApp: { capable: true, title: 'MAI', statusBarStyle: 'default' },
 }
