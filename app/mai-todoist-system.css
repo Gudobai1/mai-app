@@ -1,0 +1,435 @@
+/* MAI — linguagem global de itens inspirada no Todoist.
+   Regra: registros e ações são linhas limpas; cartões ficam restritos a resumos/visões agregadas. */
+
+.mai-v3-shell{
+  --mai-item-height:52px;
+  --mai-item-radius:8px;
+  --mai-item-gap:10px;
+  --mai-item-indicator:19px;
+  --mai-item-title:13px;
+  --mai-item-meta:10.5px;
+  --mai-item-hover:color-mix(in srgb,var(--v3-text) 4.5%,transparent);
+  --mai-item-selected:var(--v3-accent-soft);
+}
+
+/* Listas não precisam de divisores nem de cartões. */
+.mai-v3-task-list,
+.mai-today-unified-list,
+.mai-v3-finance-rows,
+.mai-v3-account-list,
+.mai-v3-card-list,
+.mai-v3-health-rows,
+.mai-v3-health-history,
+.mai-v3-file-list,
+.mai-v3-report-list,
+.mai-v4-project-list,
+.mai-v3-simple-list,
+.mai-v3-goal-groups section>div{
+  display:grid!important;
+  gap:1px!important;
+}
+
+/* Base das linhas que já possuem indicador/ícone próprio. */
+.mai-v3-task-row,
+.mai-today-unified-row,
+.mai-v3-upcoming-item,
+.mai-v3-habit-today,
+.mai-v3-file-list>button,
+.mai-v4-project-item{
+  min-height:var(--mai-item-height)!important;
+  padding:7px 6px!important;
+  border:0!important;
+  border-radius:var(--mai-item-radius)!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  color:var(--v3-text)!important;
+  transition:background .12s ease,color .12s ease!important;
+}
+
+.mai-v3-task-row:hover,
+.mai-today-unified-row:hover,
+.mai-v3-upcoming-item:hover,
+.mai-v3-habit-today:hover,
+.mai-v3-file-list>button:hover,
+.mai-v4-project-item:hover{
+  background:var(--mai-item-hover)!important;
+}
+
+.mai-v3-task-row[data-selected="true"],
+.mai-v4-project-item[data-active="true"],
+.mai-v3-notes-layout>aside>div:last-child>button[data-active="true"]{
+  background:var(--mai-item-selected)!important;
+}
+
+/* Indicadores circulares: mesma escala em todo o sistema. */
+.mai-v3-task-check,
+.mai-today-unified-dot,
+.mai-v3-habit-check,
+.mai-v3-upcoming-item>i{
+  width:var(--mai-item-indicator)!important;
+  height:var(--mai-item-indicator)!important;
+  min-width:var(--mai-item-indicator)!important;
+  min-height:var(--mai-item-indicator)!important;
+  border-radius:50%!important;
+  box-sizing:border-box!important;
+  background:transparent!important;
+  box-shadow:none!important;
+}
+
+.mai-v3-upcoming-item>i{
+  border:1.6px solid color-mix(in srgb,var(--v3-accent) 72%,var(--v3-line-strong))!important;
+}
+
+.mai-v3-task-check[data-completed="true"],
+.mai-today-unified-dot[data-done="true"],
+.mai-v3-habit-check[data-done="true"]{
+  background:var(--v3-accent)!important;
+  border-color:var(--v3-accent)!important;
+  color:#fff!important;
+}
+
+/* Títulos e metadados obedecem à mesma hierarquia. */
+.mai-v3-task-body strong,
+.mai-today-unified-main strong,
+.mai-v3-upcoming-item button strong,
+.mai-v3-habit-body strong,
+.mai-v3-goal-row strong,
+.mai-v3-finance-rows strong,
+.mai-v3-account-list strong,
+.mai-v3-card-list strong,
+.mai-v3-file-list strong,
+.mai-v3-health-rows span,
+.mai-v3-health-history strong,
+.mai-v3-report-list strong,
+.mai-v4-project-item strong,
+.mai-v3-notes-layout>aside>div:last-child>button strong{
+  font-size:var(--mai-item-title)!important;
+  line-height:1.28!important;
+  font-weight:610!important;
+  color:var(--v3-text)!important;
+  letter-spacing:-.01em!important;
+}
+
+.mai-v3-task-body small,
+.mai-today-unified-origin,
+.mai-today-unified-meta,
+.mai-v3-upcoming-item button small,
+.mai-v3-upcoming-item time,
+.mai-v3-habit-body small,
+.mai-v3-goal-row small,
+.mai-v3-goal-row>span,
+.mai-v3-finance-rows small,
+.mai-v3-account-list small,
+.mai-v3-card-list small,
+.mai-v3-file-list small,
+.mai-v3-health-rows strong,
+.mai-v3-health-history span,
+.mai-v3-report-list small,
+.mai-v3-report-list article>span:last-child,
+.mai-v4-project-item small,
+.mai-v3-notes-layout>aside>div:last-child>button span,
+.mai-v3-notes-layout>aside>div:last-child>button small{
+  font-size:var(--mai-item-meta)!important;
+  line-height:1.3!important;
+  color:var(--v3-muted)!important;
+  font-weight:450!important;
+}
+
+/* Ações secundárias aparecem só quando são úteis, como no Todoist. */
+.mai-v3-task-more,
+.mai-v4-project-edit{
+  opacity:0!important;
+  transition:opacity .12s ease,background .12s ease!important;
+}
+.mai-v3-task-row:hover .mai-v3-task-more,
+.mai-v4-project-item-wrap:hover .mai-v4-project-edit,
+.mai-v3-task-more:focus-visible,
+.mai-v4-project-edit:focus-visible{
+  opacity:1!important;
+}
+
+/* Tarefas */
+.mai-v3-task-row{
+  grid-template-columns:var(--mai-item-indicator) minmax(0,1fr) 30px!important;
+  column-gap:var(--mai-item-gap)!important;
+  align-items:center!important;
+}
+.mai-v3-task-body{
+  min-width:0!important;
+  display:grid!important;
+  gap:3px!important;
+  padding:0!important;
+  border:0!important;
+  background:transparent!important;
+  color:var(--v3-text)!important;
+}
+.mai-v3-task-body small{display:flex!important;align-items:center!important;gap:5px!important;min-width:0!important}
+.mai-v3-task-project{display:inline-flex!important;align-items:center!important;gap:4px!important;min-width:0!important}
+.mai-v3-task-project i,.mai-v3-task-project img{width:13px!important;height:13px!important;border-radius:4px!important}
+
+/* Hoje — já usa a anatomia ideal. */
+.mai-today-unified-row{
+  grid-template-columns:var(--mai-item-indicator) minmax(0,1fr) auto!important;
+  column-gap:var(--mai-item-gap)!important;
+  align-items:center!important;
+}
+.mai-today-unified-main{min-width:0!important;display:grid!important;gap:3px!important}
+.mai-today-unified-meta{min-width:72px!important;text-align:right!important;display:grid!important;gap:2px!important;justify-items:end!important}
+.mai-today-unified-meta strong{font-size:11px!important;font-weight:600!important;color:var(--v3-text)!important}
+
+/* Em breve */
+.mai-v3-upcoming-item{
+  display:grid!important;
+  grid-template-columns:var(--mai-item-indicator) minmax(0,1fr) auto!important;
+  column-gap:var(--mai-item-gap)!important;
+  align-items:center!important;
+}
+.mai-v3-upcoming-item>button{display:grid!important;gap:3px!important;min-width:0!important;padding:0!important;border:0!important;background:transparent!important;text-align:left!important;color:var(--v3-text)!important}
+.mai-v3-upcoming-item time{min-width:66px!important;text-align:right!important;white-space:nowrap!important}
+.mai-v3-upcoming-scroll section>header,.mai-v3-month-list section>header{border:0!important;background:transparent!important}
+
+/* Hábitos */
+.mai-v3-habit-today{
+  display:grid!important;
+  grid-template-columns:var(--mai-item-indicator) minmax(0,1fr) auto!important;
+  column-gap:var(--mai-item-gap)!important;
+  align-items:center!important;
+}
+.mai-v3-habit-body{display:grid!important;gap:3px!important;min-width:0!important;padding:0!important;border:0!important;background:transparent!important;text-align:left!important}
+.mai-v4-habit-value{min-width:38px!important;height:28px!important;padding:0 8px!important;border:0!important;border-radius:7px!important;background:transparent!important;color:var(--v3-muted)!important;font-size:11px!important}
+.mai-v4-habit-value:hover{background:var(--v3-hover)!important;color:var(--v3-text)!important}
+
+/* Metas: círculo à esquerda, conteúdo no centro, percentual à direita. */
+.mai-v3-goal-row{
+  min-height:var(--mai-item-height)!important;
+  display:grid!important;
+  grid-template-columns:var(--mai-item-indicator) minmax(0,1fr) auto!important;
+  column-gap:var(--mai-item-gap)!important;
+  align-items:center!important;
+  padding:7px 6px!important;
+  border:0!important;
+  border-radius:var(--mai-item-radius)!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  text-align:left!important;
+}
+.mai-v3-goal-row::before{
+  content:"";
+  width:var(--mai-item-indicator);
+  height:var(--mai-item-indicator);
+  border:1.6px solid var(--v3-accent);
+  border-radius:50%;
+  box-sizing:border-box;
+}
+.mai-v3-goal-row:hover{background:var(--mai-item-hover)!important}
+.mai-v3-goal-row>div{min-width:0!important;display:grid!important;gap:3px!important}
+.mai-v3-goal-row>div>i{height:3px!important;margin-top:3px!important;border:0!important;background:var(--v3-sidebar)!important}
+.mai-v3-goal-row>span{min-width:38px!important;text-align:right!important}
+
+/* Finanças: lançamentos, contas e cartões são registros em linha. */
+.mai-v3-finance-rows>button,
+.mai-v3-card-list>article{
+  min-height:var(--mai-item-height)!important;
+  display:grid!important;
+  grid-template-columns:var(--mai-item-indicator) minmax(0,1fr) auto!important;
+  column-gap:var(--mai-item-gap)!important;
+  align-items:center!important;
+  padding:7px 6px!important;
+  border:0!important;
+  border-radius:var(--mai-item-radius)!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  text-align:left!important;
+}
+.mai-v3-finance-rows>button::before,
+.mai-v3-card-list>article::before{
+  content:"";
+  width:var(--mai-item-indicator);
+  height:var(--mai-item-indicator);
+  border:1.6px solid var(--v3-line-strong);
+  border-radius:50%;
+  box-sizing:border-box;
+}
+.mai-v3-finance-rows>button:has(b[data-income="true"])::before{border-color:var(--v3-accent)!important}
+.mai-v3-finance-rows>button:hover,.mai-v3-card-list>article:hover{background:var(--mai-item-hover)!important}
+.mai-v3-finance-rows>button>span,.mai-v3-card-list>article>div{min-width:0!important;display:grid!important;gap:3px!important}
+.mai-v3-finance-rows>button>b,.mai-v3-card-list>article>b{font-size:11px!important;font-weight:600!important;white-space:nowrap!important;color:var(--v3-text)!important;text-align:right!important}
+.mai-v3-finance-rows>button>b[data-income="true"]{color:var(--v3-accent)!important}
+
+.mai-v3-account-list>article{
+  min-height:var(--mai-item-height)!important;
+  display:grid!important;
+  grid-template-columns:var(--mai-item-indicator) minmax(0,1fr)!important;
+  column-gap:var(--mai-item-gap)!important;
+  align-items:center!important;
+  padding:7px 6px!important;
+  border:0!important;
+  border-radius:var(--mai-item-radius)!important;
+  background:transparent!important;
+  box-shadow:none!important;
+}
+.mai-v3-account-list>article:hover{background:var(--mai-item-hover)!important}
+.mai-v3-account-list>article>i{width:var(--mai-item-indicator)!important;height:var(--mai-item-indicator)!important;border-radius:50%!important}
+.mai-v3-account-list>article>div{display:grid!important;gap:3px!important}
+
+/* Notas: item da coluna esquerda também segue a mesma linha. */
+.mai-v3-notes-layout>aside>div:last-child{
+  display:grid!important;
+  gap:1px!important;
+}
+.mai-v3-notes-layout>aside>div:last-child>button{
+  min-height:var(--mai-item-height)!important;
+  display:grid!important;
+  grid-template-columns:var(--mai-item-indicator) minmax(0,1fr) auto!important;
+  grid-template-rows:auto auto!important;
+  column-gap:var(--mai-item-gap)!important;
+  row-gap:2px!important;
+  align-items:center!important;
+  padding:7px 6px!important;
+  border:0!important;
+  border-radius:var(--mai-item-radius)!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  text-align:left!important;
+}
+.mai-v3-notes-layout>aside>div:last-child>button::before{
+  content:"";
+  grid-column:1;
+  grid-row:1/3;
+  width:var(--mai-item-indicator);
+  height:var(--mai-item-indicator);
+  border:1.6px solid var(--v3-accent);
+  border-radius:50%;
+  box-sizing:border-box;
+}
+.mai-v3-notes-layout>aside>div:last-child>button:hover{background:var(--mai-item-hover)!important}
+.mai-v3-notes-layout>aside>div:last-child>button>strong{grid-column:2;grid-row:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mai-v3-notes-layout>aside>div:last-child>button>span{grid-column:2;grid-row:2;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mai-v3-notes-layout>aside>div:last-child>button>small{grid-column:3;grid-row:1/3;align-self:center;white-space:nowrap;text-align:right}
+
+/* Bem-estar */
+.mai-v3-health-rows>div{
+  min-height:var(--mai-item-height)!important;
+  display:grid!important;
+  grid-template-columns:var(--mai-item-indicator) minmax(0,1fr) auto!important;
+  column-gap:var(--mai-item-gap)!important;
+  align-items:center!important;
+  padding:7px 6px!important;
+  border:0!important;
+  border-radius:var(--mai-item-radius)!important;
+  background:transparent!important;
+}
+.mai-v3-health-rows>div::before{
+  content:"";
+  width:var(--mai-item-indicator);
+  height:var(--mai-item-indicator);
+  border:1.6px solid var(--v3-accent);
+  border-radius:50%;
+  box-sizing:border-box;
+}
+.mai-v3-health-rows>div:hover{background:var(--mai-item-hover)!important}
+.mai-v3-health-rows>div>strong{text-align:right!important;font-size:11px!important;font-weight:600!important;color:var(--v3-text)!important}
+
+.mai-v3-health-history>article{
+  min-height:var(--mai-item-height)!important;
+  display:grid!important;
+  grid-template-columns:var(--mai-item-indicator) minmax(0,1fr) auto!important;
+  grid-template-rows:auto auto!important;
+  column-gap:var(--mai-item-gap)!important;
+  row-gap:2px!important;
+  align-items:center!important;
+  padding:7px 6px!important;
+  border:0!important;
+  border-radius:var(--mai-item-radius)!important;
+  background:transparent!important;
+}
+.mai-v3-health-history>article::before{
+  content:"";
+  grid-column:1;
+  grid-row:1/3;
+  width:var(--mai-item-indicator);
+  height:var(--mai-item-indicator);
+  border:1.6px solid var(--v3-accent);
+  border-radius:50%;
+  box-sizing:border-box;
+}
+.mai-v3-health-history>article:hover{background:var(--mai-item-hover)!important}
+.mai-v3-health-history>article>strong{grid-column:2;grid-row:1}
+.mai-v3-health-history>article>span:first-of-type{grid-column:2;grid-row:2}
+.mai-v3-health-history>article>span:last-of-type{grid-column:3;grid-row:1/3;text-align:right;white-space:nowrap}
+
+/* Arquivos: lista plana; grade mantém a função mas perde aparência de cartão. */
+.mai-v3-file-list>button{
+  display:grid!important;
+  grid-template-columns:28px minmax(0,1fr)!important;
+  column-gap:var(--mai-item-gap)!important;
+  align-items:center!important;
+  text-align:left!important;
+}
+.mai-v3-file-icon{width:26px!important;height:26px!important;border-radius:7px!important;background:var(--v3-accent-soft)!important;color:var(--v3-accent)!important}
+.mai-v3-file-list>button>span:last-child{display:grid!important;grid-template-columns:minmax(0,1fr) auto!important;grid-template-rows:auto!important;gap:10px!important;align-items:center!important}
+.mai-v3-file-list>button>span:last-child>strong{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mai-v3-file-list>button>span:last-child>small{text-align:right;white-space:nowrap}
+.mai-v3-file-grid{gap:6px!important}
+.mai-v3-file-grid>button{border:0!important;box-shadow:none!important;background:transparent!important;border-radius:9px!important}
+.mai-v3-file-grid>button:hover{background:var(--mai-item-hover)!important}
+
+/* Projetos na coluna de Tarefas. */
+.mai-v4-project-item{
+  grid-template-columns:28px minmax(0,1fr)!important;
+  column-gap:9px!important;
+  padding-right:34px!important;
+}
+.mai-v4-project-item>img,.mai-v4-project-icon{width:26px!important;height:26px!important;border-radius:7px!important}
+
+/* Relatórios continuam informativos, mas cada registro é uma linha. */
+.mai-v3-report-list>article{
+  min-height:var(--mai-item-height)!important;
+  padding:7px 6px!important;
+  border:0!important;
+  border-radius:var(--mai-item-radius)!important;
+  background:transparent!important;
+  box-shadow:none!important;
+}
+.mai-v3-report-list>article:hover{background:var(--mai-item-hover)!important}
+
+/* Configurações e resultados auxiliares também perdem caixas desnecessárias. */
+.mai-v3-shell [class*="settingsRow"],
+.mai-v3-shell [class*="searchResult"],
+.mai-v3-shell [class*="resultRow"]{
+  border:0!important;
+  border-radius:var(--mai-item-radius)!important;
+  background:transparent!important;
+  box-shadow:none!important;
+}
+.mai-v3-shell [class*="settingsRow"]:hover,
+.mai-v3-shell [class*="searchResult"]:hover,
+.mai-v3-shell [class*="resultRow"]:hover{
+  background:var(--mai-item-hover)!important;
+}
+
+/* Nada de divisores entre itens. */
+.mai-v3-shell .mai-v3-task-row,
+.mai-v3-shell .mai-v3-upcoming-item,
+.mai-v3-shell .mai-v3-habit-today,
+.mai-v3-shell .mai-v3-goal-row,
+.mai-v3-shell .mai-v3-finance-rows>button,
+.mai-v3-shell .mai-v3-account-list>article,
+.mai-v3-shell .mai-v3-card-list>article,
+.mai-v3-shell .mai-v3-health-rows>div,
+.mai-v3-shell .mai-v3-health-history>article,
+.mai-v3-shell .mai-v3-file-list>button,
+.mai-v3-shell .mai-v3-notes-layout>aside>div:last-child>button,
+.mai-v3-shell .mai-v4-project-item{
+  border-top:0!important;
+  border-right:0!important;
+  border-bottom:0!important;
+  border-left:0!important;
+}
+
+@media (max-width:760px){
+  .mai-v3-shell{--mai-item-height:50px;--mai-item-gap:8px;--mai-item-title:12.5px;--mai-item-meta:10px}
+  .mai-today-unified-meta{min-width:58px!important}
+  .mai-v3-finance-rows>button>b,.mai-v3-card-list>article>b{font-size:10px!important}
+  .mai-v3-health-history>article>span:last-of-type{display:none!important}
+}
