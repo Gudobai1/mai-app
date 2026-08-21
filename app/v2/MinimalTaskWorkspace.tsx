@@ -120,7 +120,7 @@ export function MinimalTaskWorkspace(props: Props) {
 
   if (advanced) return <div className="mai-v3-task-advanced">
     <div className="mai-v3-advanced-banner"><span>Ferramentas avançadas</span><button onClick={() => savePrefs({ advanced: false })}>Voltar ao visual simples</button></div>
-    <UnifiedTasks state={state} today={today} view={view} commit={commit} googleRpc={props.googleRpc} onOpenAgenda={props.onOpenAgenda}/>
+    <UnifiedTasks state={{ ...state, tasks: state.tasks.filter(standaloneTask) }} today={today} view={view} commit={commit} googleRpc={props.googleRpc} onOpenAgenda={props.onOpenAgenda}/>
   </div>
 
   const renderTask = (task:LegacyTask, completedTask=false, groupId='') => {
