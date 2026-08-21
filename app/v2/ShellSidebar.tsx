@@ -15,6 +15,8 @@ const areas: { id: AppView; label: string; icon: string }[] = [
   { id: 'files', label: 'Arquivos', icon: 'files' },
 ]
 
+type GoogleProfile = { name: string; picture?: string; email?: string } | null
+
 type Props = {
   state: MaiState
   view: AppView
@@ -23,10 +25,11 @@ type Props = {
   navigate: (view: AppView) => void
   onSearch: () => void
   onSettings: () => void
+  profile?: GoogleProfile
 }
 
 export function ShellSidebar(props: Props) {
-  const profileName = String(props.state.configs.profileName || props.state.configs.userName || 'Meu perfil')
+  const profileName = String(props.profile?.name || props.state.configs.profileName || props.state.configs.userName || 'Meu perfil')
   const profileInitial = profileName.trim().slice(0, 1).toLocaleUpperCase('pt-BR') || 'M'
 
   return <>
@@ -35,7 +38,7 @@ export function ShellSidebar(props: Props) {
         <span>M</span><strong>MAI</strong><button onClick={() => props.setSidebarOpen(false)} aria-label="Fechar menu"><MaiIcon name="close" /></button>
       </div>
 
-      <button className={`${styles.sidebarSearch} mai-v3-search`} onClick={props.onSearch}>
+      <button className={`${styles.sidebarSearch} mai-v3-search mai-global-search-desktop`} onClick={props.onSearch}>
         <MaiIcon name="search" /><span>Buscar</span><kbd>Ctrl K</kbd>
       </button>
 
@@ -55,9 +58,12 @@ export function ShellSidebar(props: Props) {
         </button>)}
       </nav>
 
-      <div className="mai-v3-sidebar-footer">
+      <div className="mai-v3-sidebar-footer mai-profile-footer">
+        <button className="mai-v3-profile-button" onClick={props.onSettings} title={props.profile?.email || profileName}>
+          <span className="mai-v3-avatar">{props.profile?.picture ? <img src={props.profile.picture} alt="" referrerPolicy="no-referrer"/> : profileInitial}</span>
+          <span>{profileName}</span>
+        </button>
         <button className="mai-v4-settings-button" onClick={props.onSettings} title="Ajustes" aria-label="Ajustes"><span className="material-symbols-rounded">tune</span></button>
-        <button className="mai-v3-profile-button" onClick={props.onSettings}><span className="mai-v3-avatar">{profileInitial}</span><span>{profileName}</span></button>
       </div>
     </aside>
     {props.sidebarOpen ? <button className={`${styles.scrim} mai-v3-scrim`} onClick={() => props.setSidebarOpen(false)} aria-label="Fechar menu" /> : null}
