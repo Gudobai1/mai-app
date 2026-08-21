@@ -124,12 +124,9 @@ export function MinimalTaskWorkspace(props: Props) {
 
   const renderTask = (task:LegacyTask, completedTask=false, groupId='') => {
     const identity = projectIdentity(task.projeto_id)
-    const children = state.tasks.filter(child => String(child.parent_id || '') === task.id)
-    const doneChildren = children.filter(child => child.concluida).length
-    const detail = [timeOf(task), children.length ? `${doneChildren} de ${children.length}` : '', completedTask ? 'Concluída' : '', task.secao && task.secao !== groupId ? String(task.secao) : ''].filter(Boolean).join(' · ')
     return <article className="mai-v3-task-row mai-item-row-v2" data-selected={selectedId === task.id} key={`${completedTask?'done-':''}${task.id}`} draggable={!completedTask} onClick={() => inspectTask(task)} onDragStart={() => setDragId(task.id)} onDragEnd={() => setDragId('')} onDragOver={event => event.preventDefault()} onDrop={event => { event.stopPropagation(); reorder(dragId, task.id, groupId); setDragId('') }}>
       <button className="mai-v3-task-check" data-completed={completedTask||undefined} aria-label={completedTask?`Reabrir ${task.titulo}`:`Concluir ${task.titulo}`} style={completedTask?undefined:{ borderColor: priorityColor(task.prioridade) }} onClick={event => { event.stopPropagation(); toggle(task) }}>{completedTask?'✓':''}</button>
-      <span className="mai-item-copy-v2"><span className="mai-item-titleline-v2"><strong>{task.titulo}</strong>{projectBadge(identity)}</span><span className="mai-item-subline-v2"><span>{naturalDate(dayOf(task), today)}</span>{detail?<><span>·</span><span>{detail}</span></>:null}</span></span>
+      <span className="mai-item-copy-v2"><span className="mai-item-titleline-v2"><strong>{task.titulo}</strong></span><span className="mai-item-subline-v2"><span>{naturalDate(dayOf(task), today)}</span><span>·</span>{projectBadge(identity)}</span></span>
       {!completedTask?<><button className="mai-v3-task-more" aria-label={`Opções de ${task.titulo}`} onClick={event => { event.stopPropagation(); setRowMenu(current => current === task.id ? '' : task.id) }}>•••</button>{rowMenu === task.id ? <div className="mai-v3-task-row-menu" onClick={event=>event.stopPropagation()}><button onClick={() => { setRowMenu(''); inspectTask(task) }}>Editar</button>{projectId && sections.length ? <><span>Mover para</span>{sections.map(section => <button key={section} onClick={() => moveToSection(task.id, section)}>{section}</button>)}<button onClick={() => moveToSection(task.id, '')}>Sem seção</button></> : null}</div> : null}</>:null}
     </article>
   }
