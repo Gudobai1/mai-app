@@ -49,6 +49,9 @@ export function ShellSidebar(props: Props) {
         <button className="mai-v3-nav-button" data-active={props.view === 'upcoming'} onClick={() => props.navigate('upcoming')}>
           <span className="mai-v3-nav-label"><MaiIcon name="upcoming" /><span>Em breve</span></span>
         </button>
+        <button className="mai-v3-nav-button" data-active={props.view === 'completed'} onClick={() => props.navigate('completed')}>
+          <span className="mai-v3-nav-label"><span className="material-symbols-rounded" aria-hidden="true">check_circle</span><span>Concluídos</span></span>
+        </button>
       </nav>
 
       <div className="mai-v3-section-title">Áreas</div>
