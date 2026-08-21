@@ -132,7 +132,8 @@ export function UnifiedAppUx() {
     }
   }
 
-  function contextualAdd() {
+  function contextualAdd(requestedType?: string) {
+    if (requestedType) return addByType(requestedType)
     if (view === 'today' || view === 'upcoming' || view === 'tasks') return addByType('context')
     return addByType(view)
   }
