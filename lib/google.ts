@@ -2,7 +2,11 @@ import crypto from 'node:crypto'
 import type { NextRequest } from 'next/server'
 
 export const GOOGLE_COOKIE = 'mai_google_tokens'
+export const DEFAULT_ALLOWED_GOOGLE_EMAIL = 'marcelljunior2@gmail.com'
 export const GOOGLE_SCOPES = [
+  'openid',
+  'email',
+  'profile',
   'https://www.googleapis.com/auth/calendar',
   'https://www.googleapis.com/auth/drive',
 ].join(' ')
@@ -11,6 +15,11 @@ type GoogleTokens = {
   access_token?: string
   refresh_token: string
   expires_at?: number
+  email?: string
+}
+
+export function allowedGoogleEmail() {
+  return String(process.env.MAI_ALLOWED_GOOGLE_EMAIL || DEFAULT_ALLOWED_GOOGLE_EMAIL).trim().toLowerCase()
 }
 
 function key() {
@@ -39,6 +48,11 @@ export function openTokens(value?: string): GoogleTokens | null {
   } catch {
     return null
   }
+}
+
+export function hasAllowedGoogleCookie(cookieValue?: string) {
+  const tokens = openTokens(cookieValue)
+  return Boolean(tokens?.refresh_token && String(tokens.email || '').trim().toLowerCase() === allowedGoogleEmail())
 }
 
 export function googleConfig() {
@@ -73,7 +87,7 @@ async function refresh(tokens: GoogleTokens) {
 
 export async function authorizedGoogle(request: NextRequest) {
   let tokens = openTokens(request.cookies.get(GOOGLE_COOKIE)?.value)
-  if (!tokens) throw new Error('GOOGLE_NOT_CONNECTED')
+  if (!tokens || String(tokens.email || '').trim().toLowerCase() !== allowedGoogleEmail()) throw new Error('GOOGLE_NOT_CONNECTED')
   if (!tokens.access_token || !tokens.expires_at || tokens.expires_at < Date.now() + 60_000) {
     tokens = await refresh(tokens)
   }
