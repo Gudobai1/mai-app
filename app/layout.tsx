@@ -25,6 +25,7 @@ import './mai-context-unified-v4.css'
 import './mai-context-specificity-fix.css'
 import './mai-item-layout-v3.css'
 import './mai-completed-v1.css'
+import './mai-mobile-bottom-nav.css'
 
 export const metadata: Metadata = {
   title: 'MAI — Meu Sistema',
