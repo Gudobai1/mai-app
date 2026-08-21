@@ -6,7 +6,7 @@ import type { AppView, Row, TaskModuleScope } from './app-types'
 import { MaiIcon } from './MaiIcons'
 import { MinimalTaskWorkspace } from './MinimalTaskWorkspace'
 import { TodayV4 } from './TodayV4'
-import { UpcomingCompact } from './UpcomingCompact'
+import { UpcomingV4 } from './UpcomingV4'
 import type { TaskWorkspaceView } from './UnifiedTasks'
 
 const rows = (value: unknown): Row[] => Array.isArray(value) ? value as Row[] : []
@@ -82,6 +82,6 @@ export function TasksModule(props: Props) {
     </div> : null}
 
     {props.scope === 'today' ? <div className="mai-v4-nested-view"><TodayV4 state={props.state} today={props.today} commit={props.commit} navigate={props.navigate} inspect={props.inspect} onSearch={props.onSearch} onMore={props.onSettings}/></div> : null}
-    {props.scope === 'upcoming' ? <div className="mai-v4-nested-view"><UpcomingCompact state={props.state} today={props.today} inspect={props.inspect} commit={props.commit}/></div> : null}
+    {props.scope === 'upcoming' ? <div className="mai-v4-nested-view"><UpcomingV4 state={props.state} today={props.today} inspect={props.inspect} commit={props.commit}/></div> : null}
   </div>
 }
