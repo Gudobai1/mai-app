@@ -6,8 +6,9 @@ import { MaiIcon } from './MaiIcons'
 import type { SecondaryView } from './MinimalAreas'
 import styles from './unified.module.css'
 
-const areas: { id: SecondaryView; label: string; icon: string }[] = [
-  { id: 'habits', label: 'Rotinas', icon: 'habits' },
+const areas: { id: AppView; label: string; icon: string }[] = [
+  { id: 'tasks', label: 'Tarefas', icon: 'inbox' },
+  { id: 'habits', label: 'Hábitos', icon: 'habits' },
   { id: 'goals', label: 'Metas', icon: 'goals' },
   { id: 'notes', label: 'Notas', icon: 'notes' },
   { id: 'finance', label: 'Finanças', icon: 'finance' },
@@ -40,14 +41,8 @@ export function ShellSidebar(props: Props) {
       </button>
 
       <nav className="mai-v3-nav mai-v3-primary-nav">
-        <button className="mai-v3-nav-button" data-active={props.view === 'inbox'} onClick={() => props.navigate('inbox')}>
-          <span className="mai-v3-nav-label"><MaiIcon name="inbox" /><span>Entrada</span></span>
-        </button>
-        <button className="mai-v3-nav-button" data-active={props.view === 'today'} onClick={() => props.navigate('today')}>
-          <span className="mai-v3-nav-label"><MaiIcon name="today" /><span>Hoje</span></span>
-        </button>
-        <button className="mai-v3-nav-button" data-active={props.view === 'upcoming'} onClick={() => props.navigate('upcoming')}>
-          <span className="mai-v3-nav-label"><MaiIcon name="upcoming" /><span>Em breve</span></span>
+        <button className="mai-v3-nav-button" data-active={props.view === 'home'} onClick={() => props.navigate('home')}>
+          <span className="mai-v3-nav-label"><MaiIcon name="home" /><span>Início</span></span>
         </button>
       </nav>
 
@@ -59,7 +54,7 @@ export function ShellSidebar(props: Props) {
       </nav>
 
       <div className="mai-v3-sidebar-footer">
-        <button className="mai-v3-footer-button" onClick={props.onSettings}><MaiIcon name="settings" size={18}/><span>Configurações</span></button>
+        <button className="mai-v4-settings-button" onClick={props.onSettings} title="Ajustes" aria-label="Ajustes"><span className="material-symbols-rounded">tune</span></button>
         <button className="mai-v3-profile-button" onClick={props.onSettings}><span className="mai-v3-avatar">{profileInitial}</span><span>{profileName}</span></button>
       </div>
     </aside>
