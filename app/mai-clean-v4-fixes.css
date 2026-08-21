@@ -26,3 +26,21 @@ html[data-mai-theme="dark"] .mai-v3-shell [class*="calendarPicker"]{color:var(--
 .mai-v3-shell [class*="focusRow"],
 .mai-v3-shell [class*="notePeek"],
 .mai-v3-shell [class*="healthPeek"]{border-bottom-color:transparent!important}
+
+/* Tarefas: Hoje e Em breve são filtros de tarefas, sem misturar outros módulos. */
+.mai-v4-task-date-view{min-width:0;padding-top:4px}
+.mai-v4-task-date-group{margin:0 0 34px}
+.mai-v4-task-date-group>header{display:flex;align-items:center;gap:8px;min-height:34px;margin-bottom:7px}
+.mai-v4-task-date-group>header h2{margin:0;font-size:14px;font-weight:720;letter-spacing:-.015em;color:var(--v3-text)}
+.mai-v4-task-date-group>header span{font-size:9.5px;color:var(--v3-faint)}
+.mai-v4-task-date-view .mai-v3-task-row{border-top:0!important}
+.mai-v4-task-date-view .mai-v3-task-row:hover{background:var(--v3-hover)!important}
+.mai-v4-task-date-view .mai-v3-completed-wrap{margin-top:22px}
+
+/* O rail de projetos permanece visível também nas visualizações Hoje/Em breve. */
+.mai-v4-task-project-layout{display:grid!important;grid-template-columns:minmax(0,1fr) minmax(250px,320px)!important;gap:clamp(34px,4vw,70px)!important;align-items:start!important}
+
+@media(max-width:900px){
+  .mai-v4-task-project-layout{grid-template-columns:1fr!important;gap:34px!important}
+  .mai-v4-project-rail{position:static!important;order:2}
+}
