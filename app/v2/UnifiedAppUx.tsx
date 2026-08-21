@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { AppSettingsDrawer } from './AppSettingsDrawer'
 import type { AppView, TaskModuleScope } from './app-types'
+import { CompletedV4 } from './CompletedV4'
 import type { InspectableItem } from './ContextDrawer'
 import { ContextDrawerV2 } from './ContextDrawerV2'
 import { FinanceV4 } from './FinanceV4'
@@ -30,7 +31,7 @@ type GoogleProfile = { name: string; picture?: string; email?: string } | null
 
 const validView = (value: unknown): value is AppView => {
   const text = String(value || '')
-  return ['home', 'tasks', 'today', 'inbox', 'upcoming', ...secondary].includes(text as any) || text.startsWith('project:')
+  return ['home', 'tasks', 'today', 'inbox', 'upcoming', 'completed', ...secondary].includes(text as any) || text.startsWith('project:')
 }
 const scopeFromLegacy = (value: unknown): TaskModuleScope => {
   const text = String(value || '')
@@ -92,7 +93,7 @@ export function UnifiedAppUx() {
       const editing = target?.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target?.tagName || '')
       if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') { event.preventDefault(); setSearchOpen(true) }
       if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'z' && !editing) { event.preventDefault(); runtime.undo() }
-      if (!event.ctrlKey && !event.metaKey && !event.altKey && event.key.toLowerCase() === 'q' && !editing) { event.preventDefault(); contextualAdd() }
+      if (!event.ctrlKey && !event.metaKey && !event.altKey && event.key.toLowerCase() === 'q' && !editing && view !== 'completed') { event.preventDefault(); contextualAdd() }
       if (event.key === 'Escape') { setSearchOpen(false); setSettingsOpen(false); setProjectDialog(null); setSelected(null); setCreating(null); setHealthCreating(false) }
     }
     window.addEventListener('keydown', onKey)
@@ -135,6 +136,7 @@ export function UnifiedAppUx() {
   function contextualAdd(requestedType?: string) {
     if (requestedType) return addByType(requestedType)
     if (view === 'today' || view === 'upcoming' || view === 'tasks') return addByType('context')
+    if (view === 'completed') return
     return addByType(view)
   }
 
@@ -151,6 +153,7 @@ export function UnifiedAppUx() {
         {!runtime.ready ? <div className={styles.loadingState}>Carregando seu MAI…</div> : <>
           {view === 'today' ? <TodayV4 state={runtime.state} today={runtime.today} commit={runtime.commit} navigate={navigate} inspect={setSelected} onSearch={() => setSearchOpen(true)} onMore={() => setSettingsOpen(true)}/> : null}
           {view === 'upcoming' ? <UpcomingV4 state={runtime.state} today={runtime.today} commit={runtime.commit} inspect={setSelected}/> : null}
+          {view === 'completed' ? <CompletedV4 state={runtime.state} today={runtime.today} commit={runtime.commit} inspect={setSelected}/> : null}
           {view === 'tasks' ? <TasksModule
             state={runtime.state}
             today={runtime.today}
