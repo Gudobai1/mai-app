@@ -1,0 +1,28 @@
+/* Ponte final: os CSS modules antigos usam estes nomes de variáveis. */
+.mai-v3-shell{
+  --text:var(--v3-text)!important;
+  --muted:var(--v3-muted)!important;
+  --faint:var(--v3-faint)!important;
+  --line:var(--v3-line)!important;
+  --line-strong:var(--v3-line-strong)!important;
+  --bg-primary:var(--v3-bg)!important;
+  --bg-card:var(--v3-card)!important;
+  --bg-soft:var(--v3-sidebar)!important;
+  --bg-hover:var(--v3-hover)!important;
+  --sidebar:var(--v3-sidebar)!important;
+  --accent:var(--v3-accent)!important;
+  --accent-strong:var(--v3-accent-strong)!important;
+  --accent-soft:var(--v3-accent-soft)!important;
+  --divider:transparent!important;
+}
+.mai-v3-brand>span{background:var(--v3-accent)!important}
+.mai-v3-sidebar-footer{border-top:0!important}
+.mai-v3-shell [class*="modalLayer"]{background:rgba(0,0,0,.55)!important}
+html[data-mai-theme="dark"] .mai-v3-shell [class*="modalCard"],
+html[data-mai-theme="dark"] .mai-v3-shell [class*="settingsCard"]{background:var(--v3-card)!important;color:var(--v3-text)!important;border-color:var(--v3-line)!important}
+html[data-mai-theme="dark"] .mai-v3-shell [class*="settingsRow"],
+html[data-mai-theme="dark"] .mai-v3-shell [class*="calendarPicker"]{color:var(--v3-text)!important}
+.mai-v3-shell [class*="todayRow"],
+.mai-v3-shell [class*="focusRow"],
+.mai-v3-shell [class*="notePeek"],
+.mai-v3-shell [class*="healthPeek"]{border-bottom-color:transparent!important}
