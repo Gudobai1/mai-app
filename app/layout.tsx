@@ -18,6 +18,7 @@ import './mai-todoist-system.css'
 import './mai-event-rows.css'
 import './mai-today-single-list.css'
 import './mai-item-anatomy-v2.css'
+import './mai-global-shell-v2.css'
 
 export const metadata: Metadata = {
   title: 'MAI — Meu Sistema',
