@@ -141,9 +141,9 @@ export function TodayCompact({ state, today, commit, inspect, onSearch, onMore }
         const label = item.subtitle === 'Em andamento' ? 'Em andamento' : item.raw.dia_inteiro === true || !item.time ? 'Dia inteiro' : item.time
         const eventColor = String(item.raw.categoria_cor || item.color || 'var(--v3-accent)')
         return <button key={item.id} className="mai-today-unified-row" data-passed={Boolean(passed)} onClick={() => inspectPlanner(item)}>
-          <i className="mai-today-unified-dot" style={{ borderColor: eventColor }} />
+          <span className="mai-event-item-icon" style={{ color: eventColor }}><MaiIcon name="calendar" size={16}/></span>
           <span className="mai-today-unified-main"><strong>{item.title}</strong><small className="mai-today-unified-origin">{eventOrigin(item.raw)}</small></span>
-          <span className="mai-today-unified-meta"><strong>{label}</strong><small>Hoje</small></span>
+          <span className="mai-today-unified-meta"><strong>Hoje</strong><small>{label}</small></span>
         </button>
       })}{!events.length ? <div className="mai-v3-empty-line">Nenhum compromisso para hoje.</div> : null}</div>
     </section>
