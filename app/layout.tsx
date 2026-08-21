@@ -12,6 +12,7 @@ import './mai-minimal-v3-tasks.css'
 import './mai-production-polish.css'
 import './mai-clean-v4.css'
 import './mai-clean-v4-fixes.css'
+import './mai-clean-v4-modules.css'
 
 export const metadata: Metadata = {
   title: 'MAI — Meu Sistema',
