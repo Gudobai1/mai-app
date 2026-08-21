@@ -1,0 +1,76 @@
+/* MAI — anatomia V3 de itens.
+   Linha 1: somente o título.
+   Linha 2: informação útil à esquerda e data isolada no canto direito. */
+
+/* O cabeçalho do item nunca recebe projeto, categoria ou outro metadado. */
+.mai-item-titleline-v2 > .mai-item-inline-tag,
+.mai-item-titleline-v2 > .mai-item-project-tag{
+  display:none!important;
+}
+
+/* A sublinha usa o primeiro elemento como data.
+   Todo o restante permanece à esquerda como informação contextual do item. */
+.mai-item-subline-v2{
+  width:100%!important;
+  min-width:0!important;
+  display:flex!important;
+  align-items:center!important;
+  gap:5px!important;
+  overflow:hidden!important;
+  white-space:nowrap!important;
+}
+
+/* Data: sempre no extremo direito, sem disputar espaço com o detalhe. */
+.mai-item-subline-v2 > :first-child{
+  order:99!important;
+  flex:0 0 auto!important;
+  margin-left:auto!important;
+  max-width:42%!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+  white-space:nowrap!important;
+  text-align:right!important;
+  color:var(--v3-muted)!important;
+}
+
+/* Informação relevante: projeto, horário, valor, progresso, quantidade etc. */
+.mai-item-subline-v2 > :not(:first-child){
+  order:1!important;
+  min-width:0!important;
+}
+
+/* O antigo ponto separador entre data e detalhe deixa de existir.
+   Se houver somente data + detalhe, o segundo elemento é preservado. */
+.mai-item-subline-v2 > span:nth-child(2):not(:last-child):not(.mai-item-project-tag):not(.mai-item-inline-tag){
+  display:none!important;
+}
+
+.mai-item-subline-v2 > .mai-item-project-tag,
+.mai-item-subline-v2 > .mai-item-inline-tag{
+  flex:0 1 auto!important;
+  max-width:70%!important;
+  margin:0!important;
+}
+
+/* Qualquer detalhe textual ocupa apenas o espaço disponível à esquerda. */
+.mai-item-subline-v2 > :not(:first-child):not(.mai-item-project-tag):not(.mai-item-inline-tag){
+  max-width:70%!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+  white-space:nowrap!important;
+}
+
+/* Em telas estreitas, a data continua ancorada à direita. */
+@media(max-width:720px){
+  .mai-item-subline-v2{
+    gap:4px!important;
+  }
+  .mai-item-subline-v2 > :first-child{
+    max-width:40%!important;
+  }
+  .mai-item-subline-v2 > .mai-item-project-tag,
+  .mai-item-subline-v2 > .mai-item-inline-tag,
+  .mai-item-subline-v2 > :not(:first-child):not(.mai-item-project-tag):not(.mai-item-inline-tag){
+    max-width:58%!important;
+  }
+}
