@@ -1,0 +1,47 @@
+/* Compromissos não são itens completáveis: usam ícone e mantêm data acima do horário. */
+.mai-event-item-icon{
+  width:var(--mai-item-indicator,19px)!important;
+  height:var(--mai-item-indicator,19px)!important;
+  min-width:var(--mai-item-indicator,19px)!important;
+  display:grid!important;
+  place-items:center!important;
+  align-self:center!important;
+  border:0!important;
+  border-radius:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  opacity:.9;
+}
+
+.mai-event-item-icon svg{
+  width:16px!important;
+  height:16px!important;
+  display:block!important;
+}
+
+.mai-upcoming-event-meta{
+  min-width:72px!important;
+  display:grid!important;
+  gap:2px!important;
+  justify-items:end!important;
+  text-align:right!important;
+  white-space:nowrap!important;
+}
+
+.mai-upcoming-event-meta strong{
+  font-size:11px!important;
+  line-height:1.25!important;
+  font-weight:600!important;
+  color:var(--v3-text)!important;
+}
+
+.mai-upcoming-event-meta small{
+  font-size:var(--mai-item-meta,10.5px)!important;
+  line-height:1.25!important;
+  font-weight:450!important;
+  color:var(--v3-muted)!important;
+}
+
+.mai-v3-upcoming-item[data-kind="event"]{
+  grid-template-columns:var(--mai-item-indicator,19px) minmax(0,1fr) auto!important;
+}
