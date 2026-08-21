@@ -5,7 +5,7 @@ import type { InspectableItem } from './ContextDrawer'
 import type { AppView, Row, TaskModuleScope } from './app-types'
 import { MaiIcon } from './MaiIcons'
 import { MinimalTaskWorkspace } from './MinimalTaskWorkspace'
-import { TodayCompact } from './TodayCompact'
+import { TodayV4 } from './TodayV4'
 import { UpcomingCompact } from './UpcomingCompact'
 import type { TaskWorkspaceView } from './UnifiedTasks'
 
@@ -81,7 +81,7 @@ export function TasksModule(props: Props) {
       </aside>
     </div> : null}
 
-    {props.scope === 'today' ? <div className="mai-v4-nested-view"><TodayCompact state={props.state} today={props.today} commit={props.commit} navigate={props.navigate} inspect={props.inspect} onSearch={props.onSearch} onMore={props.onSettings}/></div> : null}
+    {props.scope === 'today' ? <div className="mai-v4-nested-view"><TodayV4 state={props.state} today={props.today} commit={props.commit} navigate={props.navigate} inspect={props.inspect} onSearch={props.onSearch} onMore={props.onSettings}/></div> : null}
     {props.scope === 'upcoming' ? <div className="mai-v4-nested-view"><UpcomingCompact state={props.state} today={props.today} inspect={props.inspect} commit={props.commit}/></div> : null}
   </div>
 }
