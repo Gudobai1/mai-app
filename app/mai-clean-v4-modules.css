@@ -1,0 +1,276 @@
+/* MAI V4 — neutraliza os estilos rígidos remanescentes dos módulos V3. */
+
+.mai-v3-area-header h1,
+.mai-v3-simple-section>h2,
+.mai-v3-goal-groups section>h2,
+.mai-v3-project-sections>section>h2,
+.mai-v3-task-body strong,
+.mai-v3-habit-body strong,
+.mai-v3-finance-rows strong,
+.mai-v3-account-list strong,
+.mai-v3-card-list strong,
+.mai-v3-file-list strong,
+.mai-v3-file-grid strong,
+.mai-v3-health-summary strong,
+.mai-v3-health-rows span,
+.mai-v3-health-history strong,
+.mai-v3-note-title,
+.mai-v3-note-surface{
+  color:var(--v3-text)!important;
+}
+
+.mai-v3-area-header p,
+.mai-v3-task-body small,
+.mai-v3-habit-body small,
+.mai-v3-finance-rows small,
+.mai-v3-account-list small,
+.mai-v3-card-list small,
+.mai-v3-file-list small,
+.mai-v3-health-rows strong,
+.mai-v3-health-history span,
+.mai-v3-report-list small,
+.mai-v3-report-list article>span:last-child{
+  color:var(--v3-muted)!important;
+}
+
+/* abas sem régua horizontal; só a seleção usa o acento atual */
+.mai-v3-area-tabs{
+  border-bottom:0!important;
+}
+.mai-v3-area-tabs button{
+  color:var(--v3-muted)!important;
+  border-bottom-color:transparent!important;
+}
+.mai-v3-area-tabs button[data-active="true"]{
+  color:var(--v3-accent-strong)!important;
+  border-bottom-color:var(--v3-accent)!important;
+}
+html[data-mai-theme="dark"] .mai-v3-area-tabs button[data-active="true"]{
+  color:color-mix(in srgb,var(--v3-accent) 72%,#fff)!important;
+}
+
+/* hábitos */
+.mai-v3-habit-check,
+.mai-v3-week-dot,
+.mai-v3-day-picker button,
+.mai-v3-secondary{
+  background:var(--v3-card)!important;
+  color:var(--v3-muted)!important;
+  border-color:var(--v3-line)!important;
+}
+.mai-v3-habit-check[data-done="true"],
+.mai-v3-week-dot[data-done="true"]{
+  background:var(--v3-accent)!important;
+  border-color:var(--v3-accent)!important;
+  color:#fff!important;
+}
+.mai-v3-day-picker button[data-active="true"]{
+  background:var(--v3-accent-soft)!important;
+  color:var(--v3-accent-strong)!important;
+  border-color:transparent!important;
+}
+.mai-v3-week-nav button{
+  background:var(--v3-sidebar)!important;
+  color:var(--v3-muted)!important;
+}
+.mai-v3-week-nav strong{color:var(--v3-text)!important}
+.mai-v3-week-grid>header,
+.mai-v3-week-grid>div,
+.mai-v3-habit-today,
+.mai-v3-report-list article{
+  border:0!important;
+}
+.mai-v3-week-grid>div>button:first-child{color:var(--v3-text)!important}
+.mai-v3-report-list article>b{color:var(--v3-accent)!important}
+
+/* metas */
+.mai-v3-goal-row{
+  border:0!important;
+  background:transparent!important;
+}
+.mai-v3-goal-row:hover{background:var(--v3-hover)!important}
+.mai-v3-goal-row strong{color:var(--v3-text)!important}
+.mai-v3-goal-row small,.mai-v3-goal-row>span{color:var(--v3-muted)!important}
+.mai-v3-goal-row i{background:var(--v3-sidebar)!important}
+.mai-v3-goal-row i b{background:var(--v3-accent)!important}
+
+/* notas: identificação simples, sem cartões nem divisores */
+.mai-v3-notes-layout{
+  border:0!important;
+  border-radius:0!important;
+  background:transparent!important;
+  overflow:visible!important;
+}
+.mai-v3-notes-layout>aside{
+  border-right:0!important;
+  background:transparent!important;
+}
+.mai-v3-notes-search{
+  border:0!important;
+  border-radius:11px!important;
+  background:var(--v3-sidebar)!important;
+  margin-bottom:10px!important;
+}
+.mai-v3-notes-layout>aside>div:last-child>button{
+  border:0!important;
+  background:transparent!important;
+  border-radius:0!important;
+}
+.mai-v3-notes-layout>aside>div:last-child>button:hover{
+  background:transparent!important;
+}
+.mai-v3-notes-layout>aside>div:last-child>button:hover strong{
+  color:var(--v3-accent)!important;
+}
+.mai-v3-notes-layout>aside>div:last-child>button[data-active="true"]{
+  background:transparent!important;
+}
+.mai-v3-notes-layout>aside>div:last-child>button[data-active="true"] strong{
+  color:var(--v3-accent-strong)!important;
+}
+.mai-v3-notes-layout aside strong{color:var(--v3-text)!important}
+.mai-v3-notes-layout aside span,.mai-v3-notes-layout aside small{color:var(--v3-muted)!important}
+.mai-v3-notes-layout>main,
+.mai-v3-notes-editor,
+.mai-v3-notes-toolbar,
+.mai-v3-note-surface,
+.mai-v3-note-title{
+  background:transparent!important;
+  border-color:transparent!important;
+  box-shadow:none!important;
+}
+.mai-v3-notes-toolbar button{color:var(--v3-muted)!important}
+.mai-v3-notes-toolbar button:hover{background:var(--v3-hover)!important;color:var(--v3-text)!important}
+
+/* finanças */
+.mai-v3-finance-rows>button,
+.mai-v3-account-list article,
+.mai-v3-card-list article{
+  border:0!important;
+}
+.mai-v3-finance-rows>button:hover{background:var(--v3-hover)!important}
+.mai-v3-finance-rows b[data-income="true"]{color:var(--v3-accent)!important}
+.mai-v3-finance-summary span{color:var(--v3-muted)!important}
+.mai-v3-finance-summary strong{color:var(--v3-text)!important}
+
+/* bem-estar */
+.mai-v3-health-summary article,
+.mai-v3-health-rows>div,
+.mai-v3-health-history article{
+  border:0!important;
+}
+.mai-v3-health-summary span{color:var(--v3-muted)!important}
+.mai-v3-health-history article:hover,
+.mai-v3-health-rows>div:hover{background:var(--v3-hover)!important;border-radius:9px}
+
+/* arquivos */
+.mai-v3-file-list>button{
+  border:0!important;
+}
+.mai-v3-file-list>button:hover{background:var(--v3-hover)!important}
+.mai-v3-file-icon,
+.mai-v3-file-grid>button>span{
+  background:var(--v3-accent-soft)!important;
+  color:var(--v3-accent)!important;
+}
+.mai-v3-file-grid>button{
+  background:var(--v3-card)!important;
+  color:var(--v3-text)!important;
+  border:0!important;
+  box-shadow:none!important;
+}
+.mai-v3-file-grid>button:hover{background:var(--v3-hover)!important}
+
+/* tarefas, menus e seleção — sem linha lateral */
+.mai-v3-task-row{
+  border:0!important;
+}
+.mai-v3-task-row[data-selected="true"]{
+  background:var(--v3-accent-soft)!important;
+  border-left:0!important;
+  padding-left:4px!important;
+}
+.mai-v3-task-row:hover{background:var(--v3-hover)!important}
+.mai-v3-task-check{
+  background:var(--v3-card)!important;
+  border-color:var(--v3-line-strong)!important;
+}
+.mai-v3-task-check[data-completed="true"]{
+  background:var(--v3-accent)!important;
+  border-color:var(--v3-accent)!important;
+  color:#fff!important;
+}
+.mai-v3-task-check:hover{box-shadow:0 0 0 4px var(--v3-accent-soft)!important}
+.mai-v3-task-more,.mai-v3-project-more{color:var(--v3-muted)!important}
+.mai-v3-task-more:hover,.mai-v3-project-more:hover{background:var(--v3-hover)!important;color:var(--v3-text)!important}
+.mai-v3-task-menu,
+.mai-v3-task-row-menu,
+.mai-v3-project-menu,
+.mai-v3-filter-popover{
+  background:var(--v3-card)!important;
+  border-color:var(--v3-line)!important;
+  color:var(--v3-text)!important;
+}
+.mai-v3-task-menu button,
+.mai-v3-task-row-menu button,
+.mai-v3-project-menu button{
+  color:var(--v3-text)!important;
+}
+.mai-v3-task-menu button:hover,
+.mai-v3-task-menu button[data-active="true"],
+.mai-v3-task-row-menu button:hover,
+.mai-v3-project-menu button:hover{
+  background:var(--v3-hover)!important;
+  color:var(--v3-accent-strong)!important;
+}
+.mai-v3-task-menu hr{border-top-color:var(--v3-line)!important}
+
+/* Hoje */
+.mai-v3-today-section h2{color:var(--v3-text)!important}
+.mai-v3-appointment{
+  border:0!important;
+  color:var(--v3-text)!important;
+}
+.mai-v3-appointment:hover{background:var(--v3-hover)!important}
+.mai-v3-appointment time{color:var(--v3-muted)!important}
+.mai-v3-filter-popover label>span{color:var(--v3-muted)!important}
+.mai-v3-filter-popover select{
+  background:var(--v3-sidebar)!important;
+  border-color:transparent!important;
+  color:var(--v3-text)!important;
+}
+.mai-v3-more-filter{background:var(--v3-sidebar)!important;color:var(--v3-muted)!important}
+.mai-v3-more-filter[data-active="true"]{background:var(--v3-accent-soft)!important;color:var(--v3-accent-strong)!important}
+
+/* drawers */
+.mai-v3-create-drawer,
+.mai-context-drawer,
+.mai-v3-drawer-header,
+.mai-context-drawer>header{
+  background:var(--v3-card)!important;
+  color:var(--v3-text)!important;
+  border-color:var(--v3-line)!important;
+}
+.mai-v3-close,.mai-context-drawer>header>button{color:var(--v3-muted)!important}
+.mai-v3-close:hover,.mai-context-drawer>header>button:hover{background:var(--v3-hover)!important}
+.mai-v3-kind-switch{background:var(--v3-sidebar)!important}
+.mai-v3-kind-switch button{color:var(--v3-muted)!important}
+.mai-v3-kind-switch button[data-active="true"]{background:var(--v3-card)!important;color:var(--v3-text)!important}
+.mai-v3-primary{background:var(--v3-accent)!important;color:#fff!important}
+.mai-v3-primary:hover{background:var(--v3-accent-strong)!important}
+.mai-v3-secondary{background:var(--v3-card)!important;color:var(--v3-muted)!important}
+
+/* banners e estados antigos não devem trazer o verde de volta */
+.mai-v3-advanced-banner{
+  background:var(--v3-sidebar)!important;
+  border-color:transparent!important;
+}
+.mai-v3-advanced-banner span{color:var(--v3-muted)!important}
+.mai-v3-advanced-banner button{background:var(--v3-card)!important;color:var(--v3-text)!important}
+
+html[data-mai-theme="dark"] .mai-v3-note-title,
+html[data-mai-theme="dark"] .mai-v3-note-surface,
+html[data-mai-theme="dark"] .mai-v3-habit-body,
+html[data-mai-theme="dark"] .mai-v3-task-body{
+  color:var(--v3-text)!important;
+}
