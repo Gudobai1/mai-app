@@ -27,6 +27,7 @@ const rows = (value: unknown): Row[] => Array.isArray(value) ? value as Row[] : 
 const dayOf = (task: LegacyTask) => String(task.data_vencimento || '').slice(0, 10)
 const timeOf = (task: LegacyTask) => String(task.data_vencimento || '').includes('T') ? String(task.data_vencimento).slice(11, 16) : ''
 const priorityColor = (value: unknown) => Number(value || 4) === 1 ? '#c85b52' : Number(value || 4) === 2 ? '#c28a3d' : Number(value || 4) === 3 ? '#7c9274' : '#b8beb7'
+const standaloneTask = (task: LegacyTask) => !task.parent_id || Boolean(dayOf(task))
 
 function naturalDate(key: string, today: string) {
   if (!key) return 'Sem data'
@@ -58,7 +59,7 @@ export function MinimalTaskWorkspace(props: Props) {
   const [dragId, setDragId] = useState('')
   const [completedOpen, setCompletedOpen] = useState(false)
   const projectMap = useMemo(() => new Map(projects.map(item => [String(item.id), item])), [projects])
-  const tasks = state.tasks.filter(task => projectId ? String(task.projeto_id || '') === projectId : String(task.projeto_id || 'entrada') === 'entrada')
+  const tasks = state.tasks.filter(task => standaloneTask(task) && (projectId ? String(task.projeto_id || '') === projectId : String(task.projeto_id || 'entrada') === 'entrada'))
   const open = tasks.filter(task => !task.concluida).sort((a, b) => Number(a.ordem || 0) - Number(b.ordem || 0))
   const completed = tasks.filter(task => task.concluida).sort((a, b) => String(b.concluida_em || '').localeCompare(String(a.concluida_em || '')))
   const sections = projectId ? rows(project?.secoes).map(String) : []
