@@ -34,7 +34,7 @@ const priorityColor = (value: unknown) => {
 const dateKey = (value: unknown) => String(value || '').slice(0, 10)
 const timeKey = (value: unknown) => String(value || '').includes('T') ? String(value).slice(11, 16) : ''
 
-export function TodayCompact({ state, today, commit, inspect, onSearch, onMore, part = 'all' }: Props) {
+export function TodayCompact({ state, today, commit, inspect, onMore, part = 'all' }: Props) {
   const [filterOpen, setFilterOpen] = useState(false)
   const [completedOpen, setCompletedOpen] = useState(false)
   const plan = useMemo(() => plannerItems(state, today, today), [state, today])
@@ -119,7 +119,6 @@ export function TodayCompact({ state, today, commit, inspect, onSearch, onMore, 
   const header = <header className="mai-v3-page-header">
     <div><h1>Hoje</h1><p>{dateLabel}</p></div>
     <div className="mai-v3-page-actions">
-      <button aria-label="Buscar" title="Buscar" onClick={onSearch}><MaiIcon name="search" size={18}/></button>
       <div className="mai-v3-filter-wrap">
         <button aria-label="Filtrar" title="Filtrar" data-active={filters.project !== 'all' || filters.priority !== 'all'} onClick={() => setFilterOpen(value => !value)}><span className="material-symbols-rounded">filter_list</span></button>
         {filterOpen ? <div className="mai-v3-filter-popover">
