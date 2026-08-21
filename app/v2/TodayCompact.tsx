@@ -9,6 +9,7 @@ import { MaiIcon } from './MaiIcons'
 
 const rows = (value: unknown): Row[] => Array.isArray(value) ? value as Row[] : []
 
+type TodayPart = 'all' | 'header' | 'appointments' | 'tasks'
 type Props = {
   state: MaiState
   today: string
@@ -17,6 +18,7 @@ type Props = {
   inspect: (item: InspectableItem) => void
   onSearch: () => void
   onMore: () => void
+  part?: TodayPart
 }
 
 type TodayFilters = { project: string; priority: string; status: 'open' | 'all' }
@@ -39,7 +41,7 @@ function eventOrigin(raw: Row) {
   return String(raw.categoria_nome || raw.categoria || raw.origem || 'Compromisso')
 }
 
-export function TodayCompact({ state, today, commit, inspect, onSearch, onMore }: Props) {
+export function TodayCompact({ state, today, commit, inspect, onSearch, onMore, part = 'all' }: Props) {
   const [filterOpen, setFilterOpen] = useState(false)
   const [completedOpen, setCompletedOpen] = useState(false)
   const plan = useMemo(() => plannerItems(state, today, today), [state, today])
@@ -116,65 +118,68 @@ export function TodayCompact({ state, today, commit, inspect, onSearch, onMore }
     return project || { id: 'entrada', nome: 'Entrada', cor: '#8e968d', icone: 'inbox' }
   }
 
-  return <div className="mai-v3-today">
-    <header className="mai-v3-page-header">
-      <div><h1>Hoje</h1><p>{dateLabel}</p></div>
-      <div className="mai-v3-page-actions">
-        <button aria-label="Buscar" title="Buscar" onClick={onSearch}><MaiIcon name="search" size={18}/></button>
-        <div className="mai-v3-filter-wrap">
-          <button aria-label="Filtrar" title="Filtrar" data-active={filters.project !== 'all' || filters.priority !== 'all'} onClick={() => setFilterOpen(value => !value)}><span className="material-symbols-rounded">filter_list</span></button>
-          {filterOpen ? <div className="mai-v3-filter-popover">
-            <label><span>Projeto</span><select value={filters.project} onChange={event => setFilters({ project: event.target.value })}><option value="all">Todos</option><option value="entrada">Entrada</option>{projects.map(project => <option key={String(project.id)} value={String(project.id)}>{String(project.nome)}</option>)}</select></label>
-            <label><span>Prioridade</span><select value={filters.priority} onChange={event => setFilters({ priority: event.target.value })}><option value="all">Todas</option><option value="1">Alta</option><option value="2">Média</option><option value="3">Baixa</option><option value="4">Sem prioridade</option></select></label>
-            <label><span>Status</span><select value={filters.status} onChange={event => setFilters({ status: event.target.value as TodayFilters['status'] })}><option value="open">Abertas</option><option value="all">Todas</option></select></label>
-          </div> : null}
-        </div>
-        <button aria-label="Mais opções" title="Mais opções" onClick={onMore}><span className="material-symbols-rounded">more_horiz</span></button>
+  const header = <header className="mai-v3-page-header">
+    <div><h1>Hoje</h1><p>{dateLabel}</p></div>
+    <div className="mai-v3-page-actions">
+      <button aria-label="Buscar" title="Buscar" onClick={onSearch}><MaiIcon name="search" size={18}/></button>
+      <div className="mai-v3-filter-wrap">
+        <button aria-label="Filtrar" title="Filtrar" data-active={filters.project !== 'all' || filters.priority !== 'all'} onClick={() => setFilterOpen(value => !value)}><span className="material-symbols-rounded">filter_list</span></button>
+        {filterOpen ? <div className="mai-v3-filter-popover">
+          <label><span>Projeto</span><select value={filters.project} onChange={event => setFilters({ project: event.target.value })}><option value="all">Todos</option><option value="entrada">Entrada</option>{projects.map(project => <option key={String(project.id)} value={String(project.id)}>{String(project.nome)}</option>)}</select></label>
+          <label><span>Prioridade</span><select value={filters.priority} onChange={event => setFilters({ priority: event.target.value })}><option value="all">Todas</option><option value="1">Alta</option><option value="2">Média</option><option value="3">Baixa</option><option value="4">Sem prioridade</option></select></label>
+          <label><span>Status</span><select value={filters.status} onChange={event => setFilters({ status: event.target.value as TodayFilters['status'] })}><option value="open">Abertas</option><option value="all">Todas</option></select></label>
+        </div> : null}
       </div>
-    </header>
+      <button aria-label="Personalizar Hoje" title="Personalizar Hoje" onClick={onMore}><span className="material-symbols-rounded">more_horiz</span></button>
+    </div>
+  </header>
 
-    <section className="mai-v3-today-section mai-v3-appointments mai-today-unified-section">
-      <h2>Compromissos</h2>
-      <div className="mai-today-unified-list">{events.map(item => {
-        const [hour, minute] = String(item.time || '').split(':').map(Number)
-        const passed = todayIsCurrent && item.time && Number.isFinite(hour) && (hour * 60 + (minute || 0)) < nowMinutes
-        const label = item.subtitle === 'Em andamento' ? 'Em andamento' : item.raw.dia_inteiro === true || !item.time ? 'Dia inteiro' : item.time
-        const eventColor = String(item.raw.categoria_cor || item.color || 'var(--v3-accent)')
-        return <button key={item.id} className="mai-today-unified-row" data-passed={Boolean(passed)} onClick={() => inspectPlanner(item)}>
-          <span className="mai-event-item-icon" style={{ color: eventColor }}><MaiIcon name="calendar" size={16}/></span>
-          <span className="mai-today-unified-main"><strong>{item.title}</strong><small className="mai-today-unified-origin">{eventOrigin(item.raw)}</small></span>
-          <span className="mai-today-unified-meta"><strong>Hoje</strong><small>{label}</small></span>
+  const appointments = <section className="mai-v3-today-section mai-v3-appointments mai-today-unified-section">
+    <h2>Compromissos</h2>
+    <div className="mai-today-unified-list">{events.map(item => {
+      const [hour, minute] = String(item.time || '').split(':').map(Number)
+      const passed = todayIsCurrent && item.time && Number.isFinite(hour) && (hour * 60 + (minute || 0)) < nowMinutes
+      const label = item.subtitle === 'Em andamento' ? 'Em andamento' : item.raw.dia_inteiro === true || !item.time ? 'Dia inteiro' : item.time
+      const eventColor = String(item.raw.categoria_cor || item.color || 'var(--v3-accent)')
+      return <button key={item.id} className="mai-today-unified-row" data-passed={Boolean(passed)} onClick={() => inspectPlanner(item)}>
+        <span className="mai-event-item-icon" style={{ color: eventColor }}><MaiIcon name="calendar" size={16}/></span>
+        <span className="mai-today-unified-main"><strong>{item.title}</strong><small className="mai-today-unified-origin">{eventOrigin(item.raw)}</small></span>
+        <span className="mai-today-unified-meta"><strong>Hoje</strong><small>{label}</small></span>
+      </button>
+    })}{!events.length ? <div className="mai-v3-empty-line">Nenhum compromisso para hoje.</div> : null}</div>
+  </section>
+
+  const tasks = <section className="mai-v3-today-section mai-v3-tasks-section mai-today-unified-section">
+    <h2>Tarefas</h2>
+    <div className="mai-today-unified-list">{filteredTasks.map(task => {
+      const project = projectIdentity(task.projeto_id)
+      const children = state.tasks.filter(child => String((child as Row).parent_id || '') === String(task.id))
+      const doneChildren = children.filter(child => child.concluida).length
+      return <article className="mai-today-unified-row" key={task.id}>
+        <button className="mai-today-unified-dot" aria-label={`Concluir ${task.titulo}`} style={{ borderColor: priorityColor(task.prioridade) }} onClick={() => toggleTask(task.id)} />
+        <button className="mai-today-unified-main" style={{border:0,background:'transparent',textAlign:'left',padding:0}} onClick={() => inspectTask(task)}>
+          <strong>{task.titulo}</strong>
+          <small className="mai-today-unified-origin">{project.imagem_url ? <img src={String(project.imagem_url)} alt="" /> : <i style={{ background: String(project.cor || '#8e968d') }}><MaiIcon name={String(project.icone || (project.id === 'entrada' ? 'inbox' : 'folder'))} size={9}/></i>}<span>{String(project.nome || 'Entrada')}</span></small>
         </button>
-      })}{!events.length ? <div className="mai-v3-empty-line">Nenhum compromisso para hoje.</div> : null}</div>
-    </section>
+        <span className="mai-today-unified-meta"><strong>Hoje</strong>{children.length ? <small>{doneChildren} de {children.length}</small> : null}</span>
+      </article>
+    })}{!filteredTasks.length ? <div className="mai-v3-empty-line">Nenhuma tarefa para hoje.</div> : null}</div>
 
-    <section className="mai-v3-today-section mai-v3-tasks-section mai-today-unified-section">
-      <h2>Tarefas</h2>
-      <div className="mai-today-unified-list">{filteredTasks.map(task => {
+    {filters.status === 'all' || completedToday.length ? <div className="mai-v3-completed-wrap">
+      <button className="mai-v3-completed-toggle" onClick={() => setCompletedOpen(value => !value)}><MaiIcon name="chevron" size={14}/><span>Concluídas · {completedToday.length}</span></button>
+      {completedOpen ? <div className="mai-today-unified-list mai-v3-completed-list">{completedToday.map(task => {
         const project = projectIdentity(task.projeto_id)
-        const children = state.tasks.filter(child => String((child as Row).parent_id || '') === String(task.id))
-        const doneChildren = children.filter(child => child.concluida).length
-        return <article className="mai-today-unified-row" key={task.id}>
-          <button className="mai-today-unified-dot" aria-label={`Concluir ${task.titulo}`} style={{ borderColor: priorityColor(task.prioridade) }} onClick={() => toggleTask(task.id)} />
-          <button className="mai-today-unified-main" style={{border:0,background:'transparent',textAlign:'left',padding:0}} onClick={() => inspectTask(task)}>
-            <strong>{task.titulo}</strong>
-            <small className="mai-today-unified-origin">{project.imagem_url ? <img src={String(project.imagem_url)} alt="" /> : <i style={{ background: String(project.cor || '#8e968d') }}><MaiIcon name={String(project.icone || (project.id === 'entrada' ? 'inbox' : 'folder'))} size={9}/></i>}<span>{String(project.nome || 'Entrada')}</span></small>
-          </button>
-          <span className="mai-today-unified-meta"><strong>Hoje</strong>{children.length ? <small>{doneChildren} de {children.length}</small> : null}</span>
+        return <article className="mai-today-unified-row" key={`done-${task.id}`}>
+          <button className="mai-today-unified-dot" data-done="true" onClick={() => toggleTask(task.id)}>✓</button>
+          <button className="mai-today-unified-main" style={{border:0,background:'transparent',textAlign:'left',padding:0}} onClick={() => inspectTask(task)}><strong>{task.titulo}</strong><small className="mai-today-unified-origin">{project.imagem_url ? <img src={String(project.imagem_url)} alt="" /> : <i style={{ background: String(project.cor || '#8e968d') }}><MaiIcon name={String(project.icone || 'folder')} size={9}/></i>}<span>{String(project.nome || 'Entrada')}</span></small></button>
+          <span className="mai-today-unified-meta"><strong>Hoje</strong><small>Concluída</small></span>
         </article>
-      })}{!filteredTasks.length ? <div className="mai-v3-empty-line">Nenhuma tarefa para hoje.</div> : null}</div>
+      })}</div> : null}
+    </div> : null}
+  </section>
 
-      {filters.status === 'all' || completedToday.length ? <div className="mai-v3-completed-wrap">
-        <button className="mai-v3-completed-toggle" onClick={() => setCompletedOpen(value => !value)}><MaiIcon name="chevron" size={14}/><span>Concluídas · {completedToday.length}</span></button>
-        {completedOpen ? <div className="mai-today-unified-list mai-v3-completed-list">{completedToday.map(task => {
-          const project = projectIdentity(task.projeto_id)
-          return <article className="mai-today-unified-row" key={`done-${task.id}`}>
-            <button className="mai-today-unified-dot" data-done="true" onClick={() => toggleTask(task.id)}>✓</button>
-            <button className="mai-today-unified-main" style={{border:0,background:'transparent',textAlign:'left',padding:0}} onClick={() => inspectTask(task)}><strong>{task.titulo}</strong><small className="mai-today-unified-origin">{project.imagem_url ? <img src={String(project.imagem_url)} alt="" /> : <i style={{ background: String(project.cor || '#8e968d') }}><MaiIcon name={String(project.icone || 'folder')} size={9}/></i>}<span>{String(project.nome || 'Entrada')}</span></small></button>
-            <span className="mai-today-unified-meta"><strong>Hoje</strong><small>Concluída</small></span>
-          </article>
-        })}</div> : null}
-      </div> : null}
-    </section>
-  </div>
+  if (part === 'header') return header
+  if (part === 'appointments') return appointments
+  if (part === 'tasks') return tasks
+  return <div className="mai-v3-today">{header}{appointments}{tasks}</div>
 }
