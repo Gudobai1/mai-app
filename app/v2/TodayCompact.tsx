@@ -34,13 +34,6 @@ const priorityColor = (value: unknown) => {
 const dateKey = (value: unknown) => String(value || '').slice(0, 10)
 const timeKey = (value: unknown) => String(value || '').includes('T') ? String(value).slice(11, 16) : ''
 
-function eventOrigin(raw: Row) {
-  const isGoogle = ['google', 'gcalendar'].includes(String(raw.tipo || '').toLowerCase()) || Boolean(raw.calendario_id || raw.calendarId)
-  const calendarName = String(raw.calendario_nome || raw.calendar_name || raw.calendarName || raw.nome_calendario || '').trim()
-  if (isGoogle) return calendarName ? `Google Agenda · ${calendarName}` : 'Google Agenda'
-  return String(raw.categoria_nome || raw.categoria || raw.origem || 'Compromisso')
-}
-
 export function TodayCompact({ state, today, commit, inspect, onSearch, onMore, part = 'all' }: Props) {
   const [filterOpen, setFilterOpen] = useState(false)
   const [completedOpen, setCompletedOpen] = useState(false)
@@ -118,7 +111,7 @@ export function TodayCompact({ state, today, commit, inspect, onSearch, onMore, 
     return project || { id: 'entrada', nome: 'Entrada', cor: '#8e968d', icone: 'inbox' }
   }
 
-  const projectBadge = (project: Row) => <span className="mai-item-inline-tag mai-item-project-tag">
+  const projectBadge = (project: Row) => <span className="mai-item-project-tag">
     {project.imagem_url ? <img src={String(project.imagem_url)} alt="" /> : <i style={{ background: String(project.cor || '#8e968d') }}><MaiIcon name={String(project.icone || (project.id === 'entrada' ? 'inbox' : 'folder'))} size={9}/></i>}
     <span>{String(project.nome || 'Entrada')}</span>
   </span>
@@ -148,10 +141,7 @@ export function TodayCompact({ state, today, commit, inspect, onSearch, onMore, 
       const eventColor = String(item.raw.categoria_cor || item.color || 'var(--v3-accent)')
       return <button key={item.id} className="mai-today-unified-row mai-item-row-v2" data-passed={Boolean(passed)} onClick={() => inspectPlanner(item)}>
         <span className="mai-event-item-icon" style={{ color: eventColor }}><MaiIcon name="calendar" size={16}/></span>
-        <span className="mai-item-copy-v2">
-          <span className="mai-item-titleline-v2"><strong>{item.title}</strong><span className="mai-item-inline-tag">{eventOrigin(item.raw)}</span></span>
-          <span className="mai-item-subline-v2"><span>Hoje</span><span>·</span><span>{detail}</span></span>
-        </span>
+        <span className="mai-item-copy-v2"><span className="mai-item-titleline-v2"><strong>{item.title}</strong></span><span className="mai-item-subline-v2"><span>Hoje</span><span>·</span><span>{detail}</span></span></span>
       </button>
     })}{!events.length ? <div className="mai-v3-empty-line">Nenhum compromisso para hoje.</div> : null}</div>
   </section>
@@ -160,15 +150,9 @@ export function TodayCompact({ state, today, commit, inspect, onSearch, onMore, 
     <h2>Tarefas</h2>
     <div className="mai-today-unified-list">{filteredTasks.map(task => {
       const project = projectIdentity(task.projeto_id)
-      const children = state.tasks.filter(child => String((child as Row).parent_id || '') === String(task.id))
-      const doneChildren = children.filter(child => child.concluida).length
-      const detail = [timeKey(task.data_vencimento), children.length ? `${doneChildren} de ${children.length}` : ''].filter(Boolean).join(' · ')
       return <article className="mai-today-unified-row mai-item-row-v2" key={task.id} onClick={() => inspectTask(task)}>
         <button className="mai-today-unified-dot" aria-label={`Concluir ${task.titulo}`} style={{ borderColor: priorityColor(task.prioridade) }} onClick={event => { event.stopPropagation(); toggleTask(task.id) }} />
-        <span className="mai-item-copy-v2">
-          <span className="mai-item-titleline-v2"><strong>{task.titulo}</strong>{projectBadge(project)}</span>
-          <span className="mai-item-subline-v2"><span>Hoje</span>{detail ? <><span>·</span><span>{detail}</span></> : null}</span>
-        </span>
+        <span className="mai-item-copy-v2"><span className="mai-item-titleline-v2"><strong>{task.titulo}</strong></span><span className="mai-item-subline-v2"><span>Hoje</span><span>·</span>{projectBadge(project)}</span></span>
       </article>
     })}{!filteredTasks.length ? <div className="mai-v3-empty-line">Nenhuma tarefa para hoje.</div> : null}</div>
 
@@ -178,7 +162,7 @@ export function TodayCompact({ state, today, commit, inspect, onSearch, onMore, 
         const project = projectIdentity(task.projeto_id)
         return <article className="mai-today-unified-row mai-item-row-v2" key={`done-${task.id}`} onClick={() => inspectTask(task)}>
           <button className="mai-today-unified-dot" data-done="true" onClick={event => { event.stopPropagation(); toggleTask(task.id) }}>✓</button>
-          <span className="mai-item-copy-v2"><span className="mai-item-titleline-v2"><strong>{task.titulo}</strong>{projectBadge(project)}</span><span className="mai-item-subline-v2"><span>Hoje</span><span>·</span><span>Concluída</span></span></span>
+          <span className="mai-item-copy-v2"><span className="mai-item-titleline-v2"><strong>{task.titulo}</strong></span><span className="mai-item-subline-v2"><span>Hoje</span><span>·</span>{projectBadge(project)}</span></span>
         </article>
       })}</div> : null}
     </div> : null}
