@@ -79,22 +79,22 @@ export function TaskDateView({ state, today, mode, commit, inspect, selectedId }
     return projectMap.get(key) || { id: 'entrada', nome: 'Entrada', cor: '#8e968d', icone: 'inbox' }
   }
 
+  function projectBadge(project: ProjectRow) {
+    return <span className="mai-item-inline-tag mai-item-project-tag">{project.imagem_url ? <img src={String(project.imagem_url)} alt=""/> : <i style={{ background: String(project.cor || '#8e968d') }}><MaiIcon name={String(project.icone || (project.id === 'entrada' ? 'inbox' : 'folder'))} size={9}/></i>}<span>{String(project.nome || 'Entrada')}</span></span>
+  }
+
   function renderTask(task: LegacyTask, completed = false) {
     const project = identity(task.projeto_id)
     const children = state.tasks.filter(child => String(child.parent_id || '') === String(task.id))
     const doneChildren = children.filter(child => child.concluida).length
-    return <article className="mai-v3-task-row" data-selected={selectedId === task.id} key={`${completed ? 'done-' : ''}${task.id}`}>
-      <button className="mai-v3-task-check" data-completed={completed || undefined} aria-label={completed ? `Reabrir ${task.titulo}` : `Concluir ${task.titulo}`} style={completed ? undefined : { borderColor: priorityColor(task.prioridade) }} onClick={() => toggle(task)}>{completed ? '✓' : ''}</button>
-      <button className="mai-v3-task-body" onClick={() => inspectTask(task)}>
-        <strong>{task.titulo}</strong>
-        <small>
-          <span>{naturalDate(dayOf(task), today)}</span>
-          <span>-</span>
-          <span className="mai-v3-task-project">{project.imagem_url ? <img src={String(project.imagem_url)} alt=""/> : <i style={{ background: String(project.cor || '#8e968d') }}><MaiIcon name={String(project.icone || (project.id === 'entrada' ? 'inbox' : 'folder'))} size={10}/></i>} {String(project.nome || 'Entrada')}</span>
-          {children.length ? <><span>·</span><span>{doneChildren} de {children.length}</span></> : null}
-        </small>
-      </button>
-      <button className="mai-v3-task-more" aria-label={`Opções de ${task.titulo}`} onClick={() => inspectTask(task)}>•••</button>
+    const detail = [timeOf(task), children.length ? `${doneChildren} de ${children.length}` : '', completed ? 'Concluída' : ''].filter(Boolean).join(' · ')
+    return <article className="mai-v3-task-row mai-item-row-v2" data-selected={selectedId === task.id} key={`${completed ? 'done-' : ''}${task.id}`} onClick={() => inspectTask(task)}>
+      <button className="mai-v3-task-check" data-completed={completed || undefined} aria-label={completed ? `Reabrir ${task.titulo}` : `Concluir ${task.titulo}`} style={completed ? undefined : { borderColor: priorityColor(task.prioridade) }} onClick={event => { event.stopPropagation(); toggle(task) }}>{completed ? '✓' : ''}</button>
+      <span className="mai-item-copy-v2">
+        <span className="mai-item-titleline-v2"><strong>{task.titulo}</strong>{projectBadge(project)}</span>
+        <span className="mai-item-subline-v2"><span>{naturalDate(dayOf(task), today)}</span>{detail ? <><span>·</span><span>{detail}</span></> : null}</span>
+      </span>
+      <button className="mai-v3-task-more" aria-label={`Opções de ${task.titulo}`} onClick={event => { event.stopPropagation(); inspectTask(task) }}>•••</button>
     </article>
   }
 
