@@ -29,22 +29,14 @@ const itemDate = (key:string, today:string) => {
   if (diff > 1 && diff < 7) return target.toLocaleDateString('pt-BR',{weekday:'long'})
   return target.toLocaleDateString('pt-BR',{day:'numeric',month:'short'})
 }
-function eventOrigin(raw:Row){
-  const isGoogle=['google','gcalendar'].includes(String(raw.tipo||'').toLowerCase())||Boolean(raw.calendario_id||raw.calendarId)
-  const name=String(raw.calendario_nome||raw.calendar_name||raw.calendarName||raw.nome_calendario||'').trim()
-  if(isGoogle)return name?`Google Agenda · ${name}`:'Google Agenda'
-  return String(raw.categoria_nome||raw.categoria||raw.origem||'Compromisso')
-}
 
 function ItemRow({ item, inspect, today, project }: { item: PlannerItem; inspect: Props['inspect']; today:string; project?:Row }) {
   const isEvent = item.kind === 'event'
-  const detail = isEvent ? (item.time || 'Dia inteiro') : [item.time, item.subtitle && item.subtitle !== project?.nome ? item.subtitle : ''].filter(Boolean).join(' · ')
+  const projectBadge = !isEvent ? <span className="mai-item-inline-tag mai-item-project-tag">{project?.imagem_url?<img src={String(project.imagem_url)} alt=""/>:<i style={{background:String(project?.cor||'#8e968d')}}><MaiIcon name={String(project?.icone||(project?.id==='entrada'?'inbox':'folder'))} size={9}/></i>}<span>{String(project?.nome||'Entrada')}</span></span> : null
+  const eventDetail = item.raw.dia_inteiro === true || !item.time ? 'Dia inteiro' : item.time
   return <article className="mai-upcoming-item mai-v3-upcoming-item mai-item-row-v2" data-kind={item.kind} onClick={() => inspect({kind:item.kind,sourceId:item.sourceId,title:item.title,date:item.date,time:item.time,raw:item.raw})}>
     {isEvent ? <span className="mai-event-item-icon" style={{color:item.color}}><MaiIcon name="calendar" size={16}/></span> : <i style={{background:item.color}}/>}
-    <span className="mai-item-copy-v2">
-      <span className="mai-item-titleline-v2"><strong>{item.title}</strong>{isEvent?<span className="mai-item-inline-tag">{eventOrigin(item.raw as Row)}</span>:<span className="mai-item-inline-tag mai-item-project-tag">{project?.imagem_url?<img src={String(project.imagem_url)} alt=""/>:<i style={{background:String(project?.cor||'#8e968d')}}><MaiIcon name={String(project?.icone||(project?.id==='entrada'?'inbox':'folder'))} size={9}/></i>}<span>{String(project?.nome||'Entrada')}</span></span>}</span>
-      <span className="mai-item-subline-v2"><span>{itemDate(item.date,today)}</span>{detail?<><span>·</span><span>{detail}</span></>:null}</span>
-    </span>
+    <span className="mai-item-copy-v2"><span className="mai-item-titleline-v2"><strong>{item.title}</strong></span><span className="mai-item-subline-v2"><span>{itemDate(item.date,today)}</span><span>·</span>{isEvent?<span>{eventDetail}</span>:projectBadge}</span></span>
   </article>
 }
 
