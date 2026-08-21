@@ -16,6 +16,7 @@ import './mai-clean-v4-modules.css'
 import './mai-today-unified.css'
 import './mai-todoist-system.css'
 import './mai-event-rows.css'
+import './mai-today-single-list.css'
 
 export const metadata: Metadata = {
   title: 'MAI — Meu Sistema',
