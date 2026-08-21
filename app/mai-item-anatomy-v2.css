@@ -1,0 +1,264 @@
+/* MAI — anatomia V2 de itens.
+   Linha 1: título + projeto/categoria. Linha 2: data + detalhe. */
+
+.mai-item-row-v2{
+  width:100%!important;
+  min-height:52px!important;
+  padding:7px 6px!important;
+  margin:0!important;
+  border:0!important;
+  border-radius:8px!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  color:var(--v3-text)!important;
+  text-align:left!important;
+  cursor:pointer!important;
+  box-sizing:border-box!important;
+}
+
+button.mai-item-row-v2{
+  font:inherit!important;
+  appearance:none!important;
+}
+
+.mai-item-row-v2:hover{
+  background:var(--mai-item-hover,var(--v3-hover))!important;
+}
+
+/* Hoje e listas semelhantes passam a ter somente indicador + conteúdo. */
+.mai-today-unified-row.mai-item-row-v2,
+.mai-v3-upcoming-item.mai-item-row-v2,
+.mai-v4-goal-item.mai-item-row-v2,
+.mai-v4-finance-item.mai-item-row-v2{
+  display:grid!important;
+  grid-template-columns:var(--mai-item-indicator,19px) minmax(0,1fr)!important;
+  column-gap:10px!important;
+  align-items:center!important;
+}
+
+/* Tarefas mantêm a coluna de ação dos três pontos. */
+.mai-v3-task-row.mai-item-row-v2{
+  display:grid!important;
+  grid-template-columns:var(--mai-item-indicator,19px) minmax(0,1fr) 30px!important;
+  column-gap:10px!important;
+  align-items:center!important;
+}
+.mai-v3-task-row.mai-item-row-v2:not(:has(.mai-v3-task-more)){
+  grid-template-columns:var(--mai-item-indicator,19px) minmax(0,1fr)!important;
+}
+
+/* Hábitos quantitativos mantêm o valor como ação opcional à direita. */
+.mai-v3-habit-today.mai-item-row-v2{
+  display:grid!important;
+  grid-template-columns:var(--mai-item-indicator,19px) minmax(0,1fr) auto!important;
+  column-gap:10px!important;
+  align-items:center!important;
+}
+.mai-v3-habit-today.mai-item-row-v2:not(:has(.mai-v4-habit-value)){
+  grid-template-columns:var(--mai-item-indicator,19px) minmax(0,1fr)!important;
+}
+
+.mai-item-copy-v2{
+  min-width:0!important;
+  display:grid!important;
+  gap:3px!important;
+  align-content:center!important;
+}
+
+.mai-item-titleline-v2{
+  min-width:0!important;
+  display:flex!important;
+  align-items:center!important;
+  gap:8px!important;
+  overflow:hidden!important;
+  white-space:nowrap!important;
+}
+
+.mai-item-titleline-v2>strong{
+  min-width:0!important;
+  max-width:100%!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+  white-space:nowrap!important;
+  color:var(--v3-text)!important;
+  font-size:13px!important;
+  line-height:1.28!important;
+  font-weight:610!important;
+  letter-spacing:-.01em!important;
+}
+
+.mai-item-inline-tag{
+  min-width:0!important;
+  max-width:min(42%,260px)!important;
+  display:inline-flex!important;
+  align-items:center!important;
+  gap:4px!important;
+  flex:0 1 auto!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+  white-space:nowrap!important;
+  color:var(--v3-muted)!important;
+  font-size:10.5px!important;
+  line-height:1.2!important;
+  font-weight:500!important;
+}
+
+.mai-item-inline-tag>span{
+  min-width:0!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+  white-space:nowrap!important;
+}
+
+.mai-item-project-tag>i,
+.mai-item-project-tag>img{
+  width:13px!important;
+  height:13px!important;
+  min-width:13px!important;
+  border-radius:4px!important;
+  display:inline-grid!important;
+  place-items:center!important;
+  color:#fff!important;
+  object-fit:cover!important;
+}
+
+.mai-item-subline-v2{
+  min-width:0!important;
+  display:flex!important;
+  align-items:center!important;
+  gap:5px!important;
+  color:var(--v3-muted)!important;
+  font-size:10.5px!important;
+  line-height:1.3!important;
+  font-weight:450!important;
+  overflow:hidden!important;
+  white-space:nowrap!important;
+}
+
+.mai-item-subline-v2>span:last-child{
+  min-width:0!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+  white-space:nowrap!important;
+}
+
+/* Indicadores e ícones ficam na mesma coluna e escala. */
+.mai-item-row-v2>.mai-today-unified-dot,
+.mai-item-row-v2>.mai-v3-task-check,
+.mai-item-row-v2>.mai-v3-habit-check,
+.mai-item-row-v2>.mai-event-item-icon,
+.mai-item-row-v2>i{
+  align-self:center!important;
+  justify-self:center!important;
+}
+
+.mai-event-item-icon{
+  width:19px!important;
+  height:19px!important;
+  min-width:19px!important;
+  display:grid!important;
+  place-items:center!important;
+  border-radius:5px!important;
+  background:transparent!important;
+}
+
+/* Neutraliza colunas antigas de metadados e pseudo-indicadores. */
+.mai-item-row-v2 .mai-today-unified-meta,
+.mai-item-row-v2 .mai-upcoming-event-meta{
+  display:none!important;
+}
+.mai-v3-finance-rows>.mai-item-row-v2::before,
+.mai-v3-card-list>.mai-item-row-v2::before{
+  content:none!important;
+}
+
+/* Em breve: o artigo inteiro é clicável, sem botão interno de layout antigo. */
+.mai-v3-upcoming-item.mai-item-row-v2{
+  position:relative!important;
+}
+.mai-v3-upcoming-item.mai-item-row-v2>i{
+  width:19px!important;
+  height:19px!important;
+  border-radius:50%!important;
+  box-sizing:border-box!important;
+  background:transparent!important;
+  border:1.6px solid var(--v3-line-strong)!important;
+}
+.mai-v3-upcoming-item.mai-item-row-v2[data-kind="task"]>i{
+  border-color:color-mix(in srgb,var(--v3-accent) 62%,var(--v3-line-strong))!important;
+}
+
+/* Tarefas: clique em qualquer parte da linha abre o cartão; ações mantêm prioridade. */
+.mai-v3-task-row.mai-item-row-v2{
+  position:relative!important;
+}
+.mai-v3-task-row.mai-item-row-v2>.mai-v3-task-more{
+  align-self:center!important;
+}
+
+/* Hoje: títulos de seção sem botões/atalhos laterais. */
+.mai-v4-today-list-section>header{
+  justify-content:flex-start!important;
+}
+.mai-v4-today-list-section>header>button{
+  display:none!important;
+}
+
+/* Metas simples no mesmo padrão de linha. */
+.mai-v4-goals .mai-v3-goal-groups section>div{
+  display:grid!important;
+  gap:1px!important;
+}
+.mai-v4-goal-item::before{
+  content:none!important;
+}
+
+/* Finanças: os lançamentos não usam mais a estrutura de valor à direita. */
+.mai-v4-finance .mai-v3-finance-rows>.mai-item-row-v2{
+  grid-template-columns:var(--mai-item-indicator,19px) minmax(0,1fr)!important;
+}
+
+/* Notas: lista única; edição sempre acontece no cartão lateral. */
+.mai-v4-notes-search{
+  width:min(520px,100%);
+  min-height:36px;
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding:0 10px;
+  margin:0 0 18px;
+  border:0;
+  border-radius:10px;
+  background:var(--v3-sidebar);
+  color:var(--v3-muted);
+  box-sizing:border-box;
+}
+.mai-v4-notes-search input{
+  min-width:0;
+  flex:1;
+  border:0;
+  outline:0;
+  background:transparent;
+  color:var(--v3-text);
+  font:inherit;
+  font-size:12px;
+}
+
+/* Mantém exatamente o mesmo ritmo entre seções e módulos. */
+.mai-v3-simple-list,
+.mai-v3-task-list,
+.mai-today-unified-list,
+.mai-v3-finance-rows,
+.mai-v3-upcoming-scroll section,
+.mai-v3-month-list section{
+  row-gap:1px!important;
+}
+
+@media(max-width:720px){
+  .mai-item-row-v2{
+    min-height:52px!important;
+    padding:7px 4px!important;
+  }
+  .mai-item-inline-tag{max-width:38%!important}
+  .mai-item-titleline-v2{gap:6px!important}
+}
