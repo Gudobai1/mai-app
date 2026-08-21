@@ -6,10 +6,12 @@ import type { AppView, TaskModuleScope } from './app-types'
 import { ContextDrawer, type InspectableItem } from './ContextDrawer'
 import { FinanceV4 } from './FinanceV4'
 import { FloatingAddButton } from './FloatingAddButton'
+import { GoalsV4 } from './GoalsV4'
 import { HabitsV4 } from './HabitsV4'
 import { HealthQuickAddDrawer } from './HealthQuickAddDrawer'
 import { MaiIcon } from './MaiIcons'
 import { MinimalAreas, type SecondaryView } from './MinimalAreas'
+import { NotesV4 } from './NotesV4'
 import { ProjectDrawer } from './ProjectDrawer'
 import { QuickCreateDrawer } from './QuickCreateDrawer'
 import { SearchOverlay } from './SearchOverlay'
@@ -148,9 +150,11 @@ export function UnifiedAppUx() {
             onEditProject={id => setProjectDialog({ projectId: id, tab: 'details' })}
             onManageSections={id => setProjectDialog({ projectId: id, tab: 'sections' })}
           /> : null}
-          {view === 'habits' && !advanced.habits ? <HabitsV4 state={runtime.state} today={runtime.today} commit={runtime.commit} createRequest={areaCreateRequest}/> : null}
+          {view === 'habits' && !advanced.habits ? <HabitsV4 state={runtime.state} today={runtime.today} commit={runtime.commit} createRequest={areaCreateRequest} inspect={setSelected}/> : null}
+          {view === 'goals' && !advanced.goals ? <GoalsV4 state={runtime.state} today={runtime.today} commit={runtime.commit} createRequest={areaCreateRequest} inspect={setSelected}/> : null}
+          {view === 'notes' && !advanced.notes ? <NotesV4 state={runtime.state} today={runtime.today} commit={runtime.commit} createRequest={areaCreateRequest} inspect={setSelected}/> : null}
           {view === 'finance' && !advanced.finance ? <FinanceV4 state={runtime.state} today={runtime.today} commit={runtime.commit} createRequest={areaCreateRequest} inspect={setSelected}/> : null}
-          {secondary.includes(view as SecondaryView) && !(view === 'habits' && !advanced.habits) && !(view === 'finance' && !advanced.finance) ? <MinimalAreas view={view as SecondaryView} state={runtime.state} today={runtime.today} commit={runtime.commit} googleRpc={runtime.googleRpc} createRequest={areaCreateRequest} inspect={setSelected} /> : null}
+          {secondary.includes(view as SecondaryView) && !(view === 'habits' && !advanced.habits) && !(view === 'goals' && !advanced.goals) && !(view === 'notes' && !advanced.notes) && !(view === 'finance' && !advanced.finance) ? <MinimalAreas view={view as SecondaryView} state={runtime.state} today={runtime.today} commit={runtime.commit} googleRpc={runtime.googleRpc} createRequest={areaCreateRequest} inspect={setSelected} /> : null}
         </>}
       </div>
     </main>
