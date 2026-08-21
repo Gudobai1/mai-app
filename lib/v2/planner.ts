@@ -139,7 +139,9 @@ export function plannerItems(state: MaiState, start: string, end: string): Plann
       if (habit.data_inicio && day < String(habit.data_inicio).slice(0, 10)) continue
       if (Array.isArray(habit.dias_semana) && habit.dias_semana.length && !habit.dias_semana.map(Number).includes(new Date(`${day}T12:00:00`).getDay())) continue
       const entry = rows(state.habitEntries).find(item => String(item.habito_id) === String(habit.id) && String(item.data).slice(0, 10) === day)
-      result.push({ id: `habit:${habit.id}:${day}`, sourceId: String(habit.id), kind: 'habit', date: day, time: String(habit.hora || ''), title: String(habit.nome || 'Rotina'), subtitle: `${entry ? 'Concluída' : 'Rotina'}${habit.unidade ? ` · ${habit.meta || 1} ${habit.unidade}` : ''}`, color: String(habit.cor_hex || habit.cor || '#6f8a67'), completed: Boolean(entry), recurring: true, raw: habit })
+      const target = Math.max(1, Number(habit.meta || 1))
+      const complete = Number(entry?.valor || 0) >= target
+      result.push({ id: `habit:${habit.id}:${day}`, sourceId: String(habit.id), kind: 'habit', date: day, time: String(habit.hora || ''), title: String(habit.nome || 'Rotina'), subtitle: `${complete ? 'Concluída' : 'Rotina'}${habit.unidade ? ` · ${target} ${habit.unidade}` : ''}`, color: String(habit.cor_hex || habit.cor || '#6f8a67'), completed: complete, recurring: true, raw: habit })
     }
   }
 
