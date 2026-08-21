@@ -123,6 +123,21 @@
   color:var(--v3-text)!important;
 }
 
+.mai-global-search-close{
+  width:32px!important;
+  height:32px!important;
+  min-width:32px!important;
+  display:grid!important;
+  place-items:center!important;
+  padding:0!important;
+  border:0!important;
+  border-radius:8px!important;
+  background:transparent!important;
+  color:var(--v3-muted)!important;
+  box-shadow:none!important;
+}
+.mai-global-search-close:hover{background:var(--v3-hover)!important;color:var(--v3-text)!important}
+
 @media (min-width:861px){
   .mai-global-search-desktop{display:flex!important}
 }
@@ -155,5 +170,65 @@
 
   .mai-mobile-search-button:hover{
     background:var(--v3-hover)!important;
+  }
+
+  /* Busca mobile: só uma barra compacta no topo. */
+  .mai-global-search-layer{
+    position:fixed!important;
+    inset:0!important;
+    z-index:1200!important;
+    padding:8px!important;
+    background:transparent!important;
+    backdrop-filter:none!important;
+    pointer-events:auto!important;
+  }
+
+  .mai-global-search-panel{
+    width:100%!important;
+    max-width:none!important;
+    height:auto!important;
+    max-height:min(58dvh,520px)!important;
+    margin:0!important;
+    border:1px solid var(--v3-line)!important;
+    border-radius:12px!important;
+    background:var(--v3-card)!important;
+    box-shadow:0 8px 28px rgba(0,0,0,.12)!important;
+    overflow:hidden!important;
+  }
+
+  .mai-global-search-header{
+    min-height:46px!important;
+    height:46px!important;
+    display:grid!important;
+    grid-template-columns:20px minmax(0,1fr) 32px!important;
+    align-items:center!important;
+    gap:8px!important;
+    padding:0 8px 0 12px!important;
+    border:0!important;
+  }
+
+  .mai-global-search-header input{
+    width:100%!important;
+    height:44px!important;
+    min-height:44px!important;
+    padding:0!important;
+    border:0!important;
+    background:transparent!important;
+    font-size:14px!important;
+  }
+
+  .mai-global-search-panel[data-empty="true"] .mai-global-search-results{
+    display:none!important;
+  }
+
+  .mai-global-search-results{
+    max-height:calc(min(58dvh,520px) - 46px)!important;
+    padding:4px 6px 6px!important;
+    border-top:1px solid var(--v3-line)!important;
+    overflow:auto!important;
+  }
+
+  .mai-global-search-results>button{
+    min-height:46px!important;
   }
 }
