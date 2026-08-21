@@ -3,7 +3,6 @@
 import type { MaiState } from '../../lib/v2/state'
 import type { AppView } from './app-types'
 import { MaiIcon } from './MaiIcons'
-import type { SecondaryView } from './MinimalAreas'
 import styles from './unified.module.css'
 
 const areas: { id: AppView; label: string; icon: string }[] = [
@@ -41,14 +40,17 @@ export function ShellSidebar(props: Props) {
       </button>
 
       <nav className="mai-v3-nav mai-v3-primary-nav">
-        <button className="mai-v3-nav-button" data-active={props.view === 'home'} onClick={() => props.navigate('home')}>
-          <span className="mai-v3-nav-label"><MaiIcon name="home" /><span>Início</span></span>
+        <button className="mai-v3-nav-button" data-active={props.view === 'today'} onClick={() => props.navigate('today')}>
+          <span className="mai-v3-nav-label"><MaiIcon name="today" /><span>Hoje</span></span>
+        </button>
+        <button className="mai-v3-nav-button" data-active={props.view === 'upcoming'} onClick={() => props.navigate('upcoming')}>
+          <span className="mai-v3-nav-label"><MaiIcon name="upcoming" /><span>Em breve</span></span>
         </button>
       </nav>
 
       <div className="mai-v3-section-title">Áreas</div>
       <nav className="mai-v3-nav mai-v3-area-nav">
-        {areas.map(area => <button className="mai-v3-nav-button" key={area.id} data-active={props.view === area.id} onClick={() => props.navigate(area.id)}>
+        {areas.map(area => <button className="mai-v3-nav-button" key={String(area.id)} data-active={props.view === area.id} onClick={() => props.navigate(area.id)}>
           <span className="mai-v3-nav-label"><MaiIcon name={area.icon} /><span>{area.label}</span></span>
         </button>)}
       </nav>
