@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import type { LegacyTask, MaiState } from '../../lib/v2/state'
 import type { InspectableItem } from './ContextDrawer'
 import type { Row } from './app-types'
@@ -41,7 +41,6 @@ function formatHeading(key: string, today: string) {
 }
 
 export function TaskDateView({ state, today, mode, commit, inspect, selectedId }: Props) {
-  const [completedOpen, setCompletedOpen] = useState(false)
   const projects = useMemo(() => rows(state.projects).filter(project => project.ativo !== false) as ProjectRow[], [state.projects])
   const projectMap = useMemo(() => new Map(projects.map(project => [String(project.id), project])), [projects])
 
@@ -50,10 +49,6 @@ export function TaskDateView({ state, today, mode, commit, inspect, selectedId }
     const day = dayOf(task)
     return mode === 'today' ? day === today : Boolean(day && day > today)
   }).sort((a, b) => dayOf(a).localeCompare(dayOf(b)) || (timeOf(a) || '99:99').localeCompare(timeOf(b) || '99:99') || Number(a.ordem || 0) - Number(b.ordem || 0)), [state.tasks, mode, today])
-
-  const completedToday = useMemo(() => mode === 'today'
-    ? state.tasks.filter(task => task.concluida && dayOf(task) === today).sort((a,b) => String(b.concluida_em || '').localeCompare(String(a.concluida_em || '')))
-    : [], [state.tasks, mode, today])
 
   const groups = useMemo(() => {
     if (mode === 'today') return [[today, open]] as [string, LegacyTask[]][]
@@ -83,10 +78,10 @@ export function TaskDateView({ state, today, mode, commit, inspect, selectedId }
     return <span className="mai-item-inline-tag mai-item-project-tag">{project.imagem_url ? <img src={String(project.imagem_url)} alt=""/> : <i style={{ background: String(project.cor || '#8e968d') }}><MaiIcon name={String(project.icone || (project.id === 'entrada' ? 'inbox' : 'folder'))} size={9}/></i>}<span>{String(project.nome || 'Entrada')}</span></span>
   }
 
-  function renderTask(task: LegacyTask, completed = false) {
+  function renderTask(task: LegacyTask) {
     const project = identity(task.projeto_id)
-    return <article className="mai-v3-task-row mai-item-row-v2" data-selected={selectedId === task.id} key={`${completed ? 'done-' : ''}${task.id}`} onClick={() => inspectTask(task)}>
-      <button className="mai-v3-task-check" data-completed={completed || undefined} aria-label={completed ? `Reabrir ${task.titulo}` : `Concluir ${task.titulo}`} style={completed ? undefined : { borderColor: priorityColor(task.prioridade) }} onClick={event => { event.stopPropagation(); toggle(task) }}>{completed ? '✓' : ''}</button>
+    return <article className="mai-v3-task-row mai-item-row-v2" data-selected={selectedId === task.id} key={task.id} onClick={() => inspectTask(task)}>
+      <button className="mai-v3-task-check" aria-label={`Concluir ${task.titulo}`} style={{ borderColor: priorityColor(task.prioridade) }} onClick={event => { event.stopPropagation(); toggle(task) }} />
       <span className="mai-item-copy-v2"><span className="mai-item-titleline-v2"><strong>{task.titulo}</strong></span><span className="mai-item-subline-v2"><span>{naturalDate(dayOf(task), today)}</span><span>·</span>{projectBadge(project)}</span></span>
       <button className="mai-v3-task-more" aria-label={`Opções de ${task.titulo}`} onClick={event => { event.stopPropagation(); inspectTask(task) }}>•••</button>
     </article>
@@ -99,10 +94,5 @@ export function TaskDateView({ state, today, mode, commit, inspect, selectedId }
     </section>)}
 
     {mode === 'upcoming' && !groups.length ? <div className="mai-v3-empty-line">Nenhuma tarefa futura.</div> : null}
-
-    {mode === 'today' && completedToday.length ? <div className="mai-v3-completed-wrap">
-      <button className="mai-v3-completed-toggle" onClick={() => setCompletedOpen(value => !value)}><MaiIcon name="chevron" size={14}/><span>Concluídas · {completedToday.length}</span></button>
-      {completedOpen ? <div className="mai-v3-task-list mai-v3-completed-list">{completedToday.map(task => renderTask(task, true))}</div> : null}
-    </div> : null}
   </div>
 }
