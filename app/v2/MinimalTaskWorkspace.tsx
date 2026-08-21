@@ -83,6 +83,10 @@ export function MinimalTaskWorkspace(props: Props) {
     return projectMap.get(key) || { id: 'entrada', nome: 'Entrada', cor: '#8e968d', icone: 'inbox' }
   }
 
+  function projectBadge(identity: Row) {
+    return <span className="mai-item-inline-tag mai-item-project-tag">{identity.imagem_url ? <img src={String(identity.imagem_url)} alt=""/> : <i style={{ background: String(identity.cor || '#8e968d') }}><MaiIcon name={String(identity.icone || (identity.id === 'entrada' ? 'inbox' : 'folder'))} size={9}/></i>}<span>{String(identity.nome || 'Entrada')}</span></span>
+  }
+
   function reorder(sourceId: string, targetId: string, targetSection?: string) {
     if (!sourceId || !targetId || sourceId === targetId) return
     commit(current => {
@@ -118,26 +122,25 @@ export function MinimalTaskWorkspace(props: Props) {
     <UnifiedTasks state={state} today={today} view={view} commit={commit} googleRpc={props.googleRpc} onOpenAgenda={props.onOpenAgenda}/>
   </div>
 
+  const renderTask = (task:LegacyTask, completedTask=false, groupId='') => {
+    const identity = projectIdentity(task.projeto_id)
+    const children = state.tasks.filter(child => String(child.parent_id || '') === task.id)
+    const doneChildren = children.filter(child => child.concluida).length
+    const detail = [timeOf(task), children.length ? `${doneChildren} de ${children.length}` : '', completedTask ? 'Concluída' : '', task.secao && task.secao !== groupId ? String(task.secao) : ''].filter(Boolean).join(' · ')
+    return <article className="mai-v3-task-row mai-item-row-v2" data-selected={selectedId === task.id} key={`${completedTask?'done-':''}${task.id}`} draggable={!completedTask} onClick={() => inspectTask(task)} onDragStart={() => setDragId(task.id)} onDragEnd={() => setDragId('')} onDragOver={event => event.preventDefault()} onDrop={event => { event.stopPropagation(); reorder(dragId, task.id, groupId); setDragId('') }}>
+      <button className="mai-v3-task-check" data-completed={completedTask||undefined} aria-label={completedTask?`Reabrir ${task.titulo}`:`Concluir ${task.titulo}`} style={completedTask?undefined:{ borderColor: priorityColor(task.prioridade) }} onClick={event => { event.stopPropagation(); toggle(task) }}>{completedTask?'✓':''}</button>
+      <span className="mai-item-copy-v2"><span className="mai-item-titleline-v2"><strong>{task.titulo}</strong>{projectBadge(identity)}</span><span className="mai-item-subline-v2"><span>{naturalDate(dayOf(task), today)}</span>{detail?<><span>·</span><span>{detail}</span></>:null}</span></span>
+      {!completedTask?<><button className="mai-v3-task-more" aria-label={`Opções de ${task.titulo}`} onClick={event => { event.stopPropagation(); setRowMenu(current => current === task.id ? '' : task.id) }}>•••</button>{rowMenu === task.id ? <div className="mai-v3-task-row-menu" onClick={event=>event.stopPropagation()}><button onClick={() => { setRowMenu(''); inspectTask(task) }}>Editar</button>{projectId && sections.length ? <><span>Mover para</span>{sections.map(section => <button key={section} onClick={() => moveToSection(task.id, section)}>{section}</button>)}<button onClick={() => moveToSection(task.id, '')}>Sem seção</button></> : null}</div> : null}</>:null}
+    </article>
+  }
+
   const taskLists = <>
     <div className="mai-v3-project-sections">{sectionGroups.map(group => <section key={group.id || 'none'} onDragOver={event => event.preventDefault()} onDrop={() => { if (dragId && group.tasks.length === 0) moveToSection(dragId, group.id) }}>
       <h2>{group.label}</h2>
-      <div className="mai-v3-task-list">{group.tasks.map(task => {
-        const identity = projectIdentity(task.projeto_id)
-        const children = state.tasks.filter(child => String(child.parent_id || '') === task.id)
-        const doneChildren = children.filter(child => child.concluida).length
-        return <article className="mai-v3-task-row" data-selected={selectedId === task.id} key={task.id} draggable onDragStart={() => setDragId(task.id)} onDragEnd={() => setDragId('')} onDragOver={event => event.preventDefault()} onDrop={event => { event.stopPropagation(); reorder(dragId, task.id, group.id); setDragId('') }}>
-          <button className="mai-v3-task-check" aria-label={`Concluir ${task.titulo}`} style={{ borderColor: priorityColor(task.prioridade) }} onClick={() => toggle(task)}/>
-          <button className="mai-v3-task-body" onClick={() => inspectTask(task)}><strong>{task.titulo}</strong><small><span>{naturalDate(dayOf(task), today)}</span><span>-</span><span className="mai-v3-task-project">{identity.imagem_url ? <img src={String(identity.imagem_url)} alt=""/> : <i style={{ background: String(identity.cor || '#8e968d') }}><MaiIcon name={String(identity.icone || 'folder')} size={10}/></i>} {String(identity.nome || 'Entrada')}</span>{children.length ? <><span>·</span><span>{doneChildren} de {children.length}</span></> : null}</small></button>
-          <button className="mai-v3-task-more" aria-label={`Opções de ${task.titulo}`} onClick={() => setRowMenu(current => current === task.id ? '' : task.id)}>•••</button>
-          {rowMenu === task.id ? <div className="mai-v3-task-row-menu"><button onClick={() => { setRowMenu(''); inspectTask(task) }}>Editar</button>{projectId && sections.length ? <><span>Mover para</span>{sections.map(section => <button key={section} onClick={() => moveToSection(task.id, section)}>{section}</button>)}<button onClick={() => moveToSection(task.id, '')}>Sem seção</button></> : null}</div> : null}
-        </article>
-      })}{!group.tasks.length ? <div className="mai-v3-empty-line">Nenhuma tarefa nesta seção.</div> : null}</div>
+      <div className="mai-v3-task-list">{group.tasks.map(task => renderTask(task,false,group.id))}{!group.tasks.length ? <div className="mai-v3-empty-line">Nenhuma tarefa nesta seção.</div> : null}</div>
     </section>)}</div>
 
-    <div className="mai-v3-completed-wrap"><button className="mai-v3-completed-toggle" onClick={() => setCompletedOpen(value => !value)}><MaiIcon name="chevron" size={14}/><span>Concluídas · {completed.length}</span></button>{completedOpen ? <div className="mai-v3-task-list mai-v3-completed-list">{completed.map(task => {
-      const identity = projectIdentity(task.projeto_id)
-      return <article className="mai-v3-task-row" key={task.id}><button className="mai-v3-task-check" data-completed="true" onClick={() => toggle(task)}>✓</button><button className="mai-v3-task-body" onClick={() => inspectTask(task)}><strong>{task.titulo}</strong><small><span>{naturalDate(dayOf(task), today)}</span><span>-</span><span className="mai-v3-task-project">{identity.imagem_url ? <img src={String(identity.imagem_url)} alt=""/> : <i style={{ background: String(identity.cor || '#8e968d') }}><MaiIcon name={String(identity.icone || 'folder')} size={10}/></i>} {String(identity.nome || 'Entrada')}</span></small></button></article>
-    })}</div> : null}</div>
+    <div className="mai-v3-completed-wrap"><button className="mai-v3-completed-toggle" onClick={() => setCompletedOpen(value => !value)}><MaiIcon name="chevron" size={14}/><span>Concluídas · {completed.length}</span></button>{completedOpen ? <div className="mai-v3-task-list mai-v3-completed-list">{completed.map(task => renderTask(task,true))}</div> : null}</div>
   </>
 
   return <div className="mai-v3-task-workspace">
