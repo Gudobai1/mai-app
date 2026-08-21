@@ -1,6 +1,6 @@
 'use client'
 
-import { FormEvent, ReactNode, useEffect, useMemo, useRef, useState } from 'react'
+import { CSSProperties, FormEvent, ReactNode, useEffect, useMemo, useRef, useState } from 'react'
 import type { MaiState } from '../../lib/v2/state'
 import type { InspectableItem } from './ContextDrawer'
 import { MaiIcon } from './MaiIcons'
@@ -21,6 +21,8 @@ type ToolProps = {
   icon: string
   label: string
   summary: string
+  color: string
+  leading?: ReactNode
   open: string
   setOpen: (id: string) => void
   children: ReactNode
@@ -29,7 +31,7 @@ type ToolProps = {
 const rows = (value: unknown): Row[] => Array.isArray(value) ? value as Row[] : []
 const dateOnly = (value: unknown) => String(value || '').slice(0, 10)
 const timeOnly = (value: unknown) => String(value || '').includes('T') ? String(value).slice(11, 16) : ''
-const priorityColor = (value: unknown) => Number(value || 4) === 1 ? '#c85b52' : Number(value || 4) === 2 ? '#c28a3d' : Number(value || 4) === 3 ? '#7c9274' : '#b8beb7'
+const priorityColor = (value: unknown) => Number(value || 4) === 1 ? '#c85b52' : Number(value || 4) === 2 ? '#c28a3d' : Number(value || 4) === 3 ? '#7c9274' : '#8d958b'
 
 function addDays(key: string, amount: number) {
   const value = new Date(`${key}T12:00:00`)
@@ -38,18 +40,25 @@ function addDays(key: string, amount: number) {
 }
 
 function formatDate(value: string) {
-  if (!value) return 'Sem data'
+  if (!value) return 'Não selecionado'
   return new Date(`${value}T12:00:00`).toLocaleDateString('pt-BR', { day: 'numeric', month: 'short', year: 'numeric' })
 }
 
-function Tool({ id, icon, label, summary, open, setOpen, children }: ToolProps) {
+function selectedDate(value: string, today: string) {
+  if (!value) return 'Não selecionado'
+  return value === today ? 'Hoje' : formatDate(value)
+}
+
+function Tool({ id, icon, label, summary, color, leading, open, setOpen, children }: ToolProps) {
   const active = open === id
-  return <div className="mai-task-v4-tool" data-open={active || undefined}>
-    <button type="button" className="mai-task-v4-tool-button" aria-label={`${label}: ${summary}`} title={`${label} · ${summary}`} onClick={() => setOpen(active ? '' : id)}>
-      <span className="material-symbols-rounded" aria-hidden="true">{icon}</span>
+  const visual = leading ?? <span className="material-symbols-rounded" aria-hidden="true">{icon}</span>
+  return <div className="mai-task-v4-tool" data-open={active || undefined} style={{ '--mai-tool-color': color } as CSSProperties}>
+    <button type="button" className="mai-task-v4-tool-button" aria-label={`${label}: ${summary}`} title={`${label}: ${summary}`} onClick={() => setOpen(active ? '' : id)}>
+      <span className="mai-task-v4-leading">{visual}</span>
+      <span className="mai-task-v4-tool-value">{summary || 'Não selecionado'}</span>
     </button>
     {active ? <div className="mai-task-v4-popover" role="dialog" aria-label={label} onMouseDown={event => event.stopPropagation()}>
-      <header><span className="material-symbols-rounded">{icon}</span><div><strong>{label}</strong><small>{summary}</small></div></header>
+      <header><span className="mai-task-v4-popover-leading">{visual}</span><div><strong>{label}</strong><small>{summary || 'Não selecionado'}</small></div></header>
       <div className="mai-task-v4-popover-body">{children}</div>
     </div> : null}
   </div>
@@ -115,7 +124,8 @@ function ProjectSectionPicker({ projects, projectId, section, onProject, onSecti
       const id = String(project.id)
       const sections = rows(project.secoes).map(String)
       return <button type="button" key={id} data-selected={projectId === id || undefined} onClick={() => { onProject(id); onSection(''); if (sections.length) setLevelProject(id); else close() }}>
-        <span className="material-symbols-rounded">folder</span><span>{String(project.nome || 'Projeto')}</span>{sections.length ? <span className="material-symbols-rounded">chevron_right</span> : projectId === id ? <span className="material-symbols-rounded">check</span> : <span />}
+        {project.imagem_url ? <img className="mai-task-v4-project-option-image" src={String(project.imagem_url)} alt=""/> : <span className="material-symbols-rounded" style={{ color:String(project.cor || 'var(--v3-accent)') }}>{String(project.icone || 'folder')}</span>}
+        <span>{String(project.nome || 'Projeto')}</span>{sections.length ? <span className="material-symbols-rounded">chevron_right</span> : projectId === id ? <span className="material-symbols-rounded">check</span> : <span />}
       </button>
     })}
   </div>
@@ -167,8 +177,14 @@ export function TaskContextDrawerV4({ item, state, today, commit, onClose }: Pro
   const project = projects.find(entry => String(entry.id) === projectId)
   const projectName = projectId === 'entrada' ? 'Entrada' : String(project?.nome || 'Projeto')
   const section = String(draft.secao || '')
-  const priorityLabel = ({ 1: 'Alta', 2: 'Média', 3: 'Baixa', 4: 'Sem prioridade' } as Record<number,string>)[Number(draft.prioridade || 4)]
-  const repeatLabel = ({ '': 'Não repetir', diariamente: 'Todos os dias', semanalmente: 'Toda semana', 'semanal:1,2,3,4,5': 'Dias úteis', mensalmente: 'Todo mês' } as Record<string,string>)[String(draft.repeticao || '')] || 'Personalizado'
+  const priorityLabel = ({ 1: 'Alta', 2: 'Média', 3: 'Baixa', 4: 'Não selecionado' } as Record<number,string>)[Number(draft.prioridade || 4)]
+  const repeatLabel = ({ '': 'Não selecionado', diariamente: 'Todos os dias', semanalmente: 'Toda semana', 'semanal:1,2,3,4,5': 'Dias úteis', mensalmente: 'Todo mês' } as Record<string,string>)[String(draft.repeticao || '')] || 'Personalizado'
+  const projectLeading = projectId === 'entrada'
+    ? <span className="material-symbols-rounded">inbox</span>
+    : project?.imagem_url
+      ? <img className="mai-task-v4-project-icon-image" src={String(project.imagem_url)} alt=""/>
+      : <span className="material-symbols-rounded">{String(project?.icone || 'folder')}</span>
+  const projectColor = projectId === 'entrada' ? '#687d62' : String(project?.cor || '#687d62')
 
   function save(event: FormEvent) {
     event.preventDefault()
@@ -219,15 +235,15 @@ export function TaskContextDrawerV4({ item, state, today, commit, onClose }: Pro
 
       <form className="mai-task-v4-form" onSubmit={save}>
         <div className="mai-task-v4-scroll" onMouseDown={() => openTool && setOpenTool('')}>
-          <input className="mai-task-v4-title" autoFocus value={String(draft.titulo || '')} onChange={event => set({ titulo: event.target.value })} placeholder="Nome da tarefa" onMouseDown={event => event.stopPropagation()}/>
-          <textarea className="mai-task-v4-description" rows={2} value={String(draft.descricao || '')} placeholder="Descrição" onChange={event => set({ descricao: event.target.value })} onMouseDown={event => event.stopPropagation()}/>
+          <input className="mai-v3-title-input mai-context-unified-title" autoFocus value={String(draft.titulo || '')} onChange={event => set({ titulo: event.target.value })} placeholder="Nome da tarefa" onMouseDown={event => event.stopPropagation()}/>
+          <textarea className="mai-v3-description-input mai-context-unified-description" rows={2} value={String(draft.descricao || '')} placeholder="Descrição" onChange={event => set({ descricao: event.target.value })} onMouseDown={event => event.stopPropagation()}/>
 
-          <div className="mai-task-v4-toolbar" onMouseDown={event => event.stopPropagation()}>
-            <Tool id="date" icon="calendar_today" label="Data" summary={formatDate(dateOnly(draft.data_vencimento))} open={openTool} setOpen={setOpenTool}><CalendarPicker value={dateOnly(draft.data_vencimento)} today={today} onChange={value => set({ data_vencimento: value, _hora: value ? draft._hora || '' : '' })} close={() => setOpenTool('')}/></Tool>
-            <Tool id="time" icon="schedule" label="Horário" summary={String(draft._hora || 'Sem horário')} open={openTool} setOpen={setOpenTool}><TimePicker value={String(draft._hora || '')} onChange={value => set({ _hora: value })} close={() => setOpenTool('')}/></Tool>
-            <Tool id="project" icon="folder" label="Projeto e seção" summary={`${projectName}${section ? ` · ${section}` : ''}`} open={openTool} setOpen={setOpenTool}><ProjectSectionPicker projects={projects} projectId={projectId} section={section} onProject={id => set({ projeto_id: id, secao: '' })} onSection={value => set({ secao: value })} close={() => setOpenTool('')}/></Tool>
-            <Tool id="priority" icon="flag" label="Prioridade" summary={priorityLabel} open={openTool} setOpen={setOpenTool}><OptionList value={Number(draft.prioridade || 4)} onChange={value => set({ prioridade: Number(value) })} close={() => setOpenTool('')} options={[{value:4,label:'Sem prioridade',icon:'flag'},{value:3,label:'Baixa',icon:'flag'},{value:2,label:'Média',icon:'flag'},{value:1,label:'Alta',icon:'flag'}]}/></Tool>
-            <Tool id="repeat" icon="repeat" label="Repetir" summary={repeatLabel} open={openTool} setOpen={setOpenTool}><OptionList value={String(draft.repeticao || '')} onChange={value => set({ repeticao: value })} close={() => setOpenTool('')} options={[{value:'',label:'Não repetir',icon:'block'},{value:'diariamente',label:'Todos os dias',icon:'today'},{value:'semanalmente',label:'Toda semana',icon:'date_range'},{value:'semanal:1,2,3,4,5',label:'Dias úteis',icon:'work'},{value:'mensalmente',label:'Todo mês',icon:'calendar_month'}]}/></Tool>
+          <div className="mai-task-v4-toolbar mai-context-unified-tools" onMouseDown={event => event.stopPropagation()}>
+            <Tool id="date" icon="calendar_today" label="Data" summary={selectedDate(dateOnly(draft.data_vencimento), today)} color="#4f7cac" open={openTool} setOpen={setOpenTool}><CalendarPicker value={dateOnly(draft.data_vencimento)} today={today} onChange={value => set({ data_vencimento: value, _hora: value ? draft._hora || '' : '' })} close={() => setOpenTool('')}/></Tool>
+            <Tool id="time" icon="schedule" label="Horário" summary={String(draft._hora || 'Não selecionado')} color="#875fb2" open={openTool} setOpen={setOpenTool}><TimePicker value={String(draft._hora || '')} onChange={value => set({ _hora: value })} close={() => setOpenTool('')}/></Tool>
+            <Tool id="project" icon="folder" label="Projeto e seção" summary={`${projectName}${section ? ` · ${section}` : ''}`} color={projectColor} leading={projectLeading} open={openTool} setOpen={setOpenTool}><ProjectSectionPicker projects={projects} projectId={projectId} section={section} onProject={id => set({ projeto_id: id, secao: '' })} onSection={value => set({ secao: value })} close={() => setOpenTool('')}/></Tool>
+            <Tool id="priority" icon="flag" label="Prioridade" summary={priorityLabel} color={priorityColor(draft.prioridade)} open={openTool} setOpen={setOpenTool}><OptionList value={Number(draft.prioridade || 4)} onChange={value => set({ prioridade: Number(value) })} close={() => setOpenTool('')} options={[{value:4,label:'Sem prioridade',icon:'flag'},{value:3,label:'Baixa',icon:'flag'},{value:2,label:'Média',icon:'flag'},{value:1,label:'Alta',icon:'flag'}]}/></Tool>
+            <Tool id="repeat" icon="repeat" label="Repetir" summary={repeatLabel} color="#2f8a83" open={openTool} setOpen={setOpenTool}><OptionList value={String(draft.repeticao || '')} onChange={value => set({ repeticao: value })} close={() => setOpenTool('')} options={[{value:'',label:'Não repetir',icon:'block'},{value:'diariamente',label:'Todos os dias',icon:'today'},{value:'semanalmente',label:'Toda semana',icon:'date_range'},{value:'semanal:1,2,3,4,5',label:'Dias úteis',icon:'work'},{value:'mensalmente',label:'Todo mês',icon:'calendar_month'}]}/></Tool>
           </div>
 
           <section className="mai-task-v4-section mai-task-v4-subtasks">
