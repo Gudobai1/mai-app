@@ -16,5 +16,5 @@ type Props = { view: AppView; onAdd: (type: string) => void }
 
 export function FloatingAddButton({ view, onAdd }: Props) {
   const action = actionFor(view)
-  return <button className="mai-floating-add mai-v3-floating-add" onClick={() => onAdd(action.type)} aria-label={action.label} title={action.label}><span>＋</span></button>
+  return <button className="mai-floating-add mai-v3-floating-add" onClick={() => onAdd(action.type)} aria-label={action.label} title={action.label}><span>+</span></button>
 }
