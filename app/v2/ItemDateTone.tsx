@@ -11,6 +11,20 @@ const dateKey = (value: unknown) => String(value || '').slice(0, 10)
 const normalized = (value: unknown) => String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('pt-BR').replace(/[.,]/g, '').replace(/\s+/g, ' ').trim()
 const completedStatus = (value: unknown) => ['pago','paga','quitado','quitada','concluido','concluida','concluído','concluída'].includes(String(value || '').toLocaleLowerCase('pt-BR'))
 
+function localToday() {
+  const now = new Date()
+  return `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`
+}
+
+function readState(): MaiState | null {
+  try {
+    const raw = localStorage.getItem('mai-v2-state')
+    return raw ? JSON.parse(raw) as MaiState : null
+  } catch {
+    return null
+  }
+}
+
 function dateVariants(key: string, today: string) {
   if (!key) return new Set<string>()
   const target = new Date(`${key}T12:00:00`)
@@ -34,7 +48,7 @@ function findRecord(state: MaiState, title: string, shownDate: string, today: st
   const wantedDate = normalized(shownDate)
   const candidates: { date:string; pending:boolean }[] = []
 
-  state.tasks.forEach(task => {
+  ;(state.tasks || []).forEach(task => {
     if (normalized(task.titulo) !== wantedTitle) return
     candidates.push({ date:dateKey(task.data_vencimento), pending:task.concluida !== true })
   })
@@ -94,13 +108,16 @@ function toneForDate(date: string, today: string, pending: boolean): DateTone {
   return 'future'
 }
 
-export function ItemDateTone({ state, today }: { state: MaiState; today: string }) {
+export function ItemDateTone() {
   useEffect(() => {
-    const root = document.querySelector('.mai-v3-workspace') as HTMLElement | null
-    if (!root) return
     let observer: MutationObserver | null = null
 
     const decorate = () => {
+      const root = document.querySelector('.mai-v3-workspace') as HTMLElement | null
+      if (!root) return
+      const state = readState()
+      const today = localToday()
+
       root.querySelectorAll<HTMLElement>('.mai-item-subline-v2').forEach(subline => {
         const dateElement = subline.firstElementChild as HTMLElement | null
         const row = subline.closest<HTMLElement>('.mai-item-row-v2')
@@ -116,17 +133,18 @@ export function ItemDateTone({ state, today }: { state: MaiState; today: string 
         let tone: DateTone = 'neutral'
         if (normalized(shownDate) === 'hoje' || isTodaySurface) tone = 'today'
         else if (isCompletedSurface || isNotesSurface || isUpcomingSurface) tone = 'future'
-        else {
+        else if (state) {
           const matched = findRecord(state, title, shownDate, today)
           if (matched?.date) tone = toneForDate(matched.date, today, matched.pending)
           else tone = toneForDate(parseShownDate(shownDate, today), today, true)
-        }
+        } else tone = toneForDate(parseShownDate(shownDate, today), today, true)
 
         dateElement.dataset.maiDateTone = tone
         dateElement.classList.add('mai-item-date-v4')
       })
     }
 
+    const root = document.querySelector('.mai-v3-shell') || document.body
     const observe = () => observer?.observe(root, { childList:true, subtree:true, characterData:true })
     observer = new MutationObserver(() => {
       observer?.disconnect()
@@ -135,8 +153,9 @@ export function ItemDateTone({ state, today }: { state: MaiState; today: string 
     })
     decorate()
     observe()
-    return () => observer?.disconnect()
-  }, [state, today])
+    const timer = window.setInterval(decorate, 60_000)
+    return () => { observer?.disconnect(); window.clearInterval(timer) }
+  }, [])
 
   return null
 }
