@@ -23,6 +23,7 @@ import './mai-context-drawer-v2.css'
 import './mai-task-drawer-match-create.css'
 import './mai-context-unified-v4.css'
 import './mai-context-specificity-fix.css'
+import './mai-item-layout-v3.css'
 
 export const metadata: Metadata = {
   title: 'MAI — Meu Sistema',
