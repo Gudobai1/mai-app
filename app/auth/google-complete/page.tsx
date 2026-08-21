@@ -17,8 +17,8 @@ export default function GoogleCompletePage() {
       }
 
       const { data, error } = await supabase.auth.verifyOtp({ token_hash: tokenHash, type: 'email' })
-      if (error || !data.session || String(data.user?.email || '').toLowerCase() !== 'marcelljunior2@gmail.com') {
-        location.replace('/login?error=unauthorized_google_account')
+      if (error || !data.session) {
+        location.replace('/login?error=supabase_session_error')
         return
       }
 
