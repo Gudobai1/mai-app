@@ -118,6 +118,11 @@ export function TodayCompact({ state, today, commit, inspect, onSearch, onMore, 
     return project || { id: 'entrada', nome: 'Entrada', cor: '#8e968d', icone: 'inbox' }
   }
 
+  const projectBadge = (project: Row) => <span className="mai-item-inline-tag mai-item-project-tag">
+    {project.imagem_url ? <img src={String(project.imagem_url)} alt="" /> : <i style={{ background: String(project.cor || '#8e968d') }}><MaiIcon name={String(project.icone || (project.id === 'entrada' ? 'inbox' : 'folder'))} size={9}/></i>}
+    <span>{String(project.nome || 'Entrada')}</span>
+  </span>
+
   const header = <header className="mai-v3-page-header">
     <div><h1>Hoje</h1><p>{dateLabel}</p></div>
     <div className="mai-v3-page-actions">
@@ -139,12 +144,14 @@ export function TodayCompact({ state, today, commit, inspect, onSearch, onMore, 
     <div className="mai-today-unified-list">{events.map(item => {
       const [hour, minute] = String(item.time || '').split(':').map(Number)
       const passed = todayIsCurrent && item.time && Number.isFinite(hour) && (hour * 60 + (minute || 0)) < nowMinutes
-      const label = item.subtitle === 'Em andamento' ? 'Em andamento' : item.raw.dia_inteiro === true || !item.time ? 'Dia inteiro' : item.time
+      const detail = item.subtitle === 'Em andamento' ? 'Em andamento' : item.raw.dia_inteiro === true || !item.time ? 'Dia inteiro' : item.time
       const eventColor = String(item.raw.categoria_cor || item.color || 'var(--v3-accent)')
-      return <button key={item.id} className="mai-today-unified-row" data-passed={Boolean(passed)} onClick={() => inspectPlanner(item)}>
+      return <button key={item.id} className="mai-today-unified-row mai-item-row-v2" data-passed={Boolean(passed)} onClick={() => inspectPlanner(item)}>
         <span className="mai-event-item-icon" style={{ color: eventColor }}><MaiIcon name="calendar" size={16}/></span>
-        <span className="mai-today-unified-main"><strong>{item.title}</strong><small className="mai-today-unified-origin">{eventOrigin(item.raw)}</small></span>
-        <span className="mai-today-unified-meta"><strong>Hoje</strong><small>{label}</small></span>
+        <span className="mai-item-copy-v2">
+          <span className="mai-item-titleline-v2"><strong>{item.title}</strong><span className="mai-item-inline-tag">{eventOrigin(item.raw)}</span></span>
+          <span className="mai-item-subline-v2"><span>Hoje</span><span>·</span><span>{detail}</span></span>
+        </span>
       </button>
     })}{!events.length ? <div className="mai-v3-empty-line">Nenhum compromisso para hoje.</div> : null}</div>
   </section>
@@ -155,13 +162,13 @@ export function TodayCompact({ state, today, commit, inspect, onSearch, onMore, 
       const project = projectIdentity(task.projeto_id)
       const children = state.tasks.filter(child => String((child as Row).parent_id || '') === String(task.id))
       const doneChildren = children.filter(child => child.concluida).length
-      return <article className="mai-today-unified-row" key={task.id}>
-        <button className="mai-today-unified-dot" aria-label={`Concluir ${task.titulo}`} style={{ borderColor: priorityColor(task.prioridade) }} onClick={() => toggleTask(task.id)} />
-        <button className="mai-today-unified-main" style={{border:0,background:'transparent',textAlign:'left',padding:0}} onClick={() => inspectTask(task)}>
-          <strong>{task.titulo}</strong>
-          <small className="mai-today-unified-origin">{project.imagem_url ? <img src={String(project.imagem_url)} alt="" /> : <i style={{ background: String(project.cor || '#8e968d') }}><MaiIcon name={String(project.icone || (project.id === 'entrada' ? 'inbox' : 'folder'))} size={9}/></i>}<span>{String(project.nome || 'Entrada')}</span></small>
-        </button>
-        <span className="mai-today-unified-meta"><strong>Hoje</strong>{children.length ? <small>{doneChildren} de {children.length}</small> : null}</span>
+      const detail = [timeKey(task.data_vencimento), children.length ? `${doneChildren} de ${children.length}` : ''].filter(Boolean).join(' · ')
+      return <article className="mai-today-unified-row mai-item-row-v2" key={task.id} onClick={() => inspectTask(task)}>
+        <button className="mai-today-unified-dot" aria-label={`Concluir ${task.titulo}`} style={{ borderColor: priorityColor(task.prioridade) }} onClick={event => { event.stopPropagation(); toggleTask(task.id) }} />
+        <span className="mai-item-copy-v2">
+          <span className="mai-item-titleline-v2"><strong>{task.titulo}</strong>{projectBadge(project)}</span>
+          <span className="mai-item-subline-v2"><span>Hoje</span>{detail ? <><span>·</span><span>{detail}</span></> : null}</span>
+        </span>
       </article>
     })}{!filteredTasks.length ? <div className="mai-v3-empty-line">Nenhuma tarefa para hoje.</div> : null}</div>
 
@@ -169,10 +176,9 @@ export function TodayCompact({ state, today, commit, inspect, onSearch, onMore, 
       <button className="mai-v3-completed-toggle" onClick={() => setCompletedOpen(value => !value)}><MaiIcon name="chevron" size={14}/><span>Concluídas · {completedToday.length}</span></button>
       {completedOpen ? <div className="mai-today-unified-list mai-v3-completed-list">{completedToday.map(task => {
         const project = projectIdentity(task.projeto_id)
-        return <article className="mai-today-unified-row" key={`done-${task.id}`}>
-          <button className="mai-today-unified-dot" data-done="true" onClick={() => toggleTask(task.id)}>✓</button>
-          <button className="mai-today-unified-main" style={{border:0,background:'transparent',textAlign:'left',padding:0}} onClick={() => inspectTask(task)}><strong>{task.titulo}</strong><small className="mai-today-unified-origin">{project.imagem_url ? <img src={String(project.imagem_url)} alt="" /> : <i style={{ background: String(project.cor || '#8e968d') }}><MaiIcon name={String(project.icone || 'folder')} size={9}/></i>}<span>{String(project.nome || 'Entrada')}</span></small></button>
-          <span className="mai-today-unified-meta"><strong>Hoje</strong><small>Concluída</small></span>
+        return <article className="mai-today-unified-row mai-item-row-v2" key={`done-${task.id}`} onClick={() => inspectTask(task)}>
+          <button className="mai-today-unified-dot" data-done="true" onClick={event => { event.stopPropagation(); toggleTask(task.id) }}>✓</button>
+          <span className="mai-item-copy-v2"><span className="mai-item-titleline-v2"><strong>{task.titulo}</strong>{projectBadge(project)}</span><span className="mai-item-subline-v2"><span>Hoje</span><span>·</span><span>Concluída</span></span></span>
         </article>
       })}</div> : null}
     </div> : null}
