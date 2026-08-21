@@ -25,6 +25,7 @@ import styles from './unified.module.css'
 const secondary: SecondaryView[] = ['habits', 'goals', 'notes', 'finance', 'health', 'files']
 type ProjectDialog = { projectId?: string; parentId?: string; tab?: 'details' | 'sections' } | null
 type CreateState = { kind: 'task' | 'event'; switchable?: boolean } | null
+type GoogleProfile = { name: string; picture?: string; email?: string } | null
 
 const validView = (value: unknown): value is AppView => {
   const text = String(value || '')
@@ -51,9 +52,19 @@ export function UnifiedAppUx() {
   const [creating, setCreating] = useState<CreateState>(null)
   const [healthCreating, setHealthCreating] = useState(false)
   const [areaCreateRequest, setAreaCreateRequest] = useState('')
+  const [googleProfile, setGoogleProfile] = useState<GoogleProfile>(null)
   const taskScope = scopeFromLegacy(runtime.state.configs.taskModuleScope)
   const activeProjectId = taskScope.startsWith('project:') ? taskScope.slice(8) : 'entrada'
   const advanced = runtime.state.configs.advancedAreas && typeof runtime.state.configs.advancedAreas === 'object' ? runtime.state.configs.advancedAreas as Record<string,boolean> : {}
+
+  useEffect(() => {
+    let active = true
+    fetch('/api/google/profile', { cache: 'no-store' })
+      .then(response => response.ok ? response.json() : null)
+      .then(profile => { if (active && profile?.name) setGoogleProfile(profile) })
+      .catch(() => {})
+    return () => { active = false }
+  }, [])
 
   useEffect(() => {
     if (!runtime.ready || restoredView.current) return
@@ -126,10 +137,14 @@ export function UnifiedAppUx() {
   }
 
   return <div className={`${styles.appShell} mai-v3-shell`}>
-    <ShellSidebar state={runtime.state} view={view} sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} navigate={navigate} onSearch={() => setSearchOpen(true)} onSettings={() => setSettingsOpen(true)} />
+    <ShellSidebar state={runtime.state} view={view} sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} navigate={navigate} onSearch={() => setSearchOpen(true)} onSettings={() => setSettingsOpen(true)} profile={googleProfile} />
 
     <main className={`${styles.main} mai-v3-main`}>
-      <div className={styles.mobileTop}><button onClick={() => setSidebarOpen(true)}><MaiIcon name="menu" /></button><strong>MAI</strong><span /></div>
+      <div className={`${styles.mobileTop} mai-mobile-topbar`}>
+        <button onClick={() => setSidebarOpen(true)} aria-label="Abrir menu"><MaiIcon name="menu" /></button>
+        <strong>MAI</strong>
+        <button className="mai-mobile-search-button" onClick={() => setSearchOpen(true)} aria-label="Buscar" title="Buscar"><MaiIcon name="search" /></button>
+      </div>
       <div className={`${styles.workspace} mai-v3-workspace`}>
         {!runtime.ready ? <div className={styles.loadingState}>Carregando seu MAI…</div> : <>
           {view === 'today' ? <TodayV4 state={runtime.state} today={runtime.today} commit={runtime.commit} navigate={navigate} inspect={setSelected} onSearch={() => setSearchOpen(true)} onMore={() => setSettingsOpen(true)}/> : null}
