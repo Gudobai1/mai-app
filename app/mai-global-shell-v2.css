@@ -138,6 +138,35 @@
 }
 .mai-global-search-close:hover{background:var(--v3-hover)!important;color:var(--v3-text)!important}
 
+/* Foco da busca não altera nenhuma característica visual da barra. */
+.mai-global-search-header input,
+.mai-global-search-header input:hover,
+.mai-global-search-header input:focus,
+.mai-global-search-header input:focus-visible,
+.mai-global-search-header input:active{
+  border:0!important;
+  outline:0!important;
+  box-shadow:none!important;
+  background:transparent!important;
+  appearance:none!important;
+  -webkit-appearance:none!important;
+}
+
+.mai-global-search-header:focus-within,
+.mai-global-search-panel:focus-within{
+  outline:0!important;
+}
+
+.mai-global-search-desktop:focus,
+.mai-global-search-desktop:focus-visible,
+.mai-mobile-search-button:focus,
+.mai-mobile-search-button:focus-visible,
+.mai-global-search-close:focus,
+.mai-global-search-close:focus-visible{
+  outline:0!important;
+  box-shadow:none!important;
+}
+
 @media (min-width:861px){
   .mai-global-search-desktop{display:flex!important}
 }
