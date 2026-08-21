@@ -140,11 +140,14 @@ export function useMaiRuntime() {
   }
 
   async function disconnectGoogle() {
-    if (!confirm('Desconectar Google Agenda e Drive deste navegador?')) return
-    await fetch('/api/google/disconnect', { method: 'POST' })
+    if (!confirm('Desconectar a conta Google e sair do MAI neste navegador?')) return
+    await fetch('/api/google/disconnect', { method: 'POST' }).catch(() => null)
+    localStorage.removeItem('mai-supabase-access-token')
+    localStorage.removeItem('mai-supabase-refresh-token')
     setGoogleConnected(false)
     setCalendars([])
-    setState(current => ({ ...current, events: rows(current.events).filter(event => event.tipo !== 'google' && event.tipo !== 'gcalendar') }))
+    router.replace('/login')
+    router.refresh()
   }
 
   async function requestNotifications() {
@@ -182,11 +185,13 @@ export function useMaiRuntime() {
     finally { if (importRef.current) importRef.current.value = '' }
   }
 
-  function logout() {
-    if (!confirm('Sair da conta? Os dados locais permanecem neste navegador.')) return
+  async function logout() {
+    if (!confirm('Sair da conta? Os dados sincronizados permanecem no Supabase.')) return
+    await fetch('/api/google/disconnect', { method: 'POST' }).catch(() => null)
     localStorage.removeItem('mai-supabase-access-token')
     localStorage.removeItem('mai-supabase-refresh-token')
-    router.push('/login')
+    router.replace('/login')
+    router.refresh()
   }
 
   return {
