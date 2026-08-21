@@ -37,11 +37,25 @@ export function SearchOverlay({ state, query, setQuery, onClose, inspect, openPr
     ].slice(0, 60)
   }, [query, state, projects])
 
+  function close() {
+    setQuery('')
+    onClose()
+  }
+
   function open(result: { kind: string; id: string; title: string; raw: Row }) {
-    onClose(); setQuery('')
+    close()
     if (result.kind === 'project') { openProject(result.id); return }
     inspect({ kind: result.kind as InspectableItem['kind'], sourceId: result.id, title: result.title, date: String(result.raw.data_vencimento || result.raw.data_inicio || result.raw.data || result.raw.prazo || '').slice(0, 10), raw: result.raw })
   }
 
-  return <div className={styles.searchLayer} onMouseDown={onClose}><section onMouseDown={event => event.stopPropagation()}><header><MaiIcon name="search" /><input autoFocus value={query} onChange={event => setQuery(event.target.value)} placeholder="Buscar em todo o MAI" /><kbd>Esc</kbd></header><div>{results.map(result => <button key={`${result.kind}-${result.id}`} onClick={() => open(result)}><span><strong>{result.title}</strong><small>{result.meta}</small></span><b>↗</b></button>)}{query && !results.length ? <p>Nenhum resultado encontrado.</p> : !query ? <p>Digite para buscar.</p> : null}</div></section></div>
+  return <div className={`${styles.searchLayer} mai-global-search-layer`} onMouseDown={close}>
+    <section className="mai-global-search-panel" data-empty={!query.trim()} onMouseDown={event => event.stopPropagation()}>
+      <header className="mai-global-search-header">
+        <MaiIcon name="search" />
+        <input autoFocus value={query} onChange={event => setQuery(event.target.value)} placeholder="Buscar em todo o MAI" />
+        <button className="mai-global-search-close" type="button" onClick={close} aria-label="Fechar busca" title="Fechar busca"><MaiIcon name="close" size={18}/></button>
+      </header>
+      <div className="mai-global-search-results">{results.map(result => <button key={`${result.kind}-${result.id}`} onClick={() => open(result)}><span><strong>{result.title}</strong><small>{result.meta}</small></span><b>↗</b></button>)}{query && !results.length ? <p>Nenhum resultado encontrado.</p> : !query ? <p>Digite para buscar.</p> : null}</div>
+    </section>
+  </div>
 }
