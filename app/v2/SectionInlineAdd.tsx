@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from 'react'
 import type { AppView } from './app-types'
-import styles from './ContextualInlineAdd.module.css'
+import styles from './SectionInlineAdd.module.css'
 
 type Props = {
   view: AppView
@@ -26,13 +26,13 @@ function fromText(value: string): SectionAction | null {
   return null
 }
 
-function fallback(view: AppView): SectionAction | null {
+function fallback(view: AppView, section: HTMLElement): SectionAction | null {
   const text = String(view)
   if (text === 'tasks') return { type: 'task', label: 'Adicionar tarefa' }
   if (text === 'habits') return { type: 'habits', label: 'Adicionar hábito' }
   if (text === 'goals') return { type: 'goals', label: 'Adicionar meta' }
   if (text === 'notes') return { type: 'notes', label: 'Adicionar nota' }
-  if (text === 'finance') return { type: 'finance', label: 'Adicionar lançamento' }
+  if (text === 'finance') return section.querySelector('.mai-v3-finance-rows') ? { type: 'finance', label: 'Adicionar lançamento' } : null
   if (text === 'health') return { type: 'health', label: 'Adicionar registro' }
   if (text === 'files') return { type: 'files', label: 'Adicionar arquivo' }
   if (text === 'upcoming') return { type: 'context', label: 'Adicionar' }
@@ -48,7 +48,6 @@ function listIn(section: HTMLElement): HTMLElement | null {
     '.mai-v3-note-list',
     '.mai-v3-file-list',
     '.mai-v3-health-list',
-    '.mai-v3-month-list',
   ]
   for (const selector of selectors) {
     const node = section.querySelector<HTMLElement>(selector)
@@ -66,7 +65,7 @@ function actionFor(section: HTMLElement, view: AppView): SectionAction | null {
   const byEmpty = empty ? fromText(empty.textContent || '') : null
   if (byEmpty) return byEmpty
 
-  return fallback(view)
+  return fallback(view, section)
 }
 
 export function SectionInlineAdd({ view, onAdd }: Props) {
@@ -78,6 +77,7 @@ export function SectionInlineAdd({ view, onAdd }: Props) {
     if (!workspace) return
 
     const hosts = new Set<HTMLElement>()
+    let observer: MutationObserver | null = null
 
     const clear = () => {
       hosts.forEach(host => host.remove())
@@ -101,12 +101,12 @@ export function SectionInlineAdd({ view, onAdd }: Props) {
         })
 
         const host = document.createElement('div')
-        host.className = 'mai-section-inline-add-host'
+        host.className = `${styles.host} mai-section-inline-add-host`
         host.dataset.kind = action.type
 
         const button = document.createElement('button')
         button.type = 'button'
-        button.className = styles.inlineAdd
+        button.className = styles.button
         button.setAttribute('aria-label', action.label)
 
         const icon = document.createElement('span')
@@ -129,12 +129,18 @@ export function SectionInlineAdd({ view, onAdd }: Props) {
       })
     }
 
+    const observe = () => observer?.observe(workspace, { childList: true, subtree: true })
+    observer = new MutationObserver(() => {
+      observer?.disconnect()
+      decorate()
+      observe()
+    })
+
     decorate()
-    const observer = new MutationObserver(() => decorate())
-    observer.observe(workspace, { childList: true, subtree: true })
+    observe()
 
     return () => {
-      observer.disconnect()
+      observer?.disconnect()
       clear()
     }
   }, [view])
