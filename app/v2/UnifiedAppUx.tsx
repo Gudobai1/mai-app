@@ -10,8 +10,8 @@ import { FinanceV4 } from './FinanceV4'
 import { GoalsV4 } from './GoalsV4'
 import { HabitsV4 } from './HabitsV4'
 import { HealthQuickAddDrawer } from './HealthQuickAddDrawer'
-import { MaiIcon } from './MaiIcons'
 import { MinimalAreas, type SecondaryView } from './MinimalAreas'
+import { MobileBottomNav } from './MobileBottomNav'
 import { NotesV4 } from './NotesV4'
 import { ProjectDrawer } from './ProjectDrawer'
 import { QuickCreateDrawer } from './QuickCreateDrawer'
@@ -144,11 +144,6 @@ export function UnifiedAppUx() {
     <ShellSidebar state={runtime.state} view={view} sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} navigate={navigate} onSearch={() => setSearchOpen(true)} onSettings={() => setSettingsOpen(true)} profile={googleProfile} />
 
     <main className={`${styles.main} mai-v3-main`}>
-      <div className={`${styles.mobileTop} mai-mobile-topbar`}>
-        <button onClick={() => setSidebarOpen(true)} aria-label="Abrir menu"><MaiIcon name="menu" /></button>
-        <strong>MAI</strong>
-        <button className="mai-mobile-search-button" onClick={() => setSearchOpen(true)} aria-label="Buscar" title="Buscar"><MaiIcon name="search" /></button>
-      </div>
       <div className={`${styles.workspace} mai-v3-workspace`}>
         {!runtime.ready ? <div className={styles.loadingState}>Carregando seu MAI…</div> : <>
           {view === 'today' ? <TodayV4 state={runtime.state} today={runtime.today} commit={runtime.commit} navigate={navigate} inspect={setSelected} onSearch={() => setSearchOpen(true)} onMore={() => setSettingsOpen(true)}/> : null}
@@ -179,6 +174,7 @@ export function UnifiedAppUx() {
       </div>
     </main>
 
+    <MobileBottomNav view={view} searchOpen={searchOpen} navigate={navigate} onSearch={() => setSearchOpen(true)} onSettings={() => setSettingsOpen(true)} />
     <SectionInlineAdd view={view} onAdd={contextualAdd}/>
     {searchOpen ? <SearchOverlay state={runtime.state} query={search} setQuery={setSearch} onClose={() => setSearchOpen(false)} inspect={setSelected} navigate={navigate} openProject={id => setProjectDialog({ projectId:id, tab:'details' })} /> : null}
     {projectDialog ? <ProjectDrawer state={runtime.state} commit={runtime.commit} projectId={projectDialog.projectId} parentId={projectDialog.parentId} initialTab={projectDialog.tab} onClose={() => setProjectDialog(null)} onSaved={id => { const wasCreating = !projectDialog.projectId; setProjectDialog(null); if (wasCreating) setTaskScope(`project:${id}`) }} onRemoved={() => { setProjectDialog(null); setTaskScope('entrada') }} /> : null}
