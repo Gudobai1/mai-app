@@ -8,7 +8,6 @@ import { FinanceV4 } from './FinanceV4'
 import { FloatingAddButton } from './FloatingAddButton'
 import { HabitsV4 } from './HabitsV4'
 import { HealthQuickAddDrawer } from './HealthQuickAddDrawer'
-import { HomeCompact } from './HomeCompact'
 import { MaiIcon } from './MaiIcons'
 import { MinimalAreas, type SecondaryView } from './MinimalAreas'
 import { ProjectDrawer } from './ProjectDrawer'
@@ -16,6 +15,8 @@ import { QuickCreateDrawer } from './QuickCreateDrawer'
 import { SearchOverlay } from './SearchOverlay'
 import { ShellSidebar } from './ShellSidebar'
 import { TasksModule } from './TasksModule'
+import { TodayV4 } from './TodayV4'
+import { UpcomingV4 } from './UpcomingV4'
 import { useMaiRuntime } from './useMaiRuntime'
 import styles from './unified.module.css'
 
@@ -38,7 +39,7 @@ const scopeFromLegacy = (value: unknown): TaskModuleScope => {
 export function UnifiedAppUx() {
   const runtime = useMaiRuntime()
   const restoredView = useRef(false)
-  const [view, setView] = useState<AppView>('home')
+  const [view, setView] = useState<AppView>('today')
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
   const [search, setSearch] = useState('')
@@ -58,10 +59,17 @@ export function UnifiedAppUx() {
     const saved = runtime.state.configs.lastView
     if (!validView(saved)) return
     const text = String(saved)
-    if (text === 'today' || text === 'upcoming' || text === 'inbox' || text.startsWith('project:')) {
+    if (text === 'home') {
+      setView('today')
+      runtime.commit(current => ({ ...current, configs: { ...current.configs, lastView: 'today' } }))
+      return
+    }
+    if (text === 'inbox' || text.startsWith('project:')) {
       setView('tasks')
       runtime.commit(current => ({ ...current, configs: { ...current.configs, lastView: 'tasks', taskModuleScope: scopeFromLegacy(text) } }))
-    } else setView(saved)
+      return
+    }
+    setView(saved)
   }, [runtime.ready, runtime.state.configs.lastView])
 
   useEffect(() => {
@@ -86,24 +94,21 @@ export function UnifiedAppUx() {
 
   function navigate(next: AppView) {
     const text = String(next)
-    if (text === 'today' || text === 'upcoming' || text === 'inbox' || text.startsWith('project:')) {
+    if (text === 'inbox' || text.startsWith('project:')) {
       setTaskScope(scopeFromLegacy(text))
       return
     }
-    setView(next)
+    const resolved = text === 'home' ? 'today' : next
+    setView(resolved as AppView)
     setSidebarOpen(false)
     setSelected(null)
-    runtime.commit(current => ({ ...current, configs: { ...current.configs, lastView: next } }))
+    runtime.commit(current => ({ ...current, configs: { ...current.configs, lastView: resolved } }))
   }
 
   function addByType(type: string) {
     if (type === 'context') {
-      if (view === 'home') { setCreating({ kind: 'task', switchable: true }); return }
-      if (view === 'tasks') {
-        if (taskScope === 'today' || taskScope === 'upcoming') setCreating({ kind: 'task', switchable: true })
-        else setCreating({ kind: 'task' })
-        return
-      }
+      if (view === 'today' || view === 'upcoming') { setCreating({ kind: 'task', switchable: true }); return }
+      if (view === 'tasks') { setCreating({ kind: 'task' }); return }
     }
     if (type === 'task' || type === 'event') { setCreating({ kind: type }); return }
     if (type === 'health') { if (view !== 'health') navigate('health'); setHealthCreating(true); return }
@@ -114,7 +119,7 @@ export function UnifiedAppUx() {
   }
 
   function contextualAdd() {
-    if (view === 'home' || view === 'tasks') return addByType('context')
+    if (view === 'today' || view === 'upcoming' || view === 'tasks') return addByType('context')
     return addByType(view)
   }
 
@@ -125,7 +130,8 @@ export function UnifiedAppUx() {
       <div className={styles.mobileTop}><button onClick={() => setSidebarOpen(true)}><MaiIcon name="menu" /></button><strong>MAI</strong><span /></div>
       <div className={`${styles.workspace} mai-v3-workspace`}>
         {!runtime.ready ? <div className={styles.loadingState}>Carregando seu MAI…</div> : <>
-          {view === 'home' ? <HomeCompact state={runtime.state} today={runtime.today} navigate={navigate} onSearch={() => setSearchOpen(true)}/> : null}
+          {view === 'today' ? <TodayV4 state={runtime.state} today={runtime.today} commit={runtime.commit} navigate={navigate} inspect={setSelected} onSearch={() => setSearchOpen(true)} onMore={() => setSettingsOpen(true)}/> : null}
+          {view === 'upcoming' ? <UpcomingV4 state={runtime.state} today={runtime.today} commit={runtime.commit} inspect={setSelected}/> : null}
           {view === 'tasks' ? <TasksModule
             state={runtime.state}
             today={runtime.today}
@@ -153,7 +159,7 @@ export function UnifiedAppUx() {
     {searchOpen ? <SearchOverlay state={runtime.state} query={search} setQuery={setSearch} onClose={() => setSearchOpen(false)} inspect={setSelected} navigate={navigate} /> : null}
     {projectDialog ? <ProjectDrawer state={runtime.state} commit={runtime.commit} projectId={projectDialog.projectId} parentId={projectDialog.parentId} initialTab={projectDialog.tab} onClose={() => setProjectDialog(null)} onSaved={id => { const wasCreating = !projectDialog.projectId; setProjectDialog(null); if (wasCreating) setTaskScope(`project:${id}`) }} onRemoved={() => { setProjectDialog(null); setTaskScope('entrada') }} /> : null}
     {settingsOpen ? <AppSettingsDrawer state={runtime.state} commit={runtime.commit} onClose={() => setSettingsOpen(false)} onPersonalizeToday={() => setSettingsOpen(false)} googleConnected={runtime.googleConnected} calendars={runtime.calendars} calendarDraft={runtime.calendarDraft} setCalendarDraft={runtime.setCalendarDraft} calendarBusy={runtime.calendarBusy} saveCalendars={runtime.saveCalendars} disconnectGoogle={runtime.disconnectGoogle} requestNotifications={runtime.requestNotifications} installPrompt={runtime.installPrompt} install={runtime.install} exportData={runtime.exportData} importData={runtime.importData} importRef={runtime.importRef} syncStatus={runtime.syncStatus} flushRemoteSync={runtime.flushRemoteSync} logout={runtime.logout} /> : null}
-    {creating ? <QuickCreateDrawer kind={creating.kind} allowKindSwitch={creating.switchable} state={runtime.state} today={runtime.today} defaultProjectId={creating.kind === 'task' ? activeProjectId : undefined} defaultDate={view === 'tasks' && taskScope === 'today' ? runtime.today : view === 'home' ? runtime.today : ''} commit={runtime.commit} onClose={() => setCreating(null)} /> : null}
+    {creating ? <QuickCreateDrawer kind={creating.kind} allowKindSwitch={creating.switchable} state={runtime.state} today={runtime.today} defaultProjectId={creating.kind === 'task' ? activeProjectId : undefined} defaultDate={view === 'today' || (view === 'tasks' && taskScope === 'today') ? runtime.today : ''} commit={runtime.commit} onClose={() => setCreating(null)} /> : null}
     {healthCreating ? <HealthQuickAddDrawer state={runtime.state} today={runtime.today} commit={runtime.commit} onClose={() => setHealthCreating(false)}/> : null}
     <ContextDrawer item={selected} state={runtime.state} today={runtime.today} commit={runtime.commit} googleRpc={runtime.googleRpc} refreshEvents={() => runtime.syncCalendar(runtime.state.configs.calendarios || [])} onClose={() => setSelected(null)} />
   </div>
