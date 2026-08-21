@@ -3,8 +3,8 @@
 import type { AppView } from './app-types'
 
 const actionFor = (view: AppView) => {
-  if (view === 'today' || view === 'upcoming' || view === 'inbox' || view.startsWith('project:')) return { type: 'context', label: 'Adicionar' }
-  if (view === 'habits') return { type: 'habits', label: 'Nova rotina' }
+  if (view === 'home' || view === 'tasks' || view === 'today' || view === 'upcoming' || view === 'inbox' || view.startsWith('project:')) return { type: 'context', label: 'Adicionar' }
+  if (view === 'habits') return { type: 'habits', label: 'Novo hábito' }
   if (view === 'goals') return { type: 'goals', label: 'Nova meta' }
   if (view === 'notes') return { type: 'notes', label: 'Nova nota' }
   if (view === 'finance') return { type: 'finance', label: 'Novo lançamento' }
