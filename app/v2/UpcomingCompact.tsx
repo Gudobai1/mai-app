@@ -16,16 +16,19 @@ type Props = {
 type Mode = 'list' | 'month'
 
 const rows=(value:unknown):Row[]=>Array.isArray(value)?value as Row[]:[]
+const dateKey=(value:unknown)=>String(value||'').slice(0,10)
 const firstOfMonth = (day: string) => `${day.slice(0,7)}-01`
 const endOfMonth = (day: string) => { const d = new Date(`${firstOfMonth(day)}T12:00:00`); d.setMonth(d.getMonth()+1); d.setDate(0); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}` }
 const moveMonth = (day:string, amount:number) => { const d = new Date(`${day}T12:00:00`); d.setDate(1); d.setMonth(d.getMonth()+amount); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-01` }
 const formatDay = (key:string) => new Date(`${key}T12:00:00`).toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'})
+const paidStatus=(value:unknown)=>['pago','paga','quitado','quitada','concluido','concluida','concluído','concluída'].includes(String(value||'').toLocaleLowerCase('pt-BR'))
 const itemDate = (key:string, today:string) => {
   if (key === today) return 'Hoje'
   const base = new Date(`${today}T12:00:00`)
   const target = new Date(`${key}T12:00:00`)
   const diff = Math.round((target.getTime() - base.getTime()) / 86_400_000)
   if (diff === 1) return 'Amanhã'
+  if (diff === -1) return 'Ontem'
   if (diff > 1 && diff < 7) return target.toLocaleDateString('pt-BR',{weekday:'long'})
   return target.toLocaleDateString('pt-BR',{day:'numeric',month:'short'})
 }
@@ -37,7 +40,7 @@ function ItemRow({ item, inspect, today, project }: { item: PlannerItem; inspect
   const projectBadge = isTask ? <span className="mai-item-inline-tag mai-item-project-tag">{project?.imagem_url?<img src={String(project.imagem_url)} alt=""/>:<i style={{background:String(project?.cor||'#8e968d')}}><MaiIcon name={String(project?.icone||(project?.id==='entrada'?'inbox':'folder'))} size={9}/></i>}<span>{String(project?.nome||'Entrada')}</span></span> : null
   const eventDetail = item.raw.dia_inteiro === true || !item.time ? 'Dia inteiro' : item.time
   const detail = isEvent ? <span>{eventDetail}</span> : isTask ? projectBadge : <span>{item.subtitle}</span>
-  return <article className="mai-upcoming-item mai-v3-upcoming-item mai-item-row-v2" data-kind={item.kind} onClick={() => inspect({kind:item.kind,sourceId:item.sourceId,title:item.title,date:item.date,time:item.time,raw:item.raw})}>
+  return <article className="mai-upcoming-item mai-v3-upcoming-item mai-item-row-v2" data-kind={item.kind} data-mai-item-date={item.date} onClick={() => inspect({kind:item.kind,sourceId:item.sourceId,title:item.title,date:item.date,time:item.time,raw:item.raw})}>
     {isEvent ? <span className="mai-event-item-icon" style={{color:item.color}}><MaiIcon name="calendar" size={16}/></span> : <i className={isTask?'mai-task-priority-dot':undefined} data-priority={priority} style={isTask?undefined:{background:item.color}}/>}
     <span className="mai-item-copy-v2"><span className="mai-item-titleline-v2"><strong>{item.title}</strong></span><span className="mai-item-subline-v2"><span>{itemDate(item.date,today)}</span><span>·</span>{detail}</span></span>
   </article>
@@ -64,13 +67,106 @@ export function UpcomingCompact({ state, today, inspect, commit }: Props) {
     return () => observer.disconnect()
   }, [mode])
 
-  const listItems = useMemo(() => plannerItems(state,today,addDays(today,rangeDays)).filter(item => !item.completed),[state,today,rangeDays])
-  const listGroups = useMemo(() => { const map = new Map<string,PlannerItem[]>(); listItems.forEach(item => { if(!map.has(item.date)) map.set(item.date,[]); map.get(item.date)!.push(item) }); map.forEach(items => items.sort((a,b)=>`${a.time || '99:99'} ${a.title}`.localeCompare(`${b.time || '99:99'} ${b.title}`))); return [...map.entries()] },[listItems])
+  const overdueItems = useMemo<PlannerItem[]>(() => {
+    const result: PlannerItem[] = []
+    for (const task of state.tasks) {
+      const day = dateKey(task.data_vencimento)
+      if (task.concluida || task.ocultar_agenda || !day || day >= today) continue
+      const project = projectMap.get(String(task.projeto_id || 'entrada'))
+      result.push({
+        id:`overdue:task:${task.id}:${day}`,
+        sourceId:task.id,
+        kind:'task',
+        date:day,
+        time:String(task.data_vencimento||'').includes('T')?String(task.data_vencimento).slice(11,16):'',
+        title:task.titulo,
+        subtitle:String(project?.nome||'Entrada'),
+        color:['#c85b52','#c28a3d','#7c9274','#b8beb7'][Math.max(0,Math.min(3,Number(task.prioridade||4)-1))],
+        completed:false,
+        recurring:Boolean(task.repeticao),
+        raw:task as Row,
+      })
+    }
+    for (const item of rows(state.finance?.transactions)) {
+      const day=dateKey(item.data)
+      if (!day || day>=today || item.ignorar_calculo || paidStatus(item.status)) continue
+      result.push({
+        id:`overdue:finance:${String(item.id)}:${day}`,
+        sourceId:String(item.id),
+        kind:'finance',
+        date:day,
+        time:'',
+        title:String(item.titulo||item.descricao||item.nome||item.categoria||'Lançamento'),
+        subtitle:`${String(item.tipo||'').toLowerCase()==='receita'?'Receita':'Despesa'} · ${new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(Number(item.valor||0))}`,
+        color:String(item.tipo||'').toLowerCase()==='receita'?'#4f8a66':'#b75b55',
+        completed:false,
+        recurring:item.recorrente===true,
+        raw:item,
+      })
+    }
+    for (const goal of rows(state.goals)) {
+      const day=dateKey(goal.prazo||goal.data_fim||goal.data_limite||goal.deadline)
+      const done=goal.concluida===true||String(goal.status||'').toLocaleLowerCase('pt-BR').includes('conclu')
+      if (!day || day>=today || done) continue
+      result.push({
+        id:`overdue:goal:${String(goal.id)}:${day}`,
+        sourceId:String(goal.id),
+        kind:'goal',
+        date:day,
+        time:'',
+        title:String(goal.titulo||goal.nome||'Meta'),
+        subtitle:'Prazo da meta',
+        color:String(goal.cor||'#8a6f98'),
+        completed:false,
+        recurring:false,
+        raw:goal,
+      })
+    }
+    return result.sort((a,b)=>`${a.date} ${a.time||'99:99'} ${a.title}`.localeCompare(`${b.date} ${b.time||'99:99'} ${b.title}`,'pt-BR'))
+  },[state.tasks,state.finance,state.goals,today,projectMap])
+
+  const listItems = useMemo(() => {
+    const future=plannerItems(state,today,addDays(today,rangeDays)).filter(item => {
+      if (item.completed) return false
+      if (item.kind==='task' && item.recurring && dateKey(item.raw.data_vencimento)<today) return false
+      return true
+    })
+    return [...overdueItems,...future]
+  },[state,today,rangeDays,overdueItems])
+  const listGroups = useMemo(() => {
+    const map = new Map<string,PlannerItem[]>()
+    listItems.forEach(item => {
+      const groupDay=item.date<today?today:item.date
+      if(!map.has(groupDay)) map.set(groupDay,[])
+      map.get(groupDay)!.push(item)
+    })
+    map.forEach(items => items.sort((a,b)=>{
+      const aOverdue=a.date<today
+      const bOverdue=b.date<today
+      if(aOverdue!==bOverdue) return aOverdue?-1:1
+      return `${a.date} ${a.time||'99:99'} ${a.title}`.localeCompare(`${b.date} ${b.time||'99:99'} ${b.title}`,'pt-BR')
+    }))
+    return [...map.entries()].sort((a,b)=>a[0].localeCompare(b[0]))
+  },[listItems,today])
 
   const monthStart = firstOfMonth(anchor || today)
   const monthEnd = endOfMonth(anchor || today)
   const monthItems = useMemo(() => plannerItems(state,monthStart,monthEnd).filter(item => !item.completed),[state,monthStart,monthEnd])
-  const monthMap = useMemo(() => { const map = new Map<string,PlannerItem[]>(); monthItems.forEach(item => { if(!map.has(item.date)) map.set(item.date,[]); map.get(item.date)!.push(item) }); map.forEach(items => items.sort((a,b)=>`${a.time || '99:99'} ${a.title}`.localeCompare(`${b.time || '99:99'} ${b.title}`))); return map },[monthItems])
+  const monthMap = useMemo(() => {
+    const map = new Map<string,PlannerItem[]>()
+    monthItems.forEach(item => { if(!map.has(item.date)) map.set(item.date,[]); map.get(item.date)!.push(item) })
+    if(today>=monthStart&&today<=monthEnd&&overdueItems.length){
+      const current=map.get(today)||[]
+      map.set(today,[...overdueItems,...current])
+    }
+    map.forEach(items => items.sort((a,b)=>{
+      const aOverdue=a.date<today
+      const bOverdue=b.date<today
+      if(aOverdue!==bOverdue) return aOverdue?-1:1
+      return `${a.date} ${a.time||'99:99'} ${a.title}`.localeCompare(`${b.date} ${b.time||'99:99'} ${b.title}`,'pt-BR')
+    }))
+    return map
+  },[monthItems,overdueItems,today,monthStart,monthEnd])
   const daysInMonth = Number(monthEnd.slice(8,10))
   const monthDays = Array.from({length:daysInMonth},(_,index)=>`${monthStart.slice(0,8)}${String(index+1).padStart(2,'0')}`)
   const firstWeekday = new Date(`${monthStart}T12:00:00`).getDay()
