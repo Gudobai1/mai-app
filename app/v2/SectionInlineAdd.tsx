@@ -29,7 +29,8 @@ function fromText(value: string): SectionAction | null {
 
 function fallback(view: AppView, scope?: HTMLElement | null): SectionAction | null {
   const text = String(view)
-  if (text === 'tasks' || text === 'completed') return null
+  if (text === 'completed') return null
+  if (text === 'tasks') return { type: 'task', label: 'Adicionar tarefa' }
   if (text === 'habits') return { type: 'habits', label: 'Adicionar hábito' }
   if (text === 'goals') return { type: 'goals', label: 'Adicionar meta' }
   if (text === 'notes') return { type: 'notes', label: 'Adicionar nota' }
@@ -71,7 +72,7 @@ function listIn(section: HTMLElement): HTMLElement | null {
 }
 
 function actionFor(section: HTMLElement, view: AppView): SectionAction | null {
-  if (view === 'tasks' || view === 'completed') return null
+  if (view === 'completed') return null
   const heading = section.querySelector('h2,h3')?.textContent || section.querySelector('header')?.textContent || ''
   const byHeading = fromText(heading)
   if (byHeading) return byHeading
@@ -88,7 +89,7 @@ export function SectionInlineAdd({ view, onAdd }: Props) {
   useEffect(() => { addRef.current = onAdd }, [onAdd])
 
   useEffect(() => {
-    if (view === 'tasks' || view === 'completed') return
+    if (view === 'completed') return
     const workspace = document.querySelector('.mai-v3-workspace') as HTMLElement | null
     if (!workspace) return
 
