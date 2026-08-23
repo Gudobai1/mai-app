@@ -203,6 +203,7 @@ export function UpcomingCompact({state,today,inspect,commit}:Props){
   }
 
   const monthLabel=new Date(`${monthStart}T12:00:00`).toLocaleDateString('pt-BR',{month:'long',year:'numeric'})
+  const monthName=new Date(`${monthStart}T12:00:00`).toLocaleDateString('pt-BR',{month:'long'})
   const mobileItems=mobileDay?calendarMap.get(mobileDay)||[]:[]
   const mobileWeekday=mobileDay?new Date(`${mobileDay}T12:00:00`).toLocaleDateString('pt-BR',{weekday:'long'}):''
 
@@ -212,10 +213,10 @@ export function UpcomingCompact({state,today,inspect,commit}:Props){
       <div ref={sentinelRef} className="mai-v3-infinite-sentinel"/>
     </div>:<div className="mai-upcoming-calendar-v2">
       <main className="mai-upcoming-calendar-main">
-        <header className="mai-upcoming-calendar-toolbar">
-          <div className="mai-upcoming-calendar-nav"><button aria-label="Mês anterior" onClick={()=>changeAnchor(moveMonth(anchor,-1))}>‹</button><button aria-label="Próximo mês" onClick={()=>changeAnchor(moveMonth(anchor,1))}>›</button></div>
-          <strong>{monthLabel}</strong>
-          <button className="mai-upcoming-calendar-today" onClick={goToday}>Hoje</button>
+        <header className="mai-upcoming-calendar-toolbar" aria-label={`Navegação do calendário, ${monthLabel}`}>
+          <button className="mai-upcoming-calendar-arrow mai-upcoming-calendar-prev" aria-label="Mês anterior" onClick={()=>changeAnchor(moveMonth(anchor,-1))}>‹</button>
+          <button className="mai-upcoming-calendar-month" aria-label="Voltar para hoje" title="Voltar para hoje" onClick={goToday}>{monthName}</button>
+          <button className="mai-upcoming-calendar-arrow mai-upcoming-calendar-next" aria-label="Próximo mês" onClick={()=>changeAnchor(moveMonth(anchor,1))}>›</button>
         </header>
         <div className="mai-upcoming-calendar-week">{[['Dom','D'],['Seg','S'],['Ter','T'],['Qua','Q'],['Qui','Q'],['Sex','S'],['Sáb','S']].map(([full,short])=><span key={full}><b>{full}</b><i>{short}</i></span>)}</div>
         <div className="mai-upcoming-calendar-grid">{gridDays.map(day=>{const items=calendarMap.get(day)||[];const outside=day.slice(0,7)!==monthStart.slice(0,7);return <button className="mai-upcoming-calendar-day" key={day} data-day={day} data-today={day===today||undefined} data-selected={day===selectedDay||undefined} data-outside={outside||undefined} aria-label={formatDay(day)} onClick={()=>selectDay(day)}>
