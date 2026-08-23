@@ -211,16 +211,15 @@ export function CompletedV4({ state, today, commit, inspect }: { state:MaiState;
     commit(current => ({ ...current, notes:rows(current.notes).map(note => String(note.id) === item.sourceId ? { ...note, concluida:false, status:'', concluida_em:'' } : note) }))
   }
 
-  const renderItem = (item: CompletedItem) => <article className="mai-today-unified-row mai-item-row-v2 mai-completed-row" key={item.id} onClick={() => inspect({ kind:item.kind, sourceId:item.sourceId, title:item.title, date:item.date, raw:item.raw })}>
-    <button className="mai-today-unified-dot" data-done="true" aria-label={`Reabrir ${item.title}`} title="Reabrir" onClick={event => { event.stopPropagation(); reopen(item) }}>✓</button>
-    <span className="mai-item-copy-v2"><span className="mai-item-titleline-v2"><strong>{item.title}</strong></span><span className="mai-item-subline-v2"><span>{naturalDate(item.date,today)}</span><span>·</span><span className="mai-completed-detail"><MaiIcon name={iconFor(item.kind)} size={11}/>{item.detail}</span></span></span>
+  const renderItem = (item: CompletedItem) => <article className="mai-upcoming-item mai-v3-upcoming-item mai-item-row-v2 mai-completed-row" key={item.id} onClick={() => inspect({ kind:item.kind, sourceId:item.sourceId, title:item.title, date:item.date, raw:item.raw })}>
+    <button className="mai-today-unified-dot mai-completed-check" data-done="true" aria-label={`Reabrir ${item.title}`} title="Reabrir" onClick={event => { event.stopPropagation(); reopen(item) }}>✓</button>
+    <span className="mai-item-copy-v2"><span className="mai-item-titleline-v2"><strong>{item.title}</strong></span><span className="mai-item-subline-v2"><span>{naturalDate(item.date,today)}</span><span>·</span><span className="mai-item-inline-tag mai-completed-detail"><MaiIcon name={iconFor(item.kind)} size={11}/><span>{item.detail}</span></span></span></span>
   </article>
 
-  return <div className="mai-v3-area-page mai-v4-completed">
-    <header className="mai-v3-area-header"><div><h1>Concluídos</h1><p>Itens finalizados, ainda ligados às áreas onde foram criados.</p></div></header>
+  return <div className="mai-upcoming-page mai-v3-upcoming-page mai-v4-completed">
     <div className="mai-upcoming-scroll mai-v3-upcoming-scroll mai-completed-groups">
       {groups.map(([day, dayItems]) => <section className="mai-completed-day" key={day || 'sem-data'}>
-        <header><strong>{groupDate(day,today)}</strong><span>{dayItems.length}</span></header>
+        <header><strong>{groupDate(day,today)}</strong></header>
         {dayItems.map(renderItem)}
       </section>)}
     </div>
