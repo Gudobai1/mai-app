@@ -31,6 +31,7 @@ import './mai-topbar-v1.css'
 import './mai-upcoming-v2.css'
 import './mai-upcoming-v3.css'
 import './mai-mobile-safe-zone.css'
+import './mai-overlay-layer-fix.css'
 
 export const metadata: Metadata = {
   title: 'MAI — Meu Sistema',
