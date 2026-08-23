@@ -6,6 +6,10 @@
   --mai-date-today:#b77a00;
   --mai-date-future:#4b78c2;
   --mai-date-neutral:var(--v3-muted);
+  --mai-priority-1:#c85b52;
+  --mai-priority-2:#c28a3d;
+  --mai-priority-3:#7c9274;
+  --mai-priority-4:#b8beb7;
 }
 
 html[data-mai-theme="dark"]{
@@ -111,6 +115,35 @@ html[data-mai-theme="dark"]{
 .mai-item-date-v4[data-mai-date-tone="today"]{color:var(--mai-date-today)!important}
 .mai-item-date-v4[data-mai-date-tone="future"]{color:var(--mai-date-future)!important}
 .mai-item-date-v4[data-mai-date-tone="neutral"]{color:var(--mai-date-neutral)!important}
+
+/* Prioridade de tarefas: regra final, independente da tela onde a tarefa é renderizada. */
+.mai-v3-task-check[data-priority],
+.mai-v3-upcoming-item[data-kind="task"]>.mai-task-priority-dot[data-priority],
+.mai-v3-task-advanced article button[data-priority]{
+  border-style:solid!important;
+  border-width:1.7px!important;
+  background:transparent!important;
+  box-shadow:none!important;
+}
+
+.mai-v3-task-check[data-priority="1"],
+.mai-v3-upcoming-item[data-kind="task"]>.mai-task-priority-dot[data-priority="1"],
+.mai-v3-task-advanced article button[data-priority="1"]{border-color:var(--mai-priority-1)!important}
+.mai-v3-task-check[data-priority="2"],
+.mai-v3-upcoming-item[data-kind="task"]>.mai-task-priority-dot[data-priority="2"],
+.mai-v3-task-advanced article button[data-priority="2"]{border-color:var(--mai-priority-2)!important}
+.mai-v3-task-check[data-priority="3"],
+.mai-v3-upcoming-item[data-kind="task"]>.mai-task-priority-dot[data-priority="3"],
+.mai-v3-task-advanced article button[data-priority="3"]{border-color:var(--mai-priority-3)!important}
+.mai-v3-task-check[data-priority="4"],
+.mai-v3-upcoming-item[data-kind="task"]>.mai-task-priority-dot[data-priority="4"],
+.mai-v3-task-advanced article button[data-priority="4"]{border-color:var(--mai-priority-4)!important}
+
+/* No calendário de Em breve, a prioridade aparece no pequeno marcador preenchido. */
+.mai-task-priority-calendar-dot[data-priority="1"]{background:var(--mai-priority-1)!important}
+.mai-task-priority-calendar-dot[data-priority="2"]{background:var(--mai-priority-2)!important}
+.mai-task-priority-calendar-dot[data-priority="3"]{background:var(--mai-priority-3)!important}
+.mai-task-priority-calendar-dot[data-priority="4"]{background:var(--mai-priority-4)!important}
 
 @media(max-width:720px){
   .mai-item-row-v2{
