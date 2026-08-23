@@ -27,6 +27,7 @@ import './mai-item-layout-v3.css'
 import './mai-completed-v1.css'
 import './mai-mobile-bottom-nav.css'
 import './mai-item-date-tone-v4.css'
+import './mai-topbar-v1.css'
 
 export const metadata: Metadata = {
   title: 'MAI — Meu Sistema',
