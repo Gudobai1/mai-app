@@ -1,0 +1,80 @@
+/* MAI — zona segura da navegação inferior no mobile */
+@media(max-width:900px){
+  :root{
+    --mai-mobile-nav-reserve:calc(72px + env(safe-area-inset-bottom));
+  }
+
+  /* O conteúdo nunca termina atrás da navegação fixa. */
+  .mai-v3-workspace{
+    padding-bottom:calc(var(--mai-mobile-nav-reserve) + 28px)!important;
+    scroll-padding-bottom:calc(var(--mai-mobile-nav-reserve) + 24px)!important;
+  }
+
+  /* FAB sempre acima da barra inferior. */
+  .mai-floating-add,
+  .mai-v3-floating-add{
+    bottom:calc(var(--mai-mobile-nav-reserve) + 14px)!important;
+  }
+
+  /* Drawers de criação e edição preservam a navegação inferior. */
+  .mai-v3-create-layer,
+  .mai-context-layer,
+  .mai-context-v3-layer{
+    bottom:var(--mai-mobile-nav-reserve)!important;
+    height:auto!important;
+  }
+
+  .mai-v3-create-drawer,
+  .mai-context-drawer,
+  .mai-context-v3-drawer{
+    bottom:10px!important;
+    height:auto!important;
+    max-height:calc(100dvh - var(--mai-mobile-nav-reserve) - 20px)!important;
+  }
+
+  .mai-context-v3-drawer{
+    min-height:0!important;
+  }
+
+  /* Modais em CSS Modules, como Ajustes, também ficam acima da navegação. */
+  .mai-v3-shell [class*="modalLayer"]{
+    bottom:var(--mai-mobile-nav-reserve)!important;
+    height:auto!important;
+  }
+
+  .mai-v3-shell [class*="modalCard"],
+  .mai-v3-shell [class*="settingsCard"]{
+    max-height:calc(100dvh - var(--mai-mobile-nav-reserve) - 18px)!important;
+  }
+
+  /* O painel de opções do módulo continua totalmente acessível. */
+  .mai-app-topbar-panel{
+    max-height:min(66vh,calc(100dvh - var(--mai-mobile-nav-reserve) - 76px))!important;
+    overscroll-behavior:contain;
+  }
+
+  /* Busca e seletores móveis não cobrem os quatro botões inferiores. */
+  .mai-global-search-layer,
+  .mai-mobile-areas-scrim{
+    bottom:var(--mai-mobile-nav-reserve)!important;
+  }
+
+  .mai-mobile-areas-sheet{
+    bottom:var(--mai-mobile-nav-reserve)!important;
+  }
+
+  /* Popup de itens do calendário termina antes da navegação. */
+  .mai-upcoming-mobile-day-layer{
+    bottom:var(--mai-mobile-nav-reserve)!important;
+  }
+
+  .mai-upcoming-mobile-day-sheet{
+    max-height:min(76vh,calc(100dvh - var(--mai-mobile-nav-reserve) - 14px))!important;
+    padding-bottom:0!important;
+  }
+
+  /* O calendário pode crescer, mas nunca invade a zona dos botões inferiores. */
+  .mai-upcoming-calendar-main{
+    max-height:calc(100dvh - var(--mai-mobile-nav-reserve) - 74px)!important;
+  }
+}
