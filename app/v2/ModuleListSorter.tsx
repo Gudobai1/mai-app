@@ -3,7 +3,7 @@
 import { useEffect } from 'react'
 
 type Row = Record<string, any>
-type SortMode = 'manual'|'overdue'|'date'|'priority'|'title'|'name'|'time'|'progress'|'value'|'recent'|'oldest'
+type SortMode = 'manual'|'overdue'|'date'|'priority'|'title'|'name'|'time'|'project'|'progress'|'value'|'recent'|'oldest'
 
 const normalize=(value:unknown)=>String(value||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('pt-BR').replace(/[.,]/g,' ').replace(/\s+/g,' ').trim()
 const localToday=()=>{const now=new Date();return `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`}
@@ -37,6 +37,7 @@ const dateOf=(el:HTMLElement,today:string)=>String(el.dataset.maiItemDate||dateF
 const priorityOf=(el:HTMLElement)=>{const node=el.querySelector<HTMLElement>('[data-priority]');const value=Number(node?.dataset.priority||9);return Number.isFinite(value)?value:9}
 const progressOf=(el:HTMLElement)=>Number(String(el.textContent||'').match(/(\d{1,3})\s*%/)?.[1]||0)
 const timeOf=(el:HTMLElement)=>String(el.textContent||'').match(/\b([01]?\d|2[0-3]):[0-5]\d\b/)?.[0]||'99:99'
+const projectOf=(el:HTMLElement)=>String(el.querySelector('.mai-item-project-tag')?.textContent||el.querySelector('.mai-item-subline-v2>span:last-child')?.textContent||'').trim()
 const valueOf=(el:HTMLElement)=>{const raw=String(el.textContent||'').match(/R\$\s*([\d.]+,\d{2})/)?.[1]||'';return Number(raw.replace(/\./g,'').replace(',','.'))||0}
 const overdueOf=(el:HTMLElement)=>el.dataset.maiDateTone==='overdue'||Boolean(el.querySelector('[data-mai-date-tone="overdue"]'))
 
@@ -45,6 +46,7 @@ function compare(mode:SortMode,a:HTMLElement,b:HTMLElement,today:string){
   if(overdueA!==overdueB)return overdueA?-1:1
   if(mode==='manual'||mode==='overdue')return 0
   if(mode==='priority')return priorityOf(a)-priorityOf(b)||titleOf(a).localeCompare(titleOf(b),'pt-BR',{sensitivity:'base'})
+  if(mode==='project')return projectOf(a).localeCompare(projectOf(b),'pt-BR',{sensitivity:'base'})||timeOf(a).localeCompare(timeOf(b))||titleOf(a).localeCompare(titleOf(b),'pt-BR')
   if(mode==='title'||mode==='name')return titleOf(a).localeCompare(titleOf(b),'pt-BR',{sensitivity:'base'})
   if(mode==='time')return timeOf(a).localeCompare(timeOf(b))||titleOf(a).localeCompare(titleOf(b),'pt-BR')
   if(mode==='progress')return progressOf(b)-progressOf(a)||titleOf(a).localeCompare(titleOf(b),'pt-BR')
