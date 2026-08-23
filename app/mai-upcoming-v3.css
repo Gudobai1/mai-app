@@ -39,6 +39,60 @@
 
 .mai-upcoming-mobile-day-layer{display:none}
 
+/* Desktop: o calendário e a agenda formam dois cartões da mesma altura.
+   Somente a lista interna da agenda rola. */
+@media(min-width:901px){
+  .mai-upcoming-calendar-v2{
+    align-items:stretch!important;
+  }
+
+  .mai-upcoming-calendar-main,
+  .mai-upcoming-month-agenda{
+    height:711px;
+    max-height:711px;
+    box-sizing:border-box;
+  }
+
+  .mai-upcoming-month-agenda{
+    position:relative;
+    top:auto;
+    display:grid;
+    grid-template-rows:52px minmax(0,1fr);
+    min-height:0;
+    overflow:hidden;
+    padding:0;
+    border:1px solid color-mix(in srgb,var(--v3-line,#e7ebe5) 88%,transparent);
+    border-radius:14px;
+    background:var(--v3-bg,#fff);
+    scrollbar-width:auto;
+  }
+
+  .mai-upcoming-month-agenda-head{
+    position:static;
+    min-height:0;
+    height:52px;
+    margin:0;
+    padding:0 12px;
+    border-bottom:1px solid var(--v3-line,#e7ebe5);
+    background:var(--v3-bg,#fff);
+  }
+
+  .mai-upcoming-month-agenda-list{
+    min-height:0;
+    overflow-y:auto;
+    overflow-x:hidden;
+    overscroll-behavior:contain;
+    scrollbar-gutter:stable;
+    scrollbar-width:thin;
+    scroll-behavior:smooth;
+    padding:8px 12px 24px;
+  }
+
+  .mai-upcoming-month-agenda-list>section{
+    scroll-margin-top:8px;
+  }
+}
+
 @media(max-width:900px){
   .mai-upcoming-calendar-v2{display:block!important}
   .mai-upcoming-month-agenda{display:none!important}
