@@ -33,7 +33,7 @@ function dateFromText(value:string,today:string){
 }
 
 const titleOf=(el:HTMLElement)=>String(el.querySelector('.mai-item-titleline-v2 strong')?.textContent||el.querySelector('strong')?.textContent||'').trim()
-const dateOf=(el:HTMLElement,today:string)=>String(el.dataset.maiItemDate||dateFromText(String(el.querySelector('.mai-item-subline-v2')?.firstElementChild?.textContent||el.textContent||''),today)||'')
+const dateOf=(el:HTMLElement,today:string)=>String(el.dataset.maiItemDate||dateFromText(String(el.querySelector('.mai-item-subline-v2')?.firstElementChild?.textContent||el.querySelector('small')?.textContent||el.textContent||''),today)||'')
 const priorityOf=(el:HTMLElement)=>{const node=el.querySelector<HTMLElement>('[data-priority]');const value=Number(node?.dataset.priority||9);return Number.isFinite(value)?value:9}
 const progressOf=(el:HTMLElement)=>Number(String(el.textContent||'').match(/(\d{1,3})\s*%/)?.[1]||0)
 const timeOf=(el:HTMLElement)=>String(el.textContent||'').match(/\b([01]?\d|2[0-3]):[0-5]\d\b/)?.[0]||'99:99'
@@ -70,8 +70,9 @@ function sortCompletedDays(root:HTMLElement,mode:SortMode,today:string){
   const sections=Array.from(parent.children).filter((child):child is HTMLElement=>child instanceof HTMLElement&&child.classList.contains('mai-completed-day'))
   if(sections.length<2)return
   const desired=[...sections].sort((a,b)=>{
-    const da=dateOf(a.querySelector<HTMLElement>('.mai-item-row-v2')||a,today)||dateFromText(String(a.querySelector('header')?.textContent||''),today)||''
-    const db=dateOf(b.querySelector<HTMLElement>('.mai-item-row-v2')||b,today)||dateFromText(String(b.querySelector('header')?.textContent||''),today)||''
+    const rowA=a.querySelector<HTMLElement>('.mai-item-row-v2'),rowB=b.querySelector<HTMLElement>('.mai-item-row-v2')
+    const da=(rowA?dateOf(rowA,today):'')||dateFromText(String(a.querySelector('header')?.textContent||''),today)||''
+    const db=(rowB?dateOf(rowB,today):'')||dateFromText(String(b.querySelector('header')?.textContent||''),today)||''
     return mode==='oldest'?da.localeCompare(db):db.localeCompare(da)
   })
   if(desired.every((el,index)=>el===sections[index]))return
@@ -91,15 +92,15 @@ export function ModuleListSorter(){
 
       const parents=new Set<HTMLElement>()
       root.querySelectorAll<HTMLElement>('.mai-item-row-v2').forEach(row=>{if(row.parentElement)parents.add(row.parentElement)})
-      parents.forEach(parent=>sortChildren(parent,mode,today,':scope > .mai-item-row-v2'))
-      root.querySelectorAll<HTMLElement>('.mai-v3-file-list,.mai-v3-file-grid,.mai-v3-health-history,.mai-v3-finance-rows,.mai-v3-report-list').forEach(parent=>sortChildren(parent,mode,today,':scope > button,:scope > article'))
+      parents.forEach(parent=>sortChildren(parent,mode,today,'.mai-item-row-v2'))
+      root.querySelectorAll<HTMLElement>('.mai-v3-file-list,.mai-v3-file-grid,.mai-v3-health-history,.mai-v3-finance-rows,.mai-v3-report-list').forEach(parent=>sortChildren(parent,mode,today,'button,article'))
       sortCompletedDays(root,mode,today)
     }
     const root=document.querySelector('.mai-v3-shell')||document.body
     const observe=()=>observer?.observe(root,{childList:true,subtree:true,characterData:true})
     observer=new MutationObserver(()=>{observer?.disconnect();apply();observe()})
     apply();observe()
-    const timer=window.setInterval(apply,1500)
+    const timer=window.setInterval(apply,1200)
     return()=>{observer?.disconnect();window.clearInterval(timer)}
   },[])
   return null
