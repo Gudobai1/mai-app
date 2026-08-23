@@ -36,6 +36,16 @@ function naturalDate(key: string, today: string) {
   return target.toLocaleDateString('pt-BR', { day: 'numeric', month: 'short', year: target.getFullYear() !== base.getFullYear() ? 'numeric' : undefined })
 }
 
+function groupDate(key: string, today: string) {
+  if (!key) return 'Sem data'
+  if (key === today) return 'Hoje'
+  const base = new Date(`${today}T12:00:00`)
+  const target = new Date(`${key}T12:00:00`)
+  const diff = Math.round((target.getTime() - base.getTime()) / 86_400_000)
+  if (diff === -1) return 'Ontem'
+  return target.toLocaleDateString('pt-BR', { weekday:'long', day:'numeric', month:'long', year: target.getFullYear() !== base.getFullYear() ? 'numeric' : undefined })
+}
+
 function iconFor(kind: Kind) {
   if (kind === 'task') return 'inbox'
   if (kind === 'event') return 'calendar'
@@ -100,6 +110,20 @@ export function CompletedV4({ state, today, commit, inspect }: { state: MaiState
     return result.sort((a,b) => b.sort.localeCompare(a.sort) || a.title.localeCompare(b.title, 'pt-BR'))
   }, [state, projects])
 
+  const groups = useMemo(() => {
+    const map = new Map<string, CompletedItem[]>()
+    items.forEach(item => {
+      const key = item.date || ''
+      if (!map.has(key)) map.set(key, [])
+      map.get(key)!.push(item)
+    })
+    return [...map.entries()].sort(([a],[b]) => {
+      if (!a) return 1
+      if (!b) return -1
+      return b.localeCompare(a)
+    })
+  }, [items])
+
   function reopen(item: CompletedItem) {
     if (item.kind === 'task') {
       commit(current => ({ ...current, tasks: current.tasks.map(task => String(task.id) === item.sourceId ? { ...task, concluida:false, concluida_em:'' } : task) }))
@@ -124,15 +148,18 @@ export function CompletedV4({ state, today, commit, inspect }: { state: MaiState
     commit(current => ({ ...current, notes:rows(current.notes).map(note => String(note.id) === item.sourceId ? { ...note, concluida:false, status:'', concluida_em:'' } : note) }))
   }
 
+  const renderItem = (item: CompletedItem) => <article className="mai-today-unified-row mai-item-row-v2 mai-completed-row" key={item.id} onClick={() => inspect({ kind:item.kind, sourceId:item.sourceId, title:item.title, date:item.date, raw:item.raw })}>
+    <button className="mai-today-unified-dot" data-done="true" aria-label={`Reabrir ${item.title}`} title="Reabrir" onClick={event => { event.stopPropagation(); reopen(item) }}>✓</button>
+    <span className="mai-item-copy-v2"><span className="mai-item-titleline-v2"><strong>{item.title}</strong></span><span className="mai-item-subline-v2"><span>{naturalDate(item.date,today)}</span><span>·</span><span className="mai-completed-detail"><MaiIcon name={iconFor(item.kind)} size={11}/>{item.detail}</span></span></span>
+  </article>
+
   return <div className="mai-v3-area-page mai-v4-completed">
     <header className="mai-v3-area-header"><div><h1>Concluídos</h1><p>Itens finalizados, ainda ligados às áreas onde foram criados.</p></div></header>
-    <section className="mai-v3-simple-section">
-      <div className="mai-v3-simple-list">
-        {items.map(item => <article className="mai-today-unified-row mai-item-row-v2 mai-completed-row" key={item.id} onClick={() => inspect({ kind:item.kind, sourceId:item.sourceId, title:item.title, date:item.date, raw:item.raw })}>
-          <button className="mai-today-unified-dot" data-done="true" aria-label={`Reabrir ${item.title}`} title="Reabrir" onClick={event => { event.stopPropagation(); reopen(item) }}>✓</button>
-          <span className="mai-item-copy-v2"><span className="mai-item-titleline-v2"><strong>{item.title}</strong></span><span className="mai-item-subline-v2"><span>{naturalDate(item.date,today)}</span><span>·</span><span className="mai-completed-detail"><MaiIcon name={iconFor(item.kind)} size={11}/>{item.detail}</span></span></span>
-        </article>)}
-      </div>
-    </section>
+    <div className="mai-upcoming-scroll mai-v3-upcoming-scroll mai-completed-groups">
+      {groups.map(([day, dayItems]) => <section className="mai-completed-day" key={day || 'sem-data'}>
+        <header><strong>{groupDate(day,today)}</strong><span>{dayItems.length}</span></header>
+        {dayItems.map(renderItem)}
+      </section>)}
+    </div>
   </div>
 }
