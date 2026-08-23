@@ -1,0 +1,85 @@
+/* Em breve V3 — agenda mensal desktop + detalhes por dia no mobile */
+.mai-upcoming-calendar-v2{grid-template-columns:minmax(0,1fr) minmax(300px,360px)!important}
+
+.mai-upcoming-month-agenda{
+  min-width:0;
+  position:sticky;
+  top:66px;
+  max-height:calc(100vh - 88px);
+  overflow:auto;
+  padding-left:18px;
+  border-left:1px solid var(--v3-line,#e7ebe5);
+  scrollbar-width:thin;
+  scroll-behavior:smooth;
+}
+.mai-upcoming-month-agenda-head{
+  position:sticky;
+  top:0;
+  z-index:3;
+  min-height:52px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  margin-bottom:8px;
+  padding:0 2px;
+  background:var(--v3-bg,#fff);
+}
+.mai-upcoming-month-agenda-head>div{min-width:0;display:grid;gap:2px}
+.mai-upcoming-month-agenda-head small{color:var(--v3-muted,#7f887d);font-size:9px;font-weight:560}
+.mai-upcoming-month-agenda-head strong{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--v3-text,#303630);font-size:12px;font-weight:680;text-transform:capitalize}
+.mai-upcoming-month-agenda-head>span{min-width:26px;height:26px;display:grid;place-items:center;border-radius:8px;background:var(--v3-soft,#f4f6f2);color:var(--v3-muted,#7f887d);font-size:9px;font-weight:650}
+.mai-upcoming-month-agenda-list{display:grid;gap:18px;padding-bottom:28px}
+.mai-upcoming-month-agenda-list>section{min-width:0;scroll-margin-top:58px}
+.mai-upcoming-month-agenda-list>section>header{min-height:28px;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:0 4px;border-bottom:1px solid var(--v3-line,#e7ebe5)}
+.mai-upcoming-month-agenda-list>section>header strong{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--v3-muted,#7f887d);font-size:9.8px;font-weight:640;text-transform:capitalize}
+.mai-upcoming-month-agenda-list>section[data-today="true"]>header strong{color:var(--v3-accent,#6f8168);font-weight:720}
+.mai-upcoming-month-agenda-list>section>header span{color:var(--v3-faint,#aeb4ac);font-size:8.5px}
+.mai-upcoming-month-agenda-list .mai-item-row-v2{min-height:50px!important;padding-inline:3px!important}
+
+.mai-upcoming-mobile-day-layer{display:none}
+
+@media(max-width:900px){
+  .mai-upcoming-calendar-v2{display:block!important}
+  .mai-upcoming-month-agenda{display:none!important}
+  .mai-upcoming-calendar-day{min-height:82px!important;gap:3px!important;padding:5px 4px!important}
+  .mai-upcoming-calendar-events{display:grid!important;gap:2px!important}
+  .mai-upcoming-calendar-chip{height:16px!important;gap:3px!important;padding:0 3px!important;border-radius:4px!important;background:color-mix(in srgb,var(--v3-soft,#f4f6f2) 82%,transparent)!important}
+  .mai-upcoming-calendar-chip>i{width:4px!important;height:4px!important;flex-basis:4px!important}
+  .mai-upcoming-calendar-chip>b{font-size:7.4px!important;font-weight:590!important}
+  .mai-upcoming-calendar-more{display:block!important;padding-left:2px!important;font-size:7.2px!important}
+  .mai-upcoming-calendar-mobile-dots{display:none!important}
+
+  .mai-upcoming-mobile-day-layer{
+    position:fixed;
+    inset:0;
+    z-index:1320;
+    display:flex;
+    align-items:flex-end;
+    justify-content:center;
+    background:rgba(18,22,18,.34);
+  }
+  .mai-upcoming-mobile-day-sheet{
+    width:100%;
+    max-height:min(76vh,620px);
+    display:grid;
+    grid-template-rows:auto minmax(0,1fr);
+    overflow:hidden;
+    border-radius:18px 18px 0 0;
+    background:var(--v3-bg,#fff);
+    box-shadow:0 -10px 34px rgba(0,0,0,.14);
+    padding-bottom:env(safe-area-inset-bottom);
+  }
+  .mai-upcoming-mobile-day-sheet>header{min-height:58px;display:flex;align-items:center;justify-content:space-between;gap:14px;padding:6px 14px 5px 16px;border-bottom:1px solid var(--v3-line,#e7ebe5)}
+  .mai-upcoming-mobile-day-sheet>header>div{min-width:0;display:grid;gap:2px}
+  .mai-upcoming-mobile-day-sheet>header small{color:var(--v3-muted,#7f887d);font-size:10px;text-transform:capitalize}
+  .mai-upcoming-mobile-day-sheet>header strong{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--v3-text,#303630);font-size:14px;font-weight:680;text-transform:capitalize}
+  .mai-upcoming-mobile-day-sheet>header button{width:34px;height:34px;display:grid;place-items:center;flex:0 0 34px;border:0;border-radius:10px;background:transparent;color:var(--v3-muted,#7f887d);font:inherit;font-size:24px;line-height:1}
+  .mai-upcoming-mobile-day-items{min-height:0;overflow:auto;padding:6px 10px 16px}
+}
+
+@media(max-width:560px){
+  .mai-upcoming-calendar-day{min-height:78px!important;padding:4px 3px!important}
+  .mai-upcoming-calendar-chip{padding-inline:2px!important}
+  .mai-upcoming-calendar-chip>b{font-size:7px!important}
+}
