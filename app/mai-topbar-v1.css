@@ -26,8 +26,8 @@
 .mai-app-topbar-icon{width:32px;height:32px;display:grid;place-items:center;border:0;border-radius:9px;background:transparent;color:var(--v3-muted,#7f887d);cursor:pointer}
 .mai-app-topbar-icon:hover,.mai-app-topbar-icon[data-active="true"]{background:var(--v3-hover,#f1f4ef);color:var(--v3-text,#303630)}
 .mai-app-topbar-icon .material-symbols-rounded{font-size:18px}
-.mai-app-topbar-filter-popover{position:absolute;right:0;top:48px;z-index:780;width:min(292px,calc(100vw - 28px));padding:10px;background:var(--v3-bg,#fff);border:1px solid var(--v3-line,#e7ebe5);border-radius:13px;box-shadow:0 16px 42px rgba(28,36,27,.14);display:grid;gap:8px}
-.mai-app-topbar-filter-popover label{display:grid;grid-template-columns:72px 1fr;align-items:center;gap:8px;min-height:34px}
+.mai-app-topbar-filter-popover{position:absolute;right:0;top:48px;z-index:780;width:min(304px,calc(100vw - 28px));padding:10px;background:var(--v3-bg,#fff);border:1px solid var(--v3-line,#e7ebe5);border-radius:13px;box-shadow:0 16px 42px rgba(28,36,27,.14);display:grid;gap:8px}
+.mai-app-topbar-filter-popover label{display:grid;grid-template-columns:78px 1fr;align-items:center;gap:8px;min-height:34px}
 .mai-app-topbar-filter-popover label>span{font-size:10px;color:var(--v3-muted,#8d958b)}
 .mai-app-topbar-filter-popover select{height:32px;border:0;border-radius:8px;background:var(--v3-soft,#f4f6f2);padding:0 8px;color:var(--v3-text,#303630);font:inherit;font-size:11px;outline:0}
 .mai-app-topbar-filter-toggles{display:flex;gap:5px}
@@ -35,14 +35,14 @@
 .mai-app-topbar-filter-toggles button{flex:1}
 .mai-app-topbar-filter-toggles button[data-active="true"]{background:var(--v3-hover,#edf2eb);color:var(--v3-text,#303630);font-weight:650}
 .mai-app-topbar-clear{background:transparent;text-align:left;padding:0 4px;color:var(--v3-accent-strong,#5e7257)}
+.mai-app-topbar-clear:disabled{opacity:.35;cursor:default}
 
-/* A barra superior substitui os cabeçalhos grandes e redundantes. */
+/* A barra superior é o único cabeçalho funcional do conteúdo. */
 .mai-v3-workspace .mai-v3-page-header,
 .mai-v3-workspace .mai-v3-area-header,
 .mai-v3-workspace .mai-v4-tasks-module-head{display:none!important}
 .mai-v4-upcoming-wrap>.mai-v4-upcoming-filters{display:none!important}
-.mai-v4-habits>.mai-v3-area-tabs,
-.mai-v4-finance>.mai-v3-area-tabs{display:none!important}
+.mai-v3-workspace .mai-v3-area-page>.mai-v3-area-tabs{display:none!important}
 .mai-v3-advanced-area>.mai-v3-advanced-banner{display:none!important}
 .mai-v4-today-header-wrap{margin:0!important;padding:0!important;min-height:0!important}
 .mai-v4-tasks-module-head+.mai-v4-task-project-layout{margin-top:0!important}
