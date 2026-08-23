@@ -54,14 +54,18 @@ export function AppTopBar({ state, today, view, taskScope, commit, onTaskScopeCh
   const filter = moduleFilters[String(view)] || {}
   const moduleControls = configs.moduleControls && typeof configs.moduleControls === 'object' ? configs.moduleControls as Record<string,Row> : {}
   const control = moduleControls[String(view)] || {}
+  const occurrenceDefaults:Row={task:'all',event:'all',habit:'all',finance:'all',goal:'all'}
+  const upcomingOccurrence=upcomingFilters.occurrenceMode&&typeof upcomingFilters.occurrenceMode==='object'?{...occurrenceDefaults,...upcomingFilters.occurrenceMode}:occurrenceDefaults
 
   const activeProject = taskScope.startsWith('project:') ? projects.find(project => String(project.id) === taskScope.slice(8)) : null
   const titleMap: Partial<Record<AppView,string>> = { today:'Hoje', upcoming:'Em breve', completed:'Concluídos', tasks:'Tarefas', habits:'Hábitos', goals:'Metas', notes:'Notas', finance:'Finanças', health:'Bem-estar', files:'Arquivos' }
   const title = titleMap[view] || 'MAI'
   const dayLabel = new Date(`${today}T12:00:00`).toLocaleDateString('pt-BR',{weekday:'short',day:'numeric',month:'short'}).replace('.','')
+  const overdueTasks=activeTasks.filter(task=>dateKey(task.data_vencimento)&&dateKey(task.data_vencimento)<today).length
+  const futureTasks=activeTasks.filter(task=>dateKey(task.data_vencimento)>=today).length
   let info = dayLabel
   if (view === 'today') info = overdue ? `${overdue} atrasado${overdue===1?'':'s'}` : dayLabel
-  if (view === 'upcoming') info = `${activeTasks.filter(task => dateKey(task.data_vencimento)>=today).length} futuras`
+  if (view === 'upcoming') info = overdueTasks ? `${overdueTasks} atrasada${overdueTasks===1?'':'s'} · ${futureTasks} futuras` : `${futureTasks} futuras`
   if (view === 'tasks') info = taskScope==='entrada'?'Entrada':taskScope==='today'?'Hoje':taskScope==='upcoming'?'Em breve':String(activeProject?.nome||'Projeto')
   if (view === 'habits') info = `${habits.length} hábito${habits.length===1?'':'s'}`
   if (view === 'goals') info = `${goals.filter(goal=>goal.concluida!==true&&!String(goal.status||'').toLocaleLowerCase('pt-BR').includes('conclu')).length} em andamento`
@@ -73,7 +77,19 @@ export function AppTopBar({ state, today, view, taskScope, commit, onTaskScopeCh
 
   const patchConfig = (key:string,value:unknown) => commit(current => ({...current,configs:{...current.configs,[key]:value}}))
   const patchToday = (patch:Row) => patchConfig('todayFilters',{...todayFilters,...patch})
-  const patchUpcoming = (patch:Row) => patchConfig('upcomingFilters',{tasks:upcomingFilters.tasks!==false,events:upcomingFilters.events!==false,project:String(upcomingFilters.project||'all'),priority:String(upcomingFilters.priority||'all'),...patch})
+  const patchUpcoming = (patch:Row) => patchConfig('upcomingFilters',{
+    tasks:upcomingFilters.tasks!==false,
+    events:upcomingFilters.events!==false,
+    habits:upcomingFilters.habits!==false,
+    finance:upcomingFilters.finance!==false,
+    goals:upcomingFilters.goals!==false,
+    project:String(upcomingFilters.project||'all'),
+    priority:String(upcomingFilters.priority||'all'),
+    pastDays:String(upcomingFilters.pastDays||'90'),
+    occurrenceMode:upcomingOccurrence,
+    ...patch,
+  })
+  const patchOccurrence = (kind:string,value:string) => patchUpcoming({occurrenceMode:{...upcomingOccurrence,[kind]:value}})
   const patchFilter = (patch:Row) => patchConfig('moduleFilters',{...moduleFilters,[String(view)]:{...filter,...patch}})
   const patchControl = (patch:Row) => patchConfig('moduleControls',{...moduleControls,[String(view)]:{...control,...patch}})
   const setAreaTab = (area:string,tab:string) => patchConfig('areaTabs',{...areaTabs,[area]:tab})
@@ -86,12 +102,35 @@ export function AppTopBar({ state, today, view, taskScope, commit, onTaskScopeCh
 
   const projectOptions=<><option value="all">Todos</option><option value="entrada">Entrada</option>{projects.map(project=><option key={String(project.id)} value={String(project.id)}>{String(project.nome||'Projeto')}</option>)}</>
   const priorityOptions=<><option value="all">Todas</option><option value="1">Alta</option><option value="2">Média</option><option value="3">Baixa</option><option value="4">Sem prioridade</option></>
+  const recurrenceOptions=<><option value="all">Todas as ocorrências</option><option value="next">Somente a próxima</option></>
   const density=String(control.density||'comfortable')
 
-  const panel=<div className="mai-app-topbar-panel">
+  const panel=<div className="mai-app-topbar-panel" data-view={String(view)}>
     {view==='today'?<><PanelSection title="Filtros"><SelectLine label="Projeto" value={String(todayFilters.project||'all')} onChange={value=>patchToday({project:value})}>{projectOptions}</SelectLine><SelectLine label="Prioridade" value={String(todayFilters.priority||'all')} onChange={value=>patchToday({priority:value})}>{priorityOptions}</SelectLine></PanelSection><PanelSection title="Classificação"><Choices value={String(control.sort||'overdue')} onChange={value=>patchControl({sort:value})} items={[{value:'overdue',label:'Atrasados'},{value:'date',label:'Data'},{value:'priority',label:'Prioridade'},{value:'title',label:'Título'}]}/></PanelSection><PanelSection title="Visualização"><Choices value={density} onChange={value=>patchControl({density:value})} items={[{value:'comfortable',label:'Padrão'},{value:'compact',label:'Compacta'}]}/></PanelSection></>:null}
 
-    {view==='upcoming'?<><PanelSection title="Filtros"><div className="mai-app-topbar-switches"><button data-active={upcomingFilters.tasks!==false} onClick={()=>patchUpcoming({tasks:upcomingFilters.tasks===false})}>Tarefas</button><button data-active={upcomingFilters.events!==false} onClick={()=>patchUpcoming({events:upcomingFilters.events===false})}>Compromissos</button></div><SelectLine label="Projeto" value={String(upcomingFilters.project||'all')} onChange={value=>patchUpcoming({project:value})}>{projectOptions}</SelectLine><SelectLine label="Prioridade" value={String(upcomingFilters.priority||'all')} onChange={value=>patchUpcoming({priority:value})}>{priorityOptions}</SelectLine></PanelSection><PanelSection title="Classificação"><Choices value={String(control.sort||'date')} onChange={value=>patchControl({sort:value})} items={[{value:'date',label:'Data'},{value:'priority',label:'Prioridade'},{value:'title',label:'Título'}]}/></PanelSection><PanelSection title="Visualização"><Choices value={configs.upcomingView==='month'?'month':'list'} onChange={value=>patchConfig('upcomingView',value)} items={[{value:'list',label:'Lista'},{value:'month',label:'Calendário'}]}/></PanelSection></>:null}
+    {view==='upcoming'?<>
+      <PanelSection title="Filtros">
+        <div className="mai-app-topbar-switches">
+          <button data-active={upcomingFilters.tasks!==false} onClick={()=>patchUpcoming({tasks:upcomingFilters.tasks===false})}>Tarefas</button>
+          <button data-active={upcomingFilters.events!==false} onClick={()=>patchUpcoming({events:upcomingFilters.events===false})}>Compromissos</button>
+          <button data-active={upcomingFilters.habits!==false} onClick={()=>patchUpcoming({habits:upcomingFilters.habits===false})}>Hábitos</button>
+          <button data-active={upcomingFilters.finance!==false} onClick={()=>patchUpcoming({finance:upcomingFilters.finance===false})}>Finanças</button>
+          <button data-active={upcomingFilters.goals!==false} onClick={()=>patchUpcoming({goals:upcomingFilters.goals===false})}>Metas</button>
+        </div>
+        <SelectLine label="Projeto" value={String(upcomingFilters.project||'all')} onChange={value=>patchUpcoming({project:value})}>{projectOptions}</SelectLine>
+        <SelectLine label="Prioridade" value={String(upcomingFilters.priority||'all')} onChange={value=>patchUpcoming({priority:value})}>{priorityOptions}</SelectLine>
+        <SelectLine label="Dias passados" value={String(upcomingFilters.pastDays||'90')} onChange={value=>patchUpcoming({pastDays:value})}><option value="30">30 dias</option><option value="90">90 dias</option><option value="180">180 dias</option><option value="365">1 ano</option></SelectLine>
+      </PanelSection>
+      <PanelSection title="Recorrências">
+        <SelectLine label="Tarefas" value={String(upcomingOccurrence.task||'all')} onChange={value=>patchOccurrence('task',value)}>{recurrenceOptions}</SelectLine>
+        <SelectLine label="Compromissos" value={String(upcomingOccurrence.event||'all')} onChange={value=>patchOccurrence('event',value)}>{recurrenceOptions}</SelectLine>
+        <SelectLine label="Hábitos" value={String(upcomingOccurrence.habit||'all')} onChange={value=>patchOccurrence('habit',value)}>{recurrenceOptions}</SelectLine>
+        <SelectLine label="Finanças" value={String(upcomingOccurrence.finance||'all')} onChange={value=>patchOccurrence('finance',value)}>{recurrenceOptions}</SelectLine>
+        <SelectLine label="Metas" value={String(upcomingOccurrence.goal||'all')} onChange={value=>patchOccurrence('goal',value)}>{recurrenceOptions}</SelectLine>
+      </PanelSection>
+      <PanelSection title="Classificação"><Choices value={String(control.sort||'time')} onChange={value=>patchControl({sort:value})} items={[{value:'time',label:'Horário'},{value:'priority',label:'Prioridade'},{value:'project',label:'Projeto'},{value:'name',label:'Nome'}]}/></PanelSection>
+      <PanelSection title="Visualização"><Choices value={configs.upcomingView==='month'?'month':'list'} onChange={value=>patchConfig('upcomingView',value)} items={[{value:'list',label:'Lista'},{value:'month',label:'Calendário'}]}/></PanelSection>
+    </>:null}
 
     {view==='completed'?<><PanelSection title="Filtros"><SelectLine label="Tipo" value={String(filter.kind||'all')} onChange={value=>patchFilter({kind:value})}><option value="all">Todos</option><option value="task">Tarefas</option><option value="event">Compromissos</option><option value="habit">Hábitos</option><option value="goal">Metas</option><option value="finance">Finanças</option><option value="note">Notas</option></SelectLine></PanelSection><PanelSection title="Classificação"><Choices value={String(control.sort||'recent')} onChange={value=>patchControl({sort:value})} items={[{value:'recent',label:'Recentes'},{value:'oldest',label:'Antigos'},{value:'title',label:'Título'}]}/></PanelSection><PanelSection title="Visualização"><Choices value={density} onChange={value=>patchControl({density:value})} items={[{value:'comfortable',label:'Padrão'},{value:'compact',label:'Compacta'}]}/></PanelSection></>:null}
 
