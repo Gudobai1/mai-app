@@ -1,6 +1,7 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import type { MaiState } from '../../lib/v2/state'
 import { AppSettingsDrawer } from './AppSettingsDrawer'
 import { AppTopBar } from './AppTopBar'
 import type { AppView, TaskModuleScope } from './app-types'
@@ -29,6 +30,133 @@ const secondary: SecondaryView[] = ['habits', 'goals', 'notes', 'finance', 'heal
 type ProjectDialog = { projectId?: string; parentId?: string; tab?: 'details' | 'sections' } | null
 type CreateState = { kind: 'task' | 'event'; switchable?: boolean } | null
 type GoogleProfile = { name: string; picture?: string; email?: string } | null
+type Row = Record<string, any>
+
+const rows = (value: unknown): Row[] => Array.isArray(value) ? value as Row[] : []
+const dateKey = (value: unknown) => String(value || '').slice(0, 10)
+const completedStatus = (value: unknown) => ['pago','paga','quitado','quitada','concluido','concluida','concluído','concluída'].includes(String(value || '').toLocaleLowerCase('pt-BR'))
+const moduleFilterMap = (state: MaiState) => state.configs.moduleFilters && typeof state.configs.moduleFilters === 'object' ? state.configs.moduleFilters as Record<string, Record<string, any>> : {}
+
+function filterTaskTree(tasks: MaiState['tasks'], predicate: (task: MaiState['tasks'][number]) => boolean) {
+  const rootIds = new Set(tasks.filter(task => !task.parent_id && predicate(task)).map(task => String(task.id)))
+  const visible = new Set(rootIds)
+  let changed = true
+  while (changed) {
+    changed = false
+    tasks.forEach(task => {
+      const id = String(task.id)
+      const parentId = String(task.parent_id || '')
+      if (!parentId || visible.has(id) || !visible.has(parentId)) return
+      visible.add(id)
+      changed = true
+    })
+  }
+  return tasks.filter(task => visible.has(String(task.id)))
+}
+
+function filteredStateForView(state: MaiState, view: AppView, today: string): MaiState {
+  const filters = moduleFilterMap(state)[String(view)] || {}
+
+  if (view === 'tasks') {
+    const priority = String(filters.priority || 'all')
+    const due = String(filters.due || 'all')
+    const filtered = filterTaskTree(state.tasks, task => {
+      if (priority !== 'all' && String(Number(task.prioridade || 4)) !== priority) return false
+      const day = dateKey(task.data_vencimento)
+      if (due === 'overdue') return Boolean(day) && day < today && task.concluida !== true
+      if (due === 'today') return day === today
+      if (due === 'future') return Boolean(day) && day > today
+      if (due === 'none') return !day
+      return true
+    })
+    return { ...state, tasks: filtered }
+  }
+
+  if (view === 'habits') {
+    const status = String(filters.status || 'all')
+    if (status === 'all') return state
+    const todayEntries = rows(state.habitEntries).filter(entry => dateKey(entry.data) === today)
+    const filtered = rows(state.habits).filter(habit => {
+      const entry = todayEntries.find(item => String(item.habito_id) === String(habit.id))
+      const done = Number(entry?.valor || 0) >= Math.max(1, Number(habit.meta || 1))
+      return status === 'done' ? done : !done
+    })
+    return { ...state, habits: filtered }
+  }
+
+  if (view === 'goals') {
+    const status = String(filters.status || 'all')
+    const priority = String(filters.priority || 'all')
+    const filtered = rows(state.goals).filter(goal => {
+      const text = String(goal.status || '').toLocaleLowerCase('pt-BR')
+      const done = goal.concluida === true || text.includes('conclu')
+      if (done) return false
+      const paused = text.includes('paus')
+      if (status === 'active' && paused) return false
+      if (status === 'paused' && !paused) return false
+      if (priority !== 'all' && String(Number(goal.prioridade || 4)) !== priority) return false
+      return true
+    })
+    return { ...state, goals: filtered }
+  }
+
+  if (view === 'notes') {
+    const pinned = String(filters.pinned || 'all')
+    if (pinned === 'all') return state
+    return { ...state, notes: rows(state.notes).filter(note => pinned === 'pinned' ? note.fixado === true : note.fixado !== true) }
+  }
+
+  if (view === 'finance') {
+    const tabs = state.configs.areaTabs && typeof state.configs.areaTabs === 'object' ? state.configs.areaTabs as Record<string, string> : {}
+    if ((tabs.finance || 'overview') !== 'transactions') return state
+    const type = String(filters.type || 'all')
+    const status = String(filters.status || 'all')
+    const finance = state.finance || {}
+    const filtered = rows(finance.transactions).filter(item => {
+      const isIncome = String(item.tipo || '').toLocaleLowerCase('pt-BR') === 'receita'
+      if (type === 'income' && !isIncome) return false
+      if (type === 'expense' && isIncome) return false
+      const isPaid = completedStatus(item.status) || (Number(item.valor || 0) > 0 && Number(item.valor_pago || 0) >= Number(item.valor || 0))
+      if (status === 'paid' && !isPaid) return false
+      if (status === 'pending' && isPaid) return false
+      return true
+    })
+    return { ...state, finance: { ...finance, transactions: filtered } }
+  }
+
+  if (view === 'health') {
+    const period = String(filters.period || '30')
+    if (period === 'all') return state
+    const days = Math.max(1, Number(period) || 30)
+    const health = state.health || {}
+    const diary = health.diary && typeof health.diary === 'object' ? health.diary as Record<string, Row> : {}
+    const start = new Date(`${today}T12:00:00`)
+    start.setDate(start.getDate() - (days - 1))
+    const startKey = `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, '0')}-${String(start.getDate()).padStart(2, '0')}`
+    const filteredDiary = Object.fromEntries(Object.entries(diary).filter(([key]) => key >= startKey && key <= today))
+    return { ...state, health: { ...health, diary: filteredDiary } }
+  }
+
+  if (view === 'completed') {
+    const kind = String(filters.kind || 'all')
+    if (kind === 'all') return state
+    const emptyFinance = { ...(state.finance || {}), transactions: [] }
+    return {
+      ...state,
+      tasks: kind === 'task' ? state.tasks : [],
+      taskCompletions: kind === 'task' ? state.taskCompletions : [],
+      events: kind === 'event' ? state.events : [],
+      eventCompletions: kind === 'event' ? state.eventCompletions : [],
+      habits: kind === 'habit' ? state.habits : [],
+      habitEntries: kind === 'habit' ? state.habitEntries : [],
+      goals: kind === 'goal' ? state.goals : [],
+      notes: kind === 'note' ? state.notes : [],
+      finance: kind === 'finance' ? state.finance : emptyFinance,
+    }
+  }
+
+  return state
+}
 
 const validView = (value: unknown): value is AppView => {
   const text = String(value || '')
@@ -59,6 +187,9 @@ export function UnifiedAppUx() {
   const taskScope = scopeFromLegacy(runtime.state.configs.taskModuleScope)
   const activeProjectId = taskScope.startsWith('project:') ? taskScope.slice(8) : 'entrada'
   const advanced = runtime.state.configs.advancedAreas && typeof runtime.state.configs.advancedAreas === 'object' ? runtime.state.configs.advancedAreas as Record<string,boolean> : {}
+  const viewState = useMemo(() => filteredStateForView(runtime.state, view, runtime.today), [runtime.state, view, runtime.today])
+  const currentModuleFilters = moduleFilterMap(runtime.state)[String(view)] || {}
+  const fileKind = String(currentModuleFilters.kind || 'all')
 
   useEffect(() => {
     let active = true
@@ -141,18 +272,29 @@ export function UnifiedAppUx() {
     return addByType(view)
   }
 
+  async function moduleGoogleRpc(method: string, args?: unknown[]) {
+    const response = await runtime.googleRpc(method, args)
+    if (view !== 'files' || method !== 'getDriveContent' || fileKind === 'all' || !response || typeof response !== 'object') return response
+    const source = response as Row
+    const filteredItems = rows(source.items).filter(item => {
+      const folder = item.tipo === 'folder' || item.mimeType === 'application/vnd.google-apps.folder'
+      return fileKind === 'folder' ? folder : !folder
+    })
+    return { ...source, items: filteredItems }
+  }
+
   return <div className={`${styles.appShell} mai-v3-shell`}>
     <ShellSidebar state={runtime.state} view={view} sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} navigate={navigate} onSearch={() => setSearchOpen(true)} onSettings={() => setSettingsOpen(true)} profile={googleProfile} />
 
     <main className={`${styles.main} mai-v3-main`}>
       <div className={`${styles.workspace} mai-v3-workspace`}>
-        {runtime.ready ? <AppTopBar state={runtime.state} today={runtime.today} view={view} taskScope={taskScope} commit={runtime.commit} onTaskScopeChange={setTaskScope} onSearch={() => setSearchOpen(true)} onSettings={() => setSettingsOpen(true)} /> : null}
+        {runtime.ready ? <AppTopBar state={runtime.state} today={runtime.today} view={view} taskScope={taskScope} commit={runtime.commit} onTaskScopeChange={setTaskScope} onSettings={() => setSettingsOpen(true)} /> : null}
         {!runtime.ready ? <div className={styles.loadingState}>Carregando seu MAI…</div> : <>
-          {view === 'today' ? <TodayV4 state={runtime.state} today={runtime.today} commit={runtime.commit} navigate={navigate} inspect={setSelected} onSearch={() => setSearchOpen(true)} onMore={() => setSettingsOpen(true)}/> : null}
-          {view === 'upcoming' ? <UpcomingV4 state={runtime.state} today={runtime.today} commit={runtime.commit} inspect={setSelected}/> : null}
-          {view === 'completed' ? <CompletedV4 state={runtime.state} today={runtime.today} commit={runtime.commit} inspect={setSelected}/> : null}
+          {view === 'today' ? <TodayV4 state={viewState} today={runtime.today} commit={runtime.commit} navigate={navigate} inspect={setSelected} onSearch={() => setSearchOpen(true)} onMore={() => setSettingsOpen(true)}/> : null}
+          {view === 'upcoming' ? <UpcomingV4 state={viewState} today={runtime.today} commit={runtime.commit} inspect={setSelected}/> : null}
+          {view === 'completed' ? <CompletedV4 state={viewState} today={runtime.today} commit={runtime.commit} inspect={setSelected}/> : null}
           {view === 'tasks' ? <TasksModule
-            state={runtime.state}
+            state={viewState}
             today={runtime.today}
             scope={taskScope}
             commit={runtime.commit}
@@ -167,11 +309,11 @@ export function UnifiedAppUx() {
             onEditProject={id => setProjectDialog({ projectId: id, tab: 'details' })}
             onManageSections={id => setProjectDialog({ projectId: id, tab: 'sections' })}
           /> : null}
-          {view === 'habits' && !advanced.habits ? <HabitsV4 state={runtime.state} today={runtime.today} commit={runtime.commit} createRequest={areaCreateRequest} inspect={setSelected}/> : null}
-          {view === 'goals' && !advanced.goals ? <GoalsV4 state={runtime.state} today={runtime.today} commit={runtime.commit} createRequest={areaCreateRequest} inspect={setSelected}/> : null}
-          {view === 'notes' && !advanced.notes ? <NotesV4 state={runtime.state} today={runtime.today} commit={runtime.commit} createRequest={areaCreateRequest} inspect={setSelected}/> : null}
-          {view === 'finance' && !advanced.finance ? <FinanceV4 state={runtime.state} today={runtime.today} commit={runtime.commit} createRequest={areaCreateRequest} inspect={setSelected}/> : null}
-          {secondary.includes(view as SecondaryView) && !(view === 'habits' && !advanced.habits) && !(view === 'goals' && !advanced.goals) && !(view === 'notes' && !advanced.notes) && !(view === 'finance' && !advanced.finance) ? <MinimalAreas view={view as SecondaryView} state={runtime.state} today={runtime.today} commit={runtime.commit} googleRpc={runtime.googleRpc} createRequest={areaCreateRequest} inspect={setSelected} /> : null}
+          {view === 'habits' && !advanced.habits ? <HabitsV4 state={viewState} today={runtime.today} commit={runtime.commit} createRequest={areaCreateRequest} inspect={setSelected}/> : null}
+          {view === 'goals' && !advanced.goals ? <GoalsV4 state={viewState} today={runtime.today} commit={runtime.commit} createRequest={areaCreateRequest} inspect={setSelected}/> : null}
+          {view === 'notes' && !advanced.notes ? <NotesV4 state={viewState} today={runtime.today} commit={runtime.commit} createRequest={areaCreateRequest} inspect={setSelected}/> : null}
+          {view === 'finance' && !advanced.finance ? <FinanceV4 state={viewState} today={runtime.today} commit={runtime.commit} createRequest={areaCreateRequest} inspect={setSelected}/> : null}
+          {secondary.includes(view as SecondaryView) && !(view === 'habits' && !advanced.habits) && !(view === 'goals' && !advanced.goals) && !(view === 'notes' && !advanced.notes) && !(view === 'finance' && !advanced.finance) ? <MinimalAreas key={view === 'files' ? `files:${fileKind}` : String(view)} view={view as SecondaryView} state={viewState} today={runtime.today} commit={runtime.commit} googleRpc={moduleGoogleRpc} createRequest={areaCreateRequest} inspect={setSelected} /> : null}
         </>}
       </div>
     </main>
