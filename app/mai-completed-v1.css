@@ -1,50 +1,16 @@
-/* MAI — Concluídos global */
-.mai-v4-completed .mai-completed-groups{
-  width:min(900px,100%);
-  margin:12px auto 0;
-}
-
-.mai-v4-completed .mai-completed-day{
-  margin-bottom:18px;
-}
-
-.mai-v4-completed .mai-completed-day>header{
-  min-height:34px;
-  display:flex;
-  align-items:center;
-  gap:7px;
-  border-bottom:1px solid var(--v3-line,var(--line));
-}
-
-.mai-v4-completed .mai-completed-day>header strong{
-  color:var(--v3-text,var(--text));
-  font-size:10.5px;
-  font-weight:680;
-  text-transform:capitalize;
-}
-
-.mai-v4-completed .mai-completed-day>header span{
-  color:var(--v3-faint,var(--faint));
-  font-size:9px;
-  font-weight:600;
-}
+/* MAI — Concluídos global
+   A tela reutiliza a mesma linguagem visual das listas normais do aplicativo. */
 
 .mai-completed-row{
-  opacity:.94;
+  opacity:1!important;
 }
 
-.mai-completed-row .mai-today-unified-dot[data-done="true"]{
-  cursor:pointer;
+.mai-completed-row .mai-completed-check{
+  cursor:pointer!important;
 }
 
 .mai-completed-detail{
   min-width:0;
-  display:inline-flex!important;
-  align-items:center!important;
-  gap:5px!important;
-  overflow:hidden!important;
-  text-overflow:ellipsis!important;
-  white-space:nowrap!important;
 }
 
 .mai-completed-detail svg{
@@ -109,14 +75,6 @@
 }
 
 @media(max-width:720px){
-  .mai-v4-completed .mai-completed-groups{
-    margin-top:8px;
-  }
-
-  .mai-v4-completed .mai-completed-day{
-    margin-bottom:15px;
-  }
-
   .mai-context-v3-footer>.mai-context-v3-complete{
     min-height:32px!important;
     padding-inline:7px!important;
