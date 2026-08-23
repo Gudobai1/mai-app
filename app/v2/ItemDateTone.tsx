@@ -108,6 +108,23 @@ function toneForDate(date: string, today: string, pending: boolean): DateTone {
   return 'future'
 }
 
+function promoteOverdue(root: HTMLElement) {
+  const parents = new Set<HTMLElement>()
+
+  root.querySelectorAll<HTMLElement>('.mai-item-row-v2[data-mai-date-tone="overdue"]').forEach(row => {
+    if (row.closest('.mai-v4-today-single,.mai-upcoming-page,.mai-v3-upcoming-page,.mai-v4-completed')) return
+    if (row.parentElement) parents.add(row.parentElement)
+  })
+
+  parents.forEach(parent => {
+    const listRows = Array.from(parent.children).filter((child): child is HTMLElement => child instanceof HTMLElement && child.classList.contains('mai-item-row-v2'))
+    if (listRows.length < 2) return
+    const desired = [...listRows.filter(row => row.dataset.maiDateTone === 'overdue'), ...listRows.filter(row => row.dataset.maiDateTone !== 'overdue')]
+    if (desired.every((row, index) => row === listRows[index])) return
+    desired.forEach(row => parent.appendChild(row))
+  })
+}
+
 export function ItemDateTone() {
   useEffect(() => {
     let observer: MutationObserver | null = null
@@ -141,7 +158,10 @@ export function ItemDateTone() {
 
         dateElement.dataset.maiDateTone = tone
         dateElement.classList.add('mai-item-date-v4')
+        row.dataset.maiDateTone = tone
       })
+
+      promoteOverdue(root)
     }
 
     const root = document.querySelector('.mai-v3-shell') || document.body
