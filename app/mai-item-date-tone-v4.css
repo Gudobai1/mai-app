@@ -1,7 +1,6 @@
-/* MAI — itens em três linhas + estados visuais da data.
+/* MAI — itens em duas linhas + estados visuais da data.
    Linha 1: título.
-   Linha 2: data.
-   Linha 3: projeto, categoria, horário, valor, progresso ou outro detalhe útil. */
+   Linha 2: data + projeto, categoria, horário, valor, progresso ou outro detalhe útil. */
 :root{
   --mai-date-overdue:#c94f45;
   --mai-date-today:#b77a00;
@@ -16,83 +15,89 @@ html[data-mai-theme="dark"]{
   --mai-date-neutral:var(--v3-muted);
 }
 
-/* Mais altura para acomodar título + data + detalhe sem comprimir o item. */
+/* Volta ao cartão compacto de duas linhas. */
 .mai-item-row-v2{
-  min-height:66px!important;
-  padding-top:8px!important;
-  padding-bottom:8px!important;
+  min-height:54px!important;
+  padding-top:7px!important;
+  padding-bottom:7px!important;
 }
 
 .mai-item-copy-v2{
-  gap:2px!important;
+  gap:3px!important;
   align-content:center!important;
 }
 
-/* A sublinha antiga vira duas linhas empilhadas: data e contexto. */
+/* Data e contexto ficam juntos logo abaixo do título. */
 .mai-item-subline-v2{
   width:100%!important;
   min-width:0!important;
-  min-height:32px!important;
-  display:grid!important;
-  grid-template-columns:minmax(0,1fr)!important;
-  grid-auto-rows:minmax(14px,auto)!important;
+  min-height:20px!important;
+  display:flex!important;
+  flex-direction:row!important;
+  flex-wrap:nowrap!important;
   align-items:center!important;
-  justify-items:start!important;
-  gap:1px!important;
+  justify-content:flex-start!important;
+  gap:5px!important;
   overflow:hidden!important;
   white-space:nowrap!important;
-  line-height:1.15!important;
+  line-height:1.2!important;
 }
 
-/* Data: segunda linha, logo abaixo do título, alinhada à esquerda. */
+/* Data: primeiro elemento da segunda linha, sempre à esquerda. */
 .mai-item-subline-v2>.mai-item-date-v4,
 .mai-item-subline-v2>:first-child{
   order:1!important;
   width:auto!important;
   min-width:0!important;
-  max-width:100%!important;
-  min-height:15px!important;
-  height:15px!important;
+  max-width:none!important;
+  min-height:18px!important;
+  height:18px!important;
+  flex:0 0 auto!important;
   display:inline-flex!important;
   align-items:center!important;
   justify-content:flex-start!important;
-  justify-self:start!important;
   align-self:center!important;
   margin:0!important;
   padding:0!important;
-  overflow:hidden!important;
-  text-overflow:ellipsis!important;
+  overflow:visible!important;
   white-space:nowrap!important;
   text-align:left!important;
   opacity:1!important;
   font-size:10.5px!important;
   font-weight:680!important;
-  line-height:15px!important;
+  line-height:18px!important;
   letter-spacing:.005em!important;
   color:var(--mai-date-neutral)!important;
 }
 
-/* O antigo ponto entre data e detalhe não aparece mais. */
+/* Mantém o separador discreto entre data e contexto quando já existe no item. */
 .mai-item-subline-v2>span:nth-child(2):not(:last-child):not(.mai-item-project-tag):not(.mai-item-inline-tag){
-  display:none!important;
+  order:2!important;
+  display:inline-flex!important;
+  flex:0 0 auto!important;
+  align-items:center!important;
+  color:var(--v3-faint,var(--v3-muted))!important;
+  opacity:.7!important;
+  font-size:9px!important;
+  line-height:18px!important;
 }
 
-/* Contexto: terceira linha, abaixo da data. */
+/* Categoria/projeto/horário/valor/progresso ficam imediatamente ao lado da data. */
 .mai-item-subline-v2>:not(:first-child):not(:nth-child(2)),
 .mai-item-subline-v2>.mai-item-project-tag,
 .mai-item-subline-v2>.mai-item-inline-tag{
-  order:2!important;
+  order:3!important;
   min-width:0!important;
-  max-width:100%!important;
+  max-width:70%!important;
+  flex:0 1 auto!important;
   margin:0!important;
-  justify-self:start!important;
   align-self:center!important;
   overflow:hidden!important;
   text-overflow:ellipsis!important;
   white-space:nowrap!important;
   color:var(--v3-muted)!important;
   font-size:10.5px!important;
-  line-height:14px!important;
+  line-height:18px!important;
 }
 
 .mai-item-subline-v2>.mai-item-project-tag,
@@ -109,14 +114,24 @@ html[data-mai-theme="dark"]{
 
 @media(max-width:720px){
   .mai-item-row-v2{
-    min-height:66px!important;
+    min-height:54px!important;
     padding-top:7px!important;
     padding-bottom:7px!important;
+  }
+
+  .mai-item-subline-v2{
+    gap:4px!important;
   }
 
   .mai-item-subline-v2>.mai-item-date-v4,
   .mai-item-subline-v2>:first-child{
     font-size:10.75px!important;
     font-weight:700!important;
+  }
+
+  .mai-item-subline-v2>:not(:first-child):not(:nth-child(2)),
+  .mai-item-subline-v2>.mai-item-project-tag,
+  .mai-item-subline-v2>.mai-item-inline-tag{
+    max-width:62%!important;
   }
 }
