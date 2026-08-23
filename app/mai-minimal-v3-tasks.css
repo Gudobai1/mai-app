@@ -18,4 +18,8 @@
 .mai-v3-task-row[draggable="true"]{cursor:grab}
 .mai-v3-task-row[draggable="true"]:active{cursor:grabbing}
 .mai-v3-task-advanced{min-width:0}
+
+/* Em projetos, o rail já identifica o contexto: remove o cabeçalho duplicado. */
+.mai-v3-task-workspace:not(:has(.mai-v3-inbox-layout))>.mai-v3-page-header.mai-v3-task-header{display:none!important}
+
 @media(max-width:560px){.mai-v3-project-sections{gap:42px}.mai-v3-task-title-wrap>i,.mai-v3-task-title-wrap>img{width:32px;height:32px}}
