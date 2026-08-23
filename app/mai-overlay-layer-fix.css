@@ -1,0 +1,12 @@
+/* Garante que os drawers contextuais fiquem acima da barra superior sticky. */
+.mai-context-layer,
+.mai-task-v4-layer,
+.mai-context-v3-layer{
+  z-index:1200!important;
+}
+
+.mai-context-drawer,
+.mai-task-v4-drawer,
+.mai-context-v3-drawer{
+  z-index:1201!important;
+}
