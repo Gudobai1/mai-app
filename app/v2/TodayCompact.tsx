@@ -34,6 +34,16 @@ const priorityColor = (value: unknown) => {
 const dateKey = (value: unknown) => String(value || '').slice(0, 10)
 const timeKey = (value: unknown) => String(value || '').includes('T') ? String(value).slice(11, 16) : ''
 
+function naturalDate(key: string, today: string) {
+  if (!key) return 'Sem data'
+  if (key === today) return 'Hoje'
+  const base = new Date(`${today}T12:00:00`)
+  const target = new Date(`${key}T12:00:00`)
+  const diff = Math.round((target.getTime() - base.getTime()) / 86_400_000)
+  if (diff === -1) return 'Ontem'
+  return target.toLocaleDateString('pt-BR', { day: 'numeric', month: 'short', year: target.getFullYear() !== base.getFullYear() ? 'numeric' : undefined })
+}
+
 export function TodayCompact({ state, today, commit, inspect, onMore, part = 'all' }: Props) {
   const [filterOpen, setFilterOpen] = useState(false)
   const plan = useMemo(() => plannerItems(state, today, today), [state, today])
@@ -79,12 +89,22 @@ export function TodayCompact({ state, today, commit, inspect, onMore, part = 'al
     })
   }, [plannedEvents, spanningEvents])
 
-  const todayTasks = useMemo(() => state.tasks.filter(task => !task.concluida && dateKey(task.data_vencimento) === today), [state.tasks, today])
-  const filteredTasks = useMemo(() => todayTasks.filter(task => {
+  const dueTasks = useMemo(() => state.tasks.filter(task => {
+    const day = dateKey(task.data_vencimento)
+    return !task.concluida && Boolean(day) && day <= today
+  }), [state.tasks, today])
+  const filteredTasks = useMemo(() => dueTasks.filter(task => {
     if (filters.project !== 'all' && String(task.projeto_id || 'entrada') !== filters.project) return false
     if (filters.priority !== 'all' && String(Number(task.prioridade || 4)) !== filters.priority) return false
     return true
-  }).sort((a, b) => Number(a.ordem || 0) - Number(b.ordem || 0)), [todayTasks, filters.project, filters.priority])
+  }).sort((a, b) => {
+    const aDay = dateKey(a.data_vencimento)
+    const bDay = dateKey(b.data_vencimento)
+    const aOverdue = aDay < today
+    const bOverdue = bDay < today
+    if (aOverdue !== bOverdue) return aOverdue ? -1 : 1
+    return aDay.localeCompare(bDay) || (timeKey(a.data_vencimento) || '99:99').localeCompare(timeKey(b.data_vencimento) || '99:99') || Number(a.ordem || 0) - Number(b.ordem || 0)
+  }), [dueTasks, filters.project, filters.priority, today])
 
   function setFilters(patch: Partial<TodayFilters>) {
     commit(current => ({ ...current, configs: { ...current.configs, todayFilters: { ...filters, ...patch } } }))
@@ -148,11 +168,12 @@ export function TodayCompact({ state, today, commit, inspect, onMore, part = 'al
     <h2>Tarefas</h2>
     <div className="mai-today-unified-list">{filteredTasks.map(task => {
       const project = projectIdentity(task.projeto_id)
+      const taskDay = dateKey(task.data_vencimento)
       return <article className="mai-today-unified-row mai-item-row-v2" key={task.id} onClick={() => inspectTask(task)}>
         <button className="mai-today-unified-dot" aria-label={`Concluir ${task.titulo}`} style={{ borderColor: priorityColor(task.prioridade) }} onClick={event => { event.stopPropagation(); toggleTask(task.id) }} />
-        <span className="mai-item-copy-v2"><span className="mai-item-titleline-v2"><strong>{task.titulo}</strong></span><span className="mai-item-subline-v2"><span>Hoje</span><span>·</span>{projectBadge(project)}</span></span>
+        <span className="mai-item-copy-v2"><span className="mai-item-titleline-v2"><strong>{task.titulo}</strong></span><span className="mai-item-subline-v2"><span>{naturalDate(taskDay, today)}</span><span>·</span>{projectBadge(project)}</span></span>
       </article>
-    })}{!filteredTasks.length ? <div className="mai-v3-empty-line">Nenhuma tarefa para hoje.</div> : null}</div>
+    })}{!filteredTasks.length ? <div className="mai-v3-empty-line">Nenhuma tarefa pendente para hoje.</div> : null}</div>
   </section>
 
   if (part === 'header') return header
