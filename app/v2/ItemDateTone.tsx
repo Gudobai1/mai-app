@@ -142,13 +142,19 @@ export function ItemDateTone() {
 
         const shownDate = String(dateElement.textContent || '').trim()
         const title = String(row.querySelector('.mai-item-titleline-v2 strong')?.textContent || '').trim()
+        const explicitDate = dateKey(row.dataset.maiItemDate)
         const isUpcomingSurface = Boolean(row.closest('.mai-upcoming-page,.mai-v3-upcoming-page'))
         const isCompletedSurface = Boolean(row.closest('.mai-v4-completed') || row.classList.contains('mai-completed-row'))
         const isNotesSurface = Boolean(row.closest('.mai-v4-notes-list-page'))
+        const upcomingKind = String(row.dataset.kind || '')
 
         let tone: DateTone = 'neutral'
-        if (normalized(shownDate) === 'hoje') tone = 'today'
-        else if (isCompletedSurface || isNotesSurface || isUpcomingSurface) tone = 'future'
+        if (isCompletedSurface || isNotesSurface) tone = 'future'
+        else if (isUpcomingSurface && explicitDate) {
+          const canBeOverdue = ['task','finance','goal'].includes(upcomingKind)
+          tone = explicitDate < today && !canBeOverdue ? 'future' : toneForDate(explicitDate, today, true)
+        }
+        else if (normalized(shownDate) === 'hoje') tone = 'today'
         else if (state) {
           const matched = findRecord(state, title, shownDate, today)
           if (matched?.date) tone = toneForDate(matched.date, today, matched.pending)
