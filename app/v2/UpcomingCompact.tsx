@@ -51,12 +51,12 @@ function iconFor(kind:PlannerItem['kind']){
   return'inbox'
 }
 
-function ItemRow({item,inspect,today,project}:{item:PlannerItem;inspect:Props['inspect'];today:string;project?:Row}){
+function ItemRow({item,inspect,today,project,afterOpen}:{item:PlannerItem;inspect:Props['inspect'];today:string;project?:Row;afterOpen?:()=>void}){
   const isTask=item.kind==='task'
   const priority=isTask?Number(item.raw.prioridade||4):undefined
   const projectBadge=isTask?<span className="mai-item-inline-tag mai-item-project-tag">{project?.imagem_url?<img src={String(project.imagem_url)} alt=""/>:<i style={{background:String(project?.cor||'#8e968d')}}><MaiIcon name={String(project?.icone||(project?.id==='entrada'?'inbox':'folder'))} size={9}/></i>}<span>{String(project?.nome||'Entrada')}</span></span>:null
   const detail=item.kind==='event'?<span>{item.raw.dia_inteiro===true||!item.time?'Dia inteiro':item.time}</span>:isTask?projectBadge:<span>{item.subtitle||kindLabel[item.kind]}</span>
-  return <article className="mai-upcoming-item mai-v3-upcoming-item mai-item-row-v2" data-kind={item.kind} data-mai-item-date={item.date} onClick={()=>inspect({kind:item.kind,sourceId:item.sourceId,title:item.title,date:item.date,time:item.time,raw:item.raw})}>
+  return <article className="mai-upcoming-item mai-v3-upcoming-item mai-item-row-v2" data-kind={item.kind} data-mai-item-date={item.date} onClick={()=>{afterOpen?.();inspect({kind:item.kind,sourceId:item.sourceId,title:item.title,date:item.date,time:item.time,raw:item.raw})}}>
     {isTask?<i className="mai-task-priority-dot" data-priority={priority}/>:<span className="mai-event-item-icon" style={{color:item.color}}><MaiIcon name={iconFor(item.kind)} size={16}/></span>}
     <span className="mai-item-copy-v2"><span className="mai-item-titleline-v2"><strong>{item.title}</strong></span><span className="mai-item-subline-v2"><span>{itemDate(item.date,today)}</span><span>·</span>{detail}</span></span>
   </article>
@@ -67,9 +67,11 @@ export function UpcomingCompact({state,today,inspect,commit}:Props){
   const [mode,setMode]=useState<Mode>(persistedMode)
   const [anchor,setAnchor]=useState(String(state.configs.upcomingAnchor||today))
   const [selectedDay,setSelectedDay]=useState(today)
+  const [mobileDay,setMobileDay]=useState<string|null>(null)
   const [rangeDays,setRangeDays]=useState(180)
   const listRef=useRef<HTMLDivElement>(null)
   const sentinelRef=useRef<HTMLDivElement>(null)
+  const monthAgendaRef=useRef<HTMLElement>(null)
   const focusedList=useRef(false)
   const projects=useMemo(()=>rows(state.projects).filter(item=>item.ativo!==false),[state.projects])
   const projectMap=useMemo(()=>new Map(projects.map(project=>[String(project.id),project])),[projects])
@@ -105,6 +107,12 @@ export function UpcomingCompact({state,today,inspect,commit}:Props){
     observer.observe(sentinelRef.current)
     return()=>observer.disconnect()
   },[mode])
+  useEffect(()=>{
+    if(!mobileDay)return
+    const close=(event:KeyboardEvent)=>{if(event.key==='Escape')setMobileDay(null)}
+    window.addEventListener('keydown',close)
+    return()=>window.removeEventListener('keydown',close)
+  },[mobileDay])
 
   function filterAndOccurrences(source:PlannerItem[]){
     const enabled:Record<PlannerItem['kind'],boolean>={task:filters.tasks,event:filters.events,habit:filters.habits,finance:filters.finance,goal:filters.goals}
@@ -162,6 +170,7 @@ export function UpcomingCompact({state,today,inspect,commit}:Props){
   const gridStart=addDays(monthStart,-firstWeekday)
   const gridDays=Array.from({length:42},(_,index)=>addDays(gridStart,index))
   const gridEnd=gridDays[gridDays.length-1]
+  const monthDays=gridDays.filter(day=>day.slice(0,7)===monthStart.slice(0,7))
   const calendarItems=useMemo(()=>filterAndOccurrences(plannerItems(state,gridStart,gridEnd)),[state,gridStart,gridEnd,today,filters.tasks,filters.events,filters.habits,filters.finance,filters.goals,filters.project,filters.priority,savedFilters.occurrenceMode,sortMode])
   const calendarMap=useMemo(()=>{
     const map=new Map<string,PlannerItem[]>()
@@ -170,19 +179,32 @@ export function UpcomingCompact({state,today,inspect,commit}:Props){
     return map
   },[calendarItems,sortMode])
 
+  const agendaStartDay=today.slice(0,7)===monthStart.slice(0,7)?today:monthStart
+  const agendaDays=monthDays.filter(day=>(calendarMap.get(day)||[]).length>0||day===agendaStartDay)
+  const monthItemCount=monthDays.reduce((total,day)=>total+(calendarMap.get(day)||[]).length,0)
+
   useEffect(()=>{
     if(mode!=='month')return
     const visibleMonth=monthStart.slice(0,7)
     if(selectedDay.slice(0,7)!==visibleMonth)setSelectedDay(today.slice(0,7)===visibleMonth?today:monthStart)
   },[mode,monthStart,today])
+  useEffect(()=>{
+    if(mode!=='month')return
+    const id=window.requestAnimationFrame(()=>monthAgendaRef.current?.querySelector(`[data-day="${agendaStartDay}"]`)?.scrollIntoView({block:'start'}))
+    return()=>window.cancelAnimationFrame(id)
+  },[mode,monthStart,agendaStartDay,agendaDays.length])
 
-  function changeAnchor(next:string){setAnchor(next);commit(current=>({...current,configs:{...current.configs,upcomingAnchor:next}}))}
-  function goToday(){setSelectedDay(today);changeAnchor(today)}
-  function selectDay(day:string){setSelectedDay(day);if(day.slice(0,7)!==monthStart.slice(0,7))changeAnchor(day)}
+  function changeAnchor(next:string){setAnchor(next);setMobileDay(null);commit(current=>({...current,configs:{...current.configs,upcomingAnchor:next}}))}
+  function goToday(){setSelectedDay(today);setMobileDay(null);changeAnchor(today)}
+  function selectDay(day:string){
+    setSelectedDay(day)
+    if(typeof window!=='undefined'&&window.matchMedia('(max-width:900px)').matches)setMobileDay(day)
+    if(day.slice(0,7)!==monthStart.slice(0,7))changeAnchor(day)
+  }
 
   const monthLabel=new Date(`${monthStart}T12:00:00`).toLocaleDateString('pt-BR',{month:'long',year:'numeric'})
-  const selectedItems=calendarMap.get(selectedDay)||[]
-  const selectedWeekday=new Date(`${selectedDay}T12:00:00`).toLocaleDateString('pt-BR',{weekday:'long'})
+  const mobileItems=mobileDay?calendarMap.get(mobileDay)||[]:[]
+  const mobileWeekday=mobileDay?new Date(`${mobileDay}T12:00:00`).toLocaleDateString('pt-BR',{weekday:'long'}):''
 
   return <div className="mai-upcoming-page mai-v3-upcoming-page">
     {mode==='list'?<div ref={listRef} className="mai-upcoming-scroll mai-v3-upcoming-scroll mai-upcoming-history-list">
@@ -200,13 +222,16 @@ export function UpcomingCompact({state,today,inspect,commit}:Props){
           <span className="mai-upcoming-calendar-day-number">{Number(day.slice(8))}</span>
           <div className="mai-upcoming-calendar-events">{items.slice(0,2).map(item=><span className="mai-upcoming-calendar-chip" key={item.id}><i style={{background:item.color}}/><b>{item.time?`${item.time} `:''}{item.title}</b></span>)}</div>
           {items.length>2?<span className="mai-upcoming-calendar-more">+ {items.length-2} {items.length-2===1?'item':'itens'}</span>:null}
-          <div className="mai-upcoming-calendar-mobile-dots">{items.slice(0,4).map(item=><i key={item.id} style={{background:item.color}}/>)}</div>
         </button>})}</div>
       </main>
-      <aside className="mai-upcoming-day-panel">
-        <header><div><small>{selectedWeekday}</small><strong>{selectedDay===today?'Hoje':formatDay(selectedDay)}</strong></div><span>{selectedItems.length}</span></header>
-        <div className="mai-upcoming-day-panel-list">{selectedItems.map(item=><ItemRow key={item.id} item={item} inspect={inspect} today={today} project={item.kind==='task'?projectFor(item):undefined}/>)}{!selectedItems.length?<div className="mai-upcoming-day-panel-empty">Nenhum item neste dia.</div>:null}</div>
+      <aside className="mai-upcoming-month-agenda" ref={monthAgendaRef}>
+        <header className="mai-upcoming-month-agenda-head"><div><small>Agenda do mês</small><strong>{monthLabel}</strong></div><span>{monthItemCount}</span></header>
+        <div className="mai-upcoming-month-agenda-list">{agendaDays.map(day=>{const items=calendarMap.get(day)||[];return <section key={day} data-day={day} data-today={day===today||undefined}><header><strong>{groupLabel(day,today)}</strong><span>{items.length}</span></header>{items.map(item=><ItemRow key={item.id} item={item} inspect={inspect} today={today} project={item.kind==='task'?projectFor(item):undefined}/>)}{!items.length?<div className="mai-upcoming-day-panel-empty">Nenhum item neste dia.</div>:null}</section>})}</div>
       </aside>
+      {mobileDay?<div className="mai-upcoming-mobile-day-layer" role="presentation" onClick={()=>setMobileDay(null)}><section className="mai-upcoming-mobile-day-sheet" role="dialog" aria-modal="true" aria-label={`Itens de ${formatDay(mobileDay)}`} onClick={event=>event.stopPropagation()}>
+        <header><div><small>{mobileWeekday}</small><strong>{mobileDay===today?'Hoje':formatDay(mobileDay)}</strong></div><button aria-label="Fechar" onClick={()=>setMobileDay(null)}>×</button></header>
+        <div className="mai-upcoming-mobile-day-items">{mobileItems.map(item=><ItemRow key={item.id} item={item} inspect={inspect} today={today} project={item.kind==='task'?projectFor(item):undefined} afterOpen={()=>setMobileDay(null)}/>)}{!mobileItems.length?<div className="mai-upcoming-day-panel-empty">Nenhum item neste dia.</div>:null}</div>
+      </section></div>:null}
     </div>}
   </div>
 }
