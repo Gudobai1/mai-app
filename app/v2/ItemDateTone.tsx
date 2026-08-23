@@ -112,7 +112,7 @@ function promoteOverdue(root: HTMLElement) {
   const parents = new Set<HTMLElement>()
 
   root.querySelectorAll<HTMLElement>('.mai-item-row-v2[data-mai-date-tone="overdue"]').forEach(row => {
-    if (row.closest('.mai-v4-today-single,.mai-upcoming-page,.mai-v3-upcoming-page,.mai-v4-completed')) return
+    if (row.closest('.mai-upcoming-page,.mai-v3-upcoming-page,.mai-v4-completed')) return
     if (row.parentElement) parents.add(row.parentElement)
   })
 
@@ -142,13 +142,12 @@ export function ItemDateTone() {
 
         const shownDate = String(dateElement.textContent || '').trim()
         const title = String(row.querySelector('.mai-item-titleline-v2 strong')?.textContent || '').trim()
-        const isTodaySurface = Boolean(row.closest('.mai-v4-today-single'))
         const isUpcomingSurface = Boolean(row.closest('.mai-upcoming-page,.mai-v3-upcoming-page'))
         const isCompletedSurface = Boolean(row.closest('.mai-v4-completed') || row.classList.contains('mai-completed-row'))
         const isNotesSurface = Boolean(row.closest('.mai-v4-notes-list-page'))
 
         let tone: DateTone = 'neutral'
-        if (normalized(shownDate) === 'hoje' || isTodaySurface) tone = 'today'
+        if (normalized(shownDate) === 'hoje') tone = 'today'
         else if (isCompletedSurface || isNotesSurface || isUpcomingSurface) tone = 'future'
         else if (state) {
           const matched = findRecord(state, title, shownDate, today)
