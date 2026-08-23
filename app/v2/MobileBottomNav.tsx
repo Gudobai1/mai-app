@@ -12,7 +12,7 @@ type Props = {
   onSettings: () => void
 }
 
-type AreaItem = { id: AppView; label: string; icon: string; material?: boolean }
+type AreaItem = { id: AppView; label: string; icon: string }
 
 const areas: AreaItem[] = [
   { id: 'tasks', label: 'Tarefas', icon: 'inbox' },
@@ -22,7 +22,7 @@ const areas: AreaItem[] = [
   { id: 'finance', label: 'Finanças', icon: 'finance' },
   { id: 'health', label: 'Bem-estar', icon: 'health' },
   { id: 'files', label: 'Arquivos', icon: 'files' },
-  { id: 'completed', label: 'Concluídos', icon: 'check_circle', material: true },
+  { id: 'completed', label: 'Concluídos', icon: 'completed' },
 ]
 
 const areaViews = new Set(areas.map(item => String(item.id)))
@@ -62,7 +62,7 @@ export function MobileBottomNav({ view, searchOpen, navigate, onSearch, onSettin
         <header><div><strong>Áreas</strong><small>Escolha onde deseja entrar</small></div><button type="button" onClick={() => setAreasOpen(false)} aria-label="Fechar"><span className="material-symbols-rounded">close</span></button></header>
         <nav className="mai-mobile-areas-list">
           {areas.map(item => <button type="button" key={String(item.id)} data-active={view === item.id || undefined} onClick={() => go(item.id)}>
-            <span className="mai-mobile-area-icon">{item.material ? <span className="material-symbols-rounded">{item.icon}</span> : <MaiIcon name={item.icon} size={18}/>}</span>
+            <span className="mai-mobile-area-icon"><MaiIcon name={item.icon} size={18}/></span>
             <span>{item.label}</span>
             {view === item.id ? <span className="material-symbols-rounded mai-mobile-area-check">check</span> : null}
           </button>)}
