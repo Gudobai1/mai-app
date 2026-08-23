@@ -1,0 +1,379 @@
+/* MAI — Em breve: lista histórica + calendário mensal V2 */
+.mai-upcoming-history-list{
+  min-width:0;
+  scroll-margin-top:64px;
+}
+
+.mai-upcoming-history-list>section{
+  margin:0 0 26px!important;
+}
+
+.mai-upcoming-history-list>section>header{
+  min-height:32px;
+  display:flex;
+  align-items:center;
+  gap:7px;
+  padding:0 4px;
+  border-bottom:1px solid var(--v3-line,var(--line));
+}
+
+.mai-upcoming-history-list>section>header strong{
+  font-size:11px;
+  font-weight:680;
+  color:var(--v3-text,var(--text));
+  text-transform:capitalize;
+}
+
+.mai-upcoming-history-list>section[data-past="true"]>header strong{
+  color:var(--v3-muted,var(--muted));
+}
+
+.mai-upcoming-history-list .mai-empty-day{
+  display:block;
+  padding:11px 6px 2px;
+  color:var(--v3-faint,var(--faint));
+  font-size:10px;
+}
+
+.mai-upcoming-calendar-v2{
+  min-width:0;
+  display:grid;
+  grid-template-columns:minmax(0,1fr) minmax(260px,320px);
+  gap:24px;
+  align-items:start;
+}
+
+.mai-upcoming-calendar-main{
+  min-width:0;
+  border:1px solid color-mix(in srgb,var(--v3-line,#e7ebe5) 88%,transparent);
+  border-radius:14px;
+  overflow:hidden;
+  background:var(--v3-bg,#fff);
+}
+
+.mai-upcoming-calendar-toolbar{
+  min-height:52px;
+  display:grid;
+  grid-template-columns:auto minmax(0,1fr) auto;
+  align-items:center;
+  gap:10px;
+  padding:0 10px;
+  border-bottom:1px solid var(--v3-line,#e7ebe5);
+}
+
+.mai-upcoming-calendar-toolbar>strong{
+  min-width:0;
+  text-align:center;
+  color:var(--v3-text,#303630);
+  font-size:13px;
+  font-weight:680;
+  text-transform:capitalize;
+}
+
+.mai-upcoming-calendar-nav{
+  display:flex;
+  align-items:center;
+  gap:3px;
+}
+
+.mai-upcoming-calendar-nav button,
+.mai-upcoming-calendar-today{
+  height:30px;
+  border:0;
+  border-radius:8px;
+  background:transparent;
+  color:var(--v3-muted,#7f887d);
+  font:inherit;
+  font-size:10.5px;
+  cursor:pointer;
+}
+
+.mai-upcoming-calendar-nav button{
+  width:30px;
+  display:grid;
+  place-items:center;
+  font-size:18px;
+}
+
+.mai-upcoming-calendar-today{
+  padding:0 9px;
+}
+
+.mai-upcoming-calendar-nav button:hover,
+.mai-upcoming-calendar-today:hover{
+  background:var(--v3-hover,#f1f4ef);
+  color:var(--v3-text,#303630);
+}
+
+.mai-upcoming-calendar-week{
+  display:grid;
+  grid-template-columns:repeat(7,minmax(0,1fr));
+  min-height:30px;
+  border-bottom:1px solid var(--v3-line,#e7ebe5);
+  background:color-mix(in srgb,var(--v3-soft,#f4f6f2) 58%,var(--v3-bg,#fff));
+}
+
+.mai-upcoming-calendar-week span{
+  display:grid;
+  place-items:center;
+  color:var(--v3-muted,#7f887d);
+  font-size:9px;
+  font-weight:650;
+  text-transform:uppercase;
+  letter-spacing:.025em;
+}
+
+.mai-upcoming-calendar-week i{
+  display:none;
+  font-style:normal;
+}
+
+.mai-upcoming-calendar-grid{
+  display:grid;
+  grid-template-columns:repeat(7,minmax(0,1fr));
+  gap:1px;
+  background:var(--v3-line,#e7ebe5);
+}
+
+.mai-upcoming-calendar-day{
+  position:relative;
+  min-width:0;
+  min-height:104px;
+  display:flex;
+  flex-direction:column;
+  align-items:stretch;
+  gap:5px;
+  padding:7px;
+  border:0;
+  border-radius:0;
+  background:var(--v3-bg,#fff);
+  color:var(--v3-text,#303630);
+  text-align:left;
+  font:inherit;
+  cursor:pointer;
+  overflow:hidden;
+}
+
+.mai-upcoming-calendar-day:hover{
+  background:var(--v3-hover,#f1f4ef);
+}
+
+.mai-upcoming-calendar-day[data-outside="true"]{
+  background:color-mix(in srgb,var(--v3-bg,#fff) 78%,var(--v3-soft,#f4f6f2));
+  color:var(--v3-faint,#aeb4ac);
+}
+
+.mai-upcoming-calendar-day[data-selected="true"]{
+  z-index:1;
+  box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--v3-accent,#6f8168) 70%,transparent);
+}
+
+.mai-upcoming-calendar-day-number{
+  width:25px;
+  height:25px;
+  display:grid;
+  place-items:center;
+  border-radius:50%;
+  font-size:10.5px;
+  font-weight:620;
+}
+
+.mai-upcoming-calendar-day[data-today="true"] .mai-upcoming-calendar-day-number{
+  background:var(--v3-accent,#6f8168);
+  color:#fff;
+  font-weight:720;
+}
+
+.mai-upcoming-calendar-events{
+  min-width:0;
+  display:grid;
+  gap:3px;
+}
+
+.mai-upcoming-calendar-chip{
+  min-width:0;
+  height:20px;
+  display:flex;
+  align-items:center;
+  gap:5px;
+  padding:0 5px;
+  border-radius:6px;
+  background:var(--v3-soft,#f4f6f2);
+  color:var(--v3-text,#303630);
+  overflow:hidden;
+}
+
+.mai-upcoming-calendar-chip>i,
+.mai-upcoming-calendar-mobile-dots>i{
+  width:6px;
+  height:6px;
+  flex:0 0 6px;
+  border-radius:50%;
+}
+
+.mai-upcoming-calendar-chip>b{
+  min-width:0;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  font-size:8.8px;
+  line-height:1;
+  font-weight:570;
+}
+
+.mai-upcoming-calendar-more{
+  padding-left:5px;
+  color:var(--v3-muted,#7f887d);
+  font-size:8.5px;
+  line-height:1.1;
+}
+
+.mai-upcoming-calendar-mobile-dots{
+  display:none;
+}
+
+.mai-upcoming-day-panel{
+  min-width:0;
+  position:sticky;
+  top:66px;
+  padding-left:18px;
+  border-left:1px solid var(--v3-line,#e7ebe5);
+}
+
+.mai-upcoming-day-panel>header{
+  min-height:48px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  margin-bottom:6px;
+}
+
+.mai-upcoming-day-panel>header>div{
+  min-width:0;
+  display:grid;
+  gap:2px;
+}
+
+.mai-upcoming-day-panel>header small{
+  color:var(--v3-muted,#7f887d);
+  font-size:9px;
+  text-transform:capitalize;
+}
+
+.mai-upcoming-day-panel>header strong{
+  color:var(--v3-text,#303630);
+  font-size:12px;
+  font-weight:680;
+  text-transform:capitalize;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+
+.mai-upcoming-day-panel>header>span{
+  min-width:24px;
+  height:24px;
+  display:grid;
+  place-items:center;
+  border-radius:8px;
+  background:var(--v3-soft,#f4f6f2);
+  color:var(--v3-muted,#7f887d);
+  font-size:9px;
+  font-weight:650;
+}
+
+.mai-upcoming-day-panel-list{
+  display:grid;
+  gap:1px;
+}
+
+.mai-upcoming-day-panel-empty{
+  padding:12px 4px;
+  color:var(--v3-faint,#aeb4ac);
+  font-size:10px;
+}
+
+@media(max-width:900px){
+  .mai-upcoming-history-list>section{
+    margin-bottom:22px!important;
+  }
+
+  .mai-upcoming-calendar-v2{
+    display:block;
+  }
+
+  .mai-upcoming-day-panel{
+    display:none!important;
+  }
+
+  .mai-upcoming-calendar-main{
+    border-radius:12px;
+  }
+
+  .mai-upcoming-calendar-toolbar{
+    min-height:48px;
+    padding:0 7px;
+  }
+
+  .mai-upcoming-calendar-toolbar>strong{
+    font-size:12px;
+  }
+
+  .mai-upcoming-calendar-day{
+    min-height:66px;
+    gap:3px;
+    padding:5px;
+  }
+
+  .mai-upcoming-calendar-day-number{
+    width:22px;
+    height:22px;
+    font-size:10px;
+  }
+
+  .mai-upcoming-calendar-events,
+  .mai-upcoming-calendar-more{
+    display:none;
+  }
+
+  .mai-upcoming-calendar-mobile-dots{
+    min-height:10px;
+    display:flex;
+    align-items:center;
+    flex-wrap:wrap;
+    gap:3px;
+  }
+
+  .mai-upcoming-calendar-mobile-dots>i{
+    width:5px;
+    height:5px;
+    flex-basis:5px;
+  }
+}
+
+@media(max-width:560px){
+  .mai-upcoming-calendar-main{
+    margin-inline:-2px;
+    border-left:0;
+    border-right:0;
+    border-radius:0;
+  }
+
+  .mai-upcoming-calendar-week span b{
+    display:none;
+  }
+
+  .mai-upcoming-calendar-week span i{
+    display:block;
+  }
+
+  .mai-upcoming-calendar-day{
+    min-height:58px;
+    padding:4px;
+  }
+
+  .mai-upcoming-calendar-today{
+    padding-inline:6px;
+  }
+}
