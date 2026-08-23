@@ -17,13 +17,21 @@ type CompletedItem = {
   sort: string
   detail: string
   raw: Row
+  completionId?: string
+  occurrenceDue?: string
+  recurringOccurrence?: boolean
+  snapshot?: Row
 }
 
 const rows = (value: unknown): Row[] => Array.isArray(value) ? value as Row[] : []
 const dateKey = (value: unknown) => String(value || '').slice(0, 10)
-const money = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' })
+const money = new Intl.NumberFormat('pt-BR', { style:'currency', currency:'BRL' })
 const paidStatus = (value: unknown) => ['pago','paga','quitado','quitada','concluido','concluida'].includes(String(value || '').toLocaleLowerCase('pt-BR'))
 const concludedStatus = (value: unknown) => String(value || '').toLocaleLowerCase('pt-BR').includes('conclu')
+
+function resetSubtasks(value: unknown): Row[] {
+  return rows(value).map(subtask => ({ ...subtask, concluida:false, concluida_em:'', subtarefas:resetSubtasks(subtask.subtarefas) }))
+}
 
 function naturalDate(key: string, today: string) {
   if (!key) return 'Sem data'
@@ -33,7 +41,7 @@ function naturalDate(key: string, today: string) {
   const diff = Math.round((target.getTime() - base.getTime()) / 86_400_000)
   if (diff === -1) return 'Ontem'
   if (diff === 1) return 'Amanhã'
-  return target.toLocaleDateString('pt-BR', { day: 'numeric', month: 'short', year: target.getFullYear() !== base.getFullYear() ? 'numeric' : undefined })
+  return target.toLocaleDateString('pt-BR', { day:'numeric', month:'short', year:target.getFullYear() !== base.getFullYear() ? 'numeric' : undefined })
 }
 
 function groupDate(key: string, today: string) {
@@ -43,7 +51,7 @@ function groupDate(key: string, today: string) {
   const target = new Date(`${key}T12:00:00`)
   const diff = Math.round((target.getTime() - base.getTime()) / 86_400_000)
   if (diff === -1) return 'Ontem'
-  return target.toLocaleDateString('pt-BR', { weekday:'long', day:'numeric', month:'long', year: target.getFullYear() !== base.getFullYear() ? 'numeric' : undefined })
+  return target.toLocaleDateString('pt-BR', { weekday:'long', day:'numeric', month:'long', year:target.getFullYear() !== base.getFullYear() ? 'numeric' : undefined })
 }
 
 function iconFor(kind: Kind) {
@@ -55,7 +63,7 @@ function iconFor(kind: Kind) {
   return 'notes'
 }
 
-export function CompletedV4({ state, today, commit, inspect }: { state: MaiState; today: string; commit: Commit; inspect: (item: InspectableItem) => void }) {
+export function CompletedV4({ state, today, commit, inspect }: { state:MaiState; today:string; commit:Commit; inspect:(item:InspectableItem)=>void }) {
   const projects = useMemo(() => new Map(rows(state.projects).map(project => [String(project.id), project])), [state.projects])
 
   const items = useMemo(() => {
@@ -65,6 +73,34 @@ export function CompletedV4({ state, today, commit, inspect }: { state: MaiState
       const project = projects.get(String(task.projeto_id || 'entrada'))
       const date = dateKey(task.concluida_em || task.data_vencimento)
       result.push({ id:`task:${task.id}`, kind:'task', sourceId:String(task.id), title:String(task.titulo || 'Tarefa'), date, sort:String(task.concluida_em || `${date}T00:00:00`), detail:String(project?.nome || 'Entrada'), raw:task as Row })
+    })
+
+    rows(state.taskCompletions).forEach(entry => {
+      const taskId = String(entry.task_id || '')
+      if (!taskId) return
+      const snapshot = entry.snapshot && typeof entry.snapshot === 'object' ? entry.snapshot as Row : {}
+      if (snapshot.parent_id) return
+      const currentTask = state.tasks.find(task => String(task.id) === taskId)
+      const raw = (currentTask || snapshot) as Row
+      const project = projects.get(String(entry.projeto_id || snapshot.projeto_id || currentTask?.projeto_id || 'entrada'))
+      const completedAt = String(entry.concluida_em || '')
+      const occurrenceDue = String(entry.data_vencimento || entry.data || snapshot.data_vencimento || '')
+      const date = dateKey(completedAt || entry.data || occurrenceDue)
+      const completionId = String(entry.id || `tc:${taskId}:${occurrenceDue}`)
+      result.push({
+        id:`task-occurrence:${completionId}`,
+        kind:'task',
+        sourceId:taskId,
+        title:String(entry.titulo || snapshot.titulo || currentTask?.titulo || 'Tarefa'),
+        date,
+        sort:completedAt || `${date}T00:00:00`,
+        detail:String(project?.nome || 'Entrada'),
+        raw,
+        completionId,
+        occurrenceDue,
+        recurringOccurrence:true,
+        snapshot,
+      })
     })
 
     const eventMap = new Map(rows(state.events).map(event => [String(event.id), event]))
@@ -125,20 +161,47 @@ export function CompletedV4({ state, today, commit, inspect }: { state: MaiState
   }, [items])
 
   function reopen(item: CompletedItem) {
+    if (item.kind === 'task' && item.recurringOccurrence) {
+      commit(current => {
+        const history = rows(current.taskCompletions)
+        const completion = history.find(entry => String(entry.id || '') === String(item.completionId || ''))
+        const snapshot = completion?.snapshot && typeof completion.snapshot === 'object' ? completion.snapshot as Row : item.snapshot || {}
+        const due = String(completion?.data_vencimento || item.occurrenceDue || snapshot.data_vencimento || item.date)
+        const reopened = {
+          ...snapshot,
+          id:`t-${crypto.randomUUID()}`,
+          titulo:item.title,
+          data_vencimento:due,
+          repeticao:'',
+          concluida:false,
+          concluida_em:'',
+          parent_id:'',
+          criado_em:new Date().toISOString(),
+          ordem:Date.now(),
+          subtarefas:resetSubtasks(snapshot.subtarefas),
+        }
+        return {
+          ...current,
+          taskCompletions:history.filter(entry => String(entry.id || '') !== String(item.completionId || '')),
+          tasks:[...current.tasks, reopened],
+        }
+      })
+      return
+    }
     if (item.kind === 'task') {
-      commit(current => ({ ...current, tasks: current.tasks.map(task => String(task.id) === item.sourceId ? { ...task, concluida:false, concluida_em:'' } : task) }))
+      commit(current => ({ ...current, tasks:current.tasks.map(task => String(task.id) === item.sourceId ? { ...task, concluida:false, concluida_em:'' } : task) }))
       return
     }
     if (item.kind === 'event') {
-      commit(current => ({ ...current, eventCompletions: rows(current.eventCompletions).filter(entry => !(String(entry.evento_id || String(entry.chave || '').split('|')[0]) === item.sourceId && dateKey(entry.data || String(entry.chave || '').split('|')[1]) === item.date)) }))
+      commit(current => ({ ...current, eventCompletions:rows(current.eventCompletions).filter(entry => !(String(entry.evento_id || String(entry.chave || '').split('|')[0]) === item.sourceId && dateKey(entry.data || String(entry.chave || '').split('|')[1]) === item.date)) }))
       return
     }
     if (item.kind === 'habit') {
-      commit(current => ({ ...current, habitEntries: rows(current.habitEntries).filter(entry => !(String(entry.habito_id) === item.sourceId && dateKey(entry.data) === item.date)) }))
+      commit(current => ({ ...current, habitEntries:rows(current.habitEntries).filter(entry => !(String(entry.habito_id) === item.sourceId && dateKey(entry.data) === item.date)) }))
       return
     }
     if (item.kind === 'goal') {
-      commit(current => ({ ...current, goals: rows(current.goals).map(goal => String(goal.id) === item.sourceId ? { ...goal, status:'Em Andamento', concluida:false, concluida_em:'' } : goal) }))
+      commit(current => ({ ...current, goals:rows(current.goals).map(goal => String(goal.id) === item.sourceId ? { ...goal, status:'Em Andamento', concluida:false, concluida_em:'' } : goal) }))
       return
     }
     if (item.kind === 'finance') {

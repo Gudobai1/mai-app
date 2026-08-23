@@ -51,6 +51,22 @@
   flex:0 0 auto;
 }
 
+/* Existe apenas um histórico de concluídos: o global do aplicativo. */
+.mai-v3-task-workspace .mai-v3-completed-wrap,
+.mai-v3-workspace [class*="completedBlock"]{
+  display:none!important;
+}
+
+/* Metas simples: concluídas ficam somente no histórico global. */
+.mai-v4-goals .mai-v3-goal-groups>section:last-child{
+  display:none!important;
+}
+
+/* Metas avançadas: remove a aba local Concluídas e mantém Ativas. */
+.mai-v3-workspace [class*="goalContext"]>[class*="segmented"]:last-of-type>button:last-child{
+  display:none!important;
+}
+
 /* Ação de concluir/reabrir no drawer dos itens gerais. */
 .mai-context-v3-footer{
   justify-content:flex-start!important;

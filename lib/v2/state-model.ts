@@ -24,6 +24,7 @@ export type MaiState = {
   version: number
   configs: { calendarios: string[]; [key: string]: unknown }
   tasks: LegacyTask[]
+  taskCompletions: unknown[]
   projects: unknown[]
   habits: unknown[]
   habitEntries: unknown[]
@@ -71,6 +72,7 @@ export function emptyState(): MaiState {
       upcomingFilters: { tasks: true, events: true, project: 'all', priority: 'all' },
     },
     tasks: [],
+    taskCompletions: [],
     projects: [],
     habits: [],
     habitEntries: [],
@@ -139,6 +141,7 @@ export function normalizeState(value: unknown): MaiState {
       upcomingFilters: saved.configs?.upcomingFilters && typeof saved.configs.upcomingFilters === 'object' ? saved.configs.upcomingFilters : fallback.configs.upcomingFilters,
     },
     tasks: stateRows(saved.tasks) as LegacyTask[],
+    taskCompletions: stateRows(saved.taskCompletions),
     projects: stateRows(saved.projects),
     habits: stateRows(saved.habits),
     habitEntries: stateRows(saved.habitEntries),
