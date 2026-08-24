@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { MaiState } from '../../lib/v2/state'
+import { AppKanban } from './AppKanban'
 import { AppSettingsDrawer } from './AppSettingsDrawer'
 import { AppTopBar } from './AppTopBar'
 import type { AppView, TaskModuleScope } from './app-types'
@@ -36,6 +37,7 @@ const rows = (value: unknown): Row[] => Array.isArray(value) ? value as Row[] : 
 const dateKey = (value: unknown) => String(value || '').slice(0, 10)
 const completedStatus = (value: unknown) => ['pago','paga','quitado','quitada','concluido','concluida','concluído','concluída'].includes(String(value || '').toLocaleLowerCase('pt-BR'))
 const moduleFilterMap = (state: MaiState) => state.configs.moduleFilters && typeof state.configs.moduleFilters === 'object' ? state.configs.moduleFilters as Record<string, Record<string, any>> : {}
+const moduleControlMap = (state: MaiState) => state.configs.moduleControls && typeof state.configs.moduleControls === 'object' ? state.configs.moduleControls as Record<string, Record<string, any>> : {}
 
 function filterTaskTree(tasks: MaiState['tasks'], predicate: (task: MaiState['tasks'][number]) => boolean) {
   const rootIds = new Set(tasks.filter(task => !task.parent_id && predicate(task)).map(task => String(task.id)))
@@ -189,6 +191,8 @@ export function UnifiedAppUx() {
   const advanced = runtime.state.configs.advancedAreas && typeof runtime.state.configs.advancedAreas === 'object' ? runtime.state.configs.advancedAreas as Record<string,boolean> : {}
   const viewState = useMemo(() => filteredStateForView(runtime.state, view, runtime.today), [runtime.state, view, runtime.today])
   const currentModuleFilters = moduleFilterMap(runtime.state)[String(view)] || {}
+  const currentModuleControl = moduleControlMap(runtime.state)[String(view)] || {}
+  const globalKanban = view !== 'tasks' && view !== 'home' && view !== 'inbox' && !String(view).startsWith('project:') && currentModuleControl.layout === 'kanban'
   const fileKind = String(currentModuleFilters.kind || 'all')
 
   useEffect(() => {
@@ -289,7 +293,7 @@ export function UnifiedAppUx() {
     <main className={`${styles.main} mai-v3-main`}>
       <div className={`${styles.workspace} mai-v3-workspace`}>
         {runtime.ready ? <AppTopBar state={runtime.state} today={runtime.today} view={view} taskScope={taskScope} commit={runtime.commit} onTaskScopeChange={setTaskScope} onSettings={() => setSettingsOpen(true)} /> : null}
-        {!runtime.ready ? <div className={styles.loadingState}>Carregando seu MAI…</div> : <>
+        {!runtime.ready ? <div className={styles.loadingState}>Carregando seu MAI…</div> : globalKanban ? <AppKanban view={view} state={viewState} today={runtime.today} commit={runtime.commit} inspect={setSelected}/> : <>
           {view === 'today' ? <TodayV4 state={viewState} today={runtime.today} commit={runtime.commit} navigate={navigate} inspect={setSelected} onSearch={() => setSearchOpen(true)} onMore={() => setSettingsOpen(true)}/> : null}
           {view === 'upcoming' ? <UpcomingV4 state={viewState} today={runtime.today} commit={runtime.commit} inspect={setSelected}/> : null}
           {view === 'completed' ? <CompletedV4 state={viewState} today={runtime.today} commit={runtime.commit} inspect={setSelected}/> : null}
