@@ -257,7 +257,7 @@ export function ManualKanban({ mode, state, today, commit, inspect, scope='entra
 
   return <div className="mai-manual-kanban">
     <header className="mai-manual-kanban-toolbar">
-      <div><strong>Kanban manual</strong><span>{board.columns.length} coluna{board.columns.length === 1 ? '' : 's'} · {unplacedCount} item{unplacedCount === 1 ? '' : 'ns'} disponível{unplacedCount === 1 ? '' : 'eis'}</span></div>
+      <div><strong>Kanban manual</strong><span>{board.columns.length} coluna{board.columns.length === 1 ? '' : 's'} · {unplacedCount} {unplacedCount === 1 ? 'item disponível' : 'itens disponíveis'}</span></div>
       <button type="button" onClick={() => setAddingColumn(true)}><span className="material-symbols-rounded">add</span>Nova coluna</button>
     </header>
 
