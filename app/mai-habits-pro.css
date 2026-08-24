@@ -6,6 +6,9 @@
 .mai-habits-pro-head p{margin:5px 0 0;font-size:13px;color:var(--v3-muted,#7a8279)}
 .mai-habits-pro-head>button{min-height:34px!important;padding:0 12px!important;border-radius:9px!important;box-shadow:none!important}
 
+/* O cadastro de hábito usa o mesmo “Adicionar …” inline dos demais módulos. */
+.mai-v3-workspace div:has(> [class*="habitGrid"]) > [class*="moduleHeadline"] > div:last-child > button{display:none!important}
+
 .mai-habits-pro-week-nav{margin:0!important;padding:0!important;min-height:36px!important;border:0!important;background:transparent!important;box-shadow:none!important}
 .mai-habits-pro-week-nav>button{border:0!important;background:transparent!important;box-shadow:none!important}
 .mai-habits-pro-week-nav>button:first-child,.mai-habits-pro-week-nav>button:last-child{width:34px!important;height:34px!important;border-radius:8px!important}
