@@ -12,3 +12,12 @@
 .mai-context-v3-drawer{
   z-index:1201!important;
 }
+
+/* Ao criar ou editar qualquer item, a topbar não deve permanecer visível. */
+body:has(.mai-v3-create-layer) .mai-app-topbar,
+body:has(.mai-context-layer) .mai-app-topbar,
+body:has(.mai-task-v4-layer) .mai-app-topbar,
+body:has(.mai-context-v3-layer) .mai-app-topbar{
+  visibility:hidden!important;
+  pointer-events:none!important;
+}
