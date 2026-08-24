@@ -48,7 +48,7 @@ function naturalDate(key: string, today: string) {
 export function TodayCompact({ state, today, commit, inspect, onMore, part = 'all' }: Props) {
   const [filterOpen, setFilterOpen] = useState(false)
   const plan = useMemo(() => plannerItems(state, today, today), [state, today])
-  const projects = useMemo(() => rows(state.projects).filter(item => item.ativo !== false), [state.projects])
+  const projects = useMemo(() => rows(state.projects).filter(item => item.ativo !== false).sort((a, b) => Number(Boolean(b.favorito)) - Number(Boolean(a.favorito)) || Number(a.ordem || 0) - Number(b.ordem || 0) || String(a.nome || '').localeCompare(String(b.nome || ''), 'pt-BR', { sensitivity:'base' })), [state.projects])
   const projectMap = useMemo(() => new Map(projects.map(project => [String(project.id), project])), [projects])
   const savedFilters: Partial<TodayFilters> = state.configs.todayFilters && typeof state.configs.todayFilters === 'object' ? state.configs.todayFilters as Partial<TodayFilters> : {}
   const moduleControls = state.configs.moduleControls && typeof state.configs.moduleControls === 'object' ? state.configs.moduleControls as Record<string, Row> : {}
@@ -101,7 +101,13 @@ export function TodayCompact({ state, today, commit, inspect, onMore, part = 'al
   const projectName = (projectId: unknown) => {
     const id = String(projectId || 'entrada')
     if (id === 'entrada') return 'Entrada'
-    return String(projectMap.get(id)?.nome || '')
+    return String(projectMap.get(id)?.nome || 'Sem projeto')
+  }
+
+  const projectIdentity = (projectId: unknown) => {
+    const id = String(projectId || 'entrada')
+    const project = projectMap.get(id)
+    return project || { id: id === 'entrada' ? 'entrada' : id, nome: id === 'entrada' ? 'Entrada' : 'Sem projeto', cor: '#8e968d', icone: id === 'entrada' ? 'inbox' : 'folder' }
   }
 
   const filteredTasks = useMemo(() => dueTasks.filter(task => {
@@ -126,6 +132,23 @@ export function TodayCompact({ state, today, commit, inspect, onMore, part = 'al
     return aDay.localeCompare(bDay) || aTime.localeCompare(bTime) || Number(a.ordem || 0) - Number(b.ordem || 0) || titleCompare
   }), [dueTasks, filters.project, filters.priority, sortMode, projectMap, today])
 
+  const projectGroups = useMemo(() => {
+    const grouped = new Map<string, (typeof filteredTasks)[number][]>()
+    filteredTasks.forEach(task => {
+      const id = String(task.projeto_id || 'entrada')
+      if (!grouped.has(id)) grouped.set(id, [])
+      grouped.get(id)!.push(task)
+    })
+    const rank = new Map<string, number>()
+    rank.set('entrada', -1)
+    projects.forEach((project, index) => rank.set(String(project.id), index))
+    return [...grouped.entries()].sort((a, b) => {
+      const ar = rank.get(a[0]) ?? Number.MAX_SAFE_INTEGER
+      const br = rank.get(b[0]) ?? Number.MAX_SAFE_INTEGER
+      return ar - br || projectName(a[0]).localeCompare(projectName(b[0]), 'pt-BR', { sensitivity:'base' })
+    }).map(([id, tasks]) => ({ id, name:projectName(id), tasks }))
+  }, [filteredTasks, projects, projectMap])
+
   function setFilters(patch: Partial<TodayFilters>) {
     commit(current => ({ ...current, configs: { ...current.configs, todayFilters: { ...filters, ...patch } } }))
   }
@@ -144,16 +167,19 @@ export function TodayCompact({ state, today, commit, inspect, onMore, part = 'al
   const todayIsCurrent = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}` === today
   const nowMinutes = now.getHours() * 60 + now.getMinutes()
 
-  const projectIdentity = (projectId: unknown) => {
-    const id = String(projectId || 'entrada')
-    const project = projectMap.get(id)
-    return project || { id: 'entrada', nome: 'Entrada', cor: '#8e968d', icone: 'inbox' }
-  }
-
   const projectBadge = (project: Row) => <span className="mai-item-project-tag">
     {project.imagem_url ? <img src={String(project.imagem_url)} alt="" /> : <i style={{ background: String(project.cor || '#8e968d') }}><MaiIcon name={String(project.icone || (project.id === 'entrada' ? 'inbox' : 'folder'))} size={9}/></i>}
     <span>{String(project.nome || 'Entrada')}</span>
   </span>
+
+  const renderTask = (task: Row) => {
+    const project = projectIdentity(task.projeto_id)
+    const taskDay = dateKey(task.data_vencimento)
+    return <article className="mai-today-unified-row mai-item-row-v2" key={String(task.id)} onClick={() => inspectTask(task)}>
+      <button className="mai-today-unified-dot" data-priority={Number(task.prioridade || 4)} aria-label={`Concluir ${String(task.titulo || 'tarefa')}`} style={{ borderColor: priorityColor(task.prioridade) }} onClick={event => { event.stopPropagation(); toggleTask(String(task.id)) }} />
+      <span className="mai-item-copy-v2"><span className="mai-item-titleline-v2"><strong>{String(task.titulo || 'Tarefa')}</strong></span><span className="mai-item-subline-v2"><span>{naturalDate(taskDay, today)}</span><span>·</span>{projectBadge(project)}</span></span>
+    </article>
+  }
 
   const header = <header className="mai-v3-page-header">
     <div><h1>Hoje</h1><p>{dateLabel}</p></div>
@@ -186,14 +212,13 @@ export function TodayCompact({ state, today, commit, inspect, onMore, part = 'al
 
   const tasks = <section className="mai-v3-today-section mai-v3-tasks-section mai-today-unified-section">
     <h2>Tarefas</h2>
-    <div className="mai-today-unified-list">{filteredTasks.map(task => {
-      const project = projectIdentity(task.projeto_id)
-      const taskDay = dateKey(task.data_vencimento)
-      return <article className="mai-today-unified-row mai-item-row-v2" key={task.id} onClick={() => inspectTask(task)}>
-        <button className="mai-today-unified-dot" data-priority={Number(task.prioridade || 4)} aria-label={`Concluir ${task.titulo}`} style={{ borderColor: priorityColor(task.prioridade) }} onClick={event => { event.stopPropagation(); toggleTask(task.id) }} />
-        <span className="mai-item-copy-v2"><span className="mai-item-titleline-v2"><strong>{task.titulo}</strong></span><span className="mai-item-subline-v2"><span>{naturalDate(taskDay, today)}</span><span>·</span>{projectBadge(project)}</span></span>
-      </article>
-    })}{!filteredTasks.length ? <div className="mai-v3-empty-line">Nenhuma tarefa pendente para hoje.</div> : null}</div>
+    {sortMode === 'project' ? <div className="mai-v4-project-groups">
+      {projectGroups.map(group => <section className="mai-v4-project-group" key={group.id}>
+        <header><h3>{group.name}</h3><span>{group.tasks.length}</span></header>
+        <div className="mai-today-unified-list">{group.tasks.map(task => renderTask(task))}</div>
+      </section>)}
+      {!projectGroups.length ? <div className="mai-v3-empty-line">Nenhuma tarefa pendente para hoje.</div> : null}
+    </div> : <div className="mai-today-unified-list">{filteredTasks.map(task => renderTask(task))}{!filteredTasks.length ? <div className="mai-v3-empty-line">Nenhuma tarefa pendente para hoje.</div> : null}</div>}
   </section>
 
   if (part === 'header') return header
