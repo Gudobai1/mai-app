@@ -1,4 +1,4 @@
-/* MAI — Kanban manual e minimalista. Disponível apenas em Hoje e Tarefas. */
+/* MAI — Kanban nativo: mesma lista, outra disposição. Apenas Hoje e Tarefas. */
 
 /* A troca Lista/Kanban fica somente em Opções. */
 .mai-global-layout-switch,
@@ -11,497 +11,157 @@
   display:none!important;
 }
 
-.mai-manual-kanban{
+/* HOJE
+   Cada seção já existente na lista vira uma coluna. Nada é recriado. */
+.mai-v4-today-kanban .mai-native-kanban-board{
   min-width:0;
-  display:grid;
-  gap:10px;
-}
-
-/* Barra discreta: só a ação de criar coluna fica visível. */
-.mai-manual-kanban-toolbar{
-  min-height:28px;
-  display:flex;
-  align-items:center;
-  justify-content:flex-end;
-  padding:0 1px;
-}
-.mai-manual-kanban-toolbar > div{
-  display:none;
-}
-.mai-manual-kanban-toolbar > button,
-.mai-manual-kanban-new-column button,
-.mai-manual-kanban-empty-board button{
-  min-height:28px;
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  gap:4px;
-  padding:0 7px;
-  border:0;
-  border-radius:7px;
-  background:transparent;
-  color:var(--v3-muted,#7f887d);
-  font:inherit;
-  font-size:9px;
-  font-weight:620;
-  cursor:pointer;
-}
-.mai-manual-kanban-toolbar > button:hover,
-.mai-manual-kanban-new-column button:hover,
-.mai-manual-kanban-empty-board button:hover{
-  background:var(--v3-soft,#f4f6f2);
-  color:var(--v3-text,#303630);
-}
-.mai-manual-kanban-toolbar > button .material-symbols-rounded{
-  font-size:15px;
-}
-
-.mai-manual-kanban-new-column{
-  width:min(430px,100%);
-  display:flex;
-  align-items:center;
-  gap:5px;
-  padding:4px 0 8px;
-}
-.mai-manual-kanban-new-column input,
-.mai-manual-kanban-column-head input,
-.mai-manual-kanban-search input{
-  min-width:0;
-  height:30px;
-  border:1px solid var(--v3-line,#e7ebe5);
-  border-radius:7px;
-  background:var(--v3-card,#fff);
-  color:var(--v3-text,#303630);
-  font:inherit;
-  font-size:10px;
-  outline:0;
-}
-.mai-manual-kanban-new-column input{
-  flex:1;
-  padding:0 9px;
-}
-.mai-manual-kanban-new-column input:focus,
-.mai-manual-kanban-column-head input:focus,
-.mai-manual-kanban-search input:focus{
-  border-color:var(--v3-accent,#6f8168);
-}
-
-/* Estado vazio sem painel destacado. */
-.mai-manual-kanban-empty-board{
-  min-height:250px;
-  display:grid;
-  place-items:center;
-  align-content:center;
-  gap:6px;
-  padding:26px;
-  color:var(--v3-muted,#7f887d);
-  text-align:center;
-}
-.mai-manual-kanban-empty-board > .material-symbols-rounded{
-  font-size:25px;
-  color:var(--v3-faint,#aeb4ac);
-}
-.mai-manual-kanban-empty-board strong{
-  font-size:11px;
-  color:var(--v3-text,#303630);
-}
-.mai-manual-kanban-empty-board p{
-  max-width:360px;
-  margin:0;
-  font-size:9px;
-  line-height:1.45;
-}
-.mai-manual-kanban-empty-board button{
-  margin-top:4px;
-  color:var(--v3-accent,#6f8168);
-}
-
-/* Seletor de itens: compacto e alinhado aos menus do sistema. */
-.mai-manual-kanban-picker{
-  width:min(560px,100%);
-  display:grid;
-  gap:7px;
-  padding:10px;
-  border:1px solid var(--v3-line,#e7ebe5);
-  border-radius:10px;
-  background:var(--v3-card,#fff);
-  box-shadow:0 10px 28px rgba(20,27,20,.08);
-}
-.mai-manual-kanban-picker > header{
-  display:flex;
-  align-items:flex-start;
-  justify-content:space-between;
-  gap:10px;
-}
-.mai-manual-kanban-picker > header > div{
-  display:grid;
-  gap:1px;
-}
-.mai-manual-kanban-picker > header strong{
-  font-size:10.5px;
-  color:var(--v3-text,#303630);
-}
-.mai-manual-kanban-picker > header span{
-  font-size:8.5px;
-  color:var(--v3-muted,#7f887d);
-}
-.mai-manual-kanban-picker > header > button{
-  width:24px;
-  height:24px;
-  border:0;
-  border-radius:6px;
-  background:transparent;
-  color:var(--v3-muted,#7f887d);
-  font-size:17px;
-  cursor:pointer;
-}
-.mai-manual-kanban-picker > header > button:hover{
-  background:var(--v3-soft,#f4f6f2);
-}
-.mai-manual-kanban-search{
-  display:flex;
-  align-items:center;
-  gap:6px;
-  padding:0 7px;
-  border:1px solid var(--v3-line,#e7ebe5);
-  border-radius:7px;
-  background:var(--v3-bg,#fff);
-}
-.mai-manual-kanban-search input{
-  flex:1;
-  border:0;
-  background:transparent;
-  padding:0;
-}
-.mai-manual-kanban-search input:focus{
-  box-shadow:none;
-}
-.mai-manual-kanban-picker-list{
-  max-height:280px;
-  overflow:auto;
-  display:grid;
-}
-.mai-manual-kanban-picker-list > button{
-  min-width:0;
-  display:grid;
-  grid-template-columns:24px minmax(0,1fr) auto;
-  align-items:center;
-  gap:7px;
-  padding:7px 5px;
-  border:0;
-  border-bottom:1px solid color-mix(in srgb,var(--v3-line,#e7ebe5) 72%,transparent);
-  border-radius:0;
-  background:transparent;
-  color:var(--v3-text,#303630);
-  text-align:left;
-  cursor:pointer;
-}
-.mai-manual-kanban-picker-list > button:last-child{
-  border-bottom:0;
-}
-.mai-manual-kanban-picker-list > button:hover{
-  background:var(--v3-soft,#f4f6f2);
-}
-.mai-manual-kanban-picker-list > button > i{
-  width:24px;
-  height:24px;
-  display:grid;
-  place-items:center;
-  color:var(--v3-muted,#7f887d);
-}
-.mai-manual-kanban-picker-list > button > i .material-symbols-rounded{
-  font-size:15px;
-}
-.mai-manual-kanban-picker-list > button > span{
-  min-width:0;
-  display:grid;
-  gap:1px;
-}
-.mai-manual-kanban-picker-list strong{
-  overflow:hidden;
-  text-overflow:ellipsis;
-  white-space:nowrap;
-  font-size:10px;
-  font-weight:650;
-}
-.mai-manual-kanban-picker-list small{
-  overflow:hidden;
-  text-overflow:ellipsis;
-  white-space:nowrap;
-  color:var(--v3-muted,#7f887d);
-  font-size:8.4px;
-}
-.mai-manual-kanban-picker-list b{
-  font-size:8px;
-  font-weight:620;
-  color:var(--v3-accent,#6f8168);
-}
-.mai-manual-kanban-picker-empty{
-  padding:16px;
-  text-align:center;
-  color:var(--v3-muted,#7f887d);
-  font-size:9px;
-}
-
-/* Quadro: colunas transparentes, sem aparência de cartões grandes. */
-.mai-manual-kanban-board{
-  min-width:0;
-  display:grid;
+  display:grid!important;
   grid-auto-flow:column;
-  grid-auto-columns:minmax(240px,1fr);
-  gap:22px;
+  grid-auto-columns:minmax(265px,1fr);
   align-items:start;
+  gap:22px!important;
   overflow-x:auto;
-  padding:2px 1px 14px;
+  overflow-y:visible;
+  padding:0 1px 14px;
   scrollbar-width:thin;
 }
-.mai-manual-kanban-column{
-  min-width:240px;
-  min-height:330px;
-  display:flex;
-  flex-direction:column;
-  padding:0;
-  border:0;
-  border-radius:0;
-  background:transparent;
-  transition:background .12s;
+.mai-v4-today-kanban .mai-native-kanban-board > div{
+  min-width:265px;
 }
-.mai-manual-kanban-column[data-over="true"]{
-  background:color-mix(in srgb,var(--v3-accent-soft,#edf3ea) 45%,transparent);
+.mai-v4-today-kanban .mai-native-kanban-board > div > section{
+  margin:0!important;
+  padding:0!important;
+  border:0!important;
+  border-radius:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
 }
-.mai-manual-kanban-column-head{
-  min-height:35px;
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:7px;
-  padding:0 2px 7px;
+.mai-v4-today-kanban .mai-native-kanban-board > div > section > h2,
+.mai-v4-today-kanban .mai-native-kanban-board > div > section > header{
+  min-height:34px;
+  margin:0!important;
+  padding:0 2px 8px!important;
   border-bottom:1px solid var(--v3-line,#e7ebe5);
 }
-.mai-manual-kanban-column-head > div{
-  min-width:0;
-  display:flex;
-  align-items:center;
-  gap:6px;
-}
-.mai-manual-kanban-column-head > div strong{
-  overflow:hidden;
-  text-overflow:ellipsis;
-  white-space:nowrap;
-  color:var(--v3-text,#303630);
-  font-size:10.5px;
-  font-weight:680;
-}
-.mai-manual-kanban-column-head > div span{
-  color:var(--v3-muted,#7f887d);
-  font-size:8.5px;
-}
-.mai-manual-kanban-column-head input{
-  width:100%;
-  padding:0 7px;
-}
-.mai-manual-kanban-column-head nav{
-  display:flex;
-  align-items:center;
-  gap:0;
-  flex:0 0 auto;
-  opacity:0;
-  transition:opacity .12s;
-}
-.mai-manual-kanban-column-head:hover nav,
-.mai-manual-kanban-column-head:focus-within nav{
-  opacity:1;
-}
-.mai-manual-kanban-column-head nav button{
-  width:23px;
-  height:23px;
-  display:grid;
-  place-items:center;
-  border:0;
-  border-radius:5px;
-  background:transparent;
-  color:var(--v3-muted,#7f887d);
-  cursor:pointer;
-}
-.mai-manual-kanban-column-head nav button:hover{
-  background:var(--v3-soft,#f4f6f2);
-  color:var(--v3-text,#303630);
-}
-.mai-manual-kanban-column-head nav button:disabled{
-  opacity:.22;
-  cursor:default;
-}
-.mai-manual-kanban-column-head nav .material-symbols-rounded{
-  font-size:14px;
-}
-
-/* O item mantém a anatomia simples do restante do MAI: título + metadados. */
-.mai-manual-kanban-cards{
-  display:grid;
-  padding-top:2px;
-}
-.mai-manual-kanban-card{
-  position:relative;
-  min-width:0;
-  display:grid;
-  grid-template-columns:minmax(0,1fr) auto;
-  gap:2px 8px;
-  padding:9px 25px 9px 3px;
-  border:0;
-  border-bottom:1px solid color-mix(in srgb,var(--v3-line,#e7ebe5) 78%,transparent);
-  border-radius:0;
-  background:transparent;
-  color:var(--v3-text,#303630);
-  box-shadow:none;
-  cursor:grab;
-  transition:background .12s;
-}
-.mai-manual-kanban-card:hover{
-  background:var(--v3-soft,#f4f6f2);
-  box-shadow:none;
-  transform:none;
-}
-.mai-manual-kanban-card[data-selected="true"]{
-  background:var(--v3-accent-soft,#edf3ea);
-}
-.mai-manual-kanban-card[data-completed="true"]{
-  opacity:.62;
-}
-.mai-manual-kanban-card[data-completed="true"] > strong{
-  text-decoration:line-through;
-  text-decoration-thickness:1px;
-}
-.mai-manual-kanban-card-top{
-  position:absolute;
-  top:7px;
-  right:1px;
-  display:block;
-}
-.mai-manual-kanban-kind{
-  display:none;
-}
-.mai-manual-kanban-card-top > button{
-  width:21px;
-  height:21px;
-  border:0;
-  border-radius:5px;
-  background:transparent;
-  color:transparent;
-  font-size:15px;
-  cursor:pointer;
-}
-.mai-manual-kanban-card:hover .mai-manual-kanban-card-top > button,
-.mai-manual-kanban-card:focus-within .mai-manual-kanban-card-top > button{
-  color:var(--v3-faint,#aeb4ac);
-}
-.mai-manual-kanban-card-top > button:hover{
-  background:var(--v3-card,#fff);
+.mai-v4-today-kanban .mai-native-kanban-board > div > section > h2,
+.mai-v4-today-kanban .mai-native-kanban-board > div > section > header h2{
+  font-size:11px!important;
+  font-weight:680!important;
   color:var(--v3-text,#303630)!important;
 }
-.mai-manual-kanban-card > strong{
-  grid-column:1 / -1;
-  min-width:0;
-  overflow:hidden;
-  text-overflow:ellipsis;
-  white-space:nowrap;
-  color:var(--v3-text,#303630);
-  font-size:10.8px;
-  line-height:1.35;
-  font-weight:650;
+.mai-v4-today-kanban .mai-today-unified-list{
+  display:grid!important;
+  gap:0!important;
 }
-.mai-manual-kanban-card > small{
-  min-width:0;
-  overflow:hidden;
-  text-overflow:ellipsis;
-  white-space:nowrap;
-  color:var(--v3-muted,#7f887d);
-  font-size:8.5px;
+.mai-v4-today-kanban .mai-today-unified-row{
+  width:100%!important;
+  min-height:45px!important;
+  margin:0!important;
+  padding:8px 2px!important;
+  border:0!important;
+  border-bottom:1px solid color-mix(in srgb,var(--v3-line,#e7ebe5) 76%,transparent)!important;
+  border-radius:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
 }
-.mai-manual-kanban-card > p{
-  max-width:112px;
-  overflow:hidden;
-  margin:0;
-  color:var(--v3-muted,#7f887d);
-  font-size:8.5px;
-  line-height:1.3;
-  text-overflow:ellipsis;
-  white-space:nowrap;
-  text-align:right;
-}
-.mai-manual-kanban-column-empty{
-  min-height:58px;
-  display:grid;
-  place-items:center;
-  padding:10px 2px;
-  border:0;
-  color:var(--v3-faint,#aeb4ac);
-  font-size:8.3px;
-  text-align:center;
-}
-.mai-manual-kanban-add-item{
-  min-height:29px;
-  display:flex;
-  align-items:center;
-  gap:3px;
-  margin-top:5px;
-  padding:0 3px;
-  border:0;
-  border-radius:6px;
-  background:transparent;
-  color:var(--v3-muted,#7f887d);
-  font:inherit;
-  font-size:8.7px;
-  font-weight:600;
-  cursor:pointer;
-}
-.mai-manual-kanban-add-item:hover{
-  color:var(--v3-accent,#6f8168);
-}
-.mai-manual-kanban-add-item .material-symbols-rounded{
-  font-size:13px;
+.mai-v4-today-kanban .mai-today-unified-row:hover{
+  background:var(--v3-soft,#f4f6f2)!important;
 }
 
-html[data-mai-theme="dark"] .mai-manual-kanban-picker,
-html[data-mai-theme="dark"] .mai-manual-kanban-new-column input,
-html[data-mai-theme="dark"] .mai-manual-kanban-column-head input{
-  background:var(--v3-card)!important;
-  border-color:var(--v3-line)!important;
-  color:var(--v3-text)!important;
+/* TAREFAS
+   Entrada/projetos usam as próprias seções; Hoje/Em breve usam os grupos que a lista já renderiza. */
+.mai-v4-tasks-kanban .mai-v3-project-sections,
+.mai-v4-tasks-kanban .mai-v4-task-date-view{
+  min-width:0;
+  display:grid!important;
+  grid-auto-flow:column;
+  grid-auto-columns:minmax(265px,1fr);
+  align-items:start;
+  gap:22px!important;
+  overflow-x:auto;
+  overflow-y:visible;
+  padding:0 1px 14px;
+  scrollbar-width:thin;
 }
-html[data-mai-theme="dark"] .mai-manual-kanban-search{
+.mai-v4-tasks-kanban .mai-v3-project-sections > section,
+.mai-v4-tasks-kanban .mai-v4-task-date-view > section{
+  min-width:265px;
+  margin:0!important;
+  padding:0!important;
+  border:0!important;
+  border-radius:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+}
+.mai-v4-tasks-kanban .mai-v3-project-sections > section > h2,
+.mai-v4-tasks-kanban .mai-v4-task-date-group > header{
+  min-height:34px;
+  margin:0!important;
+  padding:0 2px 8px!important;
+  border-bottom:1px solid var(--v3-line,#e7ebe5)!important;
+}
+.mai-v4-tasks-kanban .mai-v3-project-sections > section > h2,
+.mai-v4-tasks-kanban .mai-v4-task-date-group > header h2{
+  font-size:11px!important;
+  font-weight:680!important;
+  color:var(--v3-text,#303630)!important;
+}
+.mai-v4-tasks-kanban .mai-v3-task-list{
+  display:grid!important;
+  gap:0!important;
+}
+.mai-v4-tasks-kanban .mai-v3-task-row{
+  width:100%!important;
+  min-height:45px!important;
+  margin:0!important;
+  padding-top:8px!important;
+  padding-bottom:8px!important;
+  border-radius:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+}
+.mai-v4-tasks-kanban .mai-v3-task-row:hover{
+  background:var(--v3-soft,#f4f6f2)!important;
+}
+.mai-v4-tasks-kanban .mai-v3-completed-wrap{
+  margin-top:10px;
+}
+
+/* O quadro continua ocupando apenas o espaço útil do módulo. */
+.mai-v4-today-kanban,
+.mai-v4-tasks-kanban,
+.mai-v4-tasks-kanban .mai-v4-task-main,
+.mai-v4-tasks-kanban .mai-v3-task-workspace,
+.mai-v4-tasks-kanban .mai-v3-inbox-tasks{
+  min-width:0;
+}
+
+html[data-mai-theme="dark"] .mai-v4-today-kanban .mai-today-unified-row:hover,
+html[data-mai-theme="dark"] .mai-v4-tasks-kanban .mai-v3-task-row:hover{
   background:var(--v3-sidebar)!important;
-  border-color:var(--v3-line)!important;
-}
-html[data-mai-theme="dark"] .mai-manual-kanban-card:hover,
-html[data-mai-theme="dark"] .mai-manual-kanban-column-head nav button:hover,
-html[data-mai-theme="dark"] .mai-manual-kanban-toolbar > button:hover{
-  background:var(--v3-sidebar)!important;
-}
-html[data-mai-theme="dark"] .mai-manual-kanban-card[data-selected="true"]{
-  background:var(--v3-accent-soft)!important;
 }
 
 @media(max-width:900px){
-  .mai-manual-kanban-board{
+  .mai-v4-today-kanban .mai-native-kanban-board,
+  .mai-v4-tasks-kanban .mai-v3-project-sections,
+  .mai-v4-tasks-kanban .mai-v4-task-date-view{
     grid-auto-columns:minmax(78vw,320px);
-    gap:16px;
+    gap:16px!important;
     scroll-snap-type:x proximity;
     overscroll-behavior-x:contain;
   }
-  .mai-manual-kanban-column{
+  .mai-v4-today-kanban .mai-native-kanban-board > div,
+  .mai-v4-tasks-kanban .mai-v3-project-sections > section,
+  .mai-v4-tasks-kanban .mai-v4-task-date-view > section{
     min-width:0;
     scroll-snap-align:start;
-  }
-  .mai-manual-kanban-column-head nav{
-    opacity:1;
-  }
-  .mai-manual-kanban-card-top > button{
-    color:var(--v3-faint,#aeb4ac);
   }
 }
 
 @media(max-width:560px){
-  .mai-manual-kanban-board{
+  .mai-v4-today-kanban .mai-native-kanban-board,
+  .mai-v4-tasks-kanban .mai-v3-project-sections,
+  .mai-v4-tasks-kanban .mai-v4-task-date-view{
     grid-auto-columns:minmax(84vw,305px);
   }
 }
