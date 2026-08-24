@@ -29,6 +29,20 @@ function naturalDate(key:string,today:string){
   return target.toLocaleDateString('pt-BR',{day:'numeric',month:'short',year:target.getFullYear()!==base.getFullYear()?'numeric':undefined})
 }
 
+function habitEligible(habit:Row,day:string){
+  const start=dateKey(habit.data_inicio||habit.criado_em)
+  if(start&&day<start)return false
+  const match=String(habit.repeticao||'').match(/^intervalo:(\d+)$/)
+  if(match){
+    if(!start)return true
+    const interval=Math.max(1,Number(match[1])||1)
+    const diff=Math.round((new Date(`${day}T12:00:00`).getTime()-new Date(`${start}T12:00:00`).getTime())/86_400_000)
+    return diff%interval===0
+  }
+  const days=values(habit.dias_semana).map(Number).filter(value=>Number.isInteger(value)&&value>=0&&value<=6)
+  return !days.length||days.includes(new Date(`${day}T12:00:00`).getDay())
+}
+
 export function TodayV4({state,today,commit,navigate,inspect,onSearch}:{state:MaiState;today:string;commit:(change:(current:MaiState)=>MaiState)=>void;navigate:(view:AppView)=>void;inspect:(item:InspectableItem)=>void;onSearch:()=>void;onMore:()=>void}){
   const [menuOpen,setMenuOpen]=useState(false)
   const savedOrder=Array.isArray(state.configs.todayListOrder)?state.configs.todayListOrder.map(String).filter((id):id is SectionId=>DEFAULT_ORDER.includes(id as SectionId)):[]
@@ -36,9 +50,8 @@ export function TodayV4({state,today,commit,navigate,inspect,onSearch}:{state:Ma
   const hidden=new Set(Array.isArray(state.configs.todayListHidden)?state.configs.todayListHidden.map(String):[])
   const moduleControls=state.configs.moduleControls&&typeof state.configs.moduleControls==='object'?state.configs.moduleControls as Record<string,Row>:{}
   const kanban=moduleControls.today?.layout==='kanban'
-  const dayNumber=new Date(`${today}T12:00:00`).getDay()
   const entries=rows(state.habitEntries).filter(entry=>dateKey(entry.data)===today)
-  const habits=rows(state.habits).filter(habit=>habit.ativo!==false&&(()=>{const days=values(habit.dias_semana).map(Number);if(days.length&&!days.includes(dayNumber))return false;const value=Number(entries.find(entry=>String(entry.habito_id)===String(habit.id))?.valor||0);return value<Math.max(1,Number(habit.meta||1))})())
+  const habits=rows(state.habits).filter(habit=>habit.ativo!==false&&habitEligible(habit,today)&&(()=>{const value=Number(entries.find(entry=>String(entry.habito_id)===String(habit.id))?.valor||0);return value<Math.max(1,Number(habit.meta||1))})())
   const goals=rows(state.goals).filter(goal=>{const day=goalDate(goal);return Boolean(day)&&day<=today&&!String(goal.status||'').toLocaleLowerCase('pt-BR').includes('conclu')&&goal.concluida!==true}).sort((a,b)=>goalDate(a).localeCompare(goalDate(b)))
   const finance=state.finance||{}
   const transactions=rows(finance.transactions).filter(item=>{const day=dateKey(item.data);return Boolean(day)&&day<=today&&!item.ignorar_calculo&&!paid(item.status)}).sort((a,b)=>dateKey(a.data).localeCompare(dateKey(b.data)))
