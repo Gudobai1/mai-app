@@ -63,6 +63,7 @@ export function AppTopBar({ state, today, view, taskScope, commit, onTaskScopeCh
     today:'overdue', upcoming:'time', completed:'recent', tasks:'manual', habits:'name', goals:'date', notes:'recent', finance:'date', health:'recent', files:'name'
   }
   const sortMode = String(control.sort || defaultSort[view] || 'manual')
+  const layoutMode = control.layout === 'kanban' ? 'kanban' : 'normal'
   const activeProject = taskScope.startsWith('project:') ? projects.find(project => String(project.id) === taskScope.slice(8)) : null
   const titleMap: Partial<Record<AppView,string>> = { today:'Hoje', upcoming:'Em breve', completed:'Concluídos', tasks:'Tarefas', habits:'Hábitos', goals:'Metas', notes:'Notas', finance:'Finanças', health:'Bem-estar', files:'Arquivos' }
   const title = titleMap[view] || 'MAI'
@@ -81,6 +82,7 @@ export function AppTopBar({ state, today, view, taskScope, commit, onTaskScopeCh
   if (view === 'health') info = areaTabs.health === 'history' ? 'Histórico' : 'Hoje'
   if (view === 'files') info = areaTabs.files === 'grid' ? 'Grade' : 'Lista'
   if (view === 'completed') info = 'Histórico geral'
+  if (layoutMode === 'kanban') info = `${info} · Kanban`
 
   const patchConfig = (key:string, value:unknown) => commit(current => ({ ...current, configs:{ ...current.configs, [key]:value } }))
   const patchToday = (patch:Row) => patchConfig('todayFilters', { ...todayFilters, ...patch })
@@ -113,6 +115,8 @@ export function AppTopBar({ state, today, view, taskScope, commit, onTaskScopeCh
   const density = String(control.density || 'comfortable')
 
   const panel = <div className="mai-app-topbar-panel" data-view={String(view)}>
+    <PanelSection title="Layout"><Choices value={layoutMode} onChange={value => patchControl({ layout:value })} items={[{value:'normal',label:'Normal'},{value:'kanban',label:'Kanban'}]}/></PanelSection>
+
     {view === 'today' ? <>
       <PanelSection title="Filtros">
         <SelectLine label="Projeto" value={String(todayFilters.project || 'all')} onChange={value => patchToday({ project:value })}>{projectOptions}</SelectLine>
