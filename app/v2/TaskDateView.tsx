@@ -42,7 +42,7 @@ function formatHeading(key: string, today: string) {
 }
 
 export function TaskDateView({ state, today, mode, commit, inspect, selectedId }: Props) {
-  const projects = useMemo(() => rows(state.projects).filter(project => project.ativo !== false) as ProjectRow[], [state.projects])
+  const projects = useMemo(() => rows(state.projects).filter(project => project.ativo !== false).sort((a, b) => Number(Boolean(b.favorito)) - Number(Boolean(a.favorito)) || Number(a.ordem || 0) - Number(b.ordem || 0) || String(a.nome || '').localeCompare(String(b.nome || ''), 'pt-BR', { sensitivity:'base' })) as ProjectRow[], [state.projects])
   const projectMap = useMemo(() => new Map(projects.map(project => [String(project.id), project])), [projects])
   const controls = state.configs.moduleControls && typeof state.configs.moduleControls === 'object' ? state.configs.moduleControls as Record<string, Row> : {}
   const rawSort = String(controls.tasks?.sort || 'manual')
@@ -51,7 +51,7 @@ export function TaskDateView({ state, today, mode, commit, inspect, selectedId }
   const projectName = (projectId: unknown) => {
     const id = String(projectId || 'entrada')
     if (id === 'entrada') return 'Entrada'
-    return String(projectMap.get(id)?.nome || '')
+    return String(projectMap.get(id)?.nome || 'Sem projeto')
   }
 
   const open = useMemo(() => state.tasks.filter(task => {
@@ -69,7 +69,7 @@ export function TaskDateView({ state, today, mode, commit, inspect, selectedId }
     return aDay.localeCompare(bDay) || aTime.localeCompare(bTime) || titleCompare
   }), [state.tasks, mode, today, sortMode, projectMap])
 
-  const groups = useMemo(() => {
+  const dateGroups = useMemo(() => {
     if (mode === 'today') return [[today, open]] as [string, LegacyTask[]][]
     const map = new Map<string, LegacyTask[]>()
     open.forEach(task => {
@@ -79,6 +79,23 @@ export function TaskDateView({ state, today, mode, commit, inspect, selectedId }
     })
     return [...map.entries()].sort((a, b) => a[0].localeCompare(b[0]))
   }, [open, mode, today])
+
+  const projectGroups = useMemo(() => {
+    const map = new Map<string, LegacyTask[]>()
+    open.forEach(task => {
+      const id = String(task.projeto_id || 'entrada')
+      if (!map.has(id)) map.set(id, [])
+      map.get(id)!.push(task)
+    })
+    const rank = new Map<string, number>()
+    rank.set('entrada', -1)
+    projects.forEach((project, index) => rank.set(String(project.id), index))
+    return [...map.entries()].sort((a, b) => {
+      const ar = rank.get(a[0]) ?? Number.MAX_SAFE_INTEGER
+      const br = rank.get(b[0]) ?? Number.MAX_SAFE_INTEGER
+      return ar - br || projectName(a[0]).localeCompare(projectName(b[0]), 'pt-BR', { sensitivity:'base' })
+    }).map(([id, tasks]) => ({ id, name:projectName(id), tasks }))
+  }, [open, projects, projectMap])
 
   function toggle(task: LegacyTask) {
     commit(current => ({ ...current, tasks: current.tasks.map(item => item.id === task.id ? { ...item, concluida: !item.concluida, concluida_em: !item.concluida ? new Date().toISOString() : '' } : item) }))
@@ -90,7 +107,7 @@ export function TaskDateView({ state, today, mode, commit, inspect, selectedId }
 
   function identity(projectId: unknown) {
     const key = String(projectId || 'entrada')
-    return projectMap.get(key) || { id: 'entrada', nome: 'Entrada', cor: '#8e968d', icone: 'inbox' }
+    return projectMap.get(key) || { id:key === 'entrada' ? 'entrada' : key, nome:key === 'entrada' ? 'Entrada' : 'Sem projeto', cor:'#8e968d', icone:key === 'entrada' ? 'inbox' : 'folder' }
   }
 
   function projectBadge(project: ProjectRow) {
@@ -106,12 +123,20 @@ export function TaskDateView({ state, today, mode, commit, inspect, selectedId }
     </article>
   }
 
+  if (sortMode === 'project') return <div className="mai-v4-task-date-view mai-v4-project-groups">
+    {projectGroups.map(group => <section key={group.id} className="mai-v4-task-date-group mai-v4-project-group">
+      <header><h2>{group.name}</h2><span>{group.tasks.length}</span></header>
+      <div className="mai-v3-task-list">{group.tasks.map(task => renderTask(task))}</div>
+    </section>)}
+    {!projectGroups.length ? <div className="mai-v3-empty-line">{mode === 'today' ? 'Nenhuma tarefa para hoje.' : 'Nenhuma tarefa futura.'}</div> : null}
+  </div>
+
   return <div className="mai-v4-task-date-view">
-    {groups.map(([day, tasks]) => <section key={day} className="mai-v4-task-date-group">
+    {dateGroups.map(([day, tasks]) => <section key={day} className="mai-v4-task-date-group">
       <header><h2>{formatHeading(day, today)}</h2><span>{tasks.length}</span></header>
       <div className="mai-v3-task-list">{tasks.map(task => renderTask(task))}{!tasks.length ? <div className="mai-v3-empty-line">{mode === 'today' ? 'Nenhuma tarefa para hoje.' : 'Nenhuma tarefa futura.'}</div> : null}</div>
     </section>)}
 
-    {mode === 'upcoming' && !groups.length ? <div className="mai-v3-empty-line">Nenhuma tarefa futura.</div> : null}
+    {mode === 'upcoming' && !dateGroups.length ? <div className="mai-v3-empty-line">Nenhuma tarefa futura.</div> : null}
   </div>
 }
