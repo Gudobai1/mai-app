@@ -67,6 +67,22 @@ function eventOccursOn(event: Record<string, any>, day: string) {
   return occursOn(event, day, 'data_inicio')
 }
 
+function habitOccursOn(habit: Record<string, any>, day: string) {
+  const start = String(habit.data_inicio || habit.criado_em || '').slice(0, 10)
+  if (start && day < start) return false
+  const rule = String(habit.repeticao || '')
+  if (rule.startsWith('intervalo:')) {
+    if (!start) return true
+    const interval = Math.max(1, Number(rule.split(':')[1]) || 1)
+    return diffDays(start, day) % interval === 0
+  }
+  const selectedDays = Array.isArray(habit.dias_semana)
+    ? habit.dias_semana.map(Number).filter((value: number) => Number.isInteger(value) && value >= 0 && value <= 6)
+    : []
+  if (selectedDays.length) return selectedDays.includes(new Date(`${day}T12:00:00`).getDay())
+  return true
+}
+
 function eventCompleted(state: MaiState, event: Record<string, any>, day: string) {
   const key = `${event.id}|${day}|${event.hora_inicio || ''}`
   return rows(state.eventCompletions).some(entry => entry.chave === key || (String(entry.evento_id) === String(event.id) && String(entry.data).slice(0, 10) === day && entry.concluida !== false))
@@ -136,8 +152,7 @@ export function plannerItems(state: MaiState, start: string, end: string): Plann
 
   for (const habit of rows(state.habits).filter(item => item.ativo !== false && item.ocultar_agenda !== true)) {
     for (const day of days) {
-      if (habit.data_inicio && day < String(habit.data_inicio).slice(0, 10)) continue
-      if (Array.isArray(habit.dias_semana) && habit.dias_semana.length && !habit.dias_semana.map(Number).includes(new Date(`${day}T12:00:00`).getDay())) continue
+      if (!habitOccursOn(habit, day)) continue
       const entry = rows(state.habitEntries).find(item => String(item.habito_id) === String(habit.id) && String(item.data).slice(0, 10) === day)
       const target = Math.max(1, Number(habit.meta || 1))
       const complete = Number(entry?.valor || 0) >= target
