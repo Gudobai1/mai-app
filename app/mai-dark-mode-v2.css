@@ -1,0 +1,170 @@
+/* MAI — correção final de superfícies e contraste no modo escuro. */
+
+html[data-mai-theme="dark"] body{
+  background:#0d0f11!important;
+  color:#eef0f2!important;
+}
+
+html[data-mai-theme="dark"] .mai-v3-shell{
+  --v3-soft:var(--v3-sidebar)!important;
+  --v3-surface:var(--v3-card)!important;
+  --surface:var(--v3-card)!important;
+  --surface-soft:var(--v3-sidebar)!important;
+  --bg:var(--v3-bg)!important;
+  color-scheme:dark;
+}
+
+html[data-mai-theme="dark"] .mai-v3-main,
+html[data-mai-theme="dark"] .mai-v3-workspace,
+html[data-mai-theme="dark"] .mai-v3-area-page,
+html[data-mai-theme="dark"] .mai-v3-upcoming-page,
+html[data-mai-theme="dark"] .mai-v3-task-workspace,
+html[data-mai-theme="dark"] .mai-v4-tasks-module,
+html[data-mai-theme="dark"] .mai-v4-task-main,
+html[data-mai-theme="dark"] .mai-v4-home,
+html[data-mai-theme="dark"] .mai-v4-today-single,
+html[data-mai-theme="dark"] .mai-v4-upcoming-wrap{
+  background:var(--v3-bg)!important;
+  color:var(--v3-text)!important;
+}
+
+html[data-mai-theme="dark"] :is(
+  .mai-app-topbar-panel,
+  .mai-v3-filter-popover,
+  .mai-v3-task-menu,
+  .mai-v3-task-row-menu,
+  .mai-v3-project-menu,
+  .mai-v3-create-drawer,
+  .mai-context-drawer,
+  .mai-task-v4-drawer,
+  .mai-context-v3-drawer,
+  .mai-v3-notes-layout,
+  .mai-v3-note-surface,
+  .mai-v3-note-title,
+  .mai-v3-inbox-projects,
+  .mai-upcoming-calendar-main,
+  .mai-upcoming-month-agenda,
+  .mai-upcoming-month-agenda-head,
+  .mai-upcoming-mobile-day-sheet
+){
+  background:var(--v3-card)!important;
+  color:var(--v3-text)!important;
+  border-color:var(--v3-line)!important;
+}
+
+html[data-mai-theme="dark"] :is(
+  .mai-v3-file-grid>button,
+  .mai-v3-account-list article,
+  .mai-v3-card-list article,
+  .mai-v3-health-summary article,
+  .mai-v3-health-history article,
+  .mai-v3-report-list article,
+  .mai-v3-finance-summary article,
+  .mai-v4-project-item[data-active="true"]
+){
+  color:var(--v3-text)!important;
+  border-color:var(--v3-line)!important;
+}
+
+html[data-mai-theme="dark"] .mai-v3-file-grid>button,
+html[data-mai-theme="dark"] .mai-v3-account-list article,
+html[data-mai-theme="dark"] .mai-v3-card-list article,
+html[data-mai-theme="dark"] .mai-v3-health-summary article,
+html[data-mai-theme="dark"] .mai-v3-health-history article,
+html[data-mai-theme="dark"] .mai-v3-report-list article{
+  background:var(--v3-card)!important;
+}
+
+html[data-mai-theme="dark"] .mai-app-topbar{
+  background:color-mix(in srgb,var(--v3-bg) 94%,transparent)!important;
+  border-color:var(--v3-line)!important;
+}
+
+html[data-mai-theme="dark"] .mai-app-topbar-select-line select,
+html[data-mai-theme="dark"] .mai-app-topbar-choices button,
+html[data-mai-theme="dark"] .mai-app-topbar-switches button,
+html[data-mai-theme="dark"] .mai-v3-more-filter,
+html[data-mai-theme="dark"] .mai-v3-kind-switch,
+html[data-mai-theme="dark"] .mai-v3-secondary{
+  background:var(--v3-sidebar)!important;
+  color:var(--v3-muted)!important;
+  border-color:var(--v3-line)!important;
+}
+
+html[data-mai-theme="dark"] .mai-app-topbar-choices button[data-active="true"],
+html[data-mai-theme="dark"] .mai-app-topbar-switches button[data-active="true"],
+html[data-mai-theme="dark"] .mai-v3-kind-switch button[data-active="true"],
+html[data-mai-theme="dark"] .mai-v3-more-filter[data-active="true"]{
+  background:var(--v3-hover)!important;
+  color:var(--v3-text)!important;
+}
+
+html[data-mai-theme="dark"] .mai-v3-shell :is(input,textarea,select){
+  background:var(--v3-card)!important;
+  color:var(--v3-text)!important;
+  border-color:var(--v3-line)!important;
+}
+html[data-mai-theme="dark"] .mai-v3-shell :is(input,textarea)::placeholder{
+  color:var(--v3-faint)!important;
+}
+html[data-mai-theme="dark"] .mai-v3-shell option{
+  background:var(--v3-card);
+  color:var(--v3-text);
+}
+
+html[data-mai-theme="dark"] .mai-upcoming-calendar-toolbar,
+html[data-mai-theme="dark"] .mai-upcoming-calendar-arrow,
+html[data-mai-theme="dark"] .mai-upcoming-calendar-month{
+  background:var(--v3-card)!important;
+  color:var(--v3-text)!important;
+  border-color:var(--v3-line)!important;
+}
+html[data-mai-theme="dark"] .mai-upcoming-calendar-week{
+  background:var(--v3-sidebar)!important;
+  color:var(--v3-muted)!important;
+}
+html[data-mai-theme="dark"] .mai-upcoming-calendar-day{
+  background:var(--v3-bg)!important;
+  color:var(--v3-text)!important;
+  border-color:var(--v3-line)!important;
+}
+html[data-mai-theme="dark"] .mai-upcoming-calendar-day:hover{
+  background:var(--v3-hover)!important;
+}
+html[data-mai-theme="dark"] .mai-upcoming-calendar-day[data-selected="true"]{
+  background:var(--v3-accent-soft)!important;
+}
+html[data-mai-theme="dark"] .mai-upcoming-calendar-chip{
+  background:var(--v3-sidebar)!important;
+  color:var(--v3-text)!important;
+}
+
+.mai-upcoming-calendar-empty,
+.mai-upcoming-calendar-empty:hover{
+  background:transparent!important;
+  cursor:default!important;
+  pointer-events:none!important;
+}
+.mai-upcoming-calendar-empty::before,
+.mai-upcoming-calendar-empty::after{
+  content:none!important;
+}
+
+html[data-mai-theme="dark"] .mai-upcoming-month-agenda-list>section[data-selected="true"]>header{
+  background:var(--v3-accent-soft)!important;
+  border-radius:8px;
+}
+
+html[data-mai-theme="dark"] .mai-v3-shell :is([class*="modalCard"],[class*="settingsCard"],[class*="calendarPicker"]){
+  background:var(--v3-card)!important;
+  color:var(--v3-text)!important;
+  border-color:var(--v3-line)!important;
+}
+
+html[data-mai-theme="dark"] .mai-v3-shell :is([class*="settingsRow"],[class*="modalCard"],[class*="settingsCard"]) :is(strong,b,label,span,p){
+  color:inherit;
+}
+
+html[data-mai-theme="dark"] .mai-v3-shell hr{
+  border-color:var(--v3-line)!important;
+}
