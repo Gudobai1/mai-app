@@ -7,6 +7,7 @@ import type { Row } from './app-types'
 import { MaiIcon } from './MaiIcons'
 
 type Mode = 'today' | 'upcoming'
+type SortMode = 'manual' | 'date' | 'priority' | 'project' | 'name'
 
 type Props = {
   state: MaiState
@@ -43,12 +44,30 @@ function formatHeading(key: string, today: string) {
 export function TaskDateView({ state, today, mode, commit, inspect, selectedId }: Props) {
   const projects = useMemo(() => rows(state.projects).filter(project => project.ativo !== false) as ProjectRow[], [state.projects])
   const projectMap = useMemo(() => new Map(projects.map(project => [String(project.id), project])), [projects])
+  const controls = state.configs.moduleControls && typeof state.configs.moduleControls === 'object' ? state.configs.moduleControls as Record<string, Row> : {}
+  const rawSort = String(controls.tasks?.sort || 'manual')
+  const sortMode: SortMode = ['manual','date','priority','project','name'].includes(rawSort) ? rawSort as SortMode : 'manual'
+
+  const projectName = (projectId: unknown) => {
+    const id = String(projectId || 'entrada')
+    if (id === 'entrada') return 'Entrada'
+    return String(projectMap.get(id)?.nome || '')
+  }
 
   const open = useMemo(() => state.tasks.filter(task => {
     if (task.concluida) return false
     const day = dayOf(task)
     return mode === 'today' ? day === today : Boolean(day && day > today)
-  }).sort((a, b) => dayOf(a).localeCompare(dayOf(b)) || (timeOf(a) || '99:99').localeCompare(timeOf(b) || '99:99') || Number(a.ordem || 0) - Number(b.ordem || 0)), [state.tasks, mode, today])
+  }).sort((a, b) => {
+    const aDay = dayOf(a), bDay = dayOf(b)
+    const aTime = timeOf(a) || '99:99', bTime = timeOf(b) || '99:99'
+    const titleCompare = String(a.titulo || '').localeCompare(String(b.titulo || ''), 'pt-BR', { sensitivity:'base' })
+    if (sortMode === 'priority') return Number(a.prioridade || 4) - Number(b.prioridade || 4) || aDay.localeCompare(bDay) || aTime.localeCompare(bTime) || titleCompare
+    if (sortMode === 'project') return projectName(a.projeto_id).localeCompare(projectName(b.projeto_id), 'pt-BR', { sensitivity:'base' }) || aDay.localeCompare(bDay) || aTime.localeCompare(bTime) || titleCompare
+    if (sortMode === 'name') return titleCompare || aDay.localeCompare(bDay) || aTime.localeCompare(bTime)
+    if (sortMode === 'manual') return Number(a.ordem || 0) - Number(b.ordem || 0) || aDay.localeCompare(bDay) || aTime.localeCompare(bTime) || titleCompare
+    return aDay.localeCompare(bDay) || aTime.localeCompare(bTime) || titleCompare
+  }), [state.tasks, mode, today, sortMode, projectMap])
 
   const groups = useMemo(() => {
     if (mode === 'today') return [[today, open]] as [string, LegacyTask[]][]
@@ -58,7 +77,7 @@ export function TaskDateView({ state, today, mode, commit, inspect, selectedId }
       if (!map.has(day)) map.set(day, [])
       map.get(day)!.push(task)
     })
-    return [...map.entries()]
+    return [...map.entries()].sort((a, b) => a[0].localeCompare(b[0]))
   }, [open, mode, today])
 
   function toggle(task: LegacyTask) {
