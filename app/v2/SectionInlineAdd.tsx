@@ -53,6 +53,7 @@ const listSelectors = [
   '.mai-v3-week-grid',
   '.mai-v3-report-list',
   '.mai-v3-goal-groups section > div',
+  '[class*="habitGrid"]',
 ]
 
 function listIn(section: HTMLElement): HTMLElement | null {
