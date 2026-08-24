@@ -22,7 +22,7 @@ type Props = {
   onEditProject: (projectId: string) => void
 }
 
-type SortMode = 'manual' | 'date' | 'priority' | 'name'
+type SortMode = 'manual' | 'date' | 'priority' | 'project' | 'name'
 const rows = (value: unknown): Row[] => Array.isArray(value) ? value as Row[] : []
 const dayOf = (task: LegacyTask) => String(task.data_vencimento || '').slice(0, 10)
 const timeOf = (task: LegacyTask) => String(task.data_vencimento || '').includes('T') ? String(task.data_vencimento).slice(11, 16) : ''
@@ -45,6 +45,11 @@ function taskPrefs(state: MaiState): Record<string, any> {
   return value && typeof value === 'object' ? value as Record<string, any> : {}
 }
 
+function moduleControls(state: MaiState): Record<string, Row> {
+  const value = state.configs.moduleControls
+  return value && typeof value === 'object' ? value as Record<string, Row> : {}
+}
+
 export function MinimalTaskWorkspace(props: Props) {
   const { state, today, view, commit, inspect, selectedId } = props
   const projectId = view.startsWith('project:') ? view.slice(8) : ''
@@ -52,15 +57,33 @@ export function MinimalTaskWorkspace(props: Props) {
   const project = projects.find(item => String(item.id) === projectId)
   const scopeKey = projectId ? `project:${projectId}` : 'inbox'
   const prefs = taskPrefs(state)[scopeKey] || {}
+  const controls = moduleControls(state)
   const advanced = prefs.advanced === true
-  const sortMode: SortMode = ['manual', 'date', 'priority', 'name'].includes(prefs.sort) ? prefs.sort : 'manual'
+  const rawSort = String(controls.tasks?.sort || prefs.sort || 'manual')
+  const sortMode: SortMode = ['manual', 'date', 'priority', 'project', 'name'].includes(rawSort) ? rawSort as SortMode : 'manual'
   const [menu, setMenu] = useState(false)
   const [rowMenu, setRowMenu] = useState('')
   const [dragId, setDragId] = useState('')
   const [completedOpen, setCompletedOpen] = useState(false)
   const projectMap = useMemo(() => new Map(projects.map(item => [String(item.id), item])), [projects])
+
+  const projectName = (id: unknown) => {
+    const key = String(id || 'entrada')
+    if (key === 'entrada') return 'Entrada'
+    return String(projectMap.get(key)?.nome || '')
+  }
+
   const tasks = state.tasks.filter(task => standaloneTask(task) && (projectId ? String(task.projeto_id || '') === projectId : String(task.projeto_id || 'entrada') === 'entrada'))
-  const open = tasks.filter(task => !task.concluida).sort((a, b) => Number(a.ordem || 0) - Number(b.ordem || 0))
+  const open = tasks.filter(task => !task.concluida).sort((a, b) => {
+    const aDay = dayOf(a) || '9999-99-99', bDay = dayOf(b) || '9999-99-99'
+    const aTime = timeOf(a) || '99:99', bTime = timeOf(b) || '99:99'
+    const titleCompare = String(a.titulo || '').localeCompare(String(b.titulo || ''), 'pt-BR', { sensitivity:'base' })
+    if (sortMode === 'date') return aDay.localeCompare(bDay) || aTime.localeCompare(bTime) || titleCompare
+    if (sortMode === 'priority') return Number(a.prioridade || 4) - Number(b.prioridade || 4) || aDay.localeCompare(bDay) || titleCompare
+    if (sortMode === 'project') return projectName(a.projeto_id).localeCompare(projectName(b.projeto_id), 'pt-BR', { sensitivity:'base' }) || aDay.localeCompare(bDay) || titleCompare
+    if (sortMode === 'name') return titleCompare || aDay.localeCompare(bDay) || aTime.localeCompare(bTime)
+    return Number(a.ordem || 0) - Number(b.ordem || 0) || titleCompare
+  })
   const completed = tasks.filter(task => task.concluida).sort((a, b) => String(b.concluida_em || '').localeCompare(String(a.concluida_em || '')))
   const sections = projectId ? rows(project?.secoes).map(String) : []
   const sectionGroups = projectId
@@ -108,13 +131,17 @@ export function MinimalTaskWorkspace(props: Props) {
   }
 
   function applySort(mode: SortMode) {
-    const ranked = [...open].sort((a, b) => mode === 'date'
-      ? (dayOf(a) || '9999-99-99').localeCompare(dayOf(b) || '9999-99-99') || (timeOf(a) || '99:99').localeCompare(timeOf(b) || '99:99')
-      : mode === 'priority' ? Number(a.prioridade || 4) - Number(b.prioridade || 4)
-      : mode === 'name' ? a.titulo.localeCompare(b.titulo, 'pt-BR', { sensitivity: 'base' })
-      : Number(a.ordem || 0) - Number(b.ordem || 0))
-    const order = new Map(ranked.map((task, index) => [task.id, index]))
-    commit(current => ({ ...current, tasks: current.tasks.map(task => order.has(task.id) ? { ...task, ordem: order.get(task.id) } : task), configs: { ...current.configs, taskWorkspaces: { ...taskPrefs(current), [scopeKey]: { ...(taskPrefs(current)[scopeKey] || {}), sort: mode } } } }))
+    commit(current => {
+      const currentControls = moduleControls(current)
+      return {
+        ...current,
+        configs: {
+          ...current.configs,
+          taskWorkspaces: { ...taskPrefs(current), [scopeKey]: { ...(taskPrefs(current)[scopeKey] || {}), sort: mode } },
+          moduleControls: { ...currentControls, tasks: { ...(currentControls.tasks || {}), sort: mode } },
+        },
+      }
+    })
     setMenu(false)
   }
 
@@ -125,7 +152,7 @@ export function MinimalTaskWorkspace(props: Props) {
 
   const renderTask = (task:LegacyTask, completedTask=false, groupId='') => {
     const identity = projectIdentity(task.projeto_id)
-    return <article className="mai-v3-task-row mai-item-row-v2" data-selected={selectedId === task.id} key={`${completedTask?'done-':''}${task.id}`} draggable={!completedTask} onClick={() => inspectTask(task)} onDragStart={() => setDragId(task.id)} onDragEnd={() => setDragId('')} onDragOver={event => event.preventDefault()} onDrop={event => { event.stopPropagation(); reorder(dragId, task.id, groupId); setDragId('') }}>
+    return <article className="mai-v3-task-row mai-item-row-v2" data-selected={selectedId === task.id} key={`${completedTask?'done-':''}${task.id}`} draggable={!completedTask && sortMode === 'manual'} onClick={() => inspectTask(task)} onDragStart={() => setDragId(task.id)} onDragEnd={() => setDragId('')} onDragOver={event => event.preventDefault()} onDrop={event => { event.stopPropagation(); if (sortMode === 'manual') reorder(dragId, task.id, groupId); setDragId('') }}>
       <button className="mai-v3-task-check" data-completed={completedTask||undefined} data-priority={completedTask?undefined:Number(task.prioridade||4)} aria-label={completedTask?`Reabrir ${task.titulo}`:`Concluir ${task.titulo}`} style={completedTask?undefined:{ borderColor: priorityColor(task.prioridade) }} onClick={event => { event.stopPropagation(); toggle(task) }}>{completedTask?'✓':''}</button>
       <span className="mai-item-copy-v2"><span className="mai-item-titleline-v2"><strong>{task.titulo}</strong></span><span className="mai-item-subline-v2"><span>{naturalDate(dayOf(task), today)}</span><span>·</span>{projectBadge(identity)}</span></span>
       {!completedTask?<><button className="mai-v3-task-more" aria-label={`Opções de ${task.titulo}`} onClick={event => { event.stopPropagation(); setRowMenu(current => current === task.id ? '' : task.id) }}>•••</button>{rowMenu === task.id ? <div className="mai-v3-task-row-menu" onClick={event=>event.stopPropagation()}><button onClick={() => { setRowMenu(''); inspectTask(task) }}>Editar</button>{projectId && sections.length ? <><span>Mover para</span>{sections.map(section => <button key={section} onClick={() => moveToSection(task.id, section)}>{section}</button>)}<button onClick={() => moveToSection(task.id, '')}>Sem seção</button></> : null}</div> : null}</>:null}
@@ -133,7 +160,7 @@ export function MinimalTaskWorkspace(props: Props) {
   }
 
   const taskLists = <>
-    <div className="mai-v3-project-sections">{sectionGroups.map(group => <section key={group.id || 'none'} onDragOver={event => event.preventDefault()} onDrop={() => { if (dragId && group.tasks.length === 0) moveToSection(dragId, group.id) }}>
+    <div className="mai-v3-project-sections">{sectionGroups.map(group => <section key={group.id || 'none'} onDragOver={event => event.preventDefault()} onDrop={() => { if (sortMode === 'manual' && dragId && group.tasks.length === 0) moveToSection(dragId, group.id) }}>
       <h2>{group.label}</h2>
       <div className="mai-v3-task-list">{group.tasks.map(task => renderTask(task,false,group.id))}{!group.tasks.length ? <div className="mai-v3-empty-line">Nenhuma tarefa nesta seção.</div> : null}</div>
     </section>)}</div>
@@ -144,7 +171,7 @@ export function MinimalTaskWorkspace(props: Props) {
   return <div className="mai-v3-task-workspace">
     <header className="mai-v3-page-header mai-v3-task-header">
       <div className="mai-v3-task-title-wrap">{project?.imagem_url ? <img src={String(project.imagem_url)} alt=""/> : project ? <i style={{ background: String(project.cor || '#6f8168') }}><MaiIcon name={String(project.icone || 'folder')} size={18}/></i> : null}<div><h1>{project ? String(project.nome) : 'Entrada'}</h1><p>{project ? 'Tarefas organizadas neste projeto.' : 'Tarefas ainda sem projeto.'}</p></div></div>
-      <div className="mai-v3-page-actions"><button title="Ordenar" onClick={() => setMenu(value => !value)}><span className="material-symbols-rounded">sort</span></button>{project ? <button title="Seções" onClick={() => props.onManageSections(projectId)}><span className="material-symbols-rounded">segment</span></button> : null}<button title="Mais opções" onClick={() => setMenu(value => !value)}><span className="material-symbols-rounded">more_horiz</span></button>{menu ? <div className="mai-v3-task-menu"><span>Ordenar</span><button data-active={sortMode === 'manual'} onClick={() => applySort('manual')}>Ordem manual</button><button data-active={sortMode === 'date'} onClick={() => applySort('date')}>Data</button><button data-active={sortMode === 'priority'} onClick={() => applySort('priority')}>Prioridade</button><button data-active={sortMode === 'name'} onClick={() => applySort('name')}>Nome</button><hr/><button onClick={() => savePrefs({ advanced: true })}>Ferramentas avançadas</button></div> : null}</div>
+      <div className="mai-v3-page-actions"><button title="Ordenar" onClick={() => setMenu(value => !value)}><span className="material-symbols-rounded">sort</span></button>{project ? <button title="Seções" onClick={() => props.onManageSections(projectId)}><span className="material-symbols-rounded">segment</span></button> : null}<button title="Mais opções" onClick={() => setMenu(value => !value)}><span className="material-symbols-rounded">more_horiz</span></button>{menu ? <div className="mai-v3-task-menu"><span>Ordenar</span><button data-active={sortMode === 'manual'} onClick={() => applySort('manual')}>Ordem manual</button><button data-active={sortMode === 'date'} onClick={() => applySort('date')}>Data</button><button data-active={sortMode === 'priority'} onClick={() => applySort('priority')}>Prioridade</button><button data-active={sortMode === 'project'} onClick={() => applySort('project')}>Projeto</button><button data-active={sortMode === 'name'} onClick={() => applySort('name')}>Nome</button><hr/><button onClick={() => savePrefs({ advanced: true })}>Ferramentas avançadas</button></div> : null}</div>
     </header>
 
     {!projectId ? <div className="mai-v3-inbox-layout">
