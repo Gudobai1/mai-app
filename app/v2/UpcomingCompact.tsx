@@ -101,12 +101,14 @@ export function UpcomingCompact({state,today,inspect,commit}:Props){
   const sortMode=String(moduleControls.upcoming?.sort||'time')
 
   useEffect(()=>{setMode(state.configs.upcomingView==='month'?'month':'list')},[state.configs.upcomingView])
+
   useEffect(()=>{
     if(mode!=='list'||!sentinelRef.current)return
     const observer=new IntersectionObserver(entries=>{if(entries.some(entry=>entry.isIntersecting))setRangeDays(value=>Math.min(value+180,1440))},{rootMargin:'500px'})
     observer.observe(sentinelRef.current)
     return()=>observer.disconnect()
   },[mode])
+
   useEffect(()=>{
     if(!mobileDay)return
     const close=(event:KeyboardEvent)=>{if(event.key==='Escape')setMobileDay(null)}
@@ -166,12 +168,17 @@ export function UpcomingCompact({state,today,inspect,commit}:Props){
   },[mode,today,listGroups.length])
 
   const monthStart=firstOfMonth(anchor||today)
+  const nextMonthStart=moveMonth(monthStart,1)
+  const monthEnd=addDays(nextMonthStart,-1)
   const firstWeekday=new Date(`${monthStart}T12:00:00`).getDay()
-  const gridStart=addDays(monthStart,-firstWeekday)
-  const gridDays=Array.from({length:42},(_,index)=>addDays(gridStart,index))
-  const gridEnd=gridDays[gridDays.length-1]
-  const monthDays=gridDays.filter(day=>day.slice(0,7)===monthStart.slice(0,7))
-  const calendarItems=useMemo(()=>filterAndOccurrences(plannerItems(state,gridStart,gridEnd)),[state,gridStart,gridEnd,today,filters.tasks,filters.events,filters.habits,filters.finance,filters.goals,filters.project,filters.priority,savedFilters.occurrenceMode,sortMode])
+  const daysInMonth=Number(monthEnd.slice(8))
+  const monthKey=monthStart.slice(0,7)
+  const gridCells=Array.from({length:42},(_,index)=>{
+    const dayNumber=index-firstWeekday+1
+    return dayNumber>=1&&dayNumber<=daysInMonth?`${monthKey}-${String(dayNumber).padStart(2,'0')}`:null
+  })
+  const monthDays=gridCells.filter((day):day is string=>Boolean(day))
+  const calendarItems=useMemo(()=>filterAndOccurrences(plannerItems(state,monthStart,monthEnd)),[state,monthStart,monthEnd,today,filters.tasks,filters.events,filters.habits,filters.finance,filters.goals,filters.project,filters.priority,savedFilters.occurrenceMode,sortMode])
   const calendarMap=useMemo(()=>{
     const map=new Map<string,PlannerItem[]>()
     calendarItems.forEach(item=>{if(!map.has(item.date))map.set(item.date,[]);map.get(item.date)!.push(item)})
@@ -179,27 +186,44 @@ export function UpcomingCompact({state,today,inspect,commit}:Props){
     return map
   },[calendarItems,sortMode])
 
-  const agendaStartDay=today.slice(0,7)===monthStart.slice(0,7)?today:monthStart
-  const agendaDays=monthDays.filter(day=>(calendarMap.get(day)||[]).length>0||day===agendaStartDay)
+  const agendaFocusDay=selectedDay.slice(0,7)===monthKey?selectedDay:today.slice(0,7)===monthKey?today:monthStart
+  const agendaDays=monthDays.filter(day=>(calendarMap.get(day)||[]).length>0||day===agendaFocusDay)
   const monthItemCount=monthDays.reduce((total,day)=>total+(calendarMap.get(day)||[]).length,0)
 
   useEffect(()=>{
     if(mode!=='month')return
     const visibleMonth=monthStart.slice(0,7)
     if(selectedDay.slice(0,7)!==visibleMonth)setSelectedDay(today.slice(0,7)===visibleMonth?today:monthStart)
-  },[mode,monthStart,today])
+  },[mode,monthStart,today,selectedDay])
+
   useEffect(()=>{
     if(mode!=='month')return
-    const id=window.requestAnimationFrame(()=>monthAgendaRef.current?.querySelector(`[data-day="${agendaStartDay}"]`)?.scrollIntoView({block:'start'}))
+    const focusDay=selectedDay.slice(0,7)===monthKey?selectedDay:agendaFocusDay
+    const id=window.requestAnimationFrame(()=>monthAgendaRef.current?.querySelector(`[data-day="${focusDay}"]`)?.scrollIntoView({block:'start'}))
     return()=>window.cancelAnimationFrame(id)
-  },[mode,monthStart,agendaStartDay,agendaDays.length])
+  },[mode,monthStart,monthKey,selectedDay,agendaFocusDay,agendaDays.length])
 
-  function changeAnchor(next:string){setAnchor(next);setMobileDay(null);commit(current=>({...current,configs:{...current.configs,upcomingAnchor:next}}))}
-  function goToday(){setSelectedDay(today);setMobileDay(null);changeAnchor(today)}
+  function changeAnchor(next:string){
+    const nextStart=firstOfMonth(next)
+    const nextSelected=today.slice(0,7)===nextStart.slice(0,7)?today:nextStart
+    setAnchor(nextStart)
+    setSelectedDay(nextSelected)
+    setMobileDay(null)
+    commit(current=>({...current,configs:{...current.configs,upcomingAnchor:nextStart}}))
+  }
+
+  function goToday(){
+    setAnchor(today)
+    setSelectedDay(today)
+    setMobileDay(null)
+    commit(current=>({...current,configs:{...current.configs,upcomingAnchor:today}}))
+    window.requestAnimationFrame(()=>monthAgendaRef.current?.querySelector(`[data-day="${today}"]`)?.scrollIntoView({block:'start'}))
+  }
+
   function selectDay(day:string){
+    if(day.slice(0,7)!==monthKey)return
     setSelectedDay(day)
     if(typeof window!=='undefined'&&window.matchMedia('(max-width:900px)').matches)setMobileDay(day)
-    if(day.slice(0,7)!==monthStart.slice(0,7))changeAnchor(day)
   }
 
   const monthLabel=new Date(`${monthStart}T12:00:00`).toLocaleDateString('pt-BR',{month:'long',year:'numeric'})
@@ -214,20 +238,24 @@ export function UpcomingCompact({state,today,inspect,commit}:Props){
     </div>:<div className="mai-upcoming-calendar-v2">
       <main className="mai-upcoming-calendar-main">
         <header className="mai-upcoming-calendar-toolbar" aria-label={`Navegação do calendário, ${monthLabel}`}>
-          <button className="mai-upcoming-calendar-arrow mai-upcoming-calendar-prev" aria-label="Mês anterior" onClick={()=>changeAnchor(moveMonth(anchor,-1))}>‹</button>
+          <button className="mai-upcoming-calendar-arrow mai-upcoming-calendar-prev" aria-label="Mês anterior" onClick={()=>changeAnchor(moveMonth(monthStart,-1))}>‹</button>
           <button className="mai-upcoming-calendar-month" aria-label="Voltar para hoje" title="Voltar para hoje" onClick={goToday}>{monthName}</button>
-          <button className="mai-upcoming-calendar-arrow mai-upcoming-calendar-next" aria-label="Próximo mês" onClick={()=>changeAnchor(moveMonth(anchor,1))}>›</button>
+          <button className="mai-upcoming-calendar-arrow mai-upcoming-calendar-next" aria-label="Próximo mês" onClick={()=>changeAnchor(moveMonth(monthStart,1))}>›</button>
         </header>
         <div className="mai-upcoming-calendar-week">{[['Dom','D'],['Seg','S'],['Ter','T'],['Qua','Q'],['Qui','Q'],['Sex','S'],['Sáb','S']].map(([full,short])=><span key={full}><b>{full}</b><i>{short}</i></span>)}</div>
-        <div className="mai-upcoming-calendar-grid">{gridDays.map(day=>{const items=calendarMap.get(day)||[];const outside=day.slice(0,7)!==monthStart.slice(0,7);return <button className="mai-upcoming-calendar-day" key={day} data-day={day} data-today={day===today||undefined} data-selected={day===selectedDay||undefined} data-outside={outside||undefined} aria-label={formatDay(day)} onClick={()=>selectDay(day)}>
-          <span className="mai-upcoming-calendar-day-number">{Number(day.slice(8))}</span>
-          <div className="mai-upcoming-calendar-events">{items.slice(0,2).map(item=><span className="mai-upcoming-calendar-chip" key={item.id}><i style={{background:item.color}}/><b>{item.time?`${item.time} `:''}{item.title}</b></span>)}</div>
-          {items.length>2?<span className="mai-upcoming-calendar-more">+ {items.length-2} {items.length-2===1?'item':'itens'}</span>:null}
-        </button>})}</div>
+        <div className="mai-upcoming-calendar-grid">{gridCells.map((day,index)=>{
+          if(!day)return <div className="mai-upcoming-calendar-day mai-upcoming-calendar-empty" key={`empty-${index}`} aria-hidden="true"/>
+          const items=calendarMap.get(day)||[]
+          return <button className="mai-upcoming-calendar-day" key={day} data-day={day} data-today={day===today||undefined} data-selected={day===selectedDay||undefined} aria-label={formatDay(day)} onClick={()=>selectDay(day)}>
+            <span className="mai-upcoming-calendar-day-number">{Number(day.slice(8))}</span>
+            <div className="mai-upcoming-calendar-events">{items.slice(0,2).map(item=><span className="mai-upcoming-calendar-chip" key={item.id}><i style={{background:item.color}}/><b>{item.time?`${item.time} `:''}{item.title}</b></span>)}</div>
+            {items.length>2?<span className="mai-upcoming-calendar-more">+ {items.length-2} {items.length-2===1?'item':'itens'}</span>:null}
+          </button>
+        })}</div>
       </main>
       <aside className="mai-upcoming-month-agenda" ref={monthAgendaRef}>
         <header className="mai-upcoming-month-agenda-head"><div><small>Agenda do mês</small><strong>{monthLabel}</strong></div><span>{monthItemCount}</span></header>
-        <div className="mai-upcoming-month-agenda-list">{agendaDays.map(day=>{const items=calendarMap.get(day)||[];return <section key={day} data-day={day} data-today={day===today||undefined}><header><strong>{groupLabel(day,today)}</strong><span>{items.length}</span></header>{items.map(item=><ItemRow key={item.id} item={item} inspect={inspect} today={today} project={item.kind==='task'?projectFor(item):undefined}/>)}{!items.length?<div className="mai-upcoming-day-panel-empty">Nenhum item neste dia.</div>:null}</section>})}</div>
+        <div className="mai-upcoming-month-agenda-list">{agendaDays.map(day=>{const items=calendarMap.get(day)||[];return <section key={day} data-day={day} data-today={day===today||undefined} data-selected={day===selectedDay||undefined}><header><strong>{groupLabel(day,today)}</strong><span>{items.length}</span></header>{items.map(item=><ItemRow key={item.id} item={item} inspect={inspect} today={today} project={item.kind==='task'?projectFor(item):undefined}/>)}{!items.length?<div className="mai-upcoming-day-panel-empty">Nenhum item neste dia.</div>:null}</section>})}</div>
       </aside>
       {mobileDay?<div className="mai-upcoming-mobile-day-layer" role="presentation" onClick={()=>setMobileDay(null)}><section className="mai-upcoming-mobile-day-sheet" role="dialog" aria-modal="true" aria-label={`Itens de ${formatDay(mobileDay)}`} onClick={event=>event.stopPropagation()}>
         <header><div><small>{mobileWeekday}</small><strong>{mobileDay===today?'Hoje':formatDay(mobileDay)}</strong></div><button aria-label="Fechar" onClick={()=>setMobileDay(null)}>×</button></header>
