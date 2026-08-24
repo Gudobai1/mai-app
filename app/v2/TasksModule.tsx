@@ -6,6 +6,7 @@ import type { AppView, Row, TaskModuleScope } from './app-types'
 import { MaiIcon } from './MaiIcons'
 import { MinimalTaskWorkspace } from './MinimalTaskWorkspace'
 import { TaskDateView } from './TaskDateView'
+import { TaskKanban } from './TaskKanban'
 import type { TaskWorkspaceView } from './UnifiedTasks'
 
 const rows = (value: unknown): Row[] => Array.isArray(value) ? value as Row[] : []
@@ -37,6 +38,25 @@ export function TasksModule(props: Props) {
   const inboxCount = openTasks.filter(task => String(task.projeto_id || 'entrada') === 'entrada').length
   const todayCount = openTasks.filter(task => dateKey(task.data_vencimento) === props.today).length
   const upcomingCount = openTasks.filter(task => dateKey(task.data_vencimento) > props.today).length
+  const moduleControls = props.state.configs.moduleControls && typeof props.state.configs.moduleControls === 'object' ? props.state.configs.moduleControls as Record<string, Row> : {}
+  const taskControl = moduleControls.tasks || {}
+  const taskLayout = taskControl.layout === 'kanban' ? 'kanban' : 'list'
+
+  function setTaskLayout(layout: 'list' | 'kanban') {
+    props.commit(current => {
+      const controls = current.configs.moduleControls && typeof current.configs.moduleControls === 'object' ? current.configs.moduleControls as Record<string, Row> : {}
+      return {
+        ...current,
+        configs: {
+          ...current.configs,
+          moduleControls: {
+            ...controls,
+            tasks: { ...(controls.tasks || {}), layout },
+          },
+        },
+      }
+    })
+  }
 
   return <div className="mai-v4-tasks-module">
     <header className="mai-v4-tasks-module-head">
@@ -45,7 +65,19 @@ export function TasksModule(props: Props) {
 
     <div className="mai-v4-task-project-layout">
       <main className="mai-v4-task-main">
-        {projectScope ? <MinimalTaskWorkspace
+        <div className="mai-task-layout-switch" role="group" aria-label="Visualização das tarefas">
+          <button type="button" data-active={taskLayout === 'list'} onClick={() => setTaskLayout('list')}><span className="material-symbols-rounded">view_list</span><span>Lista</span></button>
+          <button type="button" data-active={taskLayout === 'kanban'} onClick={() => setTaskLayout('kanban')}><span className="material-symbols-rounded">view_kanban</span><span>Kanban</span></button>
+        </div>
+
+        {taskLayout === 'kanban' ? <TaskKanban
+          state={props.state}
+          today={props.today}
+          scope={props.scope}
+          commit={props.commit}
+          inspect={props.inspect}
+          selectedId={props.selectedId}
+        /> : projectScope ? <MinimalTaskWorkspace
           state={props.state}
           today={props.today}
           view={workspaceView}
