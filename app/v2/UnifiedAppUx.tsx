@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { MaiState } from '../../lib/v2/state'
-import { AppKanban } from './AppKanban'
 import { AppSettingsDrawer } from './AppSettingsDrawer'
 import { AppTopBar } from './AppTopBar'
 import type { AppView, TaskModuleScope } from './app-types'
@@ -13,6 +12,7 @@ import { FinanceV4 } from './FinanceV4'
 import { GoalsV4 } from './GoalsV4'
 import { HabitsV4 } from './HabitsV4'
 import { HealthQuickAddDrawer } from './HealthQuickAddDrawer'
+import { ManualKanban } from './ManualKanban'
 import { MinimalAreas, type SecondaryView } from './MinimalAreas'
 import { MobileBottomNav } from './MobileBottomNav'
 import { NotesV4 } from './NotesV4'
@@ -175,6 +175,7 @@ const scopeFromLegacy = (value: unknown): TaskModuleScope => {
 export function UnifiedAppUx() {
   const runtime = useMaiRuntime()
   const restoredView = useRef(false)
+  const cleanedLegacyKanban = useRef(false)
   const [view, setView] = useState<AppView>('today')
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
@@ -191,17 +192,9 @@ export function UnifiedAppUx() {
   const advanced = runtime.state.configs.advancedAreas && typeof runtime.state.configs.advancedAreas === 'object' ? runtime.state.configs.advancedAreas as Record<string,boolean> : {}
   const viewState = useMemo(() => filteredStateForView(runtime.state, view, runtime.today), [runtime.state, view, runtime.today])
   const currentModuleFilters = moduleFilterMap(runtime.state)[String(view)] || {}
-  const currentModuleControl = moduleControlMap(runtime.state)[String(view)] || {}
-  const globalKanban = view !== 'tasks' && view !== 'home' && view !== 'inbox' && !String(view).startsWith('project:') && currentModuleControl.layout === 'kanban'
+  const todayControl = moduleControlMap(runtime.state).today || {}
+  const todayKanban = view === 'today' && todayControl.layout === 'kanban'
   const fileKind = String(currentModuleFilters.kind || 'all')
-  const kanbanState = useMemo(() => {
-    if (view !== 'files' || fileKind === 'all') return viewState
-    const items = rows(viewState.drive?.items).filter(item => {
-      const folder = item.tipo === 'folder' || item.mimeType === 'application/vnd.google-apps.folder'
-      return fileKind === 'folder' ? folder : !folder
-    })
-    return { ...viewState, drive:{ ...viewState.drive, items } }
-  }, [viewState, view, fileKind])
 
   useEffect(() => {
     let active = true
@@ -213,15 +206,18 @@ export function UnifiedAppUx() {
   }, [])
 
   useEffect(() => {
-    if (!runtime.ready || view !== 'files' || !globalKanban) return
-    let active = true
-    runtime.googleRpc('getDriveContent', ['root','meudrive']).then(response => {
-      if (!active || !response || typeof response !== 'object') return
-      const items = rows((response as Row).items)
-      runtime.commit(current => ({ ...current, drive:{ ...current.drive, items } }))
-    }).catch(() => {})
-    return () => { active = false }
-  }, [runtime.ready, view, globalKanban])
+    if (!runtime.ready || cleanedLegacyKanban.current) return
+    cleanedLegacyKanban.current = true
+    const controls = moduleControlMap(runtime.state)
+    let changed = false
+    const next = Object.fromEntries(Object.entries(controls).map(([key,value]) => {
+      if (key === 'today' || key === 'tasks' || !Object.prototype.hasOwnProperty.call(value,'layout')) return [key,value]
+      const { layout: _layout, ...rest } = value
+      changed = true
+      return [key,rest]
+    }))
+    if (changed) runtime.commit(current => ({ ...current, configs:{ ...current.configs, moduleControls:next } }))
+  }, [runtime.ready])
 
   useEffect(() => {
     if (!runtime.ready || restoredView.current) return
@@ -262,11 +258,10 @@ export function UnifiedAppUx() {
     runtime.commit(current => ({ ...current, configs: { ...current.configs, lastView: 'tasks', taskModuleScope: scope } }))
   }
 
-  function setCurrentLayout(layout: 'normal' | 'kanban') {
+  function setTodayLayout(layout: 'normal' | 'kanban') {
     runtime.commit(current => {
       const controls = moduleControlMap(current)
-      const key = String(view)
-      return { ...current, configs:{ ...current.configs, moduleControls:{ ...controls, [key]:{ ...(controls[key] || {}), layout } } } }
+      return { ...current, configs:{ ...current.configs, moduleControls:{ ...controls, today:{ ...(controls.today || {}), layout } } } }
     })
   }
 
@@ -320,9 +315,9 @@ export function UnifiedAppUx() {
     <main className={`${styles.main} mai-v3-main`}>
       <div className={`${styles.workspace} mai-v3-workspace`}>
         {runtime.ready ? <AppTopBar state={runtime.state} today={runtime.today} view={view} taskScope={taskScope} commit={runtime.commit} onTaskScopeChange={setTaskScope} onSettings={() => setSettingsOpen(true)} /> : null}
-        {runtime.ready && view !== 'tasks' && view !== 'home' && view !== 'inbox' && !String(view).startsWith('project:') ? <div className="mai-task-layout-switch mai-global-layout-switch" role="group" aria-label="Visualização do módulo"><button type="button" data-active={!globalKanban} onClick={() => setCurrentLayout('normal')}><span className="material-symbols-rounded">view_list</span><span>Normal</span></button><button type="button" data-active={globalKanban} onClick={() => setCurrentLayout('kanban')}><span className="material-symbols-rounded">view_kanban</span><span>Kanban</span></button></div> : null}
-        {!runtime.ready ? <div className={styles.loadingState}>Carregando seu MAI…</div> : globalKanban ? <AppKanban view={view as any} state={kanbanState} today={runtime.today} commit={runtime.commit} inspect={setSelected}/> : <>
-          {view === 'today' ? <TodayV4 state={viewState} today={runtime.today} commit={runtime.commit} navigate={navigate} inspect={setSelected} onSearch={() => setSearchOpen(true)} onMore={() => setSettingsOpen(true)}/> : null}
+        {runtime.ready && view === 'today' ? <div className="mai-task-layout-switch mai-global-layout-switch" role="group" aria-label="Visualização do Hoje"><button type="button" data-active={!todayKanban} onClick={() => setTodayLayout('normal')}><span className="material-symbols-rounded">view_list</span><span>Normal</span></button><button type="button" data-active={todayKanban} onClick={() => setTodayLayout('kanban')}><span className="material-symbols-rounded">view_kanban</span><span>Kanban</span></button></div> : null}
+        {!runtime.ready ? <div className={styles.loadingState}>Carregando seu MAI…</div> : <>
+          {view === 'today' ? todayKanban ? <ManualKanban mode="today" state={viewState} today={runtime.today} commit={runtime.commit} inspect={setSelected} selectedId={selected?.sourceId || ''}/> : <TodayV4 state={viewState} today={runtime.today} commit={runtime.commit} navigate={navigate} inspect={setSelected} onSearch={() => setSearchOpen(true)} onMore={() => setSettingsOpen(true)}/> : null}
           {view === 'upcoming' ? <UpcomingV4 state={viewState} today={runtime.today} commit={runtime.commit} inspect={setSelected}/> : null}
           {view === 'completed' ? <CompletedV4 state={viewState} today={runtime.today} commit={runtime.commit} inspect={setSelected}/> : null}
           {view === 'tasks' ? <TasksModule
