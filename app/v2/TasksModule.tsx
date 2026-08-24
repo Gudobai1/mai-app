@@ -37,8 +37,10 @@ export function TasksModule(props: Props) {
   const inboxCount = openTasks.filter(task => String(task.projeto_id || 'entrada') === 'entrada').length
   const todayCount = openTasks.filter(task => dateKey(task.data_vencimento) === props.today).length
   const upcomingCount = openTasks.filter(task => dateKey(task.data_vencimento) > props.today).length
+  const controls = props.state.configs.moduleControls && typeof props.state.configs.moduleControls === 'object' ? props.state.configs.moduleControls as Record<string, Row> : {}
+  const kanban = controls.tasks?.layout === 'kanban'
 
-  return <div className="mai-v4-tasks-module">
+  return <div className={`mai-v4-tasks-module${kanban ? ' mai-v4-tasks-kanban' : ''}`}>
     <header className="mai-v4-tasks-module-head">
       <div><h1>Tarefas</h1><p>Entrada, datas e projetos no mesmo lugar.</p></div>
     </header>
