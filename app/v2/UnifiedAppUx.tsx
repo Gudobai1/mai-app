@@ -194,6 +194,14 @@ export function UnifiedAppUx() {
   const currentModuleControl = moduleControlMap(runtime.state)[String(view)] || {}
   const globalKanban = view !== 'tasks' && view !== 'home' && view !== 'inbox' && !String(view).startsWith('project:') && currentModuleControl.layout === 'kanban'
   const fileKind = String(currentModuleFilters.kind || 'all')
+  const kanbanState = useMemo(() => {
+    if (view !== 'files' || fileKind === 'all') return viewState
+    const items = rows(viewState.drive?.items).filter(item => {
+      const folder = item.tipo === 'folder' || item.mimeType === 'application/vnd.google-apps.folder'
+      return fileKind === 'folder' ? folder : !folder
+    })
+    return { ...viewState, drive:{ ...viewState.drive, items } }
+  }, [viewState, view, fileKind])
 
   useEffect(() => {
     let active = true
@@ -203,6 +211,17 @@ export function UnifiedAppUx() {
       .catch(() => {})
     return () => { active = false }
   }, [])
+
+  useEffect(() => {
+    if (!runtime.ready || view !== 'files' || !globalKanban) return
+    let active = true
+    runtime.googleRpc('getDriveContent', ['root','meudrive']).then(response => {
+      if (!active || !response || typeof response !== 'object') return
+      const items = rows((response as Row).items)
+      runtime.commit(current => ({ ...current, drive:{ ...current.drive, items } }))
+    }).catch(() => {})
+    return () => { active = false }
+  }, [runtime.ready, view, globalKanban])
 
   useEffect(() => {
     if (!runtime.ready || restoredView.current) return
@@ -241,6 +260,14 @@ export function UnifiedAppUx() {
     setSidebarOpen(false)
     setSelected(null)
     runtime.commit(current => ({ ...current, configs: { ...current.configs, lastView: 'tasks', taskModuleScope: scope } }))
+  }
+
+  function setCurrentLayout(layout: 'normal' | 'kanban') {
+    runtime.commit(current => {
+      const controls = moduleControlMap(current)
+      const key = String(view)
+      return { ...current, configs:{ ...current.configs, moduleControls:{ ...controls, [key]:{ ...(controls[key] || {}), layout } } } }
+    })
   }
 
   function navigate(next: AppView) {
@@ -293,7 +320,8 @@ export function UnifiedAppUx() {
     <main className={`${styles.main} mai-v3-main`}>
       <div className={`${styles.workspace} mai-v3-workspace`}>
         {runtime.ready ? <AppTopBar state={runtime.state} today={runtime.today} view={view} taskScope={taskScope} commit={runtime.commit} onTaskScopeChange={setTaskScope} onSettings={() => setSettingsOpen(true)} /> : null}
-        {!runtime.ready ? <div className={styles.loadingState}>Carregando seu MAI…</div> : globalKanban ? <AppKanban view={view as any} state={viewState} today={runtime.today} commit={runtime.commit} inspect={setSelected}/> : <>
+        {runtime.ready && view !== 'tasks' && view !== 'home' && view !== 'inbox' && !String(view).startsWith('project:') ? <div className="mai-task-layout-switch mai-global-layout-switch" role="group" aria-label="Visualização do módulo"><button type="button" data-active={!globalKanban} onClick={() => setCurrentLayout('normal')}><span className="material-symbols-rounded">view_list</span><span>Normal</span></button><button type="button" data-active={globalKanban} onClick={() => setCurrentLayout('kanban')}><span className="material-symbols-rounded">view_kanban</span><span>Kanban</span></button></div> : null}
+        {!runtime.ready ? <div className={styles.loadingState}>Carregando seu MAI…</div> : globalKanban ? <AppKanban view={view as any} state={kanbanState} today={runtime.today} commit={runtime.commit} inspect={setSelected}/> : <>
           {view === 'today' ? <TodayV4 state={viewState} today={runtime.today} commit={runtime.commit} navigate={navigate} inspect={setSelected} onSearch={() => setSearchOpen(true)} onMore={() => setSettingsOpen(true)}/> : null}
           {view === 'upcoming' ? <UpcomingV4 state={viewState} today={runtime.today} commit={runtime.commit} inspect={setSelected}/> : null}
           {view === 'completed' ? <CompletedV4 state={viewState} today={runtime.today} commit={runtime.commit} inspect={setSelected}/> : null}
