@@ -4,9 +4,9 @@ import type { MaiState } from '../../lib/v2/state'
 import type { InspectableItem } from './ContextDrawer'
 import type { AppView, Row, TaskModuleScope } from './app-types'
 import { MaiIcon } from './MaiIcons'
+import { ManualKanban } from './ManualKanban'
 import { MinimalTaskWorkspace } from './MinimalTaskWorkspace'
 import { TaskDateView } from './TaskDateView'
-import { TaskKanban } from './TaskKanban'
 import type { TaskWorkspaceView } from './UnifiedTasks'
 
 const rows = (value: unknown): Row[] => Array.isArray(value) ? value as Row[] : []
@@ -70,7 +70,8 @@ export function TasksModule(props: Props) {
           <button type="button" data-active={taskLayout === 'kanban'} onClick={() => setTaskLayout('kanban')}><span className="material-symbols-rounded">view_kanban</span><span>Kanban</span></button>
         </div>
 
-        {taskLayout === 'kanban' ? <TaskKanban
+        {taskLayout === 'kanban' ? <ManualKanban
+          mode="tasks"
           state={props.state}
           today={props.today}
           scope={props.scope}
