@@ -1,0 +1,46 @@
+/* Hábitos — visualização avançada como padrão, com linguagem minimalista do MAI. */
+.mai-habits-pro{min-width:0;display:grid;gap:18px}
+.mai-habits-pro-head{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;flex-wrap:wrap;padding:2px 0 4px}
+.mai-habits-pro-head>div{min-width:0}
+.mai-habits-pro-head h1{margin:0;font-size:24px;line-height:1.15;font-weight:700;color:var(--v3-text,#303630)}
+.mai-habits-pro-head p{margin:5px 0 0;font-size:13px;color:var(--v3-muted,#7a8279)}
+.mai-habits-pro-head>button{min-height:34px!important;padding:0 12px!important;border-radius:9px!important;box-shadow:none!important}
+
+.mai-habits-pro-week-nav{margin:0!important;padding:0!important;min-height:36px!important;border:0!important;background:transparent!important;box-shadow:none!important}
+.mai-habits-pro-week-nav>button{border:0!important;background:transparent!important;box-shadow:none!important}
+.mai-habits-pro-week-nav>button:first-child,.mai-habits-pro-week-nav>button:last-child{width:34px!important;height:34px!important;border-radius:8px!important}
+.mai-habits-pro-week-nav>button:first-child:hover,.mai-habits-pro-week-nav>button:last-child:hover{background:var(--v3-soft,#f4f6f2)!important}
+
+.mai-habits-pro-grid-scroll{min-width:0;overflow-x:auto;padding-bottom:8px;scrollbar-width:thin}
+.mai-habits-pro-grid{min-width:720px!important;border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;overflow:visible!important}
+.mai-habits-pro-grid>header{background:transparent!important;border:0!important;padding-left:0!important;padding-right:0!important}
+.mai-habits-pro-row{background:transparent!important;border:0!important;border-radius:0!important;box-shadow:none!important;padding-left:0!important;padding-right:0!important}
+.mai-habits-pro-row:hover{background:color-mix(in srgb,var(--v3-soft,#f4f6f2) 58%,transparent)!important}
+.mai-habits-pro-row button{box-shadow:none!important}
+
+.mai-habits-pro-modal{box-shadow:0 18px 50px rgba(26,32,27,.12)!important}
+.mai-habits-pro-form{gap:14px!important}
+.mai-habits-pro-form input,.mai-habits-pro-form textarea,.mai-habits-pro-form select{box-shadow:none!important}
+
+.mai-habits-frequency-modes{display:flex;gap:6px;flex-wrap:wrap;margin:2px 0 10px}
+.mai-habits-frequency-modes>button{min-height:34px;padding:0 11px;border:0;border-radius:9px;background:var(--v3-soft,#f4f6f2);color:var(--v3-muted,#697069);font:inherit;font-size:12px;font-weight:650;cursor:pointer}
+.mai-habits-frequency-modes>button[data-active="true"]{background:var(--v3-accent-soft,#e7efe4);color:var(--v3-accent,#647c5f)}
+.mai-habits-interval-fields{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px;margin-top:8px}
+.mai-habits-interval-fields label{display:grid;gap:6px;min-width:0;font-size:12px;color:var(--v3-muted,#697069)}
+.mai-habits-interval-fields label>div{display:flex;align-items:center;gap:8px}
+.mai-habits-interval-fields input{min-width:0;width:100%}
+
+html[data-mai-theme="dark"] .mai-habits-pro-week-nav>button:first-child:hover,
+html[data-mai-theme="dark"] .mai-habits-pro-week-nav>button:last-child:hover,
+html[data-mai-theme="dark"] .mai-habits-pro-row:hover{background:var(--v3-sidebar)!important}
+html[data-mai-theme="dark"] .mai-habits-frequency-modes>button{background:var(--v3-sidebar);color:var(--v3-muted)}
+html[data-mai-theme="dark"] .mai-habits-frequency-modes>button[data-active="true"]{background:var(--v3-accent-soft);color:var(--v3-text)}
+
+@media(max-width:700px){
+  .mai-habits-pro{gap:14px}
+  .mai-habits-pro-head{align-items:center}
+  .mai-habits-pro-head h1{font-size:21px}
+  .mai-habits-pro-head p{display:none}
+  .mai-habits-pro-grid{min-width:680px!important}
+  .mai-habits-interval-fields{grid-template-columns:1fr}
+}
