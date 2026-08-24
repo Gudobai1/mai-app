@@ -143,7 +143,7 @@ export function HabitsV4({ state, today, commit, createRequest }: { state:MaiSta
   const draftInterval=Math.max(1,Number(draftRepeat.match(/^intervalo:(\d+)$/)?.[1]||2))
 
   return <div className="mai-habits-pro">
-    <div className="mai-habits-pro-head"><div><h1>Hábitos</h1><p>Acompanhe sua rotina na semana e abra os detalhes quando precisar.</p></div><button className={styles.primaryButton} onClick={()=>setDraft(newDraft())}>＋ Hábito</button></div>
+    <div className="mai-habits-pro-head"><div><h1>Hábitos</h1><p>Acompanhe sua rotina na semana e abra os detalhes quando precisar.</p></div></div>
 
     <div className={`${styles.weekNavigator} mai-habits-pro-week-nav`}><button onClick={()=>setWeekAnchor(moveDate(weekAnchor,-7))}>‹</button><button onClick={()=>setWeekAnchor(today)}><strong>{monday===moveDate(today,-(new Date(`${today}T12:00:00`).getDay()===0?6:new Date(`${today}T12:00:00`).getDay()-1))?'Esta semana':`${dateLabel(monday)} — ${dateLabel(week[6])}`}</strong><small>Voltar para a semana atual</small></button><button onClick={()=>setWeekAnchor(moveDate(weekAnchor,7))}>›</button></div>
 
