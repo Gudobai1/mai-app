@@ -69,7 +69,7 @@ export function TasksModule(props: Props) {
         <div className="mai-v4-project-list mai-v4-task-scope-list">
           <div className="mai-v4-project-item-wrap">
             <button className="mai-v4-project-item" data-active={props.scope === 'entrada'} onClick={() => props.onScopeChange('entrada')}>
-              <i className="mai-v4-project-icon mai-v4-project-inbox"><MaiIcon name="inbox" size={13}/></i>
+              <i className="mai-v4-project-icon mai-v4-task-scope-icon"><MaiIcon name="inbox" size={13}/></i>
               <span><strong>Entrada</strong><small>{inboxCount} aberta{inboxCount === 1 ? '' : 's'}</small></span>
             </button>
           </div>
