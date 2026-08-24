@@ -33,6 +33,7 @@ import './mai-upcoming-v3.css'
 import './mai-mobile-safe-zone.css'
 import './mai-overlay-layer-fix.css'
 import './mai-kanban.css'
+import './mai-kanban-global.css'
 import './mai-dark-mode-v2.css'
 
 export const metadata: Metadata = {
