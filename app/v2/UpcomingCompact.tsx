@@ -149,34 +149,15 @@ export function UpcomingCompact({state,today,inspect,commit}:Props){
 
   const overdueTasks=useMemo(()=>{
     if(!filters.tasks)return[] as PlannerItem[]
-    return state.tasks.filter(task=>{
-      const day=String(task.data_vencimento||'').slice(0,10)
-      if(task.concluida||task.ocultar_agenda||!day||day>=today)return false
-      if(filters.project!=='all'&&String(task.projeto_id||'entrada')!==filters.project)return false
-      if(filters.priority!=='all'&&String(Number(task.prioridade||4))!==filters.priority)return false
-      return true
-    }).map(task=>{
-      const day=String(task.data_vencimento||'').slice(0,10)
-      const project=projectMap.get(String(task.projeto_id||'entrada'))
-      const priority=Math.max(1,Math.min(4,Number(task.prioridade||4)))
-      return {
-        id:`overdue:${task.id}`,
-        sourceId:task.id,
-        kind:'task' as const,
-        date:day,
-        time:String(task.data_vencimento||'').includes('T')?String(task.data_vencimento).slice(11,16):'',
-        title:task.titulo,
-        subtitle:String(project?.nome||project?.name||(task.projeto_id==='entrada'?'Entrada':'Tarefa')),
-        color:['#c85b52','#c28a3d','#7c9274','#b8beb7'][priority-1],
-        completed:false,
-        recurring:Boolean(task.repeticao),
-        raw:task as Row,
-      } satisfies PlannerItem
-    }).sort((a,b)=>{
-      if(sortMode==='priority'||sortMode==='project'||sortMode==='name'||sortMode==='title')return compareItems(a,b)
-      return a.date.localeCompare(b.date)||(a.time||'99:99').localeCompare(b.time||'99:99')||a.title.localeCompare(b.title,'pt-BR',{sensitivity:'base'})
-    })
-  },[state.tasks,today,filters.tasks,filters.project,filters.priority,sortMode,projectMap])
+    const start=addDays(today,-filters.pastDays)
+    const end=addDays(today,-1)
+    return filterAndOccurrences(plannerItems(state,start,end))
+      .filter(item=>item.kind==='task'&&item.date<today)
+      .sort((a,b)=>{
+        if(sortMode==='priority'||sortMode==='project'||sortMode==='name'||sortMode==='title')return compareItems(a,b)
+        return a.date.localeCompare(b.date)||(a.time||'99:99').localeCompare(b.time||'99:99')||a.title.localeCompare(b.title,'pt-BR',{sensitivity:'base'})
+      })
+  },[state,today,filters.tasks,filters.project,filters.priority,filters.pastDays,savedFilters.occurrenceMode,sortMode])
 
   const listItems=useMemo(()=>{
     const start=addDays(today,-filters.pastDays)
