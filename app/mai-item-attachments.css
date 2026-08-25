@@ -1,0 +1,98 @@
+.mai-item-attachments{
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+  padding:16px 0 4px;
+  background:transparent;
+  border:0;
+}
+.mai-item-attachments>header{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  min-height:28px;
+}
+.mai-item-attachments>header>div{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  min-width:0;
+}
+.mai-item-attachments>header .material-symbols-rounded{
+  font-size:18px;
+  color:var(--v3-muted,#7a817b);
+}
+.mai-item-attachments>header strong{
+  font-size:13px;
+  font-weight:650;
+  color:var(--v3-text,#202225);
+}
+.mai-item-attachments>header small{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-width:20px;
+  height:20px;
+  padding:0 6px;
+  border-radius:999px;
+  background:var(--v3-hover,rgba(0,0,0,.05));
+  color:var(--v3-muted,#7a817b);
+  font-size:11px;
+}
+.mai-item-attachments-add{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  cursor:pointer;
+  color:var(--v3-accent,#687d62);
+  font-size:12px;
+  font-weight:600;
+  padding:6px 8px;
+  border-radius:8px;
+}
+.mai-item-attachments-add:hover{background:var(--v3-hover,rgba(0,0,0,.05))}
+.mai-item-attachments-add[data-busy]{opacity:.65;pointer-events:none}
+.mai-item-attachments-list{display:flex;flex-direction:column;gap:2px}
+.mai-item-attachments-list article{
+  display:grid;
+  grid-template-columns:20px minmax(0,1fr) 28px;
+  align-items:center;
+  gap:8px;
+  min-height:36px;
+  padding:3px 2px;
+  border:0;
+  background:transparent;
+  border-radius:8px;
+}
+.mai-item-attachments-list article:hover{background:var(--v3-hover,rgba(0,0,0,.04))}
+.mai-item-attachments-file-icon{font-size:18px;color:var(--v3-muted,#7a817b)}
+.mai-item-attachments-list a,.mai-item-attachments-list article>span:not(.material-symbols-rounded){
+  min-width:0;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  color:var(--v3-text,#202225);
+  text-decoration:none;
+  font-size:13px;
+}
+.mai-item-attachments-list a:hover{text-decoration:underline}
+.mai-item-attachments-list button{
+  width:28px;
+  height:28px;
+  display:grid;
+  place-items:center;
+  border:0;
+  background:transparent;
+  border-radius:7px;
+  color:var(--v3-muted,#7a817b);
+  cursor:pointer;
+}
+.mai-item-attachments-list button:hover{background:var(--v3-hover,rgba(0,0,0,.06));color:var(--v3-text,#202225)}
+.mai-item-attachments-list button .material-symbols-rounded{font-size:17px}
+.mai-item-attachments-empty{color:var(--v3-muted,#7a817b);font-size:12px}
+.mai-item-attachments-error{margin:0;color:var(--mai-danger,#c85b52);font-size:12px}
+.mai-item-attachments-compact{padding-top:10px}
+
+[data-theme="dark"] .mai-item-attachments,
+html.dark .mai-item-attachments{background:transparent}
