@@ -128,7 +128,8 @@ async function handler(request:NextRequest){
       if(!response.ok)throw new Error(data.error?.message||'Erro ao mover item');payload={ok:true,item:item(data)}
     } else if(method==='copy'){
       const sourceIds=(Array.isArray(args[0])?args[0]:[args[0]]).map(String).filter(Boolean);const destination=String(args[1]||'root');const copied=[]
-      for(const id of sourceIds)copied.push(item(await copyTree(g,id,destination));payload={ok:true,items:copied}
+      for(const id of sourceIds)copied.push(item(await copyTree(g,id,destination)))
+      payload={ok:true,items:copied}
     } else if(method==='trash'||method==='restore'){
       const ids=(Array.isArray(args[0])?args[0]:[args[0]]).map(String).filter(Boolean);for(const id of ids){const response=await g.fetch(`https://www.googleapis.com/drive/v3/files/${q(id)}?supportsAllDrives=true`,{method:'PATCH',headers:{'content-type':'application/json'},body:JSON.stringify({trashed:method==='trash'})});if(!response.ok){const data=await response.json().catch(()=>({}));throw new Error(data.error?.message||'Erro ao atualizar lixeira')}}payload={ok:true}
     } else if(method==='delete'){
