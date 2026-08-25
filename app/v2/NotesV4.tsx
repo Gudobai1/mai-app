@@ -28,16 +28,7 @@ const defaultGoogleRpc: Rpc = async (method, args = []) => {
 }
 
 function newNote(): Row {
-  return {
-    titulo: '',
-    conteudo: '',
-    ativo: true,
-    arquivado: false,
-    fixado: false,
-    tamanho: 'normal',
-    anexos: [],
-    ordem: Date.now(),
-  }
+  return { titulo: '', conteudo: '', ativo: true, arquivado: false, fixado: false, tamanho: 'normal', anexos: [], ordem: Date.now() }
 }
 
 function RichNoteEditor({ value, onChange }: { value: string; onChange: (value: string) => void }) {
@@ -94,8 +85,6 @@ export function NotesV4({ state, commit, createRequest, googleRpc = defaultGoogl
     return !search || `${note.titulo || ''} ${cleanText(note.conteudo)}`.toLocaleLowerCase('pt-BR').includes(search)
   }).sort((a, b) => Number(Boolean(b.fixado)) - Number(Boolean(a.fixado)) || Number(a.ordem || 0) - Number(b.ordem || 0) || String(b.data || '').localeCompare(String(a.data || '')))
 
-  const pinnedCount = visible.filter(note => note.fixado).length
-
   function normalized(note: Row): Row {
     return {
       ...note,
@@ -114,17 +103,9 @@ export function NotesV4({ state, commit, createRequest, googleRpc = defaultGoogl
   function save(event: FormEvent) {
     event.preventDefault()
     if (!draft) return
-    if (!String(draft.titulo || '').trim() && !cleanText(draft.conteudo) && !rows(draft.anexos).length) {
-      setDraft(null)
-      return
-    }
+    if (!String(draft.titulo || '').trim() && !cleanText(draft.conteudo) && !rows(draft.anexos).length) { setDraft(null); return }
     const next = normalized(draft)
-    commit(current => ({
-      ...current,
-      notes: rows(current.notes).some(note => String(note.id) === String(next.id))
-        ? rows(current.notes).map(note => String(note.id) === String(next.id) ? next : note)
-        : [next, ...rows(current.notes)],
-    }))
+    commit(current => ({ ...current, notes: rows(current.notes).some(note => String(note.id) === String(next.id)) ? rows(current.notes).map(note => String(note.id) === String(next.id) ? next : note) : [next, ...rows(current.notes)] }))
     setDraft(null)
   }
 
@@ -132,15 +113,13 @@ export function NotesV4({ state, commit, createRequest, googleRpc = defaultGoogl
     if (kind === 'delete' && !confirm('Excluir definitivamente esta nota e seus vínculos?')) return
     commit(current => ({
       ...current,
-      notes: kind === 'delete'
-        ? rows(current.notes).filter(item => String(item.id) !== String(note.id))
-        : rows(current.notes).map(item => String(item.id) === String(note.id) ? {
-          ...item,
-          fixado: kind === 'pin' ? !item.fixado : item.fixado,
-          arquivado: kind === 'archive' ? true : kind === 'restore' ? false : item.arquivado,
-          ativo: kind === 'trash' ? false : kind === 'restore' ? true : item.ativo,
-          data: new Date().toISOString(),
-        } : item),
+      notes: kind === 'delete' ? rows(current.notes).filter(item => String(item.id) !== String(note.id)) : rows(current.notes).map(item => String(item.id) === String(note.id) ? {
+        ...item,
+        fixado: kind === 'pin' ? !item.fixado : item.fixado,
+        arquivado: kind === 'archive' ? true : kind === 'restore' ? false : item.arquivado,
+        ativo: kind === 'trash' ? false : kind === 'restore' ? true : item.ativo,
+        data: new Date().toISOString(),
+      } : item),
     }))
     if (draft && String(draft.id) === String(note.id)) setDraft(null)
   }
@@ -183,9 +162,7 @@ export function NotesV4({ state, commit, createRequest, googleRpc = defaultGoogl
       const response = await googleRpc('salvarAnexoDrive', [data, file.name, file.type])
       const item = response?.item || response
       setDraft(current => current ? { ...current, anexos: [...rows(current.anexos), { idDrive: item.id, nome: item.name || item.nome || file.name, tipo: item.tipo || file.type, url: item.url || item.webViewLink || '' }] } : current)
-    } finally {
-      setUploading(false)
-    }
+    } finally { setUploading(false) }
   }
 
   async function removeAttachment(index: number) {
@@ -195,10 +172,8 @@ export function NotesV4({ state, commit, createRequest, googleRpc = defaultGoogl
     setDraft({ ...draft, anexos: rows(draft.anexos).filter((_, position) => position !== index) })
   }
 
-  function changeTab(next: Tab) {
-    setTab(next)
-    setDraft(null)
-  }
+  function changeTab(next: Tab) { setTab(next); setDraft(null) }
+  const contextLabel = (note: Row) => tab === 'archive' ? 'Arquivada' : tab === 'trash' ? 'Na lixeira' : note.fixado ? 'Fixada' : 'Nota'
 
   return <div className="mai-notes-v4">
     <header className="mai-notes-v4-head"><div><h1>Notas</h1><p>Ideias, referências e documentos em um só lugar.</p></div></header>
@@ -208,15 +183,18 @@ export function NotesV4({ state, commit, createRequest, googleRpc = defaultGoogl
       <label className="mai-notes-v4-search"><span className="material-symbols-rounded">search</span><input value={query} onChange={event => setQuery(event.target.value)} placeholder="Buscar nas notas" />{query ? <button type="button" aria-label="Limpar busca" onClick={() => setQuery('')}><span className="material-symbols-rounded">close</span></button> : null}</label>
     </div>
 
-    {tab === 'active' && pinnedCount > 0 ? <div className="mai-notes-v4-section-label"><span className="material-symbols-rounded">keep</span><span>Fixadas</span><b>{pinnedCount}</b></div> : null}
-
-    <div className="mai-v3-note-list mai-notes-v4-grid" data-tab={tab}>
-      {visible.map((note, index) => <article className="mai-notes-v4-card" data-size={String(note.tamanho || 'normal')} data-pinned={note.fixado === true || undefined} key={String(note.id)} draggable={tab === 'active'} onDragStart={event => event.dataTransfer.setData('text/note', String(note.id))} onDragOver={event => { if (tab === 'active') event.preventDefault() }} onDrop={event => { event.preventDefault(); reorder(event.dataTransfer.getData('text/note'), String(note.id)) }} onClick={() => setDraft({ ...note, anexos: rows(note.anexos) })}>
-        <header><div className="mai-notes-v4-card-title">{note.fixado ? <span className="material-symbols-rounded" title="Fixada">keep</span> : null}<strong>{note.titulo || 'Sem título'}</strong></div>{tab !== 'trash' ? <button type="button" className="mai-notes-v4-card-action" title={note.fixado ? 'Desfixar' : 'Fixar'} aria-label={note.fixado ? 'Desfixar nota' : 'Fixar nota'} onClick={event => { event.stopPropagation(); quickAction(note, 'pin') }}><span className="material-symbols-rounded">{note.fixado ? 'keep_off' : 'keep'}</span></button> : null}</header>
-        <p>{cleanText(note.conteudo) || 'Nota vazia'}</p>
-        <footer><span>{formatDate(note.data)}</span><span className="mai-notes-v4-card-meta">{rows(note.anexos).length ? <span title={`${rows(note.anexos).length} anexos`}><span className="material-symbols-rounded">attach_file</span>{rows(note.anexos).length}</span> : null}{note.tamanho !== 'normal' ? <span>{note.tamanho === 'largo' ? 'Larga' : 'Grande'}</span> : null}</span></footer>
-        {tab === 'active' && index === pinnedCount - 1 && pinnedCount < visible.length ? <span className="mai-notes-v4-pin-divider" aria-hidden="true" /> : null}
-      </article>)}
+    <div className="mai-v3-note-list mai-notes-v4-list" data-tab={tab}>
+      {visible.map(note => {
+        const attachments = rows(note.anexos).length
+        return <article className="mai-notes-v4-row mai-item-row-v2" key={String(note.id)} draggable={tab === 'active'} onDragStart={event => event.dataTransfer.setData('text/note', String(note.id))} onDragOver={event => { if (tab === 'active') event.preventDefault() }} onDrop={event => { event.preventDefault(); reorder(event.dataTransfer.getData('text/note'), String(note.id)) }} onClick={() => setDraft({ ...note, anexos: rows(note.anexos) })}>
+          <span className="mai-notes-v4-row-icon" aria-hidden="true"><span className="material-symbols-rounded">notes</span></span>
+          <span className="mai-item-copy-v2 mai-notes-v4-row-copy">
+            <span className="mai-item-titleline-v2"><strong>{note.titulo || 'Sem título'}</strong></span>
+            <span className="mai-item-subline-v2 mai-notes-v4-row-context"><span>{contextLabel(note)}</span><span>·</span><span>{formatDate(note.data)}</span>{attachments ? <><span>·</span><span className="mai-notes-v4-attachment-context"><span className="material-symbols-rounded">attach_file</span>{attachments} {attachments === 1 ? 'anexo' : 'anexos'}</span></> : null}</span>
+          </span>
+          {tab !== 'trash' ? <button type="button" className="mai-notes-v4-row-action" title={note.fixado ? 'Desfixar' : 'Fixar'} aria-label={note.fixado ? 'Desfixar nota' : 'Fixar nota'} onClick={event => { event.stopPropagation(); quickAction(note, 'pin') }}><span className="material-symbols-rounded">{note.fixado ? 'keep_off' : 'keep'}</span></button> : null}
+        </article>
+      })}
     </div>
 
     {!visible.length ? <div className="mai-v3-empty-line mai-notes-v4-empty">{query ? 'Nenhuma nota encontrada.' : tab === 'active' ? 'Nenhuma nota criada.' : tab === 'archive' ? 'Nenhuma nota arquivada.' : 'A lixeira está vazia.'}</div> : null}
