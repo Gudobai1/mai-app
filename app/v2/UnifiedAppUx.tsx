@@ -8,6 +8,7 @@ import type { AppView, TaskModuleScope } from './app-types'
 import { CompletedV4 } from './CompletedV4'
 import type { InspectableItem } from './ContextDrawer'
 import { ContextDrawerV2 } from './ContextDrawerV2'
+import { FilesV4 } from './FilesV4'
 import { FinanceV4 } from './FinanceV4'
 import { GoalsV4 } from './GoalsV4'
 import { HabitsV4 } from './HabitsV4'
@@ -328,7 +329,8 @@ export function UnifiedAppUx() {
           {view === 'goals' ? <GoalsV4 state={viewState} today={runtime.today} commit={runtime.commit} createRequest={areaCreateRequest} inspect={setSelected}/> : null}
           {view === 'notes' ? <NotesV4 state={viewState} today={runtime.today} commit={runtime.commit} createRequest={areaCreateRequest} inspect={setSelected}/> : null}
           {view === 'finance' ? <FinanceV4 state={viewState} today={runtime.today} commit={runtime.commit} createRequest={areaCreateRequest} inspect={setSelected}/> : null}
-          {(view === 'health' || view === 'files') ? <MinimalAreas key={view === 'files' ? `files:${fileKind}` : String(view)} view={view as SecondaryView} state={viewState} today={runtime.today} commit={runtime.commit} googleRpc={moduleGoogleRpc} createRequest={areaCreateRequest} inspect={setSelected} /> : null}
+          {view === 'health' ? <MinimalAreas key="health" view="health" state={viewState} today={runtime.today} commit={runtime.commit} googleRpc={moduleGoogleRpc} createRequest={areaCreateRequest} inspect={setSelected} /> : null}
+          {view === 'files' ? <FilesV4 state={runtime.state} commit={runtime.commit} createRequest={areaCreateRequest}/> : null}
         </>}
       </div>
     </main>
