@@ -1,9 +1,10 @@
 'use client'
 
-import { FormEvent, ReactNode, useEffect, useMemo, useRef, useState } from 'react'
+import { ReactNode, useEffect, useMemo, useRef, useState } from 'react'
 import type { MaiState } from '../../lib/v2/state'
 import type { InspectableItem } from './ContextDrawer'
 import styles from './unified.module.css'
+import { useAutosaveDraft } from './useAutosaveDraft'
 
 type Row = Record<string, any>
 type Commit = (change: (current: MaiState) => MaiState) => void
@@ -57,16 +58,17 @@ export function HabitsV4({ state, today, commit, createRequest }: { state:MaiSta
   const [reportMonth,setReportMonth]=useState(today.slice(0,7))
   const [valueDraft,setValueDraft]=useState<{habit:Row;day:string}|null>(null)
   const [value,setValue]=useState('')
+  const valueTimer=useRef<number|null>(null)
   const icons=['star','favorite','fitness_center','local_drink','menu_book','self_improvement','directions_run','bedtime','palette','code','attach_money','psychology','restaurant','cleaning_services','directions_bike','air','spa','bolt','school','monitor_heart']
 
   const monday=useMemo(()=>{const date=new Date(`${weekAnchor}T12:00:00`);const day=date.getDay();date.setDate(date.getDate()-(day===0?6:day-1));return dateKey(date)},[weekAnchor])
   const week=Array.from({length:7},(_,index)=>moveDate(monday,index))
 
-  function newDraft():Row{return {nome:'',descricao:'',meta:1,unidade:'',hora:'',cor_hex:'#718269',icone:'star',dias_semana:[0,1,2,3,4,5,6],repeticao:'diariamente',data_inicio:today,ocultar_agenda:false,ativo:true}}
+  function newDraft():Row{return {id:uid('hab'),nome:'',descricao:'',meta:1,unidade:'',hora:'',cor_hex:'#718269',icone:'star',dias_semana:[0,1,2,3,4,5,6],repeticao:'diariamente',data_inicio:today,ocultar_agenda:false,ativo:true,criado_em:new Date().toISOString(),_persisted:false}}
   function editDraft(habit:Row):Row{
     const days=normalizedDays(habit)
-    const repeat=String(habit.repeticao||'') || (days.length===7?'diariamente':`semanal:${days.join(',')}`)
-    return {...habit,dias_semana:days,repeticao:repeat,data_inicio:dateKey(habit.data_inicio||habit.criado_em)||today}
+    const repeat=String(habit.repeticao||'') || (!days.length||days.length===7?'diariamente':`semanal:${days.join(',')}`)
+    return {...habit,dias_semana:days,repeticao:repeat,data_inicio:dateKey(habit.data_inicio||habit.criado_em)||today,_persisted:true}
   }
 
   useEffect(()=>{if(createRequest?.startsWith('habits:'))setDraft(newDraft())},[createRequest,today])
@@ -83,12 +85,24 @@ export function HabitsV4({ state, today, commit, createRequest }: { state:MaiSta
     commit(current=>({...current,habitEntries:[...rows(current.habitEntries),{id:uid('hr'),habito_id:habit.id,data:day,valor:target,criado_em:new Date().toISOString()}]}))
   }
 
-  function saveValue(event:FormEvent){
-    event.preventDefault();if(!valueDraft)return
-    const amount=Number(String(value).replace(',','.'));if(!Number.isFinite(amount)||amount<0)return
-    commit(current=>({...current,habitEntries:[...rows(current.habitEntries).filter(item=>!(String(item.habito_id)===String(valueDraft.habit.id)&&dateKey(item.data)===valueDraft.day)),{id:uid('hr'),habito_id:valueDraft.habit.id,data:valueDraft.day,valor:amount,criado_em:new Date().toISOString()}]}))
-    setValueDraft(null)
+  function persistValue(target:{habit:Row;day:string}|null,rawValue:string){
+    if(!target)return
+    const amount=Number(String(rawValue).replace(',','.'));if(!Number.isFinite(amount)||amount<0)return
+    commit(current=>{
+      const existing=rows(current.habitEntries).find(item=>String(item.habito_id)===String(target.habit.id)&&dateKey(item.data)===target.day)
+      const filtered=rows(current.habitEntries).filter(item=>!(String(item.habito_id)===String(target.habit.id)&&dateKey(item.data)===target.day))
+      return {...current,habitEntries:[...filtered,{id:existing?.id||uid('hr'),habito_id:target.habit.id,data:target.day,valor:amount,criado_em:existing?.criado_em||new Date().toISOString()}]}
+    })
   }
+
+  useEffect(()=>{
+    if(!valueDraft)return
+    if(valueTimer.current)window.clearTimeout(valueTimer.current)
+    valueTimer.current=window.setTimeout(()=>persistValue(valueDraft,value),260)
+    return()=>{if(valueTimer.current)window.clearTimeout(valueTimer.current)}
+  },[valueDraft,value])
+
+  useEffect(()=>()=>{if(valueTimer.current&&valueDraft)persistValue(valueDraft,value)},[])
 
   function stats(habit:Row){
     const target=Math.max(1,Number(habit.meta||1))
@@ -104,10 +118,9 @@ export function HabitsV4({ state, today, commit, createRequest }: { state:MaiSta
     return {current,best,rate,isDone,map}
   }
 
-  function saveHabit(event:FormEvent){
-    event.preventDefault();if(!draft||!String(draft.nome||'').trim())return
-    let repeat=String(draft.repeticao||'diariamente')
-    let days=values(draft.dias_semana).map(Number).filter(value=>Number.isInteger(value)&&value>=0&&value<=6)
+  function normalizeHabit(snapshot:Row){
+    let repeat=String(snapshot.repeticao||'diariamente')
+    let days=values(snapshot.dias_semana).map(Number).filter(value=>Number.isInteger(value)&&value>=0&&value<=6)
     if(repeat==='diariamente')days=[0,1,2,3,4,5,6]
     if(repeat.startsWith('semanal:')){
       if(!days.length)days=[new Date(`${today}T12:00:00`).getDay()]
@@ -119,13 +132,21 @@ export function HabitsV4({ state, today, commit, createRequest }: { state:MaiSta
       repeat=`intervalo:${interval}`
       days=[]
     }
-    const next={...draft,id:draft.id||uid('hab'),nome:String(draft.nome).trim(),meta:Math.max(1,Number(draft.meta||1)),dias_semana:days,repeticao:repeat,data_inicio:dateKey(draft.data_inicio)||today,cor_hex:draft.cor_hex||'#718269',icone:draft.icone||'star',ativo:true,criado_em:draft.criado_em||new Date().toISOString()}
-    commit(current=>({...current,habits:rows(current.habits).some(item=>String(item.id)===String(next.id))?rows(current.habits).map(item=>String(item.id)===String(next.id)?next:item):[...rows(current.habits),next]}))
-    setDraft(null)
+    const {_persisted:_ignored,...clean}=snapshot
+    return {...clean,id:clean.id||uid('hab'),nome:String(clean.nome||'').trim(),meta:Math.max(1,Number(clean.meta||1)),dias_semana:days,repeticao:repeat,data_inicio:dateKey(clean.data_inicio)||today,cor_hex:clean.cor_hex||'#718269',icone:clean.icone||'star',ativo:true,criado_em:clean.criado_em||new Date().toISOString()}
   }
 
+  function persistHabit(snapshot:Row){
+    if(!String(snapshot.nome||'').trim())return
+    const next=normalizeHabit(snapshot)
+    commit(current=>({...current,habits:rows(current.habits).some(item=>String(item.id)===String(next.id))?rows(current.habits).map(item=>String(item.id)===String(next.id)?next:item):[...rows(current.habits),next]}))
+    if(snapshot._persisted===false)setDraft(current=>current&&String(current.id)===String(next.id)?{...current,_persisted:true}:current)
+  }
+
+  useAutosaveDraft({value:draft,identity:String(draft?.id||''),enabled:Boolean(draft),save:persistHabit})
+
   function deleteHabit(){
-    if(!draft?.id||!confirm('Excluir este hábito e todos os registros?'))return
+    if(!draft?.id||draft._persisted===false||!confirm('Excluir este hábito e todos os registros?'))return
     commit(current=>({...current,habits:rows(current.habits).filter(item=>String(item.id)!==String(draft.id)),habitEntries:rows(current.habitEntries).filter(item=>String(item.habito_id)!==String(draft.id))}))
     setDraft(null)
   }
@@ -151,13 +172,13 @@ export function HabitsV4({ state, today, commit, createRequest }: { state:MaiSta
 
     {!habits.length?<div className={styles.emptyState}><strong>Nenhum hábito criado</strong><span>Crie um hábito e ele aparecerá aqui, em Hoje e na Agenda conforme a frequência escolhida.</span></div>:null}
 
-    {draft?<Modal title={draft.id?'Configurar hábito':'Novo hábito'} subtitle="Meta, frequência, identidade e agenda" onClose={()=>setDraft(null)}><form className={`${styles.areaForm} mai-habits-pro-form`} onSubmit={saveHabit}><label className={styles.span2}><span>Nome</span><input autoFocus value={draft.nome||''} onChange={event=>setDraft({...draft,nome:event.target.value})}/></label><label><span>Meta</span><input type="number" min="1" step="0.1" value={draft.meta||1} onChange={event=>setDraft({...draft,meta:Number(event.target.value)})}/></label><label><span>Unidade</span><input value={draft.unidade||''} placeholder="copos, km, páginas…" onChange={event=>setDraft({...draft,unidade:event.target.value})}/></label><label><span>Horário</span><input type="time" value={draft.hora||''} onChange={event=>setDraft({...draft,hora:event.target.value})}/></label><label><span>Cor</span><input type="color" value={draft.cor_hex||'#718269'} onChange={event=>setDraft({...draft,cor_hex:event.target.value})}/></label>
+    {draft?<Modal title={draft._persisted===false?'Novo hábito':'Configurar hábito'} subtitle="Meta, frequência, identidade e agenda" onClose={()=>setDraft(null)}><form className={`${styles.areaForm} mai-habits-pro-form`} onSubmit={event=>event.preventDefault()}><label className={styles.span2}><span>Nome</span><input autoFocus value={draft.nome||''} onChange={event=>setDraft({...draft,nome:event.target.value})}/></label><label><span>Meta</span><input type="number" min="1" step="0.1" value={draft.meta||1} onChange={event=>setDraft({...draft,meta:Number(event.target.value)})}/></label><label><span>Unidade</span><input value={draft.unidade||''} placeholder="copos, km, páginas…" onChange={event=>setDraft({...draft,unidade:event.target.value})}/></label><label><span>Horário</span><input type="time" value={draft.hora||''} onChange={event=>setDraft({...draft,hora:event.target.value})}/></label><label><span>Cor</span><input type="color" value={draft.cor_hex||'#718269'} onChange={event=>setDraft({...draft,cor_hex:event.target.value})}/></label>
       <section className={`${styles.editorSection} ${styles.span2}`}><div className={styles.editorSectionHead}><strong>Frequência</strong></div><div className="mai-habits-frequency-modes"><button type="button" data-active={draftMode==='daily'} onClick={()=>setDraft({...draft,repeticao:'diariamente',dias_semana:[0,1,2,3,4,5,6]})}>Todos os dias</button><button type="button" data-active={draftMode==='weekdays'} onClick={()=>{const selected=draftDays.length&&draftDays.length<7?draftDays:[1,2,3,4,5];setDraft({...draft,repeticao:`semanal:${selected.join(',')}`,dias_semana:selected})}}>Dias específicos</button><button type="button" data-active={draftMode==='interval'} onClick={()=>setDraft({...draft,repeticao:`intervalo:${draftInterval}`,dias_semana:[],data_inicio:dateKey(draft.data_inicio)||today})}>A cada X dias</button></div>{draftMode==='weekdays'?<div className={styles.weekdays}>{['D','S','T','Q','Q','S','S'].map((label,day)=>{const active=draftDays.includes(day);return <button type="button" key={`${label}-${day}`} data-active={active} onClick={()=>{const next=active?draftDays.filter(value=>value!==day):[...draftDays,day].sort((a,b)=>a-b);setDraft({...draft,dias_semana:next,repeticao:`semanal:${next.join(',')}`})}}>{label}</button>})}</div>:null}{draftMode==='interval'?<div className="mai-habits-interval-fields"><label><span>Repetir a cada</span><div><input type="number" min="1" max="365" value={draftInterval} onChange={event=>setDraft({...draft,repeticao:`intervalo:${Math.max(1,Number(event.target.value)||1)}`})}/><span>dias</span></div></label><label><span>Começando em</span><input type="date" value={dateKey(draft.data_inicio)||today} onChange={event=>setDraft({...draft,data_inicio:event.target.value})}/></label></div>:null}</section>
       <section className={`${styles.editorSection} ${styles.span2}`}><div className={styles.editorSectionHead}><strong>Ícone</strong></div><div className={styles.iconPicker}>{icons.map(icon=><button type="button" key={icon} data-active={draft.icone===icon} onClick={()=>setDraft({...draft,icone:icon})}><span className="material-symbols-rounded">{icon}</span></button>)}</div></section>
       <label className={`${styles.toggleRow} ${styles.span2}`}><input type="checkbox" checked={draft.ocultar_agenda===true} onChange={event=>setDraft({...draft,ocultar_agenda:event.target.checked})}/><span>Não mostrar em Hoje/Agenda</span></label>
-      <footer className={styles.span2}>{draft.id?<button type="button" className={styles.dangerButton} onClick={deleteHabit}>Excluir</button>:<span/>}<div><button type="button" className={styles.secondaryButton} onClick={()=>setDraft(null)}>Cancelar</button><button className={styles.primaryButton}>Salvar hábito</button></div></footer></form></Modal>:null}
+      <footer className={styles.span2}>{draft._persisted!==false?<button type="button" className={styles.dangerButton} onClick={deleteHabit}>Excluir</button>:<span/>}<span className="mai-autosave-status">Alterações salvas automaticamente</span></footer></form></Modal>:null}
 
-    {valueDraft?<Modal title={`Registrar ${valueDraft.habit.nome}`} subtitle={dateLabel(valueDraft.day)} onClose={()=>setValueDraft(null)}><form className={styles.valueModal} onSubmit={saveValue}><label><span>Quantidade {valueDraft.habit.unidade?`(${valueDraft.habit.unidade})`:''}</span><input autoFocus type="number" step="0.1" min="0" value={value} onChange={event=>setValue(event.target.value)}/></label><p>Meta do dia: <strong>{valueDraft.habit.meta||1} {valueDraft.habit.unidade||''}</strong></p><button className={styles.primaryButton}>Registrar</button></form></Modal>:null}
+    {valueDraft?<Modal title={`Registrar ${valueDraft.habit.nome}`} subtitle={dateLabel(valueDraft.day)} onClose={()=>setValueDraft(null)}><form className={styles.valueModal} onSubmit={event=>event.preventDefault()}><label><span>Quantidade {valueDraft.habit.unidade?`(${valueDraft.habit.unidade})`:''}</span><input autoFocus type="number" step="0.1" min="0" value={value} onChange={event=>setValue(event.target.value)}/></label><p>Meta do dia: <strong>{valueDraft.habit.meta||1} {valueDraft.habit.unidade||''}</strong></p><span className="mai-autosave-status">Registro salvo automaticamente</span></form></Modal>:null}
 
     {reportHabit&&reportStats?<Modal title={reportHabit.nome} subtitle="Relatório completo do hábito" onClose={()=>setReportId('')} wide><div className={styles.reportBody}><div className={styles.metricGrid}><article><span>Sequência atual</span><strong>{reportStats.current} dias</strong></article><article><span>Melhor sequência</span><strong>{reportStats.best} dias</strong></article><article><span>Últimos 30 dias</span><strong>{reportStats.rate}%</strong></article><article><span>Meta</span><strong>{reportHabit.meta||1} {reportHabit.unidade||''}</strong></article></div><section className={styles.reportSection}><header><strong>Heatmap · 18 semanas</strong><small>Clique em um dia válido para registrar ou remover.</small></header><div className={styles.heatmap}>{heatDays.map(day=>{const found=reportStats.map.get(day);const done=reportStats.isDone(day);const allowed=eligible(reportHabit,day);return <button key={day} disabled={!allowed} title={`${dateLabel(day)} · ${allowed?(found??0):'fora da frequência'} ${allowed?reportHabit.unidade||'':''}`} data-done={done} data-partial={Boolean(found)&&!done} style={done?{background:reportHabit.cor_hex||'#718269'}:undefined} onClick={()=>toggle(reportHabit,day)}/>})}</div></section><section className={styles.reportSection}><header><strong>Desempenho por dia</strong></header><div className={styles.performanceBars}>{weekPerformance.map(item=><div key={item.day}><span>{['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'][item.day]}</span><i><b style={{width:`${pct(item.done,item.total)}%`,background:reportHabit.cor_hex||'#718269'}}/></i><strong>{pct(item.done,item.total)}%</strong></div>)}</div></section><section className={styles.reportSection}><header><strong>Calendário mensal</strong><input type="month" value={reportMonth} onChange={event=>setReportMonth(event.target.value)}/></header><div className={styles.monthHabitGrid}>{['D','S','T','Q','Q','S','S'].map((label,index)=><small key={`${label}-${index}`}>{label}</small>)}{Array.from({length:reportFirst},(_,index)=><span key={`gap-${index}`}/>)}{Array.from({length:reportDays},(_,index)=>{const day=`${ry}-${String(rm).padStart(2,'0')}-${String(index+1).padStart(2,'0')}`;const done=reportStats.isDone(day);const allowed=eligible(reportHabit,day);return <button key={day} disabled={!allowed} data-done={done} style={done?{background:reportHabit.cor_hex||'#718269'}:undefined} onClick={()=>toggle(reportHabit,day)}>{index+1}</button>})}</div></section><section className={styles.reportSection}><header><strong>Histórico recente</strong></header><div className={styles.historyList}>{[...reportStats.map.entries()].sort((a,b)=>b[0].localeCompare(a[0])).slice(0,16).map(([day,amount])=><div key={day}><span>{dateLabel(day)}</span><strong>{amount} {reportHabit.unidade||''}</strong></div>)}</div></section></div></Modal>:null}
   </div>
