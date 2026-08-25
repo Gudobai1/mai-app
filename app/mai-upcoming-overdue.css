@@ -1,0 +1,40 @@
+/* Em breve — tarefas atrasadas no mesmo padrão visual das seções do sistema. */
+.mai-upcoming-overdue-section{
+  min-width:0;
+  margin:0 0 24px;
+}
+
+.mai-upcoming-overdue-section>header{
+  min-height:32px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  padding:0 4px;
+  border-bottom:1px solid var(--v3-line,#e7ebe5);
+}
+
+.mai-upcoming-overdue-section>header strong{
+  color:#c85b52;
+  font-size:11px;
+  font-weight:700;
+}
+
+.mai-upcoming-overdue-section>header span{
+  color:var(--v3-faint,#aeb4ac);
+  font-size:9px;
+  font-weight:650;
+}
+
+.mai-upcoming-overdue-section>div{
+  min-width:0;
+  display:grid;
+}
+
+.mai-upcoming-overdue-section .mai-item-subline-v2>span:first-child{
+  color:#c85b52;
+}
+
+@media(max-width:900px){
+  .mai-upcoming-overdue-section{margin-bottom:20px}
+}
