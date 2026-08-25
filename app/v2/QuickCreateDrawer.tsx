@@ -1,9 +1,10 @@
 'use client'
 
-import { CSSProperties, FormEvent, ReactNode, useState } from 'react'
+import { CSSProperties, ReactNode, useState } from 'react'
 import type { MaiState } from '../../lib/v2/state'
 import type { Row } from './app-types'
 import styles from './unified.module.css'
+import { useAutosaveDraft } from './useAutosaveDraft'
 
 const rows = (value: unknown): Row[] => Array.isArray(value) ? value as Row[] : []
 const dateOnly = (value: unknown) => String(value || '').slice(0, 10)
@@ -131,8 +132,8 @@ type Props = {
 
 export function QuickCreateDrawer({ kind, allowKindSwitch = false, state, today, defaultProjectId = 'entrada', defaultDate, commit, onClose }: Props) {
   const makeDraft = (target: 'task' | 'event'): Row => target === 'task'
-    ? { titulo: '', descricao: '', data: defaultDate ?? '', hora: '', prioridade: 4, projeto_id: defaultProjectId, secao: '', repeticao: '', lembrete: '' }
-    : { titulo: '', descricao: '', data: defaultDate || today, hora_inicio: '', hora_fim: '', dia_inteiro: false, local: '', categoria: '', categoria_cor: '#6f8168', repeticao: '', lembrete: '' }
+    ? { _id: `t-${crypto.randomUUID()}`, _persisted: false, titulo: '', descricao: '', data: defaultDate ?? '', hora: '', prioridade: 4, projeto_id: defaultProjectId, secao: '', repeticao: '', lembrete: '' }
+    : { _id: `local-event-${crypto.randomUUID()}`, _persisted: false, titulo: '', descricao: '', data: defaultDate || today, hora_inicio: '', hora_fim: '', dia_inteiro: false, local: '', categoria: '', categoria_cor: '#6f8168', repeticao: '', lembrete: '' }
   const [currentKind, setCurrentKind] = useState<'task' | 'event'>(kind)
   const [draft, setDraft] = useState<Row>(() => makeDraft(kind))
   const [openTool, setOpenTool] = useState('')
@@ -152,40 +153,49 @@ export function QuickCreateDrawer({ kind, allowKindSwitch = false, state, today,
   const repeatLabel = ({ '':'Não selecionado', diariamente:'Todos os dias', semanalmente:'Toda semana', 'semanal:1,2,3,4,5':'Dias úteis', mensalmente:'Todo mês' } as Record<string,string>)[String(draft.repeticao || '')] || 'Personalizado'
   const reminderLabel = ({ '':'Não selecionado', '10m':'10 min antes', '30m':'30 min antes', '1h':'1 hora antes', '1d':'1 dia antes' } as Record<string,string>)[String(draft.lembrete || '')] || String(draft.lembrete || 'Não selecionado')
 
+  function persistDraft(snapshot: Row) {
+    const title = String(snapshot.titulo || '').trim()
+    if (!title) return
+    const id = String(snapshot._id)
+    if (currentKind === 'task') {
+      const due = snapshot.data ? `${snapshot.data}${snapshot.hora ? `T${snapshot.hora}` : ''}` : ''
+      const task = {
+        id,
+        titulo: title, descricao: snapshot.descricao || '', data_vencimento: due,
+        prioridade: Number(snapshot.prioridade || 4), concluida: false, projeto_id: snapshot.projeto_id || 'entrada',
+        criado_em: snapshot.criado_em || new Date().toISOString(), ordem: Number(snapshot.ordem || Date.now()), notas: [], anexos: [], subtarefas: [],
+        repeticao: snapshot.repeticao || '', lembretes: snapshot.lembrete ? [snapshot.lembrete] : [], etiquetas: [], secao: snapshot.secao || '', ocultar_agenda: false,
+      }
+      commit(current => ({ ...current, tasks: current.tasks.some(item => String(item.id) === id) ? current.tasks.map(item => String(item.id) === id ? { ...item, ...task } : item) : [...current.tasks, task] }))
+    } else {
+      const eventRow = {
+        id, tipo: 'local', titulo: title, descricao: snapshot.descricao || '',
+        data_inicio: snapshot.data || today, hora_inicio: snapshot.dia_inteiro ? '' : snapshot.hora_inicio || '', hora_fim: snapshot.dia_inteiro ? '' : snapshot.hora_fim || '',
+        dia_inteiro: snapshot.dia_inteiro === true, local: snapshot.local || '', categoria: snapshot.categoria || '', categoria_cor: snapshot.categoria_cor || '#6f8168',
+        categoria_icone: 'calendar', repeticao: snapshot.repeticao || '', lembretes: snapshot.lembrete ? [snapshot.lembrete] : [], anexos: [], cor: snapshot.categoria_cor || '#6f8168',
+      }
+      commit(current => ({ ...current, events: rows(current.events).some(item => String(item.id) === id) ? rows(current.events).map(item => String(item.id) === id ? { ...item, ...eventRow } : item) : [...rows(current.events), eventRow] }))
+    }
+    if (snapshot._persisted === false) setDraft(current => current && String(current._id) === id ? { ...current, _persisted: true } : current)
+  }
+
+  useAutosaveDraft({ value: draft, identity: `${currentKind}:${String(draft._id)}`, enabled: Boolean(draft), save: persistDraft })
+
   function switchKind(next: 'task' | 'event') {
     if (next === currentKind) return
+    const previousId = String(draft._id || '')
+    if (draft._persisted && previousId) {
+      commit(current => currentKind === 'task'
+        ? { ...current, tasks: current.tasks.filter(item => String(item.id) !== previousId) }
+        : { ...current, events: rows(current.events).filter(item => String(item.id) !== previousId) })
+    }
     setCurrentKind(next)
     setDraft(makeDraft(next))
     setOpenTool('')
   }
 
-  function save(event: FormEvent) {
-    event.preventDefault()
-    if (!String(draft.titulo || '').trim()) return
-    if (currentKind === 'task') {
-      const due = draft.data ? `${draft.data}${draft.hora ? `T${draft.hora}` : ''}` : ''
-      const task = {
-        id: `t-${crypto.randomUUID()}`,
-        titulo: String(draft.titulo).trim(), descricao: draft.descricao || '', data_vencimento: due,
-        prioridade: Number(draft.prioridade || 4), concluida: false, projeto_id: draft.projeto_id || 'entrada',
-        criado_em: new Date().toISOString(), ordem: Date.now(), notas: [], anexos: [], subtarefas: [],
-        repeticao: draft.repeticao || '', lembretes: draft.lembrete ? [draft.lembrete] : [], etiquetas: [], secao: draft.secao || '', ocultar_agenda: false,
-      }
-      commit(current => ({ ...current, tasks: [...current.tasks, task] }))
-    } else {
-      const eventRow = {
-        id: `local-event-${crypto.randomUUID()}`, tipo: 'local', titulo: String(draft.titulo).trim(), descricao: draft.descricao || '',
-        data_inicio: draft.data || today, hora_inicio: draft.dia_inteiro ? '' : draft.hora_inicio || '', hora_fim: draft.dia_inteiro ? '' : draft.hora_fim || '',
-        dia_inteiro: draft.dia_inteiro === true, local: draft.local || '', categoria: draft.categoria || '', categoria_cor: draft.categoria_cor || '#6f8168',
-        categoria_icone: 'calendar', repeticao: draft.repeticao || '', lembretes: draft.lembrete ? [draft.lembrete] : [], anexos: [], cor: draft.categoria_cor || '#6f8168',
-      }
-      commit(current => ({ ...current, events: [...rows(current.events), eventRow] }))
-    }
-    onClose()
-  }
-
   return <div className="mai-v3-create-layer" onMouseDown={onClose}>
-    <form className="mai-v3-create-drawer" onSubmit={save} onMouseDown={event => event.stopPropagation()}>
+    <form className="mai-v3-create-drawer" onSubmit={event => event.preventDefault()} onMouseDown={event => event.stopPropagation()}>
       <header className="mai-v3-drawer-header">
         <div>{allowKindSwitch ? <div className="mai-v3-kind-switch"><button type="button" data-active={currentKind === 'task'} onClick={() => switchKind('task')}>Tarefa</button><button type="button" data-active={currentKind === 'event'} onClick={() => switchKind('event')}>Compromisso</button></div> : <strong>{currentKind === 'task' ? 'Nova tarefa' : 'Novo compromisso'}</strong>}</div>
         <button type="button" className="mai-v3-close" onClick={onClose}>×</button>
@@ -216,7 +226,7 @@ export function QuickCreateDrawer({ kind, allowKindSwitch = false, state, today,
         </div>
       </div>
 
-      <footer className="mai-v3-drawer-footer"><button type="button" className={styles.secondaryButton} onClick={onClose}>Cancelar</button><button className={styles.primaryButton}>Salvar</button></footer>
+      <footer className="mai-v3-drawer-footer"><span/><span className="mai-autosave-status">Alterações salvas automaticamente</span></footer>
     </form>
   </div>
 }
