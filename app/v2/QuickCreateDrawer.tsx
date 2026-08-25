@@ -3,6 +3,7 @@
 import { CSSProperties, ReactNode, useState } from 'react'
 import type { MaiState } from '../../lib/v2/state'
 import type { Row } from './app-types'
+import { ItemAttachments } from './ItemAttachments'
 import styles from './unified.module.css'
 import { useAutosaveDraft } from './useAutosaveDraft'
 
@@ -132,8 +133,8 @@ type Props = {
 
 export function QuickCreateDrawer({ kind, allowKindSwitch = false, state, today, defaultProjectId = 'entrada', defaultDate, commit, onClose }: Props) {
   const makeDraft = (target: 'task' | 'event'): Row => target === 'task'
-    ? { _id: `t-${crypto.randomUUID()}`, _persisted: false, titulo: '', descricao: '', data: defaultDate ?? '', hora: '', prioridade: 4, projeto_id: defaultProjectId, secao: '', repeticao: '', lembrete: '' }
-    : { _id: `local-event-${crypto.randomUUID()}`, _persisted: false, titulo: '', descricao: '', data: defaultDate || today, hora_inicio: '', hora_fim: '', dia_inteiro: false, local: '', categoria: '', categoria_cor: '#6f8168', repeticao: '', lembrete: '' }
+    ? { _id: `t-${crypto.randomUUID()}`, _persisted: false, titulo: '', descricao: '', data: defaultDate ?? '', hora: '', prioridade: 4, projeto_id: defaultProjectId, secao: '', repeticao: '', lembrete: '', anexos: [] }
+    : { _id: `local-event-${crypto.randomUUID()}`, _persisted: false, titulo: '', descricao: '', data: defaultDate || today, hora_inicio: '', hora_fim: '', dia_inteiro: false, local: '', categoria: '', categoria_cor: '#6f8168', repeticao: '', lembrete: '', anexos: [] }
   const [currentKind, setCurrentKind] = useState<'task' | 'event'>(kind)
   const [draft, setDraft] = useState<Row>(() => makeDraft(kind))
   const [openTool, setOpenTool] = useState('')
@@ -163,7 +164,7 @@ export function QuickCreateDrawer({ kind, allowKindSwitch = false, state, today,
         id,
         titulo: title, descricao: snapshot.descricao || '', data_vencimento: due,
         prioridade: Number(snapshot.prioridade || 4), concluida: false, projeto_id: snapshot.projeto_id || 'entrada',
-        criado_em: snapshot.criado_em || new Date().toISOString(), ordem: Number(snapshot.ordem || Date.now()), notas: [], anexos: [], subtarefas: [],
+        criado_em: snapshot.criado_em || new Date().toISOString(), ordem: Number(snapshot.ordem || Date.now()), notas: [], anexos: rows(snapshot.anexos), subtarefas: [],
         repeticao: snapshot.repeticao || '', lembretes: snapshot.lembrete ? [snapshot.lembrete] : [], etiquetas: [], secao: snapshot.secao || '', ocultar_agenda: false,
       }
       commit(current => ({ ...current, tasks: current.tasks.some(item => String(item.id) === id) ? current.tasks.map(item => String(item.id) === id ? { ...item, ...task } : item) : [...current.tasks, task] }))
@@ -172,7 +173,7 @@ export function QuickCreateDrawer({ kind, allowKindSwitch = false, state, today,
         id, tipo: 'local', titulo: title, descricao: snapshot.descricao || '',
         data_inicio: snapshot.data || today, hora_inicio: snapshot.dia_inteiro ? '' : snapshot.hora_inicio || '', hora_fim: snapshot.dia_inteiro ? '' : snapshot.hora_fim || '',
         dia_inteiro: snapshot.dia_inteiro === true, local: snapshot.local || '', categoria: snapshot.categoria || '', categoria_cor: snapshot.categoria_cor || '#6f8168',
-        categoria_icone: 'calendar', repeticao: snapshot.repeticao || '', lembretes: snapshot.lembrete ? [snapshot.lembrete] : [], anexos: [], cor: snapshot.categoria_cor || '#6f8168',
+        categoria_icone: 'calendar', repeticao: snapshot.repeticao || '', lembretes: snapshot.lembrete ? [snapshot.lembrete] : [], anexos: rows(snapshot.anexos), cor: snapshot.categoria_cor || '#6f8168',
       }
       commit(current => ({ ...current, events: rows(current.events).some(item => String(item.id) === id) ? rows(current.events).map(item => String(item.id) === id ? { ...item, ...eventRow } : item) : [...rows(current.events), eventRow] }))
     }
@@ -224,6 +225,7 @@ export function QuickCreateDrawer({ kind, allowKindSwitch = false, state, today,
             <Tool id="event-reminder" icon="notifications" label="Lembrete" summary={reminderLabel} color="#b16b4b" open={openTool} setOpen={setOpenTool}><OptionList value={String(draft.lembrete || '')} onChange={value => setDraft(current => ({ ...current, lembrete:value }))} close={() => setOpenTool('')} options={[{value:'',label:'Sem lembrete',icon:'notifications_off'},{value:'10m',label:'10 minutos antes',icon:'notifications'},{value:'30m',label:'30 minutos antes',icon:'notifications'},{value:'1h',label:'1 hora antes',icon:'notifications'},{value:'1d',label:'1 dia antes',icon:'notifications'}]}/></Tool>
           </>}
         </div>
+        <ItemAttachments attachments={rows(draft.anexos)} onChange={anexos => setDraft(current => ({ ...current, anexos }))}/>
       </div>
 
       <footer className="mai-v3-drawer-footer"><span/><span className="mai-autosave-status">Alterações salvas automaticamente</span></footer>
