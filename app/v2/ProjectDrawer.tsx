@@ -1,10 +1,11 @@
 'use client'
 
-import { FormEvent, useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import type { MaiState } from '../../lib/v2/state'
 import type { Row } from './app-types'
 import { MaiIcon } from './MaiIcons'
 import styles from './unified.module.css'
+import { useAutosaveDraft } from './useAutosaveDraft'
 
 const rows = (value: unknown): Row[] => Array.isArray(value) ? value as Row[] : []
 const COLORS = [
@@ -62,7 +63,7 @@ function resizeProjectImage(file: File) {
   })
 }
 
-export function ProjectDrawer({ state, commit, onClose, onSaved, onRemoved, projectId, parentId, initialTab = 'details' }: Props) {
+export function ProjectDrawer({ state, commit, onClose, onRemoved, projectId, parentId, initialTab = 'details' }: Props) {
   const projects = rows(state.projects)
   const existing = projects.find(item => String(item.id) === String(projectId || ''))
   const [tab, setTab] = useState<Tab>(initialTab)
@@ -72,13 +73,15 @@ export function ProjectDrawer({ state, commit, onClose, onSaved, onRemoved, proj
     cor: existing.cor || '#60765a',
     icone: existing.icone || 'folder',
     imagem_url: existing.imagem_url || '',
-  } : { nome: '', cor: '#60765a', icone: 'folder', imagem_url: '', parent_id: parentId || '' })
+    _persisted: true,
+  } : { id:`p-${crypto.randomUUID()}`, nome: '', cor: '#60765a', icone: 'folder', imagem_url: '', parent_id: parentId || '', _persisted:false })
   const [sectionDrafts, setSectionDrafts] = useState<SectionDraft[]>(() => rows(existing?.secoes).map((name, index) => ({ id: `saved-${index}`, name: String(name), original: String(name) })))
+  const lastSectionsRef = useRef(new Map(sectionDrafts.map(item => [item.id, item.name])))
   const [sectionName, setSectionName] = useState('')
   const [imageBusy, setImageBusy] = useState(false)
 
   const blockedParents = useMemo(() => existing ? descendants(projects, String(existing.id)) : new Set<string>(), [projects, existing])
-  const parentOptions = projects.filter(item => item.ativo !== false && String(item.id) !== String(existing?.id || '') && !blockedParents.has(String(item.id)))
+  const parentOptions = projects.filter(item => item.ativo !== false && String(item.id) !== String(draft.id || '') && !blockedParents.has(String(item.id)))
 
   function addSection() {
     const name = sectionName.trim()
@@ -110,48 +113,59 @@ export function ProjectDrawer({ state, commit, onClose, onSaved, onRemoved, proj
     } finally { setImageBusy(false) }
   }
 
-  function save(event: FormEvent) {
-    event.preventDefault()
-    const name = String(draft.nome || '').trim()
+  function persistProject(snapshot:{project:Row;sections:SectionDraft[]}) {
+    const name = String(snapshot.project.nome || '').trim()
     if (!name) return
-    const cleanSections = sectionDrafts.map(item => ({ ...item, name: item.name.trim() })).filter(item => item.name)
+    const cleanSections = snapshot.sections.map(item => ({ ...item, name: item.name.trim() })).filter(item => item.name)
     const uniqueSections = cleanSections.filter((item, index, list) => list.findIndex(candidate => candidate.name.toLocaleLowerCase('pt-BR') === item.name.toLocaleLowerCase('pt-BR')) === index)
-    const id = String(existing?.id || `p-${crypto.randomUUID()}`)
-    const nextProject = { ...existing, ...draft, id, nome: name, cor: draft.cor || '#60765a', icone: draft.icone || 'folder', imagem_url: draft.imagem_url || '', parent_id: draft.parent_id || '', ordem: Number(existing?.ordem ?? projects.filter(item => item.ativo !== false).length), secoes: uniqueSections.map(item => item.name), ativo: true }
+    const id = String(snapshot.project.id)
+    const {_persisted:_ignored,...cleanProject}=snapshot.project
+    const nextProject = { ...cleanProject, id, nome: name, cor: cleanProject.cor || '#60765a', icone: cleanProject.icone || 'folder', imagem_url: cleanProject.imagem_url || '', parent_id: cleanProject.parent_id || '', ordem: Number(cleanProject.ordem ?? projects.filter(item => item.ativo !== false).length), secoes: uniqueSections.map(item => item.name), ativo: true }
+    const previousSections = new Map(lastSectionsRef.current)
+    const nextSections = new Map(uniqueSections.map(item => [item.id,item.name]))
+    const renameMap = new Map<string,string>()
+    const removed = new Set<string>()
+    previousSections.forEach((oldName,sectionId) => {
+      const nextName=nextSections.get(sectionId)
+      if(nextName == null) removed.add(oldName)
+      else if(nextName!==oldName) renameMap.set(oldName,nextName)
+    })
 
     commit(current => {
       const currentProjects = rows(current.projects)
-      const nextProjects = existing ? currentProjects.map(item => String(item.id) === id ? nextProject : item) : [...currentProjects, nextProject]
-      const originalNames = new Set(rows(existing?.secoes).map(String))
-      const renameMap = new Map(uniqueSections.filter(item => item.original).map(item => [item.original, item.name]))
-      const nextTasks = existing ? current.tasks.map(task => {
+      const nextProjects = currentProjects.some(item=>String(item.id)===id) ? currentProjects.map(item => String(item.id) === id ? { ...item, ...nextProject } : item) : [...currentProjects,nextProject]
+      const nextTasks = current.tasks.map(task => {
         if (String(task.projeto_id || '') !== id || !task.secao) return task
         const currentSection = String(task.secao)
         if (renameMap.has(currentSection)) return { ...task, secao: renameMap.get(currentSection) || '' }
-        if (originalNames.has(currentSection)) return { ...task, secao: '' }
+        if (removed.has(currentSection)) return { ...task, secao: '' }
         return task
-      }) : current.tasks
+      })
       return { ...current, projects: nextProjects, tasks: nextTasks }
     })
-    onSaved(id)
+    lastSectionsRef.current=nextSections
+    if(snapshot.project._persisted===false)setDraft(current=>current&&String(current.id)===id?{...current,_persisted:true}:current)
   }
 
+  useAutosaveDraft({value:{project:draft,sections:sectionDrafts},identity:String(draft.id||''),enabled:Boolean(draft),save:persistProject})
+
   function archive() {
-    if (!existing || !confirm(`Arquivar “${existing.nome}”? As tarefas permanecem salvas.`)) return
-    commit(current => ({ ...current, projects: rows(current.projects).map(item => String(item.id) === String(existing.id) ? { ...item, ativo: false } : item) }))
+    if (!existing && draft._persisted===false) return
+    if (!confirm(`Arquivar “${draft.nome}”? As tarefas permanecem salvas.`)) return
+    commit(current => ({ ...current, projects: rows(current.projects).map(item => String(item.id) === String(draft.id) ? { ...item, ativo: false } : item) }))
     onRemoved()
   }
 
   function remove() {
-    if (!existing || !confirm(`Excluir “${existing.nome}”? As tarefas serão movidas para Entrada.`)) return
-    const id = String(existing.id)
-    const fallbackParent = String(existing.parent_id || '')
+    if ((!existing && draft._persisted===false) || !confirm(`Excluir “${draft.nome}”? As tarefas serão movidas para Entrada.`)) return
+    const id = String(draft.id)
+    const fallbackParent = String(draft.parent_id || '')
     commit(current => ({ ...current, projects: rows(current.projects).filter(item => String(item.id) !== id).map(item => String(item.parent_id || '') === id ? { ...item, parent_id: fallbackParent } : item), tasks: current.tasks.map(task => String(task.projeto_id || '') === id ? { ...task, projeto_id: 'entrada', secao: '' } : task) }))
     onRemoved()
   }
 
   return <div className={styles.modalLayer} onMouseDown={onClose}>
-    <form className={`${styles.modalCard} mai-project-settings-drawer`} onSubmit={save} onMouseDown={event => event.stopPropagation()}>
+    <form className={`${styles.modalCard} mai-project-settings-drawer`} onSubmit={event=>event.preventDefault()} onMouseDown={event => event.stopPropagation()}>
       <header className={styles.modalHeader}><div><h2>{existing ? 'Configurar projeto' : parentId ? 'Novo subprojeto' : 'Novo projeto'}</h2></div><button type="button" onClick={onClose}>×</button></header>
       <div className="mai-project-settings-tabs"><button type="button" data-active={tab === 'details'} onClick={() => setTab('details')}>Geral</button><button type="button" data-active={tab === 'sections'} onClick={() => setTab('sections')}>Seções <span>{sectionDrafts.length || ''}</span></button></div>
 
@@ -164,7 +178,7 @@ export function ProjectDrawer({ state, commit, onClose, onSaved, onRemoved, proj
         <section className="mai-project-config-section"><header><strong>Imagem</strong><span>Opcional; substitui o ícone</span></header><div className="mai-project-image-actions"><label>{imageBusy ? 'Processando…' : 'Escolher imagem'}<input hidden type="file" accept="image/*" disabled={imageBusy} onChange={event => void chooseImage(event.target.files?.[0])} /></label>{draft.imagem_url ? <button type="button" onClick={() => setDraft({ ...draft, imagem_url: '' })}>Remover imagem</button> : null}</div></section>
       </div> : <div className="mai-project-settings-body"><section className="mai-project-config-section mai-sections-manager"><header><strong>Seções do projeto</strong><span>Use seções para organizar a lista e o quadro.</span></header><div className="mai-add-section"><input value={sectionName} onChange={event => setSectionName(event.target.value)} onKeyDown={event => { if (event.key === 'Enter') { event.preventDefault(); addSection() } }} placeholder="Nova seção" /><button type="button" onClick={addSection}>Adicionar</button></div><div className="mai-section-list">{sectionDrafts.map((section, index) => <div key={section.id}><span className="mai-section-grip">⋮⋮</span><input value={section.name} onChange={event => renameSection(section.id, event.target.value)} /><div><button type="button" disabled={index === 0} onClick={() => moveSection(section.id, -1)}>↑</button><button type="button" disabled={index === sectionDrafts.length - 1} onClick={() => moveSection(section.id, 1)}>↓</button><button type="button" className="mai-section-remove" onClick={() => removeSection(section.id)}>×</button></div></div>)}</div>{!sectionDrafts.length ? <div className="mai-project-empty-sections"><strong>Sem seções</strong><span>Você pode continuar usando uma lista simples ou criar seções aqui.</span></div> : null}</section></div>}
 
-      <footer className="mai-project-settings-footer"><div>{existing ? <><button type="button" onClick={archive}>Arquivar</button><button type="button" className={styles.dangerButton} onClick={remove}>Excluir</button></> : <span />}</div><div><button type="button" className={styles.secondaryButton} onClick={onClose}>Cancelar</button><button className={styles.primaryButton}>{existing ? 'Salvar alterações' : 'Criar projeto'}</button></div></footer>
+      <footer className="mai-project-settings-footer"><div>{draft._persisted!==false ? <><button type="button" onClick={archive}>Arquivar</button><button type="button" className={styles.dangerButton} onClick={remove}>Excluir</button></> : <span />}</div><span className="mai-autosave-status">Alterações salvas automaticamente</span></footer>
     </form>
   </div>
 }
