@@ -15,6 +15,7 @@ const goalDate=(goal:Row)=>dateKey(goal.prazo||goal.data||goal.data_limite||goal
 const txTitle=(item:Row)=>String(item.descricao||item.titulo||item.nome||item.categoria||'Lançamento')
 const paid=(value:unknown)=>['pago','paga','quitado','quitada','concluido','concluida'].includes(String(value||'').toLocaleLowerCase('pt-BR'))
 const concluded=(item:Row)=>item.concluida===true||String(item.status||'').toLocaleLowerCase('pt-BR').includes('conclu')
+const hiddenFromAgenda=(habit:Row)=>habit.ocultar_agenda===true||String(habit.ocultar_agenda||'').toLowerCase()==='true'||habit.ocultarAgenda===true||habit.mostrar_agenda===false||habit.mostrar_hoje_agenda===false
 const DEFAULT_ORDER=['appointments','tasks','habits','goals','finance','notes'] as const
 type SectionId=typeof DEFAULT_ORDER[number]
 const labels:Record<SectionId,string>={appointments:'Compromissos',tasks:'Tarefas',habits:'Hábitos',goals:'Metas',finance:'Finanças',notes:'Notas'}
@@ -51,7 +52,11 @@ export function TodayV4({state,today,commit,navigate,inspect,onSearch}:{state:Ma
   const moduleControls=state.configs.moduleControls&&typeof state.configs.moduleControls==='object'?state.configs.moduleControls as Record<string,Row>:{}
   const kanban=moduleControls.today?.layout==='kanban'
   const entries=rows(state.habitEntries).filter(entry=>dateKey(entry.data)===today)
-  const habits=rows(state.habits).filter(habit=>habit.ativo!==false&&habitEligible(habit,today)&&Number(entries.find(entry=>String(entry.habito_id)===String(habit.id))?.valor||0)<=0)
+  const habits=rows(state.habits).filter(habit=>{
+    if(habit.ativo===false||hiddenFromAgenda(habit)||!habitEligible(habit,today))return false
+    const entry=entries.find(item=>String(item.habito_id)===String(habit.id))
+    return !entry||(!(entry.falhou===true||String(entry.status||'').toLowerCase()==='falha')&&Number(entry.valor||0)<=0)
+  })
   const goals=rows(state.goals).filter(goal=>{const day=goalDate(goal);return Boolean(day)&&day<=today&&!String(goal.status||'').toLocaleLowerCase('pt-BR').includes('conclu')&&goal.concluida!==true}).sort((a,b)=>goalDate(a).localeCompare(goalDate(b)))
   const finance=state.finance||{}
   const transactions=rows(finance.transactions).filter(item=>{const day=dateKey(item.data);return Boolean(day)&&day<=today&&!item.ignorar_calculo&&!paid(item.status)}).sort((a,b)=>dateKey(a.data).localeCompare(dateKey(b.data)))
