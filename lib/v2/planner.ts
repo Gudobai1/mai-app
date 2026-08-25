@@ -16,6 +16,8 @@ export type PlannerItem = {
 }
 
 const rows = (value: unknown) => Array.isArray(value) ? value as Record<string, any>[] : []
+const hiddenFromAgenda = (habit: Record<string, any>) => habit.ocultar_agenda === true || String(habit.ocultar_agenda || '').toLowerCase() === 'true' || habit.ocultarAgenda === true || habit.mostrar_agenda === false || habit.mostrar_hoje_agenda === false
+const failedHabitEntry = (entry?: Record<string, any>) => entry?.falhou === true || String(entry?.status || '').toLowerCase() === 'falha'
 
 export function addDays(key: string, amount: number) {
   const date = new Date(`${key}T12:00:00`)
@@ -150,13 +152,15 @@ export function plannerItems(state: MaiState, start: string, end: string): Plann
     }
   }
 
-  for (const habit of rows(state.habits).filter(item => item.ativo !== false && item.ocultar_agenda !== true)) {
+  for (const habit of rows(state.habits).filter(item => item.ativo !== false && !hiddenFromAgenda(item))) {
     for (const day of days) {
       if (!habitOccursOn(habit, day)) continue
       const entry = rows(state.habitEntries).find(item => String(item.habito_id) === String(habit.id) && String(item.data).slice(0, 10) === day)
       const target = Math.max(1, Number(habit.meta || 1))
       const complete = Number(entry?.valor || 0) >= target
-      result.push({ id: `habit:${habit.id}:${day}`, sourceId: String(habit.id), kind: 'habit', date: day, time: String(habit.hora || ''), title: String(habit.nome || 'Rotina'), subtitle: `${complete ? 'Concluída' : 'Rotina'}${habit.unidade ? ` · ${target} ${habit.unidade}` : ''}`, color: String(habit.cor_hex || habit.cor || '#6f8a67'), completed: complete, recurring: true, raw: habit })
+      const failed = failedHabitEntry(entry)
+      const resolved = complete || failed
+      result.push({ id: `habit:${habit.id}:${day}`, sourceId: String(habit.id), kind: 'habit', date: day, time: String(habit.hora || ''), title: String(habit.nome || 'Rotina'), subtitle: `${failed ? 'Falha' : complete ? 'Concluída' : 'Rotina'}${habit.unidade ? ` · ${target} ${habit.unidade}` : ''}`, color: String(habit.cor_hex || habit.cor || '#6f8a67'), completed: resolved, recurring: true, raw: habit })
     }
   }
 
