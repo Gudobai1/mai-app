@@ -188,7 +188,6 @@ export function UnifiedAppUx() {
   const [googleProfile, setGoogleProfile] = useState<GoogleProfile>(null)
   const taskScope = scopeFromLegacy(runtime.state.configs.taskModuleScope)
   const activeProjectId = taskScope.startsWith('project:') ? taskScope.slice(8) : 'entrada'
-  const advanced = runtime.state.configs.advancedAreas && typeof runtime.state.configs.advancedAreas === 'object' ? runtime.state.configs.advancedAreas as Record<string,boolean> : {}
   const viewState = useMemo(() => filteredStateForView(runtime.state, view, runtime.today), [runtime.state, view, runtime.today])
   const currentModuleFilters = moduleFilterMap(runtime.state)[String(view)] || {}
   const fileKind = String(currentModuleFilters.kind || 'all')
@@ -325,11 +324,11 @@ export function UnifiedAppUx() {
             onEditProject={id => setProjectDialog({ projectId: id, tab: 'details' })}
             onManageSections={id => setProjectDialog({ projectId: id, tab: 'sections' })}
           /> : null}
-          {view === 'habits' && !advanced.habits ? <HabitsV4 state={viewState} today={runtime.today} commit={runtime.commit} createRequest={areaCreateRequest} inspect={setSelected}/> : null}
-          {view === 'goals' && !advanced.goals ? <GoalsV4 state={viewState} today={runtime.today} commit={runtime.commit} createRequest={areaCreateRequest} inspect={setSelected}/> : null}
-          {view === 'notes' && !advanced.notes ? <NotesV4 state={viewState} today={runtime.today} commit={runtime.commit} createRequest={areaCreateRequest} inspect={setSelected}/> : null}
-          {view === 'finance' && !advanced.finance ? <FinanceV4 state={viewState} today={runtime.today} commit={runtime.commit} createRequest={areaCreateRequest} inspect={setSelected}/> : null}
-          {secondary.includes(view as SecondaryView) && !(view === 'habits' && !advanced.habits) && !(view === 'goals' && !advanced.goals) && !(view === 'notes' && !advanced.notes) && !(view === 'finance' && !advanced.finance) ? <MinimalAreas key={view === 'files' ? `files:${fileKind}` : String(view)} view={view as SecondaryView} state={viewState} today={runtime.today} commit={runtime.commit} googleRpc={moduleGoogleRpc} createRequest={areaCreateRequest} inspect={setSelected} /> : null}
+          {view === 'habits' ? <HabitsV4 state={viewState} today={runtime.today} commit={runtime.commit} createRequest={areaCreateRequest} inspect={setSelected}/> : null}
+          {view === 'goals' ? <GoalsV4 state={viewState} today={runtime.today} commit={runtime.commit} createRequest={areaCreateRequest} inspect={setSelected}/> : null}
+          {view === 'notes' ? <NotesV4 state={viewState} today={runtime.today} commit={runtime.commit} createRequest={areaCreateRequest} inspect={setSelected}/> : null}
+          {view === 'finance' ? <FinanceV4 state={viewState} today={runtime.today} commit={runtime.commit} createRequest={areaCreateRequest} inspect={setSelected}/> : null}
+          {(view === 'health' || view === 'files') ? <MinimalAreas key={view === 'files' ? `files:${fileKind}` : String(view)} view={view as SecondaryView} state={viewState} today={runtime.today} commit={runtime.commit} googleRpc={moduleGoogleRpc} createRequest={areaCreateRequest} inspect={setSelected} /> : null}
         </>}
       </div>
     </main>
