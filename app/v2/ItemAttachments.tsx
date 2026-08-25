@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { FilePreviewOverlay } from './FilePreviewOverlay'
 
 type Row = Record<string, any>
 type Rpc = (method: string, args?: unknown[]) => Promise<any>
@@ -27,10 +28,6 @@ function fileName(file: Row) {
   return String(file.nome || file.name || 'Arquivo')
 }
 
-function fileUrl(file: Row) {
-  return String(file.url || file.webViewLink || '')
-}
-
 function driveId(file: Row) {
   return String(file.idDrive || file.driveId || file.id || '')
 }
@@ -38,6 +35,7 @@ function driveId(file: Row) {
 export function ItemAttachments({ attachments, onChange, googleRpc = defaultGoogleRpc, compact = false }: Props) {
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState('')
+  const [preview, setPreview] = useState<Row | null>(null)
 
   async function upload(file?: File) {
     if (!file) return
@@ -78,31 +76,31 @@ export function ItemAttachments({ attachments, onChange, googleRpc = defaultGoog
     if (id) await googleRpc('trashDriveItem', [id]).catch(() => null)
   }
 
-  return <section className={`mai-item-attachments${compact ? ' mai-item-attachments-compact' : ''}`}>
-    <header>
-      <div>
-        <span className="material-symbols-rounded" aria-hidden="true">attach_file</span>
-        <strong>Arquivos</strong>
-        {attachments.length ? <small>{attachments.length}</small> : null}
-      </div>
-      <label className="mai-item-attachments-add" data-busy={uploading || undefined}>
-        <span className="material-symbols-rounded" aria-hidden="true">attach_file_add</span>
-        <span>{uploading ? 'Enviando…' : 'Adicionar'}</span>
-        <input hidden type="file" disabled={uploading} onChange={event => { void upload(event.target.files?.[0]); event.currentTarget.value = '' }} />
-      </label>
-    </header>
+  return <>
+    <section className={`mai-item-attachments${compact ? ' mai-item-attachments-compact' : ''}`}>
+      <header>
+        <div>
+          <span className="material-symbols-rounded" aria-hidden="true">attach_file</span>
+          <strong>Arquivos</strong>
+          {attachments.length ? <small>{attachments.length}</small> : null}
+        </div>
+        <label className="mai-item-attachments-add" data-busy={uploading || undefined}>
+          <span className="material-symbols-rounded" aria-hidden="true">attach_file_add</span>
+          <span>{uploading ? 'Enviando…' : 'Adicionar'}</span>
+          <input hidden type="file" disabled={uploading} onChange={event => { void upload(event.target.files?.[0]); event.currentTarget.value = '' }} />
+        </label>
+      </header>
 
-    {attachments.length ? <div className="mai-item-attachments-list">
-      {attachments.map((file, index) => {
-        const url = fileUrl(file)
-        return <article key={`${driveId(file) || fileName(file)}-${index}`}>
+      {attachments.length ? <div className="mai-item-attachments-list">
+        {attachments.map((file, index) => <article key={`${driveId(file) || fileName(file)}-${index}`}>
           <span className="material-symbols-rounded mai-item-attachments-file-icon" aria-hidden="true">description</span>
-          {url ? <a href={url} target="_blank" rel="noreferrer" title={fileName(file)}>{fileName(file)}</a> : <span title={fileName(file)}>{fileName(file)}</span>}
+          <button type="button" className="mai-item-attachments-open" title={`Visualizar ${fileName(file)}`} onClick={() => setPreview(file)}>{fileName(file)}</button>
           <button type="button" aria-label={`Remover ${fileName(file)}`} title="Remover arquivo" onClick={() => void remove(index)}><span className="material-symbols-rounded">close</span></button>
-        </article>
-      })}
-    </div> : <small className="mai-item-attachments-empty">Nenhum arquivo anexado.</small>}
+        </article>)}
+      </div> : <small className="mai-item-attachments-empty">Nenhum arquivo anexado.</small>}
 
-    {error ? <p className="mai-item-attachments-error">{error}</p> : null}
-  </section>
+      {error ? <p className="mai-item-attachments-error">{error}</p> : null}
+    </section>
+    <FilePreviewOverlay file={preview} onClose={() => setPreview(null)} />
+  </>
 }
