@@ -3,6 +3,7 @@
 import { ReactNode, useEffect, useMemo, useRef, useState } from 'react'
 import type { MaiState } from '../../lib/v2/state'
 import type { InspectableItem } from './ContextDrawer'
+import { ItemAttachments } from './ItemAttachments'
 import styles from './unified.module.css'
 import { useAutosaveDraft } from './useAutosaveDraft'
 
@@ -64,11 +65,11 @@ export function HabitsV4({ state, today, commit, createRequest }: { state:MaiSta
   const monday=useMemo(()=>{const date=new Date(`${weekAnchor}T12:00:00`);const day=date.getDay();date.setDate(date.getDate()-(day===0?6:day-1));return dateKey(date)},[weekAnchor])
   const week=Array.from({length:7},(_,index)=>moveDate(monday,index))
 
-  function newDraft():Row{return {id:uid('hab'),nome:'',descricao:'',meta:1,unidade:'',hora:'',cor_hex:'#718269',icone:'star',dias_semana:[0,1,2,3,4,5,6],repeticao:'diariamente',data_inicio:today,ocultar_agenda:false,ativo:true,criado_em:new Date().toISOString(),_persisted:false}}
+  function newDraft():Row{return {id:uid('hab'),nome:'',descricao:'',meta:1,unidade:'',hora:'',cor_hex:'#718269',icone:'star',dias_semana:[0,1,2,3,4,5,6],repeticao:'diariamente',data_inicio:today,ocultar_agenda:false,ativo:true,criado_em:new Date().toISOString(),anexos:[],_persisted:false}}
   function editDraft(habit:Row):Row{
     const days=normalizedDays(habit)
     const repeat=String(habit.repeticao||'') || (!days.length||days.length===7?'diariamente':`semanal:${days.join(',')}`)
-    return {...habit,dias_semana:days,repeticao:repeat,data_inicio:dateKey(habit.data_inicio||habit.criado_em)||today,_persisted:true}
+    return {...habit,anexos:rows(habit.anexos),dias_semana:days,repeticao:repeat,data_inicio:dateKey(habit.data_inicio||habit.criado_em)||today,_persisted:true}
   }
 
   useEffect(()=>{if(createRequest?.startsWith('habits:'))setDraft(newDraft())},[createRequest,today])
@@ -133,7 +134,7 @@ export function HabitsV4({ state, today, commit, createRequest }: { state:MaiSta
       days=[]
     }
     const {_persisted:_ignored,...clean}=snapshot
-    return {...clean,id:clean.id||uid('hab'),nome:String(clean.nome||'').trim(),meta:Math.max(1,Number(clean.meta||1)),dias_semana:days,repeticao:repeat,data_inicio:dateKey(clean.data_inicio)||today,cor_hex:clean.cor_hex||'#718269',icone:clean.icone||'star',ativo:true,criado_em:clean.criado_em||new Date().toISOString()}
+    return {...clean,id:clean.id||uid('hab'),nome:String(clean.nome||'').trim(),meta:Math.max(1,Number(clean.meta||1)),dias_semana:days,repeticao:repeat,data_inicio:dateKey(clean.data_inicio)||today,cor_hex:clean.cor_hex||'#718269',icone:clean.icone||'star',anexos:rows(clean.anexos),ativo:true,criado_em:clean.criado_em||new Date().toISOString()}
   }
 
   function persistHabit(snapshot:Row){
@@ -175,6 +176,7 @@ export function HabitsV4({ state, today, commit, createRequest }: { state:MaiSta
     {draft?<Modal title={draft._persisted===false?'Novo hábito':'Configurar hábito'} subtitle="Meta, frequência, identidade e agenda" onClose={()=>setDraft(null)}><form className={`${styles.areaForm} mai-habits-pro-form`} onSubmit={event=>event.preventDefault()}><label className={styles.span2}><span>Nome</span><input autoFocus value={draft.nome||''} onChange={event=>setDraft({...draft,nome:event.target.value})}/></label><label><span>Meta</span><input type="number" min="1" step="0.1" value={draft.meta||1} onChange={event=>setDraft({...draft,meta:Number(event.target.value)})}/></label><label><span>Unidade</span><input value={draft.unidade||''} placeholder="copos, km, páginas…" onChange={event=>setDraft({...draft,unidade:event.target.value})}/></label><label><span>Horário</span><input type="time" value={draft.hora||''} onChange={event=>setDraft({...draft,hora:event.target.value})}/></label><label><span>Cor</span><input type="color" value={draft.cor_hex||'#718269'} onChange={event=>setDraft({...draft,cor_hex:event.target.value})}/></label>
       <section className={`${styles.editorSection} ${styles.span2}`}><div className={styles.editorSectionHead}><strong>Frequência</strong></div><div className="mai-habits-frequency-modes"><button type="button" data-active={draftMode==='daily'} onClick={()=>setDraft({...draft,repeticao:'diariamente',dias_semana:[0,1,2,3,4,5,6]})}>Todos os dias</button><button type="button" data-active={draftMode==='weekdays'} onClick={()=>{const selected=draftDays.length&&draftDays.length<7?draftDays:[1,2,3,4,5];setDraft({...draft,repeticao:`semanal:${selected.join(',')}`,dias_semana:selected})}}>Dias específicos</button><button type="button" data-active={draftMode==='interval'} onClick={()=>setDraft({...draft,repeticao:`intervalo:${draftInterval}`,dias_semana:[],data_inicio:dateKey(draft.data_inicio)||today})}>A cada X dias</button></div>{draftMode==='weekdays'?<div className={styles.weekdays}>{['D','S','T','Q','Q','S','S'].map((label,day)=>{const active=draftDays.includes(day);return <button type="button" key={`${label}-${day}`} data-active={active} onClick={()=>{const next=active?draftDays.filter(value=>value!==day):[...draftDays,day].sort((a,b)=>a-b);setDraft({...draft,dias_semana:next,repeticao:`semanal:${next.join(',')}`})}}>{label}</button>})}</div>:null}{draftMode==='interval'?<div className="mai-habits-interval-fields"><label><span>Repetir a cada</span><div><input type="number" min="1" max="365" value={draftInterval} onChange={event=>setDraft({...draft,repeticao:`intervalo:${Math.max(1,Number(event.target.value)||1)}`})}/><span>dias</span></div></label><label><span>Começando em</span><input type="date" value={dateKey(draft.data_inicio)||today} onChange={event=>setDraft({...draft,data_inicio:event.target.value})}/></label></div>:null}</section>
       <section className={`${styles.editorSection} ${styles.span2}`}><div className={styles.editorSectionHead}><strong>Ícone</strong></div><div className={styles.iconPicker}>{icons.map(icon=><button type="button" key={icon} data-active={draft.icone===icon} onClick={()=>setDraft({...draft,icone:icon})}><span className="material-symbols-rounded">{icon}</span></button>)}</div></section>
+      <div className={styles.span2}><ItemAttachments attachments={rows(draft.anexos)} onChange={anexos=>setDraft({...draft,anexos})}/></div>
       <label className={`${styles.toggleRow} ${styles.span2}`}><input type="checkbox" checked={draft.ocultar_agenda===true} onChange={event=>setDraft({...draft,ocultar_agenda:event.target.checked})}/><span>Não mostrar em Hoje/Agenda</span></label>
       <footer className={styles.span2}>{draft._persisted!==false?<button type="button" className={styles.dangerButton} onClick={deleteHabit}>Excluir</button>:<span/>}<span className="mai-autosave-status">Alterações salvas automaticamente</span></footer></form></Modal>:null}
 
