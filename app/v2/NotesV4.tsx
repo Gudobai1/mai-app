@@ -1,8 +1,9 @@
 'use client'
 
-import { FormEvent, useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { MaiState } from '../../lib/v2/state'
 import type { InspectableItem } from './ContextDrawer'
+import { useAutosaveDraft } from './useAutosaveDraft'
 
 type Row = Record<string, any>
 type Commit = (change: (current: MaiState) => MaiState) => void
@@ -28,7 +29,7 @@ const defaultGoogleRpc: Rpc = async (method, args = []) => {
 }
 
 function newNote(): Row {
-  return { titulo: '', conteudo: '', ativo: true, arquivado: false, fixado: false, tamanho: 'normal', anexos: [], ordem: Date.now() }
+  return { id: uid('note'), titulo: '', conteudo: '', ativo: true, arquivado: false, fixado: false, tamanho: 'normal', anexos: [], ordem: Date.now(), data: new Date().toISOString(), _persisted: false }
 }
 
 function RichNoteEditor({ value, onChange }: { value: string; onChange: (value: string) => void }) {
@@ -86,28 +87,30 @@ export function NotesV4({ state, commit, createRequest, googleRpc = defaultGoogl
   }).sort((a, b) => Number(Boolean(b.fixado)) - Number(Boolean(a.fixado)) || Number(a.ordem || 0) - Number(b.ordem || 0) || String(b.data || '').localeCompare(String(a.data || '')))
 
   function normalized(note: Row): Row {
+    const { _persisted: _ignoredPersisted, ...clean } = note
     return {
-      ...note,
-      id: note.id || uid('note'),
-      titulo: String(note.titulo || '').trim(),
+      ...clean,
+      id: clean.id || uid('note'),
+      titulo: String(clean.titulo || '').trim(),
       data: new Date().toISOString(),
-      ativo: note.ativo !== false,
-      arquivado: note.arquivado === true,
-      fixado: note.fixado === true,
-      tamanho: ['normal', 'largo', 'grande'].includes(String(note.tamanho)) ? note.tamanho : 'normal',
-      anexos: rows(note.anexos),
-      ordem: Number(note.ordem || Date.now()),
+      ativo: clean.ativo !== false,
+      arquivado: clean.arquivado === true,
+      fixado: clean.fixado === true,
+      tamanho: ['normal', 'largo', 'grande'].includes(String(clean.tamanho)) ? clean.tamanho : 'normal',
+      anexos: rows(clean.anexos),
+      ordem: Number(clean.ordem || Date.now()),
     }
   }
 
-  function save(event: FormEvent) {
-    event.preventDefault()
-    if (!draft) return
-    if (!String(draft.titulo || '').trim() && !cleanText(draft.conteudo) && !rows(draft.anexos).length) { setDraft(null); return }
-    const next = normalized(draft)
+  function persistDraft(snapshot: Row) {
+    const empty = !String(snapshot.titulo || '').trim() && !cleanText(snapshot.conteudo) && !rows(snapshot.anexos).length
+    if (snapshot._persisted === false && empty) return
+    const next = normalized(snapshot)
     commit(current => ({ ...current, notes: rows(current.notes).some(note => String(note.id) === String(next.id)) ? rows(current.notes).map(note => String(note.id) === String(next.id) ? next : note) : [next, ...rows(current.notes)] }))
-    setDraft(null)
+    if (snapshot._persisted === false) setDraft(current => current && String(current.id) === String(next.id) ? { ...current, _persisted: true } : current)
   }
+
+  useAutosaveDraft({ value: draft, identity: String(draft?.id || ''), enabled: Boolean(draft), save: persistDraft, delay: 220 })
 
   function quickAction(note: Row, kind: NoteAction) {
     if (kind === 'delete' && !confirm('Excluir definitivamente esta nota e seus vínculos?')) return
@@ -186,7 +189,7 @@ export function NotesV4({ state, commit, createRequest, googleRpc = defaultGoogl
     <div className="mai-v3-note-list mai-notes-v4-list" data-tab={tab}>
       {visible.map(note => {
         const attachments = rows(note.anexos).length
-        return <article className="mai-notes-v4-row mai-item-row-v2" key={String(note.id)} draggable={tab === 'active'} onDragStart={event => event.dataTransfer.setData('text/note', String(note.id))} onDragOver={event => { if (tab === 'active') event.preventDefault() }} onDrop={event => { event.preventDefault(); reorder(event.dataTransfer.getData('text/note'), String(note.id)) }} onClick={() => setDraft({ ...note, anexos: rows(note.anexos) })}>
+        return <article className="mai-notes-v4-row mai-item-row-v2" key={String(note.id)} draggable={tab === 'active'} onDragStart={event => event.dataTransfer.setData('text/note', String(note.id))} onDragOver={event => { if (tab === 'active') event.preventDefault() }} onDrop={event => { event.preventDefault(); reorder(event.dataTransfer.getData('text/note'), String(note.id)) }} onClick={() => setDraft({ ...note, anexos: rows(note.anexos), _persisted: true })}>
           <span className="mai-notes-v4-row-icon" aria-hidden="true"><span className="material-symbols-rounded">notes</span></span>
           <span className="mai-item-copy-v2 mai-notes-v4-row-copy">
             <span className="mai-item-titleline-v2"><strong>{note.titulo || 'Sem título'}</strong></span>
@@ -199,15 +202,15 @@ export function NotesV4({ state, commit, createRequest, googleRpc = defaultGoogl
 
     {!visible.length ? <div className="mai-v3-empty-line mai-notes-v4-empty">{query ? 'Nenhuma nota encontrada.' : tab === 'active' ? 'Nenhuma nota criada.' : tab === 'archive' ? 'Nenhuma nota arquivada.' : 'A lixeira está vazia.'}</div> : null}
 
-    {draft ? <div className="mai-v3-create-layer mai-notes-v4-layer" onMouseDown={() => setDraft(null)}><form className="mai-notes-v4-drawer" onSubmit={save} onMouseDown={event => event.stopPropagation()}>
-      <header className="mai-notes-v4-drawer-head"><div><small>{draft.id ? formatDate(draft.data) : 'Nova nota'}</small><strong>{draft.id ? 'Editar nota' : 'Nova nota'}</strong></div><button type="button" aria-label="Fechar" onClick={() => setDraft(null)}><span className="material-symbols-rounded">close</span></button></header>
+    {draft ? <div className="mai-v3-create-layer mai-notes-v4-layer" onMouseDown={() => setDraft(null)}><form className="mai-notes-v4-drawer" onSubmit={event => event.preventDefault()} onMouseDown={event => event.stopPropagation()}>
+      <header className="mai-notes-v4-drawer-head"><div><small>{draft._persisted ? formatDate(draft.data) : 'Nova nota'}</small><strong>{draft._persisted ? 'Editar nota' : 'Nova nota'}</strong></div><button type="button" aria-label="Fechar" onClick={() => setDraft(null)}><span className="material-symbols-rounded">close</span></button></header>
       <div className="mai-notes-v4-drawer-body">
         <div className="mai-notes-v4-note-options"><button type="button" data-active={draft.fixado === true} onClick={() => setDraft({ ...draft, fixado: !draft.fixado })}><span className="material-symbols-rounded">keep</span><span>{draft.fixado ? 'Fixada' : 'Fixar'}</span></button><label><span className="material-symbols-rounded">view_agenda</span><select value={draft.tamanho || 'normal'} onChange={event => setDraft({ ...draft, tamanho: event.target.value })}><option value="normal">Normal</option><option value="largo">Larga</option><option value="grande">Grande</option></select></label></div>
         <input className="mai-notes-v4-title" autoFocus value={draft.titulo || ''} onChange={event => setDraft({ ...draft, titulo: event.target.value })} placeholder="Título da nota" />
         <RichNoteEditor value={String(draft.conteudo || '')} onChange={value => setDraft({ ...draft, conteudo: value })} />
         <section className="mai-notes-v4-attachments"><header><div><strong>Anexos</strong><span>{rows(draft.anexos).length ? `${rows(draft.anexos).length} ${rows(draft.anexos).length === 1 ? 'arquivo' : 'arquivos'}` : 'Google Drive'}</span></div><label><span className="material-symbols-rounded">attach_file_add</span><span>{uploading ? 'Enviando…' : 'Adicionar'}</span><input hidden type="file" disabled={uploading} onChange={event => void upload(event.target.files?.[0])} /></label></header><div>{rows(draft.anexos).map((file, index) => <article key={`${file.idDrive || file.nome}-${index}`}><span className="material-symbols-rounded">description</span><a href={file.url || '#'} target="_blank" rel="noreferrer">{file.nome || 'Arquivo'}</a><button type="button" aria-label={`Remover ${file.nome || 'arquivo'}`} onClick={() => void removeAttachment(index)}><span className="material-symbols-rounded">close</span></button></article>)}</div></section>
       </div>
-      <footer className="mai-notes-v4-drawer-footer"><div className="mai-notes-v4-danger-actions">{draft.id && tab === 'active' ? <button type="button" onClick={() => draftAction('archive')}><span className="material-symbols-rounded">archive</span>Arquivar</button> : null}{draft.id && tab === 'archive' ? <button type="button" onClick={() => draftAction('restore')}><span className="material-symbols-rounded">unarchive</span>Desarquivar</button> : null}{draft.id && tab !== 'trash' ? <button type="button" data-danger="true" onClick={() => draftAction('trash')}><span className="material-symbols-rounded">delete</span>Lixeira</button> : null}{draft.id && tab === 'trash' ? <><button type="button" onClick={() => draftAction('restore')}><span className="material-symbols-rounded">restore_from_trash</span>Restaurar</button><button type="button" data-danger="true" onClick={() => draftAction('delete')}><span className="material-symbols-rounded">delete_forever</span>Excluir</button></> : null}</div><div className="mai-notes-v4-save-actions"><button type="button" onClick={() => setDraft(null)}>Cancelar</button><button type="submit" data-primary="true">Salvar nota</button></div></footer>
+      <footer className="mai-notes-v4-drawer-footer"><div className="mai-notes-v4-danger-actions">{draft._persisted && tab === 'active' ? <button type="button" onClick={() => draftAction('archive')}><span className="material-symbols-rounded">archive</span>Arquivar</button> : null}{draft._persisted && tab === 'archive' ? <button type="button" onClick={() => draftAction('restore')}><span className="material-symbols-rounded">unarchive</span>Desarquivar</button> : null}{draft._persisted && tab !== 'trash' ? <button type="button" data-danger="true" onClick={() => draftAction('trash')}><span className="material-symbols-rounded">delete</span>Lixeira</button> : null}{draft._persisted && tab === 'trash' ? <><button type="button" onClick={() => draftAction('restore')}><span className="material-symbols-rounded">restore_from_trash</span>Restaurar</button><button type="button" data-danger="true" onClick={() => draftAction('delete')}><span className="material-symbols-rounded">delete_forever</span>Excluir</button></> : null}</div><span className="mai-autosave-status">Alterações salvas automaticamente</span></footer>
     </form></div> : null}
   </div>
 }
