@@ -1,0 +1,15 @@
+/* MAI — salvamento automático: alterou, já está salvo. */
+.mai-autosave-status{display:inline-flex;align-items:center;min-height:28px;color:var(--v3-faint,#aeb4ac);font-size:9.5px;font-weight:560;line-height:1.3;white-space:nowrap}
+
+/* O editor geral antigo continua como motor funcional, mas a confirmação manual deixa de existir. */
+.mai-context-v3-drawer[data-mai-autosave="true"] .mai-context-v3-footer>div{display:none!important}
+.mai-context-v3-drawer[data-mai-autosave="true"] .mai-context-v3-footer::after{content:"Alterações salvas automaticamente";margin-left:auto;color:var(--v3-faint,#aeb4ac);font-size:9.5px;font-weight:560;white-space:nowrap}
+
+.mai-task-v4-footer>.mai-autosave-status{margin-left:auto;padding-right:3px}
+.mai-v3-drawer-footer>.mai-autosave-status{margin-left:auto;padding-right:3px}
+.mai-project-settings-footer>.mai-autosave-status{margin-left:auto}
+.mai-notes-v4-drawer-footer>.mai-autosave-status{margin-left:auto}
+
+@media(max-width:720px){
+  .mai-autosave-status,.mai-context-v3-drawer[data-mai-autosave="true"] .mai-context-v3-footer::after{font-size:9px;white-space:normal;text-align:right}
+}
