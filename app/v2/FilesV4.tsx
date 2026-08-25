@@ -66,15 +66,17 @@ export function FilesV4({state,commit,createRequest}:Props){
   const inputRef=useRef<HTMLInputElement>(null)
   const dragIds=useRef<string[]>([])
   const layout=state.configs.filesLayout==='grid'?'grid':'list'
+  const moduleFilters=state.configs.moduleFilters&&typeof state.configs.moduleFilters==='object'?state.configs.moduleFilters as Record<string,Row>:{}
+  const fileKind=String(moduleFilters.files?.kind||'all')
   const canWrite=view==='meudrive'||view==='drive'
   const currentParent=view==='drive'?(folderId==='root'?driveId:folderId):folderId
 
-  const visibleItems=useMemo(()=>[...items].sort((a,b)=>{
+  const visibleItems=useMemo(()=>items.filter(item=>fileKind==='all'||(fileKind==='folder'?isFolder(item):!isFolder(item))).sort((a,b)=>{
     if(isFolder(a)!==isFolder(b))return isFolder(a)?-1:1
     if(sort==='modified')return String(b.modifiedTime||b.modificado||'').localeCompare(String(a.modifiedTime||a.modificado||''))||String(a.name||'').localeCompare(String(b.name||''),'pt-BR')
     if(sort==='size')return Number(b.size||b.tamanho||0)-Number(a.size||a.tamanho||0)||String(a.name||'').localeCompare(String(b.name||''),'pt-BR')
     return String(a.name||a.nome||'').localeCompare(String(b.name||b.nome||''),'pt-BR',{numeric:true,sensitivity:'base'})
-  }),[items,sort])
+  }),[items,sort,fileKind])
   const selectedItems=useMemo(()=>visibleItems.filter(item=>selected.has(String(item.id))),[visibleItems,selected])
   const one=selectedItems.length===1?selectedItems[0]:null
 
@@ -146,7 +148,11 @@ export function FilesV4({state,commit,createRequest}:Props){
   async function moveDropped(ids:string[],destination:string){if(!ids.length)return;await run(async()=>{for(const id of ids)if(id!==destination)await driveCall('move',[id,destination]);await load()})}
 
   function startDrag(item:Row){const ids=selected.has(String(item.id))?[...selected]:[String(item.id)];dragIds.current=ids;if(!selected.has(String(item.id)))setSelected(new Set(ids))}
-  function dropOnFolder(event:any,item:Row){event.preventDefault();event.stopPropagation();if(isFolder(item))void moveDropped(dragIds.current,String(item.id))}
+  function dropOnFolder(event:any,item:Row){
+    event.preventDefault();event.stopPropagation();if(!isFolder(item))return
+    if(event.dataTransfer?.files?.length){void uploadFiles(event.dataTransfer.files,String(item.id));return}
+    void moveDropped(dragIds.current,String(item.id))
+  }
   function dropRoot(event:any,target:string){event.preventDefault();if(event.dataTransfer?.files?.length){void uploadFiles(event.dataTransfer.files,target);return}void moveDropped(dragIds.current,target)}
 
   useEffect(()=>{
@@ -187,7 +193,7 @@ export function FilesV4({state,commit,createRequest}:Props){
     <main className="mai-drive-v4-main">
       <header className="mai-drive-v4-head">
         <div className="mai-drive-title"><h1>{title}</h1>{view==='computers'?<p>A API do Google Drive não oferece a coleção “Computadores” como uma pasta navegável; esta visão reúne os itens da conta ordenados por atividade.</p>:null}</div>
-        <div className="mai-drive-search"><span className="material-symbols-rounded">search</span><input value={query} onChange={event=>setQuery(event.target.value)} placeholder="Pesquisar no Drive"/><kbd>Ctrl K</kbd></div>
+        <div className="mai-drive-search"><span className="material-symbols-rounded">search</span><input value={query} onChange={event=>setQuery(event.target.value)} placeholder="Pesquisar no Drive"/></div>
       </header>
 
       {!query.trim()&&(view==='meudrive'||view==='drive')?<div className="mai-drive-breadcrumbs">
