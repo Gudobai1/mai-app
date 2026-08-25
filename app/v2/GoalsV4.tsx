@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import type { MaiState } from '../../lib/v2/state'
 import type { InspectableItem } from './ContextDrawer'
 import { CreateCalendarPicker, CreateNumberEditor, CreateOptionList, CreateTool, createNaturalDate } from './CreateDrawerTools'
+import { ItemAttachments } from './ItemAttachments'
 import { useAutosaveDraft } from './useAutosaveDraft'
 
 type Row=Record<string,any>
@@ -19,7 +20,7 @@ export function GoalsV4({state,today,commit,createRequest,inspect}:{state:MaiSta
   const goals=rows(state.goals)
   const [draft,setDraft]=useState<Row|null>(null)
   const [createTool,setCreateTool]=useState('')
-  useEffect(()=>{if(createRequest?.startsWith('goals:')){setDraft({id:uid('meta'),titulo:'',status:'Em Andamento',prazo:'',progresso_atual:0,progresso_total:100,descricao:'',prioridade:4,_persisted:false});setCreateTool('')}},[createRequest])
+  useEffect(()=>{if(createRequest?.startsWith('goals:')){setDraft({id:uid('meta'),titulo:'',status:'Em Andamento',prazo:'',progresso_atual:0,progresso_total:100,descricao:'',prioridade:4,anexos:[],_persisted:false});setCreateTool('')}},[createRequest])
   const buckets=[
     {id:'active',title:'Em andamento',test:(g:Row)=>!String(g.status||'').toLowerCase().includes('conclu')&&!String(g.status||'').toLowerCase().includes('paus')},
     {id:'paused',title:'Pausadas',test:(g:Row)=>String(g.status||'').toLowerCase().includes('paus')},
@@ -29,7 +30,7 @@ export function GoalsV4({state,today,commit,createRequest,inspect}:{state:MaiSta
   function persistDraft(snapshot:Row){
     if(!String(snapshot.titulo||'').trim())return
     const {_persisted:_ignored,...clean}=snapshot
-    const next={...clean,id:clean.id||uid('meta'),titulo:String(clean.titulo).trim(),progresso_total:Math.max(1,Number(clean.progresso_total||100)),progresso_atual:Number(clean.progresso_atual||0)}
+    const next={...clean,id:clean.id||uid('meta'),titulo:String(clean.titulo).trim(),progresso_total:Math.max(1,Number(clean.progresso_total||100)),progresso_atual:Number(clean.progresso_atual||0),anexos:rows(clean.anexos)}
     commit(current=>({...current,goals:rows(current.goals).some(g=>String(g.id)===String(next.id))?rows(current.goals).map(g=>String(g.id)===String(next.id)?next:g):[next,...rows(current.goals)]}))
     if(snapshot._persisted===false)setDraft(current=>current&&String(current.id)===String(next.id)?{...current,_persisted:true}:current)
   }
@@ -49,6 +50,6 @@ export function GoalsV4({state,today,commit,createRequest,inspect}:{state:MaiSta
       <CreateTool id="goal-target" icon="target" label="Alvo" summary={String(Number(draft.progresso_total||100))} color="#7b63ad" open={createTool} setOpen={setCreateTool}><CreateNumberEditor value={Number(draft.progresso_total||100)} onChange={value=>setDraft({...draft,progresso_total:Math.max(1,value)})}/></CreateTool>
       <CreateTool id="goal-status" icon="task_alt" label="Status" summary={String(draft.status||'Em andamento')} color="#5779a6" open={createTool} setOpen={setCreateTool}><CreateOptionList value={String(draft.status||'Em Andamento')} onChange={value=>setDraft({...draft,status:value})} close={()=>setCreateTool('')} options={[{value:'Em Andamento',label:'Em andamento',icon:'play_circle'},{value:'Pausada',label:'Pausada',icon:'pause_circle'},{value:'Concluída',label:'Concluída',icon:'check_circle'}]}/></CreateTool>
       <CreateTool id="goal-priority" icon="flag" label="Prioridade" summary={priorityLabel} color={draftPriorityColor} open={createTool} setOpen={setCreateTool}><CreateOptionList value={Number(draft.prioridade||4)} onChange={value=>setDraft({...draft,prioridade:Number(value)})} close={()=>setCreateTool('')} options={[{value:4,label:'Sem prioridade',icon:'flag'},{value:3,label:'Baixa',icon:'flag'},{value:2,label:'Média',icon:'flag'},{value:1,label:'Alta',icon:'flag'}]}/></CreateTool>
-    </div></div><footer className="mai-v3-drawer-footer"><span/><span className="mai-autosave-status">Alterações salvas automaticamente</span></footer></form></div>:null}
+    </div><ItemAttachments attachments={rows(draft.anexos)} onChange={anexos=>setDraft({...draft,anexos})}/></div><footer className="mai-v3-drawer-footer"><span/><span className="mai-autosave-status">Alterações salvas automaticamente</span></footer></form></div>:null}
   </div>
 }
