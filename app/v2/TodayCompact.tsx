@@ -212,12 +212,11 @@ export function TodayCompact({ state, today, commit, inspect, onMore, part = 'al
 
   const tasks = <section className="mai-v3-today-section mai-v3-tasks-section mai-today-unified-section">
     <h2>Tarefas</h2>
-    {sortMode === 'project' ? <div className="mai-v4-project-groups">
+    {sortMode === 'project' && projectGroups.length ? <div className="mai-v4-project-groups">
       {projectGroups.map(group => <section className="mai-v4-project-group" key={group.id}>
         <header><h3>{group.name}</h3><span>{group.tasks.length}</span></header>
         <div className="mai-today-unified-list">{group.tasks.map(task => renderTask(task))}</div>
       </section>)}
-      {!projectGroups.length ? <div className="mai-today-unified-list" /> : null}
     </div> : <div className="mai-today-unified-list">{filteredTasks.map(task => renderTask(task))}</div>}
   </section>
 
