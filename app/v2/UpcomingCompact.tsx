@@ -147,6 +147,37 @@ export function UpcomingCompact({state,today,inspect,commit}:Props){
     return (a.time||'99:99').localeCompare(b.time||'99:99')||a.title.localeCompare(b.title,'pt-BR')
   }
 
+  const overdueTasks=useMemo(()=>{
+    if(!filters.tasks)return[] as PlannerItem[]
+    return state.tasks.filter(task=>{
+      const day=String(task.data_vencimento||'').slice(0,10)
+      if(task.concluida||task.ocultar_agenda||!day||day>=today)return false
+      if(filters.project!=='all'&&String(task.projeto_id||'entrada')!==filters.project)return false
+      if(filters.priority!=='all'&&String(Number(task.prioridade||4))!==filters.priority)return false
+      return true
+    }).map(task=>{
+      const day=String(task.data_vencimento||'').slice(0,10)
+      const project=projectMap.get(String(task.projeto_id||'entrada'))
+      const priority=Math.max(1,Math.min(4,Number(task.prioridade||4)))
+      return {
+        id:`overdue:${task.id}`,
+        sourceId:task.id,
+        kind:'task' as const,
+        date:day,
+        time:String(task.data_vencimento||'').includes('T')?String(task.data_vencimento).slice(11,16):'',
+        title:task.titulo,
+        subtitle:String(project?.nome||project?.name||(task.projeto_id==='entrada'?'Entrada':'Tarefa')),
+        color:['#c85b52','#c28a3d','#7c9274','#b8beb7'][priority-1],
+        completed:false,
+        recurring:Boolean(task.repeticao),
+        raw:task as Row,
+      } satisfies PlannerItem
+    }).sort((a,b)=>{
+      if(sortMode==='priority'||sortMode==='project'||sortMode==='name'||sortMode==='title')return compareItems(a,b)
+      return a.date.localeCompare(b.date)||(a.time||'99:99').localeCompare(b.time||'99:99')||a.title.localeCompare(b.title,'pt-BR',{sensitivity:'base'})
+    })
+  },[state.tasks,today,filters.tasks,filters.project,filters.priority,sortMode,projectMap])
+
   const listItems=useMemo(()=>{
     const start=addDays(today,-filters.pastDays)
     const end=addDays(today,rangeDays)
@@ -155,7 +186,11 @@ export function UpcomingCompact({state,today,inspect,commit}:Props){
 
   const listGroups=useMemo(()=>{
     const map=new Map<string,PlannerItem[]>()
-    listItems.forEach(item=>{if(!map.has(item.date))map.set(item.date,[]);map.get(item.date)!.push(item)})
+    listItems.forEach(item=>{
+      if(item.kind==='task'&&item.date<today)return
+      if(!map.has(item.date))map.set(item.date,[])
+      map.get(item.date)!.push(item)
+    })
     if(!map.has(today))map.set(today,[])
     map.forEach(items=>items.sort(compareItems))
     return [...map.entries()].sort((a,b)=>a[0].localeCompare(b[0]))
@@ -163,9 +198,10 @@ export function UpcomingCompact({state,today,inspect,commit}:Props){
 
   useEffect(()=>{
     if(mode!=='list'||focusedList.current)return
+    if(overdueTasks.length){focusedList.current=true;return}
     const id=window.requestAnimationFrame(()=>{listRef.current?.querySelector(`[data-day="${today}"]`)?.scrollIntoView({block:'start'});focusedList.current=true})
     return()=>window.cancelAnimationFrame(id)
-  },[mode,today,listGroups.length])
+  },[mode,today,listGroups.length,overdueTasks.length])
 
   const monthStart=firstOfMonth(anchor||today)
   const nextMonthStart=moveMonth(monthStart,1)
@@ -232,6 +268,7 @@ export function UpcomingCompact({state,today,inspect,commit}:Props){
   const mobileWeekday=mobileDay?new Date(`${mobileDay}T12:00:00`).toLocaleDateString('pt-BR',{weekday:'long'}):''
 
   return <div className="mai-upcoming-page mai-v3-upcoming-page">
+    {overdueTasks.length?<section className="mai-upcoming-overdue-section" data-overdue="true"><header><strong>Atrasadas</strong><span>{overdueTasks.length}</span></header><div>{overdueTasks.map(item=><ItemRow key={item.id} item={item} inspect={inspect} today={today} project={projectFor(item)}/>)}</div></section>:null}
     {mode==='list'?<div ref={listRef} className="mai-upcoming-scroll mai-v3-upcoming-scroll mai-upcoming-history-list">
       {listGroups.map(([day,items])=><section key={day} data-day={day} data-past={day<today||undefined}><header><strong>{groupLabel(day,today)}</strong></header>{items.map(item=><ItemRow key={item.id} item={item} inspect={inspect} today={today} project={item.kind==='task'?projectFor(item):undefined}/>)}{!items.length?<small className="mai-empty-day">Nenhum item.</small>:null}</section>)}
       <div ref={sentinelRef} className="mai-v3-infinite-sentinel"/>
