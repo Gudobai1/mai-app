@@ -1,0 +1,18 @@
+.mai-file-preview-layer{position:fixed;inset:0;z-index:1700;display:grid;place-items:center;padding:24px;background:rgba(20,23,20,.58);backdrop-filter:blur(3px)}
+.mai-file-preview{width:min(1180px,96vw);height:min(820px,92vh);display:grid;grid-template-rows:auto minmax(0,1fr);overflow:hidden;border:1px solid var(--v3-line);border-radius:16px;background:var(--v3-card);box-shadow:0 24px 70px rgba(0,0,0,.24)}
+.mai-file-preview>header{min-height:52px;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:0 12px 0 16px;border-bottom:1px solid var(--v3-line);background:var(--v3-card)}
+.mai-file-preview>header>div{min-width:0;display:flex;align-items:center;gap:9px}
+.mai-file-preview>header>div:first-child{flex:1}
+.mai-file-preview>header strong{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px;font-weight:680;color:var(--v3-text)}
+.mai-file-preview>header .material-symbols-rounded{font-size:19px;color:var(--v3-muted)}
+.mai-file-preview>header a,.mai-file-preview>header button{width:34px;height:34px;display:grid;place-items:center;border:0;border-radius:9px;background:transparent;color:var(--v3-muted);text-decoration:none;cursor:pointer}
+.mai-file-preview>header a:hover,.mai-file-preview>header button:hover{background:var(--v3-hover);color:var(--v3-text)}
+.mai-file-preview-body{min-height:0;background:var(--v3-bg)}
+.mai-file-preview-body iframe{width:100%;height:100%;display:block;border:0;background:#fff}
+.mai-file-preview-unavailable{height:100%;display:grid;place-items:center;align-content:center;gap:8px;padding:28px;text-align:center;color:var(--v3-muted)}
+.mai-file-preview-unavailable>.material-symbols-rounded{font-size:34px;color:var(--v3-faint)}
+.mai-file-preview-unavailable strong{font-size:14px;color:var(--v3-text)}
+.mai-file-preview-unavailable small{max-width:440px;font-size:11px;line-height:1.5}
+.mai-file-preview-unavailable a{margin-top:8px;padding:8px 12px;border-radius:9px;background:var(--v3-accent-soft);color:var(--v3-accent-strong);font-size:11px;font-weight:650;text-decoration:none}
+html[data-mai-theme="dark"] .mai-file-preview-body iframe{background:#fff}
+@media(max-width:700px){.mai-file-preview-layer{padding:0}.mai-file-preview{width:100vw;height:100dvh;border:0;border-radius:0}.mai-file-preview>header{padding-left:12px}.mai-file-preview>header strong{font-size:12px}}
