@@ -21,6 +21,16 @@
 .mai-habits-pro-row:hover{background:color-mix(in srgb,var(--v3-soft,#f4f6f2) 58%,transparent)!important}
 .mai-habits-pro-row button{box-shadow:none!important}
 
+/* Cada ocorrência mantém o check principal e, apenas em Hoje, uma ação discreta de falha. */
+.mai-habit-day-cell{position:relative;min-width:0;min-height:54px;display:grid;place-items:center}
+.mai-habit-fail-inline{position:absolute;right:0;bottom:1px;width:24px;height:24px;display:grid;place-items:center;padding:0;border:0;border-radius:7px;background:transparent;color:var(--v3-faint,#929990);font-size:14px;line-height:1;cursor:pointer}
+.mai-habit-fail-inline:hover{background:color-mix(in srgb,var(--mai-danger,#c85b52) 9%,transparent);color:var(--mai-danger,#c85b52)}
+.mai-habits-pro-row button[data-failed="true"],
+.mai-habits-pro [class*="heatmap"] button[data-failed="true"],
+.mai-habits-pro [class*="monthHabitGrid"] button[data-failed="true"]{background:transparent!important;border-color:color-mix(in srgb,var(--mai-danger,#c85b52) 58%,var(--v3-line-strong,#d8ddd6))!important;color:var(--mai-danger,#c85b52)!important}
+.mai-habit-fail-modal{min-height:34px;padding:0 11px;border:0;border-radius:8px;background:transparent;color:var(--mai-danger,#c85b52);font:inherit;font-size:12px;font-weight:650;cursor:pointer;justify-self:start}
+.mai-habit-fail-modal:hover{background:color-mix(in srgb,var(--mai-danger,#c85b52) 8%,transparent)}
+
 .mai-habits-pro-modal{box-shadow:0 18px 50px rgba(26,32,27,.12)!important}
 .mai-habits-pro-form{gap:14px!important}
 .mai-habits-pro-form input,.mai-habits-pro-form textarea,.mai-habits-pro-form select{box-shadow:none!important}
