@@ -39,6 +39,7 @@ import './mai-notes-v4.css'
 import './mai-files-v4.css'
 import './mai-autosave.css'
 import './mai-item-attachments.css'
+import './mai-file-preview.css'
 import './mai-dark-mode-v2.css'
 
 export const metadata: Metadata = {
