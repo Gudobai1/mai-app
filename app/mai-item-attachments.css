@@ -94,5 +94,15 @@
 .mai-item-attachments-error{margin:0;color:var(--mai-danger,#c85b52);font-size:12px}
 .mai-item-attachments-compact{padding-top:10px}
 
+.mai-task-v4-files[data-mai-attachments-bridged="true"]>header,
+.mai-task-v4-files[data-mai-attachments-bridged="true"]>small,
+.mai-task-v4-files[data-mai-attachments-bridged="true"]>div:not(.mai-attachment-portal-host),
+.mai-context-v3-files[data-mai-attachments-bridged="true"]>header,
+.mai-context-v3-files[data-mai-attachments-bridged="true"]>small,
+.mai-context-v3-files[data-mai-attachments-bridged="true"]>div:not(.mai-attachment-portal-host){display:none!important}
+.mai-attachment-portal-host{display:block!important}
+.mai-task-v4-files[data-mai-attachments-bridged="true"],
+.mai-context-v3-files[data-mai-attachments-bridged="true"]{padding-top:0!important}
+
 [data-theme="dark"] .mai-item-attachments,
 html.dark .mai-item-attachments{background:transparent}
