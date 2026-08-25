@@ -217,8 +217,8 @@ export function TodayCompact({ state, today, commit, inspect, onMore, part = 'al
         <header><h3>{group.name}</h3><span>{group.tasks.length}</span></header>
         <div className="mai-today-unified-list">{group.tasks.map(task => renderTask(task))}</div>
       </section>)}
-      {!projectGroups.length ? <div className="mai-v3-empty-line">Nenhuma tarefa pendente para hoje.</div> : null}
-    </div> : <div className="mai-today-unified-list">{filteredTasks.map(task => renderTask(task))}{!filteredTasks.length ? <div className="mai-v3-empty-line">Nenhuma tarefa pendente para hoje.</div> : null}</div>}
+      {!projectGroups.length ? <div className="mai-today-unified-list" /> : null}
+    </div> : <div className="mai-today-unified-list">{filteredTasks.map(task => renderTask(task))}</div>}
   </section>
 
   if (part === 'header') return header
