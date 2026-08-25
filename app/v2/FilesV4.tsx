@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, type MouseEvent } from 'react'
 import type { MaiState } from '../../lib/v2/state'
+import { FilePreviewOverlay } from './FilePreviewOverlay'
 import { MaiIcon } from './MaiIcons'
 
 type Row=Record<string,any>
@@ -63,6 +64,7 @@ export function FilesV4({state,commit,createRequest}:Props){
   const [moveDialog,setMoveDialog]=useState<{ids:string[];folder:string;driveId:string;view:'meudrive'|'drive'}|null>(null)
   const [pickerFolders,setPickerFolders]=useState<Row[]>([])
   const [pickerPath,setPickerPath]=useState<Row[]>([])
+  const [preview,setPreview]=useState<Row|null>(null)
   const inputRef=useRef<HTMLInputElement>(null)
   const dragIds=useRef<string[]>([])
   const layout=state.configs.filesLayout==='grid'?'grid':'list'
@@ -110,7 +112,7 @@ export function FilesV4({state,commit,createRequest}:Props){
     if(itemDrive){setView('drive');setDriveId(itemDrive)}else if(view!=='drive')setView('meudrive')
     setFolderId(String(item.id));setQuery('');setSelected(new Set())
   }
-  function openItem(item:Row){if(isFolder(item)){openFolder(item);return}const url=String(item.webViewLink||item.url||item.webContentLink||'');if(url)window.open(url,'_blank','noopener,noreferrer')}
+  function openItem(item:Row){if(isFolder(item)){openFolder(item);return}setPreview(item)}
   function clickItem(event:MouseEvent<HTMLElement>,item:Row){
     const id=String(item.id);setContext(null)
     if(event.ctrlKey||event.metaKey){setSelected(current=>{const next=new Set(current);next.has(id)?next.delete(id):next.add(id);return next})}
@@ -167,10 +169,10 @@ export function FilesV4({state,commit,createRequest}:Props){
       if(event.key==='Delete'&&selectedItems.length){event.preventDefault();view==='trash'?void deleteForever():void trash()}
       if(event.key==='F2'&&one){event.preventDefault();void rename()}
       if(event.key==='Enter'&&one){event.preventDefault();openItem(one)}
-      if(event.key==='Escape')clearSelection()
+      if(event.key==='Escape'&&!preview)clearSelection()
     }
     window.addEventListener('keydown',onKey);return()=>window.removeEventListener('keydown',onKey)
-  },[visibleItems,selectedItems,clipboard,view,one,currentParent])
+  },[visibleItems,selectedItems,clipboard,view,one,currentParent,preview])
 
   const title=query.trim()?`Pesquisa: ${query.trim()}`:view==='drive'?(sharedDrives.find(d=>String(d.id)===driveId)?.name||'Drive compartilhado'):viewLabels[view]
   const storagePct=storage.limit?Math.min(100,Math.round(Number(storage.used||0)/Number(storage.limit)*100)):0
@@ -202,7 +204,7 @@ export function FilesV4({state,commit,createRequest}:Props){
       </div>:null}
 
       <div className="mai-drive-toolbar">
-        <div>{selectedItems.length?<><strong>{selectedItems.length} selecionado{selectedItems.length>1?'s':''}</strong>{one?<button onClick={()=>openItem(one)} title="Abrir/editar"><span className="material-symbols-rounded">open_in_new</span></button>:null}{one?<button onClick={()=>void rename()} title="Renomear"><span className="material-symbols-rounded">edit</span></button>:null}<button onClick={()=>copy('cut')} title="Recortar"><span className="material-symbols-rounded">content_cut</span></button><button onClick={()=>copy('copy')} title="Copiar"><span className="material-symbols-rounded">content_copy</span></button><button onClick={()=>openMove()} title="Mover"><span className="material-symbols-rounded">drive_file_move</span></button><button onClick={()=>void star()} title="Adicionar/remover estrela"><span className="material-symbols-rounded">star</span></button>{view==='trash'?<><button onClick={()=>void restore()} title="Restaurar"><span className="material-symbols-rounded">restore_from_trash</span></button><button onClick={()=>void deleteForever()} title="Excluir definitivamente"><span className="material-symbols-rounded">delete_forever</span></button></>:<button onClick={()=>void trash()} title="Mover para lixeira"><span className="material-symbols-rounded">delete</span></button>}<button onClick={clearSelection} title="Limpar seleção"><span className="material-symbols-rounded">close</span></button></>:<><button onClick={()=>inputRef.current?.click()}><span className="material-symbols-rounded">upload</span><span>Enviar arquivo</span></button><button onClick={()=>setNewFolder(true)}><span className="material-symbols-rounded">create_new_folder</span><span>Nova pasta</span></button></>}</div>
+        <div>{selectedItems.length?<><strong>{selectedItems.length} selecionado{selectedItems.length>1?'s':''}</strong>{one?<button onClick={()=>openItem(one)} title="Visualizar"><span className="material-symbols-rounded">visibility</span></button>:null}{one?<button onClick={()=>void rename()} title="Renomear"><span className="material-symbols-rounded">edit</span></button>:null}<button onClick={()=>copy('cut')} title="Recortar"><span className="material-symbols-rounded">content_cut</span></button><button onClick={()=>copy('copy')} title="Copiar"><span className="material-symbols-rounded">content_copy</span></button><button onClick={()=>openMove()} title="Mover"><span className="material-symbols-rounded">drive_file_move</span></button><button onClick={()=>void star()} title="Adicionar/remover estrela"><span className="material-symbols-rounded">star</span></button>{view==='trash'?<><button onClick={()=>void restore()} title="Restaurar"><span className="material-symbols-rounded">restore_from_trash</span></button><button onClick={()=>void deleteForever()} title="Excluir definitivamente"><span className="material-symbols-rounded">delete_forever</span></button></>:<button onClick={()=>void trash()} title="Mover para lixeira"><span className="material-symbols-rounded">delete</span></button>}<button onClick={clearSelection} title="Limpar seleção"><span className="material-symbols-rounded">close</span></button></>:<><button onClick={()=>inputRef.current?.click()}><span className="material-symbols-rounded">upload</span><span>Enviar arquivo</span></button><button onClick={()=>setNewFolder(true)}><span className="material-symbols-rounded">create_new_folder</span><span>Nova pasta</span></button></>}</div>
         <div>{clipboard?<button className="mai-drive-paste" onClick={()=>void paste()}><span className="material-symbols-rounded">content_paste</span><span>Colar {clipboard.items.length}</span></button>:null}<select aria-label="Ordenar" value={sort} onChange={event=>setSort(event.target.value as any)}><option value="name">Nome</option><option value="modified">Modificado</option><option value="size">Tamanho</option></select><span className="mai-drive-layout"><button data-active={layout==='list'} onClick={()=>updateLayout('list')} title="Lista"><span className="material-symbols-rounded">view_list</span></button><button data-active={layout==='grid'} onClick={()=>updateLayout('grid')} title="Grade"><span className="material-symbols-rounded">grid_view</span></button></span></div>
       </div>
 
@@ -221,7 +223,7 @@ export function FilesV4({state,commit,createRequest}:Props){
     </main>
 
     {context?<div className="mai-drive-context" style={{left:Math.min(context.x,window.innerWidth-230),top:Math.min(context.y,window.innerHeight-360)}} onClick={event=>event.stopPropagation()}>
-      <button onClick={()=>{openItem(context.item);setContext(null)}}><span className="material-symbols-rounded">open_in_new</span>Abrir / editar</button>
+      <button onClick={()=>{openItem(context.item);setContext(null)}}><span className="material-symbols-rounded">visibility</span>Visualizar</button>
       <button onClick={()=>void rename(context.item)}><span className="material-symbols-rounded">edit</span>Renomear</button>
       <button onClick={()=>void star([context.item])}><span className="material-symbols-rounded">star</span>{context.item.starred?'Remover estrela':'Adicionar estrela'}</button>
       <hr/>
@@ -235,5 +237,6 @@ export function FilesV4({state,commit,createRequest}:Props){
     {newFolder?<div className="mai-drive-modal-layer" onMouseDown={()=>setNewFolder(false)}><form className="mai-drive-modal" onMouseDown={event=>event.stopPropagation()} onSubmit={event=>{event.preventDefault();void makeFolder()}}><header><strong>Nova pasta</strong><button type="button" onClick={()=>setNewFolder(false)}>×</button></header><input autoFocus value={folderName} onChange={event=>setFolderName(event.target.value)} onFocus={event=>event.target.select()}/><footer><button type="button" onClick={()=>setNewFolder(false)}>Cancelar</button><button disabled={!folderName.trim()||busy}>Criar</button></footer></form></div>:null}
 
     {moveDialog?<div className="mai-drive-modal-layer" onMouseDown={()=>setMoveDialog(null)}><section className="mai-drive-move-modal" onMouseDown={event=>event.stopPropagation()}><header><div><strong>Mover {moveDialog.ids.length===1?'item':`${moveDialog.ids.length} itens`}</strong><small>Escolha a pasta de destino</small></div><button onClick={()=>setMoveDialog(null)}>×</button></header><nav><button data-active={moveDialog.view==='meudrive'} onClick={()=>pickerLocation('root','','meudrive')}>Meu Drive</button>{sharedDrives.map(d=><button key={String(d.id)} data-active={moveDialog.view==='drive'&&moveDialog.driveId===String(d.id)} onClick={()=>pickerLocation('root',String(d.id),'drive')}>{String(d.name)}</button>)}</nav><div className="mai-drive-picker-path"><button onClick={()=>pickerLocation('root',moveDialog.driveId,moveDialog.view)}>Raiz</button>{pickerPath.map(part=><span key={String(part.id)}><b>›</b><button onClick={()=>pickerLocation(String(part.id),moveDialog.driveId,moveDialog.view)}>{String(part.name||part.nome)}</button></span>)}</div><div className="mai-drive-picker-list">{pickerFolders.map(folder=><button key={String(folder.id)} onDoubleClick={()=>pickerLocation(String(folder.id),moveDialog.driveId,moveDialog.view)} onClick={()=>pickerLocation(String(folder.id),moveDialog.driveId,moveDialog.view)}><span className="material-symbols-rounded">folder</span><span>{String(folder.name||folder.nome)}</span><span className="material-symbols-rounded">chevron_right</span></button>)}{!pickerFolders.length?<small>Nenhuma subpasta.</small>:null}</div><footer><button onClick={()=>setMoveDialog(null)}>Cancelar</button><button onClick={()=>void confirmMove()} disabled={busy}>Mover para cá</button></footer></section></div>:null}
+    <FilePreviewOverlay file={preview} onClose={()=>setPreview(null)}/>
   </div>
 }
