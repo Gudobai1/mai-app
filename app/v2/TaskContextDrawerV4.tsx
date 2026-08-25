@@ -1,9 +1,10 @@
 'use client'
 
-import { CSSProperties, FormEvent, ReactNode, useEffect, useMemo, useRef, useState } from 'react'
+import { CSSProperties, ReactNode, useEffect, useMemo, useRef, useState } from 'react'
 import type { MaiState } from '../../lib/v2/state'
 import type { InspectableItem } from './ContextDrawer'
 import { MaiIcon } from './MaiIcons'
+import { useAutosaveDraft } from './useAutosaveDraft'
 
 type Row = Record<string, any>
 type Props = {
@@ -169,6 +170,33 @@ export function TaskContextDrawerV4({ item, state, today, commit, onClose }: Pro
     if (pathRef.current) pathRef.current.scrollLeft = pathRef.current.scrollWidth
   }, [activeId, breadcrumbs.length])
 
+  function persistDraft(snapshot: Row) {
+    if (!activeId) return
+    const day = dateOnly(snapshot.data_vencimento)
+    const hour = String(snapshot._hora || '')
+    const due = day ? `${day}${hour ? `T${hour}` : ''}` : ''
+    const snapshotProjectId = String(snapshot.projeto_id || 'entrada')
+    const snapshotSection = String(snapshot.secao || '')
+    const snapshotAttachments = rows(snapshot.anexos)
+    const { _hora: _ignoredHour, ...clean } = snapshot
+    commit(current => ({
+      ...current,
+      tasks: current.tasks.map(task => String(task.id) === activeId ? {
+        ...task,
+        ...clean,
+        titulo: String(snapshot.titulo || '').trim(),
+        descricao: snapshot.descricao || '',
+        data_vencimento: due,
+        projeto_id: snapshotProjectId,
+        secao: snapshotSection,
+        prioridade: Number(snapshot.prioridade || 4),
+        anexos: snapshotAttachments,
+      } : task),
+    }))
+  }
+
+  useAutosaveDraft({ value: item ? draft : null, identity: activeId, enabled: Boolean(item && activeId), save: persistDraft })
+
   if (!item) return null
 
   const set = (patch: Row) => setDraft(current => ({ ...current, ...patch }))
@@ -185,15 +213,6 @@ export function TaskContextDrawerV4({ item, state, today, commit, onClose }: Pro
       ? <img className="mai-task-v4-project-icon-image" src={String(project.imagem_url)} alt=""/>
       : <span className="material-symbols-rounded">{String(project?.icone || 'folder')}</span>
   const projectColor = projectId === 'entrada' ? '#687d62' : String(project?.cor || '#687d62')
-
-  function save(event: FormEvent) {
-    event.preventDefault()
-    const day = dateOnly(draft.data_vencimento)
-    const hour = String(draft._hora || '')
-    const due = day ? `${day}${hour ? `T${hour}` : ''}` : ''
-    commit(current => ({ ...current, tasks: current.tasks.map(task => String(task.id) === activeId ? { ...task, ...draft, titulo: String(draft.titulo || '').trim(), descricao: draft.descricao || '', data_vencimento: due, projeto_id: projectId, secao: section, prioridade: Number(draft.prioridade || 4), anexos: attachments } : task) }))
-    onClose()
-  }
 
   function remove() {
     if (!confirm('Excluir tarefa?')) return
@@ -233,7 +252,7 @@ export function TaskContextDrawerV4({ item, state, today, commit, onClose }: Pro
         <button type="button" className="mai-task-v4-close" onClick={onClose} aria-label="Fechar"><MaiIcon name="close" size={18}/></button>
       </header>
 
-      <form className="mai-task-v4-form" onSubmit={save}>
+      <form className="mai-task-v4-form" onSubmit={event => event.preventDefault()}>
         <div className="mai-task-v4-scroll" onMouseDown={() => openTool && setOpenTool('')}>
           <input className="mai-v3-title-input mai-context-unified-title" autoFocus value={String(draft.titulo || '')} onChange={event => set({ titulo: event.target.value })} placeholder="Nome da tarefa" onMouseDown={event => event.stopPropagation()}/>
           <textarea className="mai-v3-description-input mai-context-unified-description" rows={2} value={String(draft.descricao || '')} placeholder="Descrição" onChange={event => set({ descricao: event.target.value })} onMouseDown={event => event.stopPropagation()}/>
@@ -264,7 +283,7 @@ export function TaskContextDrawerV4({ item, state, today, commit, onClose }: Pro
 
         <footer className="mai-task-v4-footer">
           <button type="button" className="mai-task-v4-delete" onClick={remove}><MaiIcon name="delete" size={15}/>Excluir</button>
-          <div><button type="button" onClick={onClose}>Cancelar</button><button className="mai-task-v4-save">Salvar</button></div>
+          <span className="mai-autosave-status">Alterações salvas automaticamente</span>
         </footer>
       </form>
     </aside>
