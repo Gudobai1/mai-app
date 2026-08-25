@@ -37,6 +37,7 @@ import './mai-kanban.css'
 import './mai-habits-pro.css'
 import './mai-notes-v4.css'
 import './mai-autosave.css'
+import './mai-item-attachments.css'
 import './mai-dark-mode-v2.css'
 
 export const metadata: Metadata = {
