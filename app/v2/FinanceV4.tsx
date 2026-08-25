@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import type { MaiState } from '../../lib/v2/state'
 import type { InspectableItem } from './ContextDrawer'
 import { CreateCalendarPicker, CreateNumberEditor, CreateOptionList, CreateTextEditor, CreateTool, createNaturalDate } from './CreateDrawerTools'
+import { ItemAttachments } from './ItemAttachments'
 import { useAutosaveDraft } from './useAutosaveDraft'
 
 type Row=Record<string,any>
@@ -35,13 +36,13 @@ export function FinanceV4({state,today,commit,createRequest,inspect}:{state:MaiS
   const invoice=cards.reduce((sum,card)=>sum+monthTx.filter(item=>String(item.conta_id||'')===`card|${card.id}`||String(item.cartao_id||'')===String(card.id)).reduce((subtotal,item)=>subtotal+Number(item.valor||0),0),0)
   const [draft,setDraft]=useState<Row|null>(null)
   const [createTool,setCreateTool]=useState('')
-  useEffect(()=>{if(createRequest?.startsWith('finance:')){setDraft({id:uid('fin'),titulo:'',observacao:'',valor:0,tipo:'despesa',data:today,status:'pendente',categoria:'',conta_id:'',_persisted:false});setCreateTool('')}},[createRequest,today])
+  useEffect(()=>{if(createRequest?.startsWith('finance:')){setDraft({id:uid('fin'),titulo:'',observacao:'',valor:0,tipo:'despesa',data:today,status:'pendente',categoria:'',conta_id:'',anexos:[],_persisted:false});setCreateTool('')}},[createRequest,today])
   const setTab=(next:string)=>commit(current=>({...current,configs:{...current.configs,areaTabs:{...(current.configs.areaTabs&&typeof current.configs.areaTabs==='object'?current.configs.areaTabs as Record<string,string>:{}),finance:next}}}))
 
   function persistDraft(snapshot:Row){
     if(!String(snapshot.titulo||'').trim())return
     const {_persisted:_ignored,...clean}=snapshot
-    const next={...clean,id:clean.id||uid('fin'),titulo:String(clean.titulo).trim(),valor:Number(clean.valor||0),valor_pago:clean.status==='pago'?Number(clean.valor||0):Number(clean.valor_pago||0)}
+    const next={...clean,id:clean.id||uid('fin'),titulo:String(clean.titulo).trim(),valor:Number(clean.valor||0),valor_pago:clean.status==='pago'?Number(clean.valor||0):Number(clean.valor_pago||0),anexos:rows(clean.anexos)}
     commit(current=>({...current,finance:{...current.finance,transactions:rows(current.finance.transactions).some(item=>String(item.id)===String(next.id))?rows(current.finance.transactions).map(item=>String(item.id)===String(next.id)?next:item):[next,...rows(current.finance.transactions)]}}))
     if(snapshot._persisted===false)setDraft(current=>current&&String(current.id)===String(next.id)?{...current,_persisted:true}:current)
   }
@@ -77,6 +78,6 @@ export function FinanceV4({state,today,commit,createRequest,inspect}:{state:MaiS
       <CreateTool id="finance-status" icon="task_alt" label="Status" summary={String(draft.status||'pendente')==='pago'?'Pago':'Pendente'} color="#5779a6" open={createTool} setOpen={setCreateTool}><CreateOptionList value={String(draft.status||'pendente')} onChange={value=>setDraft({...draft,status:value})} close={()=>setCreateTool('')} options={[{value:'pendente',label:'Pendente',icon:'schedule'},{value:'pago',label:'Pago',icon:'check_circle'}]}/></CreateTool>
       <CreateTool id="finance-category" icon="sell" label="Categoria" summary={String(draft.categoria||'Não selecionado')} color="#b27a35" open={createTool} setOpen={setCreateTool}><CreateTextEditor value={String(draft.categoria||'')} placeholder="Adicionar categoria" onChange={value=>setDraft({...draft,categoria:value})}/></CreateTool>
       <CreateTool id="finance-account" icon="account_balance_wallet" label="Conta" summary={accountSummary} color="#75808b" open={createTool} setOpen={setCreateTool}><CreateOptionList value={String(draft.conta_id||'')} onChange={value=>setDraft({...draft,conta_id:value})} close={()=>setCreateTool('')} options={[{value:'',label:'Sem conta',icon:'remove_circle'},...accounts.map(account=>({value:String(account.id),label:String(account.nome||'Conta'),icon:'account_balance'})),...cards.map(card=>({value:`card|${String(card.id)}`,label:String(card.nome||'Cartão'),icon:'credit_card'}))]}/></CreateTool>
-    </div></div><footer className="mai-v3-drawer-footer"><span/><span className="mai-autosave-status">Alterações salvas automaticamente</span></footer></form></div>:null}
+    </div><ItemAttachments attachments={rows(draft.anexos)} onChange={anexos=>setDraft({...draft,anexos})}/></div><footer className="mai-v3-drawer-footer"><span/><span className="mai-autosave-status">Alterações salvas automaticamente</span></footer></form></div>:null}
   </div>
 }
