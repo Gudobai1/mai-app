@@ -1,6 +1,6 @@
 'use client'
 
-import { ComponentProps, useEffect } from 'react'
+import { ComponentProps, useEffect, useRef } from 'react'
 import { ContextDrawerV2 as GeneralContextDrawer } from './ContextDrawerV3'
 
 type Props = ComponentProps<typeof GeneralContextDrawer>
@@ -41,6 +41,7 @@ function normalizeValue(label: string, value: string, today: string) {
 
 export function GeneralContextDrawerV4(props: Props) {
   const item = props.item
+  const autosaveTimer = useRef<number | null>(null)
   const itemDate = item?.date || (item?.kind === 'event' ? dateKey(item.raw.data_inicio) : item?.kind === 'finance' ? dateKey(item.raw.data) : props.today)
 
   const isCompleted = (() => {
@@ -111,6 +112,8 @@ export function GeneralContextDrawerV4(props: Props) {
     const mount = () => {
       if (cancelled) return
       const footer = document.querySelector<HTMLElement>('.mai-context-v3-footer')
+      const drawer = document.querySelector<HTMLElement>('.mai-context-v3-drawer')
+      if (drawer) drawer.dataset.maiAutosave = 'true'
       if (!footer || footer.querySelector('.mai-context-v3-complete')) return
       button = document.createElement('button')
       button.type = 'button'
@@ -125,5 +128,51 @@ export function GeneralContextDrawerV4(props: Props) {
     return () => { cancelled = true; cancelAnimationFrame(raf); observer.disconnect(); if (button) { button.removeEventListener('click', toggleCompleted); button.remove() } }
   }, [item?.kind,item?.sourceId,itemDate,isCompleted])
 
-  return <GeneralContextDrawer {...props}/>
+  useEffect(() => {
+    if (!item || item.kind === 'task') return
+
+    const schedule = () => {
+      if (autosaveTimer.current) window.clearTimeout(autosaveTimer.current)
+      autosaveTimer.current = window.setTimeout(() => {
+        const form = document.querySelector<HTMLFormElement>('.mai-context-v3-form')
+        if (form) form.requestSubmit()
+      }, item.kind === 'event' ? 650 : 280)
+    }
+
+    const insideDrawer = (target: EventTarget | null) => target instanceof Element && Boolean(target.closest('.mai-context-v3-drawer'))
+    const onInput = (event: Event) => { if (insideDrawer(event.target)) schedule() }
+    const onChange = (event: Event) => { if (insideDrawer(event.target)) schedule() }
+    const onClick = (event: Event) => {
+      const target = event.target instanceof Element ? event.target : null
+      if (!target) return
+      if (target.closest('.mai-context-v3-delete')) {
+        window.setTimeout(() => props.onClose(), 0)
+        return
+      }
+      if (target.closest('.mai-context-v3-popover-body button')) window.setTimeout(schedule, 0)
+      if (target.closest('.mai-context-v3-close')) props.onClose()
+    }
+    const onBackdrop = (event: MouseEvent) => {
+      if (event.target instanceof Element && event.target.classList.contains('mai-context-v3-layer')) props.onClose()
+    }
+
+    document.addEventListener('input', onInput, true)
+    document.addEventListener('change', onChange, true)
+    document.addEventListener('click', onClick, true)
+    document.addEventListener('mousedown', onBackdrop, true)
+
+    return () => {
+      if (autosaveTimer.current) {
+        window.clearTimeout(autosaveTimer.current)
+        const form = document.querySelector<HTMLFormElement>('.mai-context-v3-form')
+        if (form) form.requestSubmit()
+      }
+      document.removeEventListener('input', onInput, true)
+      document.removeEventListener('change', onChange, true)
+      document.removeEventListener('click', onClick, true)
+      document.removeEventListener('mousedown', onBackdrop, true)
+    }
+  }, [item?.kind,item?.sourceId])
+
+  return <GeneralContextDrawer {...props} onClose={() => {}}/>
 }
