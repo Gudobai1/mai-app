@@ -2,11 +2,13 @@
 
 import { FormEvent, useEffect, useRef, useState } from 'react'
 import type { MaiState } from '../../lib/v2/state'
+import type { InspectableItem } from './ContextDrawer'
 
 type Row = Record<string, any>
 type Commit = (change: (current: MaiState) => MaiState) => void
 type Tab = 'active' | 'archive' | 'trash'
 type NoteAction = 'pin' | 'archive' | 'restore' | 'trash' | 'delete'
+type Rpc = (method: string, args?: unknown[]) => Promise<any>
 
 const rows = (value: unknown): Row[] => Array.isArray(value) ? value as Row[] : []
 const uid = (prefix: string) => `${prefix}-${crypto.randomUUID()}`
@@ -17,6 +19,12 @@ const formatDate = (value: unknown) => {
   const date = new Date(raw)
   if (Number.isNaN(date.getTime())) return 'Sem data'
   return date.toLocaleDateString('pt-BR', { day: 'numeric', month: 'short', year: date.getFullYear() !== new Date().getFullYear() ? 'numeric' : undefined })
+}
+const defaultGoogleRpc: Rpc = async (method, args = []) => {
+  const response = await fetch('/api/google/rpc', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ method, args }) })
+  const data = await response.json()
+  if (!response.ok) throw new Error(data.error || 'Não foi possível acessar o Google')
+  return data.payload
 }
 
 function newNote(): Row {
@@ -60,18 +68,11 @@ function RichNoteEditor({ value, onChange }: { value: string; onChange: (value: 
       <span className="mai-notes-v4-toolbar-separator" />
       <button type="button" title="Remover formatação" onClick={() => command('removeFormat')}><span className="material-symbols-rounded">format_clear</span></button>
     </div>
-    <div
-      ref={ref}
-      className="mai-notes-v4-editor-surface"
-      contentEditable
-      suppressContentEditableWarning
-      data-placeholder="Comece a escrever…"
-      onInput={event => onChange(event.currentTarget.innerHTML)}
-    />
+    <div ref={ref} className="mai-notes-v4-editor-surface" contentEditable suppressContentEditableWarning data-placeholder="Comece a escrever…" onInput={event => onChange(event.currentTarget.innerHTML)} />
   </div>
 }
 
-export function NotesV4({ state, commit, googleRpc, createRequest }: { state: MaiState; commit: Commit; googleRpc: (method: string, args?: unknown[]) => Promise<any>; createRequest?: string }) {
+export function NotesV4({ state, commit, createRequest, googleRpc = defaultGoogleRpc }: { state: MaiState; today: string; commit: Commit; createRequest?: string; inspect: (item: InspectableItem) => void; googleRpc?: Rpc }) {
   const notes = rows(state.notes)
   const [tab, setTab] = useState<Tab>('active')
   const [query, setQuery] = useState('')
@@ -152,11 +153,7 @@ export function NotesV4({ state, commit, googleRpc, createRequest }: { state: Ma
       setDraft(null)
       return
     }
-    const next = normalized({
-      ...draft,
-      arquivado: kind === 'archive' ? true : kind === 'restore' ? false : draft.arquivado,
-      ativo: kind === 'trash' ? false : kind === 'restore' ? true : draft.ativo,
-    })
+    const next = normalized({ ...draft, arquivado: kind === 'archive' ? true : kind === 'restore' ? false : draft.arquivado, ativo: kind === 'trash' ? false : kind === 'restore' ? true : draft.ativo })
     commit(current => ({ ...current, notes: rows(current.notes).map(item => String(item.id) === String(next.id) ? next : item) }))
     setDraft(null)
   }
@@ -170,10 +167,7 @@ export function NotesV4({ state, commit, googleRpc, createRequest }: { state: Ma
     const [moved] = ordered.splice(from, 1)
     ordered.splice(to, 0, moved)
     const rank = new Map(ordered.map((item, index) => [String(item.id), index]))
-    commit(current => ({
-      ...current,
-      notes: rows(current.notes).map(item => rank.has(String(item.id)) ? { ...item, ordem: rank.get(String(item.id)) } : item),
-    }))
+    commit(current => ({ ...current, notes: rows(current.notes).map(item => rank.has(String(item.id)) ? { ...item, ordem: rank.get(String(item.id)) } : item) }))
   }
 
   async function upload(file?: File) {
@@ -188,15 +182,7 @@ export function NotesV4({ state, commit, googleRpc, createRequest }: { state: Ma
       })
       const response = await googleRpc('salvarAnexoDrive', [data, file.name, file.type])
       const item = response?.item || response
-      setDraft(current => current ? {
-        ...current,
-        anexos: [...rows(current.anexos), {
-          idDrive: item.id,
-          nome: item.name || item.nome || file.name,
-          tipo: item.tipo || file.type,
-          url: item.url || item.webViewLink || '',
-        }],
-      } : current)
+      setDraft(current => current ? { ...current, anexos: [...rows(current.anexos), { idDrive: item.id, nome: item.name || item.nome || file.name, tipo: item.tipo || file.type, url: item.url || item.webViewLink || '' }] } : current)
     } finally {
       setUploading(false)
     }
@@ -205,9 +191,7 @@ export function NotesV4({ state, commit, googleRpc, createRequest }: { state: Ma
   async function removeAttachment(index: number) {
     if (!draft) return
     const file = rows(draft.anexos)[index]
-    if (file?.idDrive && confirm('Também mover este arquivo para a lixeira do Google Drive?')) {
-      await googleRpc('trashDriveItem', [file.idDrive]).catch(() => null)
-    }
+    if (file?.idDrive && confirm('Também mover este arquivo para a lixeira do Google Drive?')) await googleRpc('trashDriveItem', [file.idDrive]).catch(() => null)
     setDraft({ ...draft, anexos: rows(draft.anexos).filter((_, position) => position !== index) })
   }
 
@@ -217,93 +201,35 @@ export function NotesV4({ state, commit, googleRpc, createRequest }: { state: Ma
   }
 
   return <div className="mai-notes-v4">
-    <header className="mai-notes-v4-head">
-      <div><h1>Notas</h1><p>Ideias, referências e documentos em um só lugar.</p></div>
-    </header>
+    <header className="mai-notes-v4-head"><div><h1>Notas</h1><p>Ideias, referências e documentos em um só lugar.</p></div></header>
 
     <div className="mai-notes-v4-controls">
-      <div className="mai-notes-v4-tabs" role="tablist" aria-label="Visualização das notas">
-        <button data-active={tab === 'active'} onClick={() => changeTab('active')}>Notas</button>
-        <button data-active={tab === 'archive'} onClick={() => changeTab('archive')}>Arquivo</button>
-        <button data-active={tab === 'trash'} onClick={() => changeTab('trash')}>Lixeira</button>
-      </div>
-      <label className="mai-notes-v4-search">
-        <span className="material-symbols-rounded">search</span>
-        <input value={query} onChange={event => setQuery(event.target.value)} placeholder="Buscar nas notas" />
-        {query ? <button type="button" aria-label="Limpar busca" onClick={() => setQuery('')}><span className="material-symbols-rounded">close</span></button> : null}
-      </label>
+      <div className="mai-notes-v4-tabs" role="tablist" aria-label="Visualização das notas"><button data-active={tab === 'active'} onClick={() => changeTab('active')}>Notas</button><button data-active={tab === 'archive'} onClick={() => changeTab('archive')}>Arquivo</button><button data-active={tab === 'trash'} onClick={() => changeTab('trash')}>Lixeira</button></div>
+      <label className="mai-notes-v4-search"><span className="material-symbols-rounded">search</span><input value={query} onChange={event => setQuery(event.target.value)} placeholder="Buscar nas notas" />{query ? <button type="button" aria-label="Limpar busca" onClick={() => setQuery('')}><span className="material-symbols-rounded">close</span></button> : null}</label>
     </div>
 
     {tab === 'active' && pinnedCount > 0 ? <div className="mai-notes-v4-section-label"><span className="material-symbols-rounded">keep</span><span>Fixadas</span><b>{pinnedCount}</b></div> : null}
 
     <div className="mai-v3-note-list mai-notes-v4-grid" data-tab={tab}>
-      {visible.map((note, index) => <article
-        className="mai-notes-v4-card"
-        data-size={String(note.tamanho || 'normal')}
-        data-pinned={note.fixado === true || undefined}
-        key={String(note.id)}
-        draggable={tab === 'active'}
-        onDragStart={event => event.dataTransfer.setData('text/note', String(note.id))}
-        onDragOver={event => { if (tab === 'active') event.preventDefault() }}
-        onDrop={event => { event.preventDefault(); reorder(event.dataTransfer.getData('text/note'), String(note.id)) }}
-        onClick={() => setDraft({ ...note, anexos: rows(note.anexos) })}
-      >
-        <header>
-          <div className="mai-notes-v4-card-title">
-            {note.fixado ? <span className="material-symbols-rounded" title="Fixada">keep</span> : null}
-            <strong>{note.titulo || 'Sem título'}</strong>
-          </div>
-          {tab !== 'trash' ? <button type="button" className="mai-notes-v4-card-action" title={note.fixado ? 'Desfixar' : 'Fixar'} aria-label={note.fixado ? 'Desfixar nota' : 'Fixar nota'} onClick={event => { event.stopPropagation(); quickAction(note, 'pin') }}><span className="material-symbols-rounded">{note.fixado ? 'keep_off' : 'keep'}</span></button> : null}
-        </header>
+      {visible.map((note, index) => <article className="mai-notes-v4-card" data-size={String(note.tamanho || 'normal')} data-pinned={note.fixado === true || undefined} key={String(note.id)} draggable={tab === 'active'} onDragStart={event => event.dataTransfer.setData('text/note', String(note.id))} onDragOver={event => { if (tab === 'active') event.preventDefault() }} onDrop={event => { event.preventDefault(); reorder(event.dataTransfer.getData('text/note'), String(note.id)) }} onClick={() => setDraft({ ...note, anexos: rows(note.anexos) })}>
+        <header><div className="mai-notes-v4-card-title">{note.fixado ? <span className="material-symbols-rounded" title="Fixada">keep</span> : null}<strong>{note.titulo || 'Sem título'}</strong></div>{tab !== 'trash' ? <button type="button" className="mai-notes-v4-card-action" title={note.fixado ? 'Desfixar' : 'Fixar'} aria-label={note.fixado ? 'Desfixar nota' : 'Fixar nota'} onClick={event => { event.stopPropagation(); quickAction(note, 'pin') }}><span className="material-symbols-rounded">{note.fixado ? 'keep_off' : 'keep'}</span></button> : null}</header>
         <p>{cleanText(note.conteudo) || 'Nota vazia'}</p>
-        <footer>
-          <span>{formatDate(note.data)}</span>
-          <span className="mai-notes-v4-card-meta">
-            {rows(note.anexos).length ? <span title={`${rows(note.anexos).length} anexos`}><span className="material-symbols-rounded">attach_file</span>{rows(note.anexos).length}</span> : null}
-            {note.tamanho !== 'normal' ? <span>{note.tamanho === 'largo' ? 'Larga' : 'Grande'}</span> : null}
-          </span>
-        </footer>
+        <footer><span>{formatDate(note.data)}</span><span className="mai-notes-v4-card-meta">{rows(note.anexos).length ? <span title={`${rows(note.anexos).length} anexos`}><span className="material-symbols-rounded">attach_file</span>{rows(note.anexos).length}</span> : null}{note.tamanho !== 'normal' ? <span>{note.tamanho === 'largo' ? 'Larga' : 'Grande'}</span> : null}</span></footer>
         {tab === 'active' && index === pinnedCount - 1 && pinnedCount < visible.length ? <span className="mai-notes-v4-pin-divider" aria-hidden="true" /> : null}
       </article>)}
     </div>
 
     {!visible.length ? <div className="mai-v3-empty-line mai-notes-v4-empty">{query ? 'Nenhuma nota encontrada.' : tab === 'active' ? 'Nenhuma nota criada.' : tab === 'archive' ? 'Nenhuma nota arquivada.' : 'A lixeira está vazia.'}</div> : null}
 
-    {draft ? <div className="mai-v3-create-layer mai-notes-v4-layer" onMouseDown={() => setDraft(null)}>
-      <form className="mai-notes-v4-drawer" onSubmit={save} onMouseDown={event => event.stopPropagation()}>
-        <header className="mai-notes-v4-drawer-head">
-          <div>
-            <small>{draft.id ? formatDate(draft.data) : 'Nova nota'}</small>
-            <strong>{draft.id ? 'Editar nota' : 'Nova nota'}</strong>
-          </div>
-          <button type="button" aria-label="Fechar" onClick={() => setDraft(null)}><span className="material-symbols-rounded">close</span></button>
-        </header>
-
-        <div className="mai-notes-v4-drawer-body">
-          <div className="mai-notes-v4-note-options">
-            <button type="button" data-active={draft.fixado === true} onClick={() => setDraft({ ...draft, fixado: !draft.fixado })}><span className="material-symbols-rounded">keep</span><span>{draft.fixado ? 'Fixada' : 'Fixar'}</span></button>
-            <label><span className="material-symbols-rounded">view_agenda</span><select value={draft.tamanho || 'normal'} onChange={event => setDraft({ ...draft, tamanho: event.target.value })}><option value="normal">Normal</option><option value="largo">Larga</option><option value="grande">Grande</option></select></label>
-          </div>
-
-          <input className="mai-notes-v4-title" autoFocus value={draft.titulo || ''} onChange={event => setDraft({ ...draft, titulo: event.target.value })} placeholder="Título da nota" />
-          <RichNoteEditor value={String(draft.conteudo || '')} onChange={value => setDraft({ ...draft, conteudo: value })} />
-
-          <section className="mai-notes-v4-attachments">
-            <header><div><strong>Anexos</strong><span>{rows(draft.anexos).length ? `${rows(draft.anexos).length} ${rows(draft.anexos).length === 1 ? 'arquivo' : 'arquivos'}` : 'Google Drive'}</span></div><label><span className="material-symbols-rounded">attach_file_add</span><span>{uploading ? 'Enviando…' : 'Adicionar'}</span><input hidden type="file" disabled={uploading} onChange={event => void upload(event.target.files?.[0])} /></label></header>
-            <div>{rows(draft.anexos).map((file, index) => <article key={`${file.idDrive || file.nome}-${index}`}><span className="material-symbols-rounded">description</span><a href={file.url || '#'} target="_blank" rel="noreferrer">{file.nome || 'Arquivo'}</a><button type="button" aria-label={`Remover ${file.nome || 'arquivo'}`} onClick={() => void removeAttachment(index)}><span className="material-symbols-rounded">close</span></button></article>)}</div>
-          </section>
-        </div>
-
-        <footer className="mai-notes-v4-drawer-footer">
-          <div className="mai-notes-v4-danger-actions">
-            {draft.id && tab === 'active' ? <button type="button" onClick={() => draftAction('archive')}><span className="material-symbols-rounded">archive</span>Arquivar</button> : null}
-            {draft.id && tab === 'archive' ? <button type="button" onClick={() => draftAction('restore')}><span className="material-symbols-rounded">unarchive</span>Desarquivar</button> : null}
-            {draft.id && tab !== 'trash' ? <button type="button" data-danger="true" onClick={() => draftAction('trash')}><span className="material-symbols-rounded">delete</span>Lixeira</button> : null}
-            {draft.id && tab === 'trash' ? <><button type="button" onClick={() => draftAction('restore')}><span className="material-symbols-rounded">restore_from_trash</span>Restaurar</button><button type="button" data-danger="true" onClick={() => draftAction('delete')}><span className="material-symbols-rounded">delete_forever</span>Excluir</button></> : null}
-          </div>
-          <div className="mai-notes-v4-save-actions"><button type="button" onClick={() => setDraft(null)}>Cancelar</button><button type="submit" data-primary="true">Salvar nota</button></div>
-        </footer>
-      </form>
-    </div> : null}
+    {draft ? <div className="mai-v3-create-layer mai-notes-v4-layer" onMouseDown={() => setDraft(null)}><form className="mai-notes-v4-drawer" onSubmit={save} onMouseDown={event => event.stopPropagation()}>
+      <header className="mai-notes-v4-drawer-head"><div><small>{draft.id ? formatDate(draft.data) : 'Nova nota'}</small><strong>{draft.id ? 'Editar nota' : 'Nova nota'}</strong></div><button type="button" aria-label="Fechar" onClick={() => setDraft(null)}><span className="material-symbols-rounded">close</span></button></header>
+      <div className="mai-notes-v4-drawer-body">
+        <div className="mai-notes-v4-note-options"><button type="button" data-active={draft.fixado === true} onClick={() => setDraft({ ...draft, fixado: !draft.fixado })}><span className="material-symbols-rounded">keep</span><span>{draft.fixado ? 'Fixada' : 'Fixar'}</span></button><label><span className="material-symbols-rounded">view_agenda</span><select value={draft.tamanho || 'normal'} onChange={event => setDraft({ ...draft, tamanho: event.target.value })}><option value="normal">Normal</option><option value="largo">Larga</option><option value="grande">Grande</option></select></label></div>
+        <input className="mai-notes-v4-title" autoFocus value={draft.titulo || ''} onChange={event => setDraft({ ...draft, titulo: event.target.value })} placeholder="Título da nota" />
+        <RichNoteEditor value={String(draft.conteudo || '')} onChange={value => setDraft({ ...draft, conteudo: value })} />
+        <section className="mai-notes-v4-attachments"><header><div><strong>Anexos</strong><span>{rows(draft.anexos).length ? `${rows(draft.anexos).length} ${rows(draft.anexos).length === 1 ? 'arquivo' : 'arquivos'}` : 'Google Drive'}</span></div><label><span className="material-symbols-rounded">attach_file_add</span><span>{uploading ? 'Enviando…' : 'Adicionar'}</span><input hidden type="file" disabled={uploading} onChange={event => void upload(event.target.files?.[0])} /></label></header><div>{rows(draft.anexos).map((file, index) => <article key={`${file.idDrive || file.nome}-${index}`}><span className="material-symbols-rounded">description</span><a href={file.url || '#'} target="_blank" rel="noreferrer">{file.nome || 'Arquivo'}</a><button type="button" aria-label={`Remover ${file.nome || 'arquivo'}`} onClick={() => void removeAttachment(index)}><span className="material-symbols-rounded">close</span></button></article>)}</div></section>
+      </div>
+      <footer className="mai-notes-v4-drawer-footer"><div className="mai-notes-v4-danger-actions">{draft.id && tab === 'active' ? <button type="button" onClick={() => draftAction('archive')}><span className="material-symbols-rounded">archive</span>Arquivar</button> : null}{draft.id && tab === 'archive' ? <button type="button" onClick={() => draftAction('restore')}><span className="material-symbols-rounded">unarchive</span>Desarquivar</button> : null}{draft.id && tab !== 'trash' ? <button type="button" data-danger="true" onClick={() => draftAction('trash')}><span className="material-symbols-rounded">delete</span>Lixeira</button> : null}{draft.id && tab === 'trash' ? <><button type="button" onClick={() => draftAction('restore')}><span className="material-symbols-rounded">restore_from_trash</span>Restaurar</button><button type="button" data-danger="true" onClick={() => draftAction('delete')}><span className="material-symbols-rounded">delete_forever</span>Excluir</button></> : null}</div><div className="mai-notes-v4-save-actions"><button type="button" onClick={() => setDraft(null)}>Cancelar</button><button type="submit" data-primary="true">Salvar nota</button></div></footer>
+    </form></div> : null}
   </div>
 }
