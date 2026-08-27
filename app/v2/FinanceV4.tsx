@@ -82,7 +82,19 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
       const occurrence = occurrences.find(item => String(item.fixo_id) === String(rule.id) && String(item.competencia) === monthKey)
       if (occurrence?.ignorado) return []
       const day = Math.min(maxDay, Math.max(1, Number(rule.dia_mes || 1)))
-      return [{ ...rule, ...occurrence, id: rule.id, _isFixed: true, occurrenceKey: `${rule.id}|${monthKey}`, data: occurrence?.data_override || `${monthKey}-${String(day).padStart(2, '0')}`, valor: occurrence?.valor_override === '' || occurrence?.valor_override == null ? clampMoney(rule.valor) : clampMoney(occurrence.valor_override), status: occurrence?.status || 'pendente', valor_pago: occurrence?.valor_pago || 0, recorrencia: 'fixo' } as Row]
+      const status = String(occurrence?.status || rule.status || 'pendente')
+      return [{
+        ...rule,
+        ...occurrence,
+        id: rule.id,
+        _isFixed: true,
+        occurrenceKey: `${rule.id}|${monthKey}`,
+        data: occurrence?.data_override || `${monthKey}-${String(day).padStart(2, '0')}`,
+        valor: occurrence?.valor_override === '' || occurrence?.valor_override == null ? clampMoney(rule.valor) : clampMoney(occurrence.valor_override),
+        status,
+        valor_pago: occurrence?.valor_pago ?? rule.valor_pago ?? (status === 'pago' ? clampMoney(rule.valor) : 0),
+        recorrencia: 'fixo',
+      } as Row]
     })
   }
 
@@ -93,10 +105,9 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
   const realBalance = initialBalance + transactions.filter(item => !item.ignorar_calculo).reduce((sum, item) => sum + signed(item, paidAmount(item)), 0) + monthFixed.filter(item => !item.ignorar_calculo && item.status === 'pago').reduce((sum, item) => sum + signed(item, clampMoney(item.valor)), 0)
   const projectedBalance = initialBalance + transactions.filter(item => !item.ignorar_calculo).reduce((sum, item) => sum + signed(item, clampMoney(item.valor)), 0) + monthFixed.filter(item => !item.ignorar_calculo).reduce((sum, item) => sum + signed(item, clampMoney(item.valor)), 0)
 
-  function cardInvoice(card: Row) {
-    return transactions.filter(item => (String(item.conta_id || '') === `card|${card.id}` || String(item.cartao_id || '') === String(card.id)) && dateKey(item.data).slice(0, 7) === month && !item.ignorar_calculo && item.tipo !== 'receita').reduce((sum, item) => sum + clampMoney(item.valor), 0) + monthFixed.filter(item => String(item.conta_id || '') === `card|${card.id}` && !item.ignorar_calculo && item.tipo !== 'receita').reduce((sum, item) => sum + clampMoney(item.valor), 0)
+  function cardInvoice(card: Row, source: Row[] = monthItems) {
+    return source.filter(item => (String(item.conta_id || '') === `card|${card.id}` || String(item.cartao_id || '') === String(card.id)) && !item.ignorar_calculo && item.tipo !== 'receita').reduce((sum, item) => sum + clampMoney(item.valor), 0)
   }
-
   function accountBalance(account: Row) {
     return Number(account.saldo_inicial || 0) + transactions.filter(item => String(item.conta_id || '') === String(account.id) && !item.ignorar_calculo).reduce((sum, item) => sum + signed(item, paidAmount(item)), 0)
   }
@@ -159,6 +170,8 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
         const recurring = String(clean.recorrencia || 'unico')
         if (recurring === 'fixo') {
           const fixedRule: Row = { ...clean, id: String(clean.id), titulo: label, valor: clampMoney(clean.valor), dia_mes: Math.min(31, Math.max(1, Number(clean.dia_mes || Number(dateKey(clean.data).slice(8)) || 1))), mes_inicio: String(clean.mes_inicio || dateKey(clean.data).slice(0, 7) || month), mes_fim: String(clean.mes_fim || ''), anexos: rows(clean.anexos), ativo: clean.ativo !== false }
+          const occurrenceStatus = String(clean.status || 'pendente')
+          const occurrencePaid = occurrenceStatus === 'pago' ? clampMoney(clean.valor) : occurrenceStatus === 'parcial' ? clampMoney(clean.valor_pago) : 0
           delete fixedRule.status
           delete fixedRule.valor_pago
           delete fixedRule.pagamentos
@@ -170,6 +183,10 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
           nextFinance.transactions = rows(nextFinance.transactions).filter(item => String(item.id) !== String(clean.id))
           const fixedList = rows(nextFinance.fixed)
           nextFinance.fixed = fixedList.some(item => String(item.id) === String(fixedRule.id)) ? fixedList.map(item => String(item.id) === String(fixedRule.id) ? fixedRule : item) : [fixedRule, ...fixedList]
+          const occurrenceKey = `${fixedRule.id}|${month}`
+          const occurrence = { chave: occurrenceKey, fixo_id: fixedRule.id, competencia: month, status: occurrenceStatus, valor_pago: occurrencePaid, atualizado_em: new Date().toISOString() }
+          const occurrenceList = rows(nextFinance.fixedOccurrences)
+          nextFinance.fixedOccurrences = occurrenceList.some(item => String(item.chave) === occurrenceKey) ? occurrenceList.map(item => String(item.chave) === occurrenceKey ? { ...item, ...occurrence } : item) : [...occurrenceList, occurrence]
         } else {
           const payments = rows(clean.pagamentos)
           const value = clampMoney(clean.valor)
@@ -192,15 +209,15 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
           nextFinance.transactions = list.some(item => String(item.id) === String(next.id)) ? list.map(item => String(item.id) === String(next.id) ? next : item) : [next, ...list]
         }
       } else if (kind === 'account') {
-        const next = { ...clean, nome: label, saldo_inicial: Number(clean.saldo_inicial || 0), cor: clean.cor || '#718269' }
+        const next: Row = { ...clean, nome: label, saldo_inicial: Number(clean.saldo_inicial || 0), cor: clean.cor || '#718269' }
         nextFinance.accounts = rows(nextFinance.accounts).some(item => String(item.id) === String(next.id)) ? rows(nextFinance.accounts).map(item => String(item.id) === String(next.id) ? next : item) : [...rows(nextFinance.accounts), next]
       } else if (kind === 'card') {
-        const next = { ...clean, nome: label, limite: clampMoney(clean.limite), fechamento: Math.min(31, Math.max(1, Number(clean.fechamento || 1))), vencimento: Math.min(31, Math.max(1, Number(clean.vencimento || 10))), cor: clean.cor || '#8a7d72' }
+        const next: Row = { ...clean, nome: label, limite: clampMoney(clean.limite), fechamento: Math.min(31, Math.max(1, Number(clean.fechamento || 1))), vencimento: Math.min(31, Math.max(1, Number(clean.vencimento || 10))), cor: clean.cor || '#8a7d72' }
         nextFinance.cards = rows(nextFinance.cards).some(item => String(item.id) === String(next.id)) ? rows(nextFinance.cards).map(item => String(item.id) === String(next.id) ? next : item) : [...rows(nextFinance.cards), next]
       } else {
         const list = rows(nextFinance.categories)
         const previous = list.find(item => String(item.id) === String(clean.id))
-        const next = { ...clean, nome: label }
+        const next: Row = { ...clean, nome: label }
         if (previous && previous.nome !== label) {
           nextFinance.transactions = rows(nextFinance.transactions).map(item => item.categoria === previous.nome ? { ...item, categoria: label } : item)
           nextFinance.fixed = rows(nextFinance.fixed).map(item => item.categoria === previous.nome ? { ...item, categoria: label } : item)
@@ -321,31 +338,37 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
     commit(current => ({ ...current, finance: { ...current.finance, transactions: [{ id: uid('fin'), titulo: 'Ajuste de saldo', valor: Math.abs(diff), valor_pago: Math.abs(diff), tipo: diff >= 0 ? 'receita' : 'despesa', categoria: 'Ajuste', conta_id: account.id, data: today, status: 'pago', observacao: 'Conciliação bancária', pagamentos: [{ id: uid('pay'), data: today, valor: Math.abs(diff) }], anexos: [], recorrencia: 'unico' }, ...rows(current.finance.transactions)] } }))
   }
 
-  const filtered = useMemo(() => monthItems.filter(item => {
+  function matchesFilters(item: Row) {
     const text = query.trim().toLocaleLowerCase('pt-BR')
-    if (text && !`${item.titulo || ''} ${item.categoria || ''} ${cleanText(item.observacao)}`.toLocaleLowerCase('pt-BR').includes(text)) return false
-    if (statusFilter === 'pago' && item.status !== 'pago') return false
-    if (statusFilter === 'pendente' && item.status !== 'pendente') return false
-    if (statusFilter === 'parcial' && item.status !== 'parcial') return false
-    if (statusFilter === 'atrasado' && (item.status === 'pago' || dateKey(item.data) >= today)) return false
-    if (categoryFilter && item.categoria !== categoryFilter) return false
-    if (originFilter && String(item.conta_id || '') !== originFilter) return false
+    if (text && !`${item.titulo || ''} ${item.categoria || ''} ${cleanText(item.observacao)} ${originName(item.conta_id, accounts, cards)}`.toLocaleLowerCase('pt-BR').includes(text)) return false
+    const status = String(item.status || 'pendente')
+    if (statusFilter === 'pago' && status !== 'pago') return false
+    if (statusFilter === 'pendente' && status !== 'pendente') return false
+    if (statusFilter === 'parcial' && status !== 'parcial') return false
+    if (statusFilter === 'atrasado' && (status === 'pago' || dateKey(item.data) >= today)) return false
+    if (categoryFilter && String(item.categoria || '') !== categoryFilter) return false
+    if (originFilter && String(item.conta_id || '') !== originFilter && String(item.cartao_id || '') !== originFilter.replace(/^card\|/, '')) return false
     return true
-  }).sort((a, b) => order === 'date_asc' ? String(a.data).localeCompare(String(b.data)) : order === 'value_desc' ? clampMoney(b.valor) - clampMoney(a.valor) : order === 'value_asc' ? clampMoney(a.valor) - clampMoney(b.valor) : order === 'az' ? String(a.titulo).localeCompare(String(b.titulo), 'pt-BR') : String(b.data).localeCompare(String(a.data))), [monthItems, query, statusFilter, categoryFilter, originFilter, order, today])
+  }
+
+  const filtered = useMemo(() => monthItems.filter(matchesFilters).sort((a, b) => order === 'date_asc' ? String(a.data).localeCompare(String(b.data)) : order === 'value_desc' ? clampMoney(b.valor) - clampMoney(a.valor) : order === 'value_asc' ? clampMoney(a.valor) - clampMoney(b.valor) : order === 'az' ? String(a.titulo).localeCompare(String(b.titulo), 'pt-BR') : String(b.data).localeCompare(String(a.data))), [monthItems, query, statusFilter, categoryFilter, originFilter, order, today])
 
   const filtersActive = Boolean(query.trim() || statusFilter || categoryFilter || originFilter)
   const activeFilterCount = [query.trim(), statusFilter, categoryFilter, originFilter].filter(Boolean).length
-  const overviewItems = filtered.filter(item => !item.ignorar_calculo)
-  const overviewIncome = overviewItems.filter(item => item.tipo === 'receita').reduce((sum, item) => sum + clampMoney(item.valor), 0)
-  const overviewExpense = overviewItems.filter(item => item.tipo !== 'receita').reduce((sum, item) => sum + clampMoney(item.valor), 0)
-  const overviewResult = overviewIncome - overviewExpense
-  const overviewInvoice = overviewItems.filter(item => item.tipo !== 'receita' && (String(item.conta_id || '').startsWith('card|') || item.cartao_id)).reduce((sum, item) => sum + clampMoney(item.valor), 0)
+  const calculationItems = filtered.filter(item => !item.ignorar_calculo)
+  const filteredIncome = calculationItems.filter(item => item.tipo === 'receita').reduce((sum, item) => sum + clampMoney(item.valor), 0)
+  const filteredExpense = calculationItems.filter(item => item.tipo !== 'receita').reduce((sum, item) => sum + clampMoney(item.valor), 0)
+  const filteredResult = filteredIncome - filteredExpense
+  const filteredInvoice = calculationItems.filter(item => item.tipo !== 'receita' && (String(item.conta_id || '').startsWith('card|') || item.cartao_id)).reduce((sum, item) => sum + clampMoney(item.valor), 0)
+  const filteredActual = calculationItems.reduce((sum, item) => sum + signed(item, paidAmount(item)), 0)
+  const filteredProjected = calculationItems.reduce((sum, item) => sum + signed(item, clampMoney(item.valor)), 0)
+  const displayRealBalance = filtersActive ? filteredActual : realBalance
+  const displayProjectedBalance = filtersActive ? filteredProjected : projectedBalance
   const recent = filtered.slice(0, 8)
-  const income = monthItems.filter(item => item.tipo === 'receita' && !item.ignorar_calculo).reduce((sum, item) => sum + clampMoney(item.valor), 0)
-  const expense = monthItems.filter(item => item.tipo !== 'receita' && !item.ignorar_calculo).reduce((sum, item) => sum + clampMoney(item.valor), 0)
-  const result = income - expense
-  const invoice = cards.reduce((sum, card) => sum + cardInvoice(card), 0)
-  const catReport = Object.entries(monthItems.reduce((map: Record<string, number>, item) => { if (item.tipo !== 'receita' && !item.ignorar_calculo) map[item.categoria || 'Sem categoria'] = (map[item.categoria || 'Sem categoria'] || 0) + clampMoney(item.valor); return map }, {})).sort((a, b) => b[1] - a[1])
+  const catReport = (Object.entries(calculationItems.reduce((map: Record<string, number>, item) => { if (item.tipo !== 'receita') map[item.categoria || 'Sem categoria'] = (map[item.categoria || 'Sem categoria'] || 0) + clampMoney(item.valor); return map }, {})) as [string, number][]).sort((a, b) => b[1] - a[1])
+  const visibleAccounts = originFilter ? accounts.filter(account => String(account.id) === originFilter) : accounts
+  const visibleCards = originFilter ? cards.filter(card => `card|${card.id}` === originFilter) : cards
+  const visibleCategories = categories.filter(category => !filtersActive || filtered.some(item => String(item.categoria || '') === String(category.nome || '')))
   const accountSummary = draft ? originName(draft.conta_id, accounts, cards) : 'Sem origem'
 
   function clearFilters() {
@@ -381,32 +404,29 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
 
     <div className="mai-finance-v4-topline"><div className="mai-v3-area-tabs mai-finance-v4-tabs">{([{ id: 'overview', label: 'Visão geral' }, { id: 'transactions', label: 'Lançamentos' }, { id: 'accounts', label: 'Contas' }, { id: 'cards', label: 'Cartões' }, { id: 'reports', label: 'Relatórios' }, { id: 'categories', label: 'Categorias' }] as { id: Tab; label: string }[]).map(item => <button key={item.id} data-active={tab === item.id} onClick={() => setTab(item.id)}>{item.label}</button>)}</div></div>
 
+    {filterBar}
+
     {tab === 'overview' ? <>
-      {filterBar}
       <div className="mai-finance-v4-overview-metrics">
-        <article className="mai-finance-v4-metric mai-finance-v4-metric-primary" data-negative={realBalance < 0}><div className="mai-finance-v4-metric-label"><span className="material-symbols-rounded">account_balance_wallet</span><span>Saldo Atual</span></div><strong>{money.format(realBalance)}</strong><small>Saldo consolidado agora</small></article>
-        <article className="mai-finance-v4-metric mai-finance-v4-metric-primary"><div className="mai-finance-v4-metric-label"><span className="material-symbols-rounded">trending_up</span><span>Previsto</span></div><strong>{money.format(projectedBalance)}</strong><small>Saldo consolidado projetado</small></article>
-        <article className="mai-finance-v4-metric" data-positive={overviewIncome > 0}><div className="mai-finance-v4-metric-label"><span className="material-symbols-rounded">south_west</span><span>Receitas</span></div><strong>{money.format(overviewIncome)}</strong><small>{filtersActive ? 'No filtro atual' : monthLabel(month)}</small></article>
-        <article className="mai-finance-v4-metric" data-negative={overviewExpense > 0}><div className="mai-finance-v4-metric-label"><span className="material-symbols-rounded">north_east</span><span>Despesas</span></div><strong>{money.format(overviewExpense)}</strong><small>{filtersActive ? 'No filtro atual' : monthLabel(month)}</small></article>
-        <article className="mai-finance-v4-metric"><div className="mai-finance-v4-metric-label"><span className="material-symbols-rounded">credit_card</span><span>Cartões</span></div><strong>{money.format(overviewInvoice)}</strong><small>{filtersActive ? 'No filtro atual' : 'Faturas do mês'}</small></article>
-        <article className="mai-finance-v4-metric" data-positive={overviewResult > 0} data-negative={overviewResult < 0}><div className="mai-finance-v4-metric-label"><span className="material-symbols-rounded">balance</span><span>Balanço Mensal</span></div><strong>{money.format(overviewResult)}</strong><small>Receitas − despesas</small></article>
+        <article className="mai-finance-v4-metric mai-finance-v4-metric-primary" data-negative={displayRealBalance < 0}><div className="mai-finance-v4-metric-label"><span className="material-symbols-rounded">account_balance_wallet</span><span>Saldo Atual</span></div><strong>{money.format(displayRealBalance)}</strong><small>{filtersActive ? 'Resultado realizado do filtro' : 'Saldo consolidado agora'}</small></article>
+        <article className="mai-finance-v4-metric mai-finance-v4-metric-primary" data-negative={displayProjectedBalance < 0}><div className="mai-finance-v4-metric-label"><span className="material-symbols-rounded">trending_up</span><span>Previsto</span></div><strong>{money.format(displayProjectedBalance)}</strong><small>{filtersActive ? 'Resultado previsto do filtro' : 'Saldo consolidado projetado'}</small></article>
+        <article className="mai-finance-v4-metric" data-positive={filteredIncome > 0}><div className="mai-finance-v4-metric-label"><span className="material-symbols-rounded">south_west</span><span>Receitas</span></div><strong>{money.format(filteredIncome)}</strong><small>{filtersActive ? 'No filtro atual' : monthLabel(month)}</small></article>
+        <article className="mai-finance-v4-metric" data-negative={filteredExpense > 0}><div className="mai-finance-v4-metric-label"><span className="material-symbols-rounded">north_east</span><span>Despesas</span></div><strong>{money.format(filteredExpense)}</strong><small>{filtersActive ? 'No filtro atual' : monthLabel(month)}</small></article>
+        <article className="mai-finance-v4-metric"><div className="mai-finance-v4-metric-label"><span className="material-symbols-rounded">credit_card</span><span>Cartões</span></div><strong>{money.format(filteredInvoice)}</strong><small>{filtersActive ? 'No filtro atual' : 'Faturas do mês'}</small></article>
+        <article className="mai-finance-v4-metric" data-positive={filteredResult > 0} data-negative={filteredResult < 0}><div className="mai-finance-v4-metric-label"><span className="material-symbols-rounded">balance</span><span>Balanço Mensal</span></div><strong>{money.format(filteredResult)}</strong><small>Receitas − despesas</small></article>
       </div>
-      <section className="mai-v3-simple-section mai-finance-v4-overview-list"><div className="mai-finance-v4-section-head"><div><h2>{filtersActive ? 'Lançamentos filtrados' : 'Últimos lançamentos'}</h2><small>{filtered.length} {filtered.length === 1 ? 'lançamento' : 'lançamentos'} em {monthLabel(month)}{filtersActive ? ` · ${activeFilterCount} ${activeFilterCount === 1 ? 'filtro ativo' : 'filtros ativos'}` : ''}</small></div><button type="button" onClick={() => openNew('transaction')}><span className="material-symbols-rounded">add</span>Adicionar lançamento</button></div><div className="mai-v3-finance-rows mai-v3-simple-list">{recent.map(transactionRow)}{!recent.length ? <div className="mai-v3-empty-line">Nenhum lançamento encontrado.</div> : null}</div></section>
+      <section className="mai-v3-simple-section mai-finance-v4-overview-list"><div className="mai-finance-v4-section-head"><div><h2>{filtersActive ? 'Lançamentos filtrados' : 'Últimos lançamentos'}</h2><small>{filtered.length} {filtered.length === 1 ? 'lançamento' : 'lançamentos'} em {monthLabel(month)}</small></div><button type="button" onClick={() => openNew('transaction')}><span className="material-symbols-rounded">add</span>Adicionar lançamento</button></div><div className="mai-v3-finance-rows mai-v3-simple-list">{recent.map(transactionRow)}{!recent.length ? <div className="mai-v3-empty-line">Nenhum lançamento encontrado.</div> : null}</div></section>
     </> : null}
 
-    {tab === 'transactions' ? <section className="mai-v3-simple-section">
-      <div className="mai-finance-v4-section-head"><div><h2>Lançamentos</h2><small>{filtered.length} no período · únicos, parcelados e fixos</small></div><button type="button" onClick={() => openNew('transaction')}><span className="material-symbols-rounded">add</span>Adicionar lançamento</button></div>
-      {filterBar}
-      <div className="mai-v3-finance-rows mai-v3-simple-list">{filtered.map(transactionRow)}{!filtered.length ? <div className="mai-v3-empty-line">Nenhum lançamento encontrado.</div> : null}</div>
-    </section> : null}
+    {tab === 'transactions' ? <section className="mai-v3-simple-section"><div className="mai-finance-v4-section-head"><div><h2>Lançamentos</h2><small>{filtered.length} no período · únicos, parcelados e fixos</small></div><button type="button" onClick={() => openNew('transaction')}><span className="material-symbols-rounded">add</span>Adicionar lançamento</button></div><div className="mai-v3-finance-rows mai-v3-simple-list">{filtered.map(transactionRow)}{!filtered.length ? <div className="mai-v3-empty-line">Nenhum lançamento encontrado.</div> : null}</div></section> : null}
 
-    {tab === 'accounts' ? <section className="mai-v3-simple-section"><div className="mai-finance-v4-section-head"><div><h2>Contas</h2><small>Saldos reais e conciliação.</small></div><button type="button" onClick={() => openNew('account')}><span className="material-symbols-rounded">add</span>Adicionar conta</button></div><div className="mai-v3-account-list mai-finance-v4-entity-list">{accounts.map(account => <article key={String(account.id)}><i style={{ background: account.cor || 'var(--v3-accent)' }} /><button type="button" onClick={() => openExisting('account', account)}><strong>{account.nome}</strong><small>Saldo inicial {money.format(Number(account.saldo_inicial || 0))}</small></button><b>{money.format(accountBalance(account))}</b><button type="button" className="mai-finance-v4-text-action" onClick={() => reconcile(account)}>Conciliar</button></article>)}{!accounts.length ? <div className="mai-v3-empty-line">Nenhuma conta cadastrada.</div> : null}</div></section> : null}
+    {tab === 'accounts' ? <section className="mai-v3-simple-section"><div className="mai-finance-v4-section-head"><div><h2>Contas</h2><small>{filtersActive ? 'Filtro ativo no módulo.' : 'Saldos reais e conciliação.'}</small></div><button type="button" onClick={() => openNew('account')}><span className="material-symbols-rounded">add</span>Adicionar conta</button></div><div className="mai-v3-account-list mai-finance-v4-entity-list">{visibleAccounts.map(account => <article key={String(account.id)}><i style={{ background: account.cor || 'var(--v3-accent)' }} /><button type="button" onClick={() => openExisting('account', account)}><strong>{account.nome}</strong><small>Saldo inicial {money.format(Number(account.saldo_inicial || 0))}</small></button><b>{money.format(accountBalance(account))}</b><button type="button" className="mai-finance-v4-text-action" onClick={() => reconcile(account)}>Conciliar</button></article>)}{!visibleAccounts.length ? <div className="mai-v3-empty-line">Nenhuma conta corresponde ao filtro.</div> : null}</div></section> : null}
 
-    {tab === 'cards' ? <section className="mai-v3-simple-section"><div className="mai-finance-v4-section-head"><div><h2>Cartões</h2><small>Fatura, limite disponível e vencimento.</small></div><button type="button" onClick={() => openNew('card')}><span className="material-symbols-rounded">add</span>Adicionar cartão</button></div><div className="mai-v3-card-list mai-finance-v4-card-list">{cards.map(card => { const cardMonthInvoice = cardInvoice(card); const available = Math.max(0, clampMoney(card.limite) - cardMonthInvoice); return <article key={String(card.id)}><i style={{ background: card.cor || '#8a7d72' }} /><button type="button" onClick={() => openExisting('card', card)}><strong>{card.nome}</strong><small>Fecha dia {card.fechamento || '—'} · vence dia {card.vencimento || '—'}</small></button><span><b>{money.format(cardMonthInvoice)}</b><small>fatura · {money.format(available)} disponível</small></span></article> })}{!cards.length ? <div className="mai-v3-empty-line">Nenhum cartão cadastrado.</div> : null}</div></section> : null}
+    {tab === 'cards' ? <section className="mai-v3-simple-section"><div className="mai-finance-v4-section-head"><div><h2>Cartões</h2><small>{filtersActive ? 'Faturas refletindo o filtro atual.' : 'Fatura, limite disponível e vencimento.'}</small></div><button type="button" onClick={() => openNew('card')}><span className="material-symbols-rounded">add</span>Adicionar cartão</button></div><div className="mai-v3-card-list mai-finance-v4-card-list">{visibleCards.map(card => { const cardMonthInvoice = cardInvoice(card, filtersActive ? calculationItems : monthItems); const available = Math.max(0, clampMoney(card.limite) - cardMonthInvoice); return <article key={String(card.id)}><i style={{ background: card.cor || '#8a7d72' }} /><button type="button" onClick={() => openExisting('card', card)}><strong>{card.nome}</strong><small>Fecha dia {card.fechamento || '—'} · vence dia {card.vencimento || '—'}</small></button><span><b>{money.format(cardMonthInvoice)}</b><small>fatura · {money.format(available)} disponível</small></span></article> })}{!visibleCards.length ? <div className="mai-v3-empty-line">Nenhum cartão corresponde ao filtro.</div> : null}</div></section> : null}
 
-    {tab === 'reports' ? <section className="mai-v3-simple-section"><div className="mai-finance-v4-section-head"><div><h2>Relatórios</h2><small>{monthLabel(month)}</small></div></div><div className="mai-finance-v4-reports"><article><header><strong>Despesas por categoria</strong><small>{money.format(expense)}</small></header>{catReport.map(([name, value]) => <div className="mai-finance-v4-report-row" key={name}><span>{name}</span><i><b style={{ width: `${expense ? value / expense * 100 : 0}%` }} /></i><strong>{money.format(value)}</strong></div>)}{!catReport.length ? <div className="mai-v3-empty-line">Sem despesas no período.</div> : null}</article><article><header><strong>Contas</strong><small>Saldo atual</small></header>{accounts.map(account => <div className="mai-finance-v4-report-simple" key={String(account.id)}><span>{account.nome}</span><strong>{money.format(accountBalance(account))}</strong></div>)}<header className="mai-finance-v4-report-subhead"><strong>Cartões</strong><small>Fatura do mês</small></header>{cards.map(card => <div className="mai-finance-v4-report-simple" key={String(card.id)}><span>{card.nome}</span><strong>{money.format(cardInvoice(card))}</strong></div>)}</article></div></section> : null}
+    {tab === 'reports' ? <section className="mai-v3-simple-section"><div className="mai-finance-v4-section-head"><div><h2>Relatórios</h2><small>{monthLabel(month)}{filtersActive ? ' · filtro ativo' : ''}</small></div></div><div className="mai-finance-v4-reports"><article><header><strong>Despesas por categoria</strong><small>{money.format(filteredExpense)}</small></header>{catReport.map(([name, value]) => <div className="mai-finance-v4-report-row" key={name}><span>{name}</span><i><b style={{ width: `${filteredExpense ? value / filteredExpense * 100 : 0}%` }} /></i><strong>{money.format(value)}</strong></div>)}{!catReport.length ? <div className="mai-v3-empty-line">Sem despesas no filtro atual.</div> : null}</article><article><header><strong>Resumo do filtro</strong><small>{filtered.length} itens</small></header><div className="mai-finance-v4-report-simple"><span>Receitas</span><strong>{money.format(filteredIncome)}</strong></div><div className="mai-finance-v4-report-simple"><span>Despesas</span><strong>{money.format(filteredExpense)}</strong></div><div className="mai-finance-v4-report-simple"><span>Cartões</span><strong>{money.format(filteredInvoice)}</strong></div><div className="mai-finance-v4-report-simple"><span>Balanço</span><strong>{money.format(filteredResult)}</strong></div></article></div></section> : null}
 
-    {tab === 'categories' ? <section className="mai-v3-simple-section"><div className="mai-finance-v4-section-head"><div><h2>Categorias</h2><small>As mesmas categorias disponíveis direto no lançamento.</small></div><button type="button" onClick={() => openNew('category')}><span className="material-symbols-rounded">add</span>Adicionar categoria</button></div><div className="mai-finance-v4-category-list">{categories.map(category => { const count = transactions.filter(item => item.categoria === category.nome).length + fixed.filter(item => item.categoria === category.nome).length; const spent = monthItems.filter(item => item.tipo !== 'receita' && item.categoria === category.nome && !item.ignorar_calculo).reduce((sum, item) => sum + clampMoney(item.valor), 0); return <button type="button" key={String(category.id)} onClick={() => openExisting('category', category)}><span><strong>{category.nome}</strong><small>{count} {count === 1 ? 'lançamento' : 'lançamentos'}</small></span><b>{money.format(spent)}</b></button> })}{!categories.length ? <div className="mai-v3-empty-line">Nenhuma categoria cadastrada.</div> : null}</div></section> : null}
+    {tab === 'categories' ? <section className="mai-v3-simple-section"><div className="mai-finance-v4-section-head"><div><h2>Categorias</h2><small>{filtersActive ? 'Categorias presentes no filtro atual.' : 'As mesmas categorias disponíveis direto no lançamento.'}</small></div><button type="button" onClick={() => openNew('category')}><span className="material-symbols-rounded">add</span>Adicionar categoria</button></div><div className="mai-finance-v4-category-list">{visibleCategories.map(category => { const items = filtered.filter(item => String(item.categoria || '') === String(category.nome || '')); const spent = items.filter(item => item.tipo !== 'receita' && !item.ignorar_calculo).reduce((sum, item) => sum + clampMoney(item.valor), 0); return <button type="button" key={String(category.id)} onClick={() => openExisting('category', category)}><span><strong>{category.nome}</strong><small>{items.length} {items.length === 1 ? 'lançamento' : 'lançamentos'} no filtro</small></span><b>{money.format(spent)}</b></button> })}{!visibleCategories.length ? <div className="mai-v3-empty-line">Nenhuma categoria corresponde ao filtro.</div> : null}</div></section> : null}
 
     {draft ? <div className="mai-v3-create-layer" onMouseDown={() => setDraft(null)}><form className={`mai-v3-create-drawer mai-finance-v4-drawer mai-finance-v4-drawer-${kind}`} onSubmit={event => event.preventDefault()} onMouseDown={event => event.stopPropagation()}><header className="mai-v3-drawer-header"><div><small>{draft._persisted ? 'Salvamento automático' : 'Novo'}</small><strong>{kind === 'transaction' ? draft._persisted ? 'Editar lançamento' : 'Novo lançamento' : kind === 'account' ? draft._persisted ? 'Editar conta' : 'Nova conta' : kind === 'card' ? draft._persisted ? 'Editar cartão' : 'Novo cartão' : draft._persisted ? 'Editar categoria' : 'Nova categoria'}</strong></div><button type="button" className="mai-v3-close" onClick={() => setDraft(null)}>×</button></header><div className="mai-v3-drawer-body mai-create-unified-body" onMouseDown={() => createTool && setCreateTool('')}>
       {kind === 'transaction' ? <>
