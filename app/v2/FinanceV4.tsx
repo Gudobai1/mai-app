@@ -76,19 +76,19 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
   }
   const signed = (item: Row, value: number) => item.tipo === 'receita' ? value : -value
 
-  function fixedForMonthAt(monthKey: string) {
+  function fixedForMonthAt(monthKey: string): Row[] {
     const maxDay = new Date(Number(monthKey.slice(0, 4)), Number(monthKey.slice(5, 7)), 0).getDate()
     return fixed.filter(rule => rule.ativo !== false && (!rule.mes_inicio || monthKey >= String(rule.mes_inicio).slice(0, 7)) && (!rule.mes_fim || monthKey <= String(rule.mes_fim).slice(0, 7))).flatMap(rule => {
       const occurrence = occurrences.find(item => String(item.fixo_id) === String(rule.id) && String(item.competencia) === monthKey)
       if (occurrence?.ignorado) return []
       const day = Math.min(maxDay, Math.max(1, Number(rule.dia_mes || 1)))
-      return [{ ...rule, ...occurrence, id: rule.id, _isFixed: true, occurrenceKey: `${rule.id}|${monthKey}`, data: occurrence?.data_override || `${monthKey}-${String(day).padStart(2, '0')}`, valor: occurrence?.valor_override === '' || occurrence?.valor_override == null ? clampMoney(rule.valor) : clampMoney(occurrence.valor_override), status: occurrence?.status || 'pendente', valor_pago: occurrence?.valor_pago || 0, recorrencia: 'fixo' }]
+      return [{ ...rule, ...occurrence, id: rule.id, _isFixed: true, occurrenceKey: `${rule.id}|${monthKey}`, data: occurrence?.data_override || `${monthKey}-${String(day).padStart(2, '0')}`, valor: occurrence?.valor_override === '' || occurrence?.valor_override == null ? clampMoney(rule.valor) : clampMoney(occurrence.valor_override), status: occurrence?.status || 'pendente', valor_pago: occurrence?.valor_pago || 0, recorrencia: 'fixo' } as Row]
     })
   }
 
   const monthFixed = fixedForMonthAt(month)
   const monthTx = transactions.filter(item => dateKey(item.data).slice(0, 7) === month)
-  const monthItems = [...monthTx, ...monthFixed]
+  const monthItems: Row[] = [...monthTx, ...monthFixed]
   const initialBalance = accounts.reduce((sum, account) => sum + Number(account.saldo_inicial || 0), 0)
   const realBalance = initialBalance + transactions.filter(item => !item.ignorar_calculo).reduce((sum, item) => sum + signed(item, paidAmount(item)), 0) + monthFixed.filter(item => !item.ignorar_calculo && item.status === 'pago').reduce((sum, item) => sum + signed(item, clampMoney(item.valor)), 0)
   const projectedBalance = initialBalance + transactions.filter(item => !item.ignorar_calculo).reduce((sum, item) => sum + signed(item, clampMoney(item.valor)), 0) + monthFixed.filter(item => !item.ignorar_calculo).reduce((sum, item) => sum + signed(item, clampMoney(item.valor)), 0)
@@ -162,7 +162,7 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
       if (kind === 'transaction') {
         const recurring = String(clean.recorrencia || 'unico')
         if (recurring === 'fixo') {
-          const fixedRule = { ...clean, id: String(clean.id), titulo: label, valor: clampMoney(clean.valor), dia_mes: Math.min(31, Math.max(1, Number(clean.dia_mes || Number(dateKey(clean.data).slice(8)) || 1))), mes_inicio: String(clean.mes_inicio || dateKey(clean.data).slice(0, 7) || month), mes_fim: String(clean.mes_fim || ''), anexos: rows(clean.anexos), ativo: clean.ativo !== false }
+          const fixedRule: Row = { ...clean, id: String(clean.id), titulo: label, valor: clampMoney(clean.valor), dia_mes: Math.min(31, Math.max(1, Number(clean.dia_mes || Number(dateKey(clean.data).slice(8)) || 1))), mes_inicio: String(clean.mes_inicio || dateKey(clean.data).slice(0, 7) || month), mes_fim: String(clean.mes_fim || ''), anexos: rows(clean.anexos), ativo: clean.ativo !== false }
           delete fixedRule.status
           delete fixedRule.valor_pago
           delete fixedRule.pagamentos
@@ -182,7 +182,7 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
           if (clean.status === 'pendente' && !payments.length) paid = 0
           const status = paid >= value && value > 0 ? 'pago' : paid > 0 ? 'parcial' : clean.status === 'pago' ? 'pago' : 'pendente'
           const accountId = String(clean.conta_id || '')
-          const next = { ...clean, titulo: label, valor: value, valor_pago: paid, status, pagamentos: payments, anexos: rows(clean.anexos), cartao_id: accountId.startsWith('card|') ? accountId.slice(5) : '', recorrencia: recurring }
+          const next: Row = { ...clean, titulo: label, valor: value, valor_pago: paid, status, pagamentos: payments, anexos: rows(clean.anexos), cartao_id: accountId.startsWith('card|') ? accountId.slice(5) : '', recorrencia: recurring }
           delete next.dia_mes
           delete next.mes_inicio
           delete next.mes_fim
