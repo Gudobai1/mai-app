@@ -92,14 +92,10 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
   const initialBalance = accounts.reduce((sum, account) => sum + Number(account.saldo_inicial || 0), 0)
   const realBalance = initialBalance + transactions.filter(item => !item.ignorar_calculo).reduce((sum, item) => sum + signed(item, paidAmount(item)), 0) + monthFixed.filter(item => !item.ignorar_calculo && item.status === 'pago').reduce((sum, item) => sum + signed(item, clampMoney(item.valor)), 0)
   const projectedBalance = initialBalance + transactions.filter(item => !item.ignorar_calculo).reduce((sum, item) => sum + signed(item, clampMoney(item.valor)), 0) + monthFixed.filter(item => !item.ignorar_calculo).reduce((sum, item) => sum + signed(item, clampMoney(item.valor)), 0)
-  const income = monthItems.filter(item => item.tipo === 'receita' && !item.ignorar_calculo).reduce((sum, item) => sum + clampMoney(item.valor), 0)
-  const expense = monthItems.filter(item => item.tipo !== 'receita' && !item.ignorar_calculo).reduce((sum, item) => sum + clampMoney(item.valor), 0)
-  const result = income - expense
 
   function cardInvoice(card: Row) {
     return transactions.filter(item => (String(item.conta_id || '') === `card|${card.id}` || String(item.cartao_id || '') === String(card.id)) && dateKey(item.data).slice(0, 7) === month && !item.ignorar_calculo && item.tipo !== 'receita').reduce((sum, item) => sum + clampMoney(item.valor), 0) + monthFixed.filter(item => String(item.conta_id || '') === `card|${card.id}` && !item.ignorar_calculo && item.tipo !== 'receita').reduce((sum, item) => sum + clampMoney(item.valor), 0)
   }
-  const invoice = cards.reduce((sum, card) => sum + cardInvoice(card), 0)
 
   function accountBalance(account: Row) {
     return Number(account.saldo_inicial || 0) + transactions.filter(item => String(item.conta_id || '') === String(account.id) && !item.ignorar_calculo).reduce((sum, item) => sum + signed(item, paidAmount(item)), 0)
@@ -329,7 +325,7 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
     const text = query.trim().toLocaleLowerCase('pt-BR')
     if (text && !`${item.titulo || ''} ${item.categoria || ''} ${cleanText(item.observacao)}`.toLocaleLowerCase('pt-BR').includes(text)) return false
     if (statusFilter === 'pago' && item.status !== 'pago') return false
-    if (statusFilter === 'pendente' && item.status === 'pago') return false
+    if (statusFilter === 'pendente' && item.status !== 'pendente') return false
     if (statusFilter === 'parcial' && item.status !== 'parcial') return false
     if (statusFilter === 'atrasado' && (item.status === 'pago' || dateKey(item.data) >= today)) return false
     if (categoryFilter && item.categoria !== categoryFilter) return false
@@ -337,9 +333,36 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
     return true
   }).sort((a, b) => order === 'date_asc' ? String(a.data).localeCompare(String(b.data)) : order === 'value_desc' ? clampMoney(b.valor) - clampMoney(a.valor) : order === 'value_asc' ? clampMoney(a.valor) - clampMoney(b.valor) : order === 'az' ? String(a.titulo).localeCompare(String(b.titulo), 'pt-BR') : String(b.data).localeCompare(String(a.data))), [monthItems, query, statusFilter, categoryFilter, originFilter, order, today])
 
-  const recent = [...monthItems].sort((a, b) => String(b.data || '').localeCompare(String(a.data || ''))).slice(0, 8)
+  const filtersActive = Boolean(query.trim() || statusFilter || categoryFilter || originFilter)
+  const activeFilterCount = [query.trim(), statusFilter, categoryFilter, originFilter].filter(Boolean).length
+  const overviewItems = filtered.filter(item => !item.ignorar_calculo)
+  const overviewIncome = overviewItems.filter(item => item.tipo === 'receita').reduce((sum, item) => sum + clampMoney(item.valor), 0)
+  const overviewExpense = overviewItems.filter(item => item.tipo !== 'receita').reduce((sum, item) => sum + clampMoney(item.valor), 0)
+  const overviewResult = overviewIncome - overviewExpense
+  const overviewInvoice = overviewItems.filter(item => item.tipo !== 'receita' && (String(item.conta_id || '').startsWith('card|') || item.cartao_id)).reduce((sum, item) => sum + clampMoney(item.valor), 0)
+  const recent = filtered.slice(0, 8)
+  const income = monthItems.filter(item => item.tipo === 'receita' && !item.ignorar_calculo).reduce((sum, item) => sum + clampMoney(item.valor), 0)
+  const expense = monthItems.filter(item => item.tipo !== 'receita' && !item.ignorar_calculo).reduce((sum, item) => sum + clampMoney(item.valor), 0)
+  const result = income - expense
+  const invoice = cards.reduce((sum, card) => sum + cardInvoice(card), 0)
   const catReport = Object.entries(monthItems.reduce((map: Record<string, number>, item) => { if (item.tipo !== 'receita' && !item.ignorar_calculo) map[item.categoria || 'Sem categoria'] = (map[item.categoria || 'Sem categoria'] || 0) + clampMoney(item.valor); return map }, {})).sort((a, b) => b[1] - a[1])
   const accountSummary = draft ? originName(draft.conta_id, accounts, cards) : 'Sem origem'
+
+  function clearFilters() {
+    setQuery('')
+    setStatusFilter('')
+    setCategoryFilter('')
+    setOriginFilter('')
+  }
+
+  const filterBar = <div className="mai-finance-v4-filters mai-finance-v4-shared-filters" data-active={filtersActive}>
+    <label className="mai-finance-v4-search"><span className="material-symbols-rounded">search</span><input value={query} onChange={event => setQuery(event.target.value)} placeholder="Buscar lançamentos" /></label>
+    <select value={statusFilter} onChange={event => setStatusFilter(event.target.value)} aria-label="Filtrar por status"><option value="">Todos os status</option><option value="pago">Pago</option><option value="parcial">Parcial</option><option value="pendente">Pendente</option><option value="atrasado">Atrasado</option></select>
+    <select value={categoryFilter} onChange={event => setCategoryFilter(event.target.value)} aria-label="Filtrar por categoria"><option value="">Todas as categorias</option>{categories.map(item => <option key={String(item.id)} value={item.nome}>{item.nome}</option>)}</select>
+    <select value={originFilter} onChange={event => setOriginFilter(event.target.value)} aria-label="Filtrar por origem"><option value="">Todas as origens</option>{accounts.map(item => <option key={String(item.id)} value={item.id}>{item.nome}</option>)}{cards.map(item => <option key={String(item.id)} value={`card|${item.id}`}>{item.nome}</option>)}</select>
+    <select value={order} onChange={event => setOrder(event.target.value)} aria-label="Ordenar lançamentos"><option value="date_desc">Mais recentes</option><option value="date_asc">Mais antigos</option><option value="value_desc">Maior valor</option><option value="value_asc">Menor valor</option><option value="az">A–Z</option></select>
+    {filtersActive ? <button type="button" className="mai-finance-v4-clear-filters" onClick={clearFilters}><span className="material-symbols-rounded">filter_alt_off</span>Limpar{activeFilterCount > 1 ? ` (${activeFilterCount})` : ''}</button> : null}
+  </div>
 
   const transactionRow = (item: Row) => {
     const incomeItem = item.tipo === 'receita'
@@ -354,28 +377,26 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
   }
 
   return <div className="mai-v3-area-page mai-v4-finance">
-    <header className="mai-v3-area-header"><div><h1>Finanças</h1><p>Seu financeiro completo, sem perder a simplicidade.</p></div></header>
+    <header className="mai-v3-area-header mai-finance-v4-header"><div><h1>Finanças</h1><p>Veja sua situação, decida rápido e registre sem atrito.</p></div><div className="mai-finance-v4-month"><button type="button" onClick={() => moveMonth(-1)} aria-label="Mês anterior">‹</button><button type="button" onClick={() => setMonth(today.slice(0, 7))}><strong>{monthLabel(month)}</strong><small>{month === today.slice(0, 7) ? 'mês atual' : 'voltar ao mês atual'}</small></button><button type="button" onClick={() => moveMonth(1)} aria-label="Próximo mês">›</button></div></header>
 
-    <div className="mai-finance-v4-topline">
-      <div className="mai-finance-v4-month"><button type="button" onClick={() => moveMonth(-1)} aria-label="Mês anterior">‹</button><button type="button" onClick={() => setMonth(today.slice(0, 7))}><strong>{monthLabel(month)}</strong><small>{month === today.slice(0, 7) ? 'mês atual' : 'voltar ao mês atual'}</small></button><button type="button" onClick={() => moveMonth(1)} aria-label="Próximo mês">›</button></div>
-      <div className="mai-v3-area-tabs mai-finance-v4-tabs">{([{ id: 'overview', label: 'Visão geral' }, { id: 'transactions', label: 'Lançamentos' }, { id: 'accounts', label: 'Contas' }, { id: 'cards', label: 'Cartões' }, { id: 'reports', label: 'Relatórios' }, { id: 'categories', label: 'Categorias' }] as { id: Tab; label: string }[]).map(item => <button key={item.id} data-active={tab === item.id} onClick={() => setTab(item.id)}>{item.label}</button>)}</div>
-    </div>
+    <div className="mai-finance-v4-topline"><div className="mai-v3-area-tabs mai-finance-v4-tabs">{([{ id: 'overview', label: 'Visão geral' }, { id: 'transactions', label: 'Lançamentos' }, { id: 'accounts', label: 'Contas' }, { id: 'cards', label: 'Cartões' }, { id: 'reports', label: 'Relatórios' }, { id: 'categories', label: 'Categorias' }] as { id: Tab; label: string }[]).map(item => <button key={item.id} data-active={tab === item.id} onClick={() => setTab(item.id)}>{item.label}</button>)}</div></div>
 
     {tab === 'overview' ? <>
-      <div className="mai-v3-finance-summary mai-v4-finance-summary">
-        <article><span>Saldo Atual</span><strong>{money.format(realBalance)}</strong></article>
-        <article><span>Previsto</span><strong>{money.format(projectedBalance)}</strong></article>
-        <article><span>Receitas</span><strong data-positive={income >= 0}>{money.format(income)}</strong></article>
-        <article><span>Despesas</span><strong data-negative={expense > 0}>{money.format(expense)}</strong></article>
-        <article><span>Cartões</span><strong>{money.format(invoice)}</strong></article>
-        <article><span>Balanço Mensal</span><strong data-positive={result >= 0} data-negative={result < 0}>{money.format(result)}</strong></article>
+      {filterBar}
+      <div className="mai-finance-v4-overview-metrics">
+        <article className="mai-finance-v4-metric mai-finance-v4-metric-primary" data-negative={realBalance < 0}><div className="mai-finance-v4-metric-label"><span className="material-symbols-rounded">account_balance_wallet</span><span>Saldo Atual</span></div><strong>{money.format(realBalance)}</strong><small>Saldo consolidado agora</small></article>
+        <article className="mai-finance-v4-metric mai-finance-v4-metric-primary"><div className="mai-finance-v4-metric-label"><span className="material-symbols-rounded">trending_up</span><span>Previsto</span></div><strong>{money.format(projectedBalance)}</strong><small>Saldo consolidado projetado</small></article>
+        <article className="mai-finance-v4-metric" data-positive={overviewIncome > 0}><div className="mai-finance-v4-metric-label"><span className="material-symbols-rounded">south_west</span><span>Receitas</span></div><strong>{money.format(overviewIncome)}</strong><small>{filtersActive ? 'No filtro atual' : monthLabel(month)}</small></article>
+        <article className="mai-finance-v4-metric" data-negative={overviewExpense > 0}><div className="mai-finance-v4-metric-label"><span className="material-symbols-rounded">north_east</span><span>Despesas</span></div><strong>{money.format(overviewExpense)}</strong><small>{filtersActive ? 'No filtro atual' : monthLabel(month)}</small></article>
+        <article className="mai-finance-v4-metric"><div className="mai-finance-v4-metric-label"><span className="material-symbols-rounded">credit_card</span><span>Cartões</span></div><strong>{money.format(overviewInvoice)}</strong><small>{filtersActive ? 'No filtro atual' : 'Faturas do mês'}</small></article>
+        <article className="mai-finance-v4-metric" data-positive={overviewResult > 0} data-negative={overviewResult < 0}><div className="mai-finance-v4-metric-label"><span className="material-symbols-rounded">balance</span><span>Balanço Mensal</span></div><strong>{money.format(overviewResult)}</strong><small>Receitas − despesas</small></article>
       </div>
-      <section className="mai-v3-simple-section"><div className="mai-finance-v4-section-head"><div><h2>Últimos lançamentos</h2><small>{monthLabel(month)} · únicos, parcelados e fixos no mesmo lugar</small></div><button type="button" onClick={() => openNew('transaction')}><span className="material-symbols-rounded">add</span>Adicionar lançamento</button></div><div className="mai-v3-finance-rows mai-v3-simple-list">{recent.map(transactionRow)}{!recent.length ? <div className="mai-v3-empty-line">Nenhum lançamento.</div> : null}</div></section>
+      <section className="mai-v3-simple-section mai-finance-v4-overview-list"><div className="mai-finance-v4-section-head"><div><h2>{filtersActive ? 'Lançamentos filtrados' : 'Últimos lançamentos'}</h2><small>{filtered.length} {filtered.length === 1 ? 'lançamento' : 'lançamentos'} em {monthLabel(month)}{filtersActive ? ` · ${activeFilterCount} ${activeFilterCount === 1 ? 'filtro ativo' : 'filtros ativos'}` : ''}</small></div><button type="button" onClick={() => openNew('transaction')}><span className="material-symbols-rounded">add</span>Adicionar lançamento</button></div><div className="mai-v3-finance-rows mai-v3-simple-list">{recent.map(transactionRow)}{!recent.length ? <div className="mai-v3-empty-line">Nenhum lançamento encontrado.</div> : null}</div></section>
     </> : null}
 
     {tab === 'transactions' ? <section className="mai-v3-simple-section">
       <div className="mai-finance-v4-section-head"><div><h2>Lançamentos</h2><small>{filtered.length} no período · únicos, parcelados e fixos</small></div><button type="button" onClick={() => openNew('transaction')}><span className="material-symbols-rounded">add</span>Adicionar lançamento</button></div>
-      <div className="mai-finance-v4-filters"><label><span className="material-symbols-rounded">search</span><input value={query} onChange={event => setQuery(event.target.value)} placeholder="Buscar" /></label><select value={statusFilter} onChange={event => setStatusFilter(event.target.value)}><option value="">Todos os status</option><option value="pago">Pago</option><option value="parcial">Parcial</option><option value="pendente">Pendente</option><option value="atrasado">Atrasado</option></select><select value={categoryFilter} onChange={event => setCategoryFilter(event.target.value)}><option value="">Todas as categorias</option>{categories.map(item => <option key={String(item.id)} value={item.nome}>{item.nome}</option>)}</select><select value={originFilter} onChange={event => setOriginFilter(event.target.value)}><option value="">Todas as origens</option>{accounts.map(item => <option key={String(item.id)} value={item.id}>{item.nome}</option>)}{cards.map(item => <option key={String(item.id)} value={`card|${item.id}`}>{item.nome}</option>)}</select><select value={order} onChange={event => setOrder(event.target.value)}><option value="date_desc">Data ↓</option><option value="date_asc">Data ↑</option><option value="value_desc">Valor ↓</option><option value="value_asc">Valor ↑</option><option value="az">A–Z</option></select></div>
+      {filterBar}
       <div className="mai-v3-finance-rows mai-v3-simple-list">{filtered.map(transactionRow)}{!filtered.length ? <div className="mai-v3-empty-line">Nenhum lançamento encontrado.</div> : null}</div>
     </section> : null}
 
