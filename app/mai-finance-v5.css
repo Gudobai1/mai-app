@@ -53,11 +53,7 @@
 .mai-v3-workspace .mai-v4-finance>.mai-finance-v4-tabs>button::after{content:none!important}
 .mai-v3-workspace .mai-v4-finance>.mai-finance-v4-tabs .material-symbols-rounded{font-size:15px!important;font-variation-settings:'FILL' 0,'wght' 400}
 
-/* Em Finanças, Opções serve apenas para filtros e classificação. */
-.mai-app-topbar-panel[data-view="finance"]>.mai-app-topbar-panel-section:first-child,
-.mai-app-topbar-panel[data-view="finance"]>.mai-app-topbar-panel-section:nth-child(4){
-  display:none!important;
-}
+/* Em Finanças, Opções é renderizado pelo AppTopBar apenas com Filtros e Classificação. */
 
 /* Seis indicadores com a mesma escala. */
 .mai-finance-v4-overview-metrics{grid-template-columns:repeat(6,minmax(0,1fr))!important}
