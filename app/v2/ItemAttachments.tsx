@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { FilePreviewOverlay } from './FilePreviewOverlay'
+import { googleDriveRpc } from './DriveAsset'
 
 type Row = Record<string, any>
 type Rpc = (method: string, args?: unknown[]) => Promise<any>
@@ -13,17 +14,6 @@ type Props = {
   compact?: boolean
 }
 
-const defaultGoogleRpc: Rpc = async (method, args = []) => {
-  const response = await fetch('/api/google/rpc', {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ method, args }),
-  })
-  const data = await response.json()
-  if (!response.ok) throw new Error(data.error || 'Não foi possível acessar o Google Drive')
-  return data.payload
-}
-
 function fileName(file: Row) {
   return String(file.nome || file.name || 'Arquivo')
 }
@@ -32,7 +22,7 @@ function driveId(file: Row) {
   return String(file.idDrive || file.driveId || file.id || '')
 }
 
-export function ItemAttachments({ attachments, onChange, googleRpc = defaultGoogleRpc, compact = false }: Props) {
+export function ItemAttachments({ attachments, onChange, googleRpc = googleDriveRpc, compact = false }: Props) {
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState('')
   const [preview, setPreview] = useState<Row | null>(null)
