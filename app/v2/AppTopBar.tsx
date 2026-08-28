@@ -119,7 +119,7 @@ export function AppTopBar({ state, today, view, taskScope, commit, onTaskScopeCh
   const density = String(control.density || 'comfortable')
 
   const panel = <div className="mai-app-topbar-panel" data-view={String(view)}>
-    <PanelSection title="Layout"><Choices value={layoutMode} onChange={value => patchControl({ layout:value })} items={[{value:'normal',label:'Normal'},{value:'kanban',label:'Kanban'}]}/></PanelSection>
+    {view !== 'finance' ? <PanelSection title="Layout"><Choices value={layoutMode} onChange={value => patchControl({ layout:value })} items={[{value:'normal',label:'Normal'},{value:'kanban',label:'Kanban'}]}/></PanelSection> : null}
 
     {view === 'today' ? <>
       <PanelSection title="Filtros">
@@ -197,8 +197,7 @@ export function AppTopBar({ state, today, view, taskScope, commit, onTaskScopeCh
         <SelectLine label="Categoria" value={String(filter.category || 'all')} onChange={value => patchFilter({ category:value })}><option value="all">Todas</option>{financeCategories.map(category => <option key={String(category.id)} value={String(category.nome || '')}>{String(category.nome || 'Sem nome')}</option>)}</SelectLine>
         <SelectLine label="Origem" value={String(filter.origin || 'all')} onChange={value => patchFilter({ origin:value })}><option value="all">Todas</option>{financeAccounts.map(account => <option key={`account-${String(account.id)}`} value={String(account.id)}>{String(account.nome || 'Conta')}</option>)}{financeCards.map(card => <option key={`card-${String(card.id)}`} value={`card|${String(card.id)}`}>{String(card.nome || 'Cartão')}</option>)}</SelectLine>
       </PanelSection>
-      <PanelSection title="Classificação"><Choices value={sortMode} onChange={value => patchControl({ sort:value })} items={[{value:'date_desc',label:'Recentes'},{value:'date_asc',label:'Antigos'},{value:'value_desc',label:'Maior valor'},{value:'value_asc',label:'Menor valor'},{value:'name',label:'Nome'}]}/></PanelSection>
-      <PanelSection title="Visualização"><Choices value={areaTabs.finance || 'overview'} onChange={value => setAreaTab('finance', value)} items={[{value:'overview',label:'Resumo'},{value:'transactions',label:'Lançamentos'},{value:'accounts',label:'Contas'},{value:'cards',label:'Cartões'},{value:'reports',label:'Relatórios'},{value:'categories',label:'Categorias'}]}/></PanelSection>
+      <PanelSection title="Classificação"><Choices value={sortMode} onChange={value => patchControl({ sort:value })} items={[{value:'pending_first',label:'Pendentes primeiro'},{value:'date_desc',label:'Recentes'},{value:'date_asc',label:'Antigos'},{value:'value_desc',label:'Maior valor'},{value:'value_asc',label:'Menor valor'},{value:'name',label:'Nome'}]}/></PanelSection>
     </> : null}
 
     {view === 'health' ? <>
