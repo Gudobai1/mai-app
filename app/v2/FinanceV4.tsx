@@ -105,7 +105,8 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
   const monthResult = monthIncome - monthExpense
   const monthInvoice = monthCalculationItems.filter(item => item.tipo !== 'receita' && (String(item.conta_id || '').startsWith('card|') || item.cartao_id)).reduce((sum, item) => sum + clampMoney(item.valor), 0)
   const initialBalance = accounts.reduce((sum, account) => sum + Number(account.saldo_inicial || 0), 0)
-  const realBalance = initialBalance + transactions.filter(item => !item.ignorar_calculo).reduce((sum, item) => sum + signed(item, paidAmount(item)), 0) + monthFixed.filter(item => !item.ignorar_calculo && item.status === 'pago').reduce((sum, item) => sum + signed(item, clampMoney(item.valor)), 0)
+  const looseCashBalance = transactions.filter(item => !item.ignorar_calculo && !String(item.conta_id || '').startsWith('card|') && !item.cartao_id).reduce((sum, item) => sum + signed(item, paidAmount(item)), 0) + monthFixed.filter(item => !item.ignorar_calculo && !String(item.conta_id || '').startsWith('card|') && !item.cartao_id).reduce((sum, item) => sum + signed(item, paidAmount(item)), 0)
+  const realBalance = accounts.length ? accounts.reduce((sum, account) => sum + accountBalance(account), 0) : looseCashBalance
   const projectedBalance = initialBalance + transactions.filter(item => !item.ignorar_calculo).reduce((sum, item) => sum + signed(item, clampMoney(item.valor)), 0) + monthFixed.filter(item => !item.ignorar_calculo).reduce((sum, item) => sum + signed(item, clampMoney(item.valor)), 0)
   const totalBoxes = boxes.reduce((sum, item) => sum + clampMoney(item.saldo), 0)
   const totalInvested = investments.reduce((sum, item) => sum + clampMoney(item.aportado), 0)
@@ -115,7 +116,10 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
     return source.filter(item => (String(item.conta_id || '') === `card|${card.id}` || String(item.cartao_id || '') === String(card.id)) && !item.ignorar_calculo && item.tipo !== 'receita').reduce((sum, item) => sum + clampMoney(item.valor), 0)
   }
   function accountBalance(account: Row) {
-    return Number(account.saldo_inicial || 0) + transactions.filter(item => String(item.conta_id || '') === String(account.id) && !item.ignorar_calculo).reduce((sum, item) => sum + signed(item, paidAmount(item)), 0)
+    const accountId = String(account.id)
+    const regular = transactions.filter(item => String(item.conta_id || '') === accountId && !item.ignorar_calculo).reduce((sum, item) => sum + signed(item, paidAmount(item)), 0)
+    const recurring = monthFixed.filter(item => String(item.conta_id || '') === accountId && !item.ignorar_calculo).reduce((sum, item) => sum + signed(item, paidAmount(item)), 0)
+    return Number(account.saldo_inicial || 0) + regular + recurring
   }
   function moveMonth(amount: number) {
     const date = new Date(`${month}-15T12:00:00`)
@@ -298,7 +302,7 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
   function reconcile(account: Row) {
     const answer = prompt(`Saldo real de “${account.nome}”:`, String(accountBalance(account))); if (answer === null || !Number.isFinite(Number(answer))) return
     const diff = Number(answer) - accountBalance(account); if (Math.abs(diff) < 0.01) return
-    commit(current => ({ ...current, finance: { ...current.finance, transactions: [{ id: uid('fin'), titulo: 'Ajuste de saldo', valor: Math.abs(diff), valor_pago: Math.abs(diff), tipo: diff >= 0 ? 'receita' : 'despesa', categoria: 'Ajuste', conta_id: account.id, data: today, status: 'pago', observacao: 'Conciliação bancária', pagamentos: [{ id: uid('pay'), data: today, valor: Math.abs(diff) }], anexos: [], recorrencia: 'unico' }, ...rows(current.finance.transactions)] } }))
+    commit(current => ({ ...current, finance: { ...current.finance, transactions: [{ id: uid('fin'), titulo: 'Ajuste de saldo', valor: Math.abs(diff), valor_pago: Math.abs(diff), tipo: diff >= 0 ? 'receita' : 'despesa', categoria: 'Ajuste', conta_id: account.id, cartao_id: '', data: today, status: 'pago', observacao: 'Conciliação bancária', pagamentos: [{ id: uid('pay'), data: today, valor: Math.abs(diff) }], anexos: [], ignorar_calculo: false, recorrencia: 'unico' }, ...rows(current.finance.transactions)] } }))
   }
   function moveBoxValue(direction: 'in' | 'out') {
     if (!draft || kind !== 'box') return
