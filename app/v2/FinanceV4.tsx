@@ -63,6 +63,13 @@ function parseMoneyInput(value: string) {
   return Number.isFinite(parsed) ? Math.max(0, parsed) : Number.NaN
 }
 
+function parseSignedMoneyInput(value: string) {
+  const cleaned = value.trim().replace(/R\$|\s/g, '')
+  const normalized = cleaned.includes(',') ? cleaned.replace(/\./g, '').replace(',', '.') : cleaned
+  const parsed = Number(normalized)
+  return Number.isFinite(parsed) ? parsed : Number.NaN
+}
+
 function monthSequence(start: string, end: string) {
   if (!/^\d{4}-\d{2}$/.test(start) || !/^\d{4}-\d{2}$/.test(end) || start > end) return []
   const result: string[] = []
@@ -111,6 +118,18 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
     if (payments.length) return Math.min(clampMoney(item.valor), payments.reduce((sum, payment) => sum + clampMoney(payment.valor), 0))
     return clampMoney(item.valor_pago) || (item.status === 'pago' ? clampMoney(item.valor) : 0)
   }
+  const paidAmountThrough = (item: Row, cutoffDate: string) => {
+    const payments = rows(item.pagamentos)
+    if (payments.length) {
+      return Math.min(clampMoney(item.valor), payments.reduce((sum, payment) => {
+        const paymentDate = dateKey(payment.data)
+        return !paymentDate || paymentDate <= cutoffDate ? sum + clampMoney(payment.valor) : sum
+      }, 0))
+    }
+    const itemDate = dateKey(item.data)
+    if (itemDate && itemDate > cutoffDate) return 0
+    return clampMoney(item.valor_pago) || (item.status === 'pago' ? clampMoney(item.valor) : 0)
+  }
   const signed = (item: Row, value: number) => item.tipo === 'receita' ? value : -value
 
   function fixedRuleAtMonth(rule: Row, monthKey: string): Row | null {
@@ -131,6 +150,41 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
       const item = fixedRuleAtMonth(rule, monthKey)
       return item ? [item] : []
     })
+  }
+
+  function fixedCashTotalThrough(cutoffDate: string, accountId?: string) {
+    const cutoffMonth = cutoffDate.slice(0, 7)
+    return fixed.reduce((total, rule) => {
+      if (rule.ignorar_calculo) return total
+      const ruleAccountId = String(rule.conta_id || '')
+      const ruleCardId = String(rule.cartao_id || '')
+      if (accountId !== undefined) {
+        if (ruleAccountId !== accountId) return total
+      } else if (ruleAccountId.startsWith('card|') || ruleCardId) return total
+      const start = String(rule.mes_inicio || dateKey(rule.data).slice(0, 7) || cutoffMonth).slice(0, 7)
+      const configuredEnd = String(rule.mes_fim || '').slice(0, 7)
+      const end = configuredEnd && configuredEnd < cutoffMonth ? configuredEnd : cutoffMonth
+      return total + monthSequence(start, end).reduce((sum, monthKey) => {
+        const item = fixedRuleAtMonth(rule, monthKey)
+        if (!item || item.ignorar_calculo) return sum
+        const itemDate = dateKey(item.data)
+        if (itemDate && itemDate > cutoffDate) return sum
+        return sum + signed(item, paidAmountThrough(item, cutoffDate))
+      }, 0)
+    }, 0)
+  }
+
+  function accountBalance(account: Row) {
+    const accountId = String(account.id)
+    const regular = transactions.reduce((sum, item) => {
+      const isDirectAccountMovement = String(item.conta_id || '') === accountId && !item.ignorar_calculo
+      const isCardInvoicePayment = item.ajuste_fatura === true && String(item.conta_pagamento_id || '') === accountId
+      if (!isDirectAccountMovement && !isCardInvoicePayment) return sum
+      const paid = paidAmountThrough(item, today)
+      if (!paid) return sum
+      return sum + signed(item, paid)
+    }, 0)
+    return Number(account.saldo_inicial || 0) + regular + fixedCashTotalThrough(today, accountId)
   }
 
   const monthFixed = fixedForMonthAt(month)
@@ -155,7 +209,7 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
   const monthExpense = monthNonCardExpense + monthInvoice + monthOrphanCardExpense
   const monthResult = monthIncome - monthExpense
   const initialBalance = accounts.reduce((sum, account) => sum + Number(account.saldo_inicial || 0), 0)
-  const looseCashBalance = transactions.filter(item => !item.ignorar_calculo && !String(item.conta_id || '').startsWith('card|') && !item.cartao_id).reduce((sum, item) => sum + signed(item, paidAmount(item)), 0) + monthFixed.filter(item => !item.ignorar_calculo && !String(item.conta_id || '').startsWith('card|') && !item.cartao_id).reduce((sum, item) => sum + signed(item, paidAmount(item)), 0)
+  const looseCashBalance = transactions.filter(item => !item.ignorar_calculo && !String(item.conta_id || '').startsWith('card|') && !item.cartao_id).reduce((sum, item) => sum + signed(item, paidAmountThrough(item, today)), 0) + fixedCashTotalThrough(today)
   const realBalance = accounts.length ? accounts.reduce((sum, account) => sum + accountBalance(account), 0) : looseCashBalance
   const projectedTransactionsTotal = transactions.filter(item => {
     if (item.ignorar_calculo) return false
@@ -186,12 +240,6 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
     const manual = source.find(item => item.ajuste_fatura === true && String(item.ajuste_fatura_card_id || item.cartao_id || '') === cardId && String(item.competencia_fatura || dateKey(item.data).slice(0, 7)) === month)
     if (manual) return clampMoney(manual.valor)
     return source.filter(item => !item.ajuste_fatura && (String(item.conta_id || '') === `card|${cardId}` || String(item.cartao_id || '') === cardId) && !item.ignorar_calculo && item.tipo !== 'receita').reduce((sum, item) => sum + clampMoney(item.valor), 0)
-  }
-  function accountBalance(account: Row) {
-    const accountId = String(account.id)
-    const regular = transactions.filter(item => String(item.conta_id || '') === accountId && !item.ignorar_calculo).reduce((sum, item) => sum + signed(item, paidAmount(item)), 0)
-    const recurring = monthFixed.filter(item => String(item.conta_id || '') === accountId && !item.ignorar_calculo).reduce((sum, item) => sum + signed(item, paidAmount(item)), 0)
-    return Number(account.saldo_inicial || 0) + regular + recurring
   }
   function moveMonth(amount: number) {
     const date = new Date(`${month}-15T12:00:00`)
@@ -372,8 +420,13 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
     setDraft({ ...generated[0], _persisted: true })
   }
   function reconcile(account: Row) {
-    const answer = prompt(`Saldo real de “${account.nome}”:`, String(accountBalance(account))); if (answer === null || !Number.isFinite(Number(answer))) return
-    const diff = Number(answer) - accountBalance(account); if (Math.abs(diff) < 0.01) return
+    const currentBalance = accountBalance(account)
+    const answer = prompt(`Saldo real de “${account.nome}”:`, currentBalance.toFixed(2).replace('.', ','))
+    if (answer === null) return
+    const targetBalance = parseSignedMoneyInput(answer)
+    if (!Number.isFinite(targetBalance)) { alert('Digite um saldo válido.'); return }
+    const diff = targetBalance - currentBalance
+    if (Math.abs(diff) < 0.01) return
     commit(current => ({ ...current, finance: { ...current.finance, transactions: [{ id: uid('fin'), titulo: 'Ajuste de saldo', valor: Math.abs(diff), valor_pago: Math.abs(diff), tipo: diff >= 0 ? 'receita' : 'despesa', categoria: 'Ajuste', conta_id: account.id, cartao_id: '', data: today, status: 'pago', observacao: 'Conciliação bancária', pagamentos: [{ id: uid('pay'), data: today, valor: Math.abs(diff) }], anexos: [], ignorar_calculo: false, recorrencia: 'unico' }, ...rows(current.finance.transactions)] } }))
   }
   function adjustCardInvoice(card: Row) {
