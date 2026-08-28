@@ -1,0 +1,94 @@
+/* Caixinhas — cards compactos em largura, mas encorpados e quase quadrados. */
+
+.mai-v4-finance:has(.mai-finance-v4-tabs>button:nth-child(5)[data-active="true"]) .mai-finance-v4-goal-grid{
+  display:grid!important;
+  grid-template-columns:repeat(auto-fill,minmax(190px,210px))!important;
+  justify-content:start!important;
+  align-items:start!important;
+  gap:12px!important;
+  max-width:none!important;
+}
+
+.mai-v4-finance:has(.mai-finance-v4-tabs>button:nth-child(5)[data-active="true"]) .mai-finance-v4-goal-card{
+  width:100%!important;
+  min-width:0!important;
+  min-height:190px!important;
+  aspect-ratio:1 / 1!important;
+  box-sizing:border-box!important;
+  display:flex!important;
+  flex-direction:column!important;
+  padding:16px!important;
+  border-radius:14px!important;
+}
+
+.mai-v4-finance:has(.mai-finance-v4-tabs>button:nth-child(5)[data-active="true"]) .mai-finance-v4-goal-main{
+  display:grid!important;
+  grid-template-columns:40px minmax(0,1fr)!important;
+  align-items:center!important;
+  gap:10px!important;
+}
+
+.mai-v4-finance:has(.mai-finance-v4-tabs>button:nth-child(5)[data-active="true"]) .mai-finance-v4-goal-icon{
+  width:40px!important;
+  height:40px!important;
+  border-radius:11px!important;
+}
+
+.mai-v4-finance:has(.mai-finance-v4-tabs>button:nth-child(5)[data-active="true"]) .mai-finance-v4-goal-icon .material-symbols-rounded{
+  font-size:20px!important;
+}
+
+.mai-v4-finance:has(.mai-finance-v4-tabs>button:nth-child(5)[data-active="true"]) .mai-finance-v4-goal-copy strong{
+  font-size:12px!important;
+}
+
+.mai-v4-finance:has(.mai-finance-v4-tabs>button:nth-child(5)[data-active="true"]) .mai-finance-v4-goal-copy small{
+  font-size:9px!important;
+}
+
+.mai-v4-finance:has(.mai-finance-v4-tabs>button:nth-child(5)[data-active="true"]) .mai-finance-v4-goal-main>b{
+  grid-column:1 / -1!important;
+  justify-self:start!important;
+  margin-top:12px!important;
+  font-size:15px!important;
+  line-height:1.15!important;
+}
+
+.mai-v4-finance:has(.mai-finance-v4-tabs>button:nth-child(5)[data-active="true"]) .mai-finance-v4-progress{
+  margin-top:auto!important;
+  padding-top:14px!important;
+  gap:6px!important;
+}
+
+.mai-v4-finance:has(.mai-finance-v4-tabs>button:nth-child(5)[data-active="true"]) .mai-finance-v4-progress>i{
+  height:5px!important;
+}
+
+.mai-v4-finance:has(.mai-finance-v4-tabs>button:nth-child(5)[data-active="true"]) .mai-finance-v4-progress small{
+  font-size:8.5px!important;
+}
+
+.mai-v4-finance:has(.mai-finance-v4-tabs>button:nth-child(5)[data-active="true"]) .mai-finance-v4-quick-action{
+  margin-top:10px!important;
+  font-size:9px!important;
+}
+
+@media(max-width:760px){
+  .mai-v4-finance:has(.mai-finance-v4-tabs>button:nth-child(5)[data-active="true"]) .mai-finance-v4-goal-grid{
+    grid-template-columns:repeat(auto-fill,minmax(175px,195px))!important;
+    gap:10px!important;
+  }
+  .mai-v4-finance:has(.mai-finance-v4-tabs>button:nth-child(5)[data-active="true"]) .mai-finance-v4-goal-card{
+    min-height:175px!important;
+    padding:14px!important;
+  }
+}
+
+@media(max-width:480px){
+  .mai-v4-finance:has(.mai-finance-v4-tabs>button:nth-child(5)[data-active="true"]) .mai-finance-v4-goal-grid{
+    grid-template-columns:minmax(165px,185px)!important;
+  }
+  .mai-v4-finance:has(.mai-finance-v4-tabs>button:nth-child(5)[data-active="true"]) .mai-finance-v4-goal-card{
+    min-height:165px!important;
+  }
+}
