@@ -48,8 +48,10 @@
 
 .mai-v4-finance:has(.mai-finance-v4-tabs>button:nth-child(5)[data-active="true"]) .mai-finance-v4-goal-main>b{
   grid-column:1 / -1!important;
-  justify-self:start!important;
+  justify-self:center!important;
+  width:100%!important;
   margin-top:12px!important;
+  text-align:center!important;
   font-size:15px!important;
   line-height:1.15!important;
 }
