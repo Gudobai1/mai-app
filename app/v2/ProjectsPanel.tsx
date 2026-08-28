@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react'
 import type { MaiState } from '../../lib/v2/state'
 import type { AppView, Row } from './app-types'
+import { driveAssetUrl } from './DriveAsset'
 import { MaiIcon } from './MaiIcons'
 
 const rows = (value: unknown): Row[] => Array.isArray(value) ? value as Row[] : []
@@ -117,9 +118,10 @@ export function ProjectsPanel({ state, view, navigate, commit, onNewProject, onE
       const id = String(project.id)
       const count = open.filter(task => String(task.projeto_id) === id).length
       const sectionCount = rows(project.secoes).length
+      const imageUrl = driveAssetUrl(project.imagem_url)
       return <article className="mai-project-card-wrap" key={id} style={{ marginLeft: `${Math.min(depth, 3) * 11}px` }}>
         <button className="mai-project-card" data-active={view === `project:${id}`} onClick={() => navigate(`project:${id}`)}>
-          {project.imagem_url ? <img src={project.imagem_url} alt="" /> : <i className="mai-project-dot" style={{ background: project.cor || '#60765a' }}><MaiIcon name={String(project.icone || 'folder')} size={12} /></i>}
+          {imageUrl ? <img src={imageUrl} alt="" /> : <i className="mai-project-dot" style={{ background: project.cor || '#60765a' }}><MaiIcon name={String(project.icone || 'folder')} size={12} /></i>}
           <span><strong>{project.nome}</strong><small>{depth ? 'Subprojeto' : count ? `${count} tarefa${count === 1 ? '' : 's'} ativa${count === 1 ? '' : 's'}` : sectionCount ? `${sectionCount} seções` : 'Sem tarefas ativas'}</small></span>
           <b>{count || ''}</b>
         </button>
