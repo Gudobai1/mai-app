@@ -4,11 +4,68 @@ import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { addDays, plannerItems } from '../../lib/v2/planner'
 import { dateKey, emptyState, flushRemoteSync, hydrateRemoteState, loadState, type MaiState, normalizeState, persistState, subscribeSyncStatus, type SyncStatus } from '../../lib/v2/state'
+import { drivePreviewUrl, uploadDataUrlToDrive } from './DriveAsset'
 
 type Row = Record<string, any>
 type Calendar = { id: string; nome: string; cor: string; primary?: boolean; acesso?: string }
 type InstallPromptEvent = Event & { prompt: () => Promise<void>; userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }> }
+type AssetPath = Array<string | number>
+type EmbeddedAsset = { path: AssetPath; dataUrl: string }
 const rows = (value: unknown): Row[] => Array.isArray(value) ? value as Row[] : []
+const DATA_URL = /^data:([^;,]+)?(?:;[^,]*)?,/i
+
+function findEmbeddedAsset(value: unknown, path: AssetPath = []): EmbeddedAsset | null {
+  if (typeof value === 'string') return DATA_URL.test(value) ? { path, dataUrl: value } : null
+  if (Array.isArray(value)) {
+    for (let index = 0; index < value.length; index += 1) {
+      const found = findEmbeddedAsset(value[index], [...path, index])
+      if (found) return found
+    }
+    return null
+  }
+  if (!value || typeof value !== 'object') return null
+  for (const [key, item] of Object.entries(value as Record<string, unknown>)) {
+    const found = findEmbeddedAsset(item, [...path, key])
+    if (found) return found
+  }
+  return null
+}
+
+function valueAtPath(value: unknown, path: AssetPath): unknown {
+  let cursor: any = value
+  for (const part of path) {
+    if (cursor == null) return undefined
+    cursor = cursor[part as any]
+  }
+  return cursor
+}
+
+function replaceAtPath(value: unknown, path: AssetPath, replacement: string): unknown {
+  if (!path.length) return replacement
+  const [head, ...rest] = path
+  if (Array.isArray(value)) {
+    const next = [...value]
+    next[Number(head)] = replaceAtPath(next[Number(head)], rest, replacement)
+    return next
+  }
+  const source = value && typeof value === 'object' ? value as Record<string, unknown> : {}
+  const next = { ...source }
+  const key = String(head)
+  next[key] = replaceAtPath(source[key], rest, replacement)
+  return next
+}
+
+function mimeFromDataUrl(value: string) {
+  return DATA_URL.exec(value)?.[1] || 'application/octet-stream'
+}
+
+function extensionFromMime(mime: string) {
+  if (mime === 'image/jpeg') return 'jpg'
+  if (mime === 'image/svg+xml') return 'svg'
+  if (mime === 'text/plain') return 'txt'
+  if (mime === 'application/pdf') return 'pdf'
+  return (mime.split('/')[1] || 'bin').split('+')[0].replace(/[^a-z0-9]+/gi, '') || 'bin'
+}
 
 export function useMaiRuntime() {
   const router = useRouter()
@@ -25,6 +82,7 @@ export function useMaiRuntime() {
   const [installPrompt, setInstallPrompt] = useState<InstallPromptEvent | null>(null)
   const history = useRef<MaiState[]>([])
   const importRef = useRef<HTMLInputElement>(null)
+  const assetMigrations = useRef(new Set<string>())
 
   useEffect(() => {
     const saved = loadState()
@@ -43,6 +101,33 @@ export function useMaiRuntime() {
     document.documentElement.dataset.maiTheme = String(state.configs.theme || 'light')
     document.documentElement.dataset.maiAccent = String(state.configs.accentPalette || 'sage')
   }, [state.configs.theme, state.configs.accentPalette])
+
+  // Regra global de persistência do MAI:
+  // dados/configs/referências ficam no estado (cache + Supabase); bytes ficam no Drive.
+  // Também migra automaticamente data URLs antigas deixadas por versões anteriores.
+  useEffect(() => {
+    if (!ready || googleConnected !== true) return
+    const embedded = findEmbeddedAsset(state)
+    if (!embedded || assetMigrations.current.has(embedded.dataUrl)) return
+    assetMigrations.current.add(embedded.dataUrl)
+
+    void (async () => {
+      try {
+        const mime = mimeFromDataUrl(embedded.dataUrl)
+        const extension = extensionFromMime(mime)
+        const asset = await uploadDataUrlToDrive(embedded.dataUrl, `MAI - asset-${Date.now()}.${extension}`, mime)
+        const reference = drivePreviewUrl(asset.idDrive)
+        setState(current => {
+          if (valueAtPath(current, embedded.path) !== embedded.dataUrl) return current
+          return persistState(replaceAtPath(current, embedded.path, reference) as MaiState)
+        })
+      } catch {
+        // Mantém o conteúdo local para não perder dados; uma próxima alteração tenta novamente.
+      } finally {
+        assetMigrations.current.delete(embedded.dataUrl)
+      }
+    })()
+  }, [ready, googleConnected, state])
 
   useEffect(() => {
     if ('Notification' in window) setNotificationPermission(Notification.permission)
