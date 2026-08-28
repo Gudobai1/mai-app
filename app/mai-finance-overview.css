@@ -105,22 +105,31 @@
 .mai-finance-v4-clear-filters:hover{background:var(--v3-hover);color:var(--v3-text)}
 .mai-finance-v4-clear-filters .material-symbols-rounded{font-size:15px}
 
-/* Visão geral: sete quadrados pequenos, idênticos e sempre lado a lado. */
-.mai-finance-v4-overview-metrics{
-  display:grid;
-  grid-auto-flow:column;
-  grid-auto-columns:110px;
-  grid-template-columns:none;
-  justify-content:start;
-  gap:8px;
-  width:100%;
-  min-width:0;
-  margin:0 0 20px;
-  overflow-x:auto;
-  overflow-y:hidden;
-  padding:0 0 3px;
+/* Visão geral: sete quadrados realmente compactos, em sequência, sem distribuição por 1fr. */
+html body .mai-v3-workspace .mai-v4-finance > .mai-finance-v4-overview-metrics{
+  display:flex!important;
+  flex-flow:row nowrap!important;
+  align-items:stretch!important;
+  justify-content:flex-start!important;
+  gap:8px!important;
+  width:100%!important;
+  min-width:0!important;
+  grid-row:auto!important;
+  margin:14px 0 20px!important;
+  overflow-x:auto!important;
+  overflow-y:hidden!important;
+  padding:0 0 3px!important;
   scrollbar-width:thin;
   overscroll-behavior-inline:contain;
+}
+
+/* No overview os lançamentos vêm sempre depois dos quadrados, nunca na mesma linha de grid. */
+html body .mai-v3-workspace .mai-v4-finance > .mai-v3-simple-section{
+  grid-row:auto!important;
+}
+html body .mai-v3-workspace .mai-v4-finance > .mai-finance-v4-overview-list{
+  margin-top:0!important;
+  padding-top:0!important;
 }
 
 .mai-finance-v4-metric,
@@ -128,11 +137,11 @@
 .mai-finance-v4-metric-asset{
   grid-column:auto!important;
   position:relative;
-  flex:0 0 110px;
-  min-width:110px!important;
-  width:110px!important;
-  min-height:110px!important;
-  height:110px!important;
+  flex:0 0 104px!important;
+  min-width:104px!important;
+  width:104px!important;
+  min-height:104px!important;
+  height:104px!important;
   aspect-ratio:1 / 1!important;
   box-sizing:border-box;
   display:flex;
@@ -140,9 +149,9 @@
   align-items:stretch;
   justify-content:center;
   margin:0;
-  padding:11px;
+  padding:10px;
   border:1px solid color-mix(in srgb,var(--v3-line,#e6e9e4) 70%,transparent);
-  border-radius:13px;
+  border-radius:12px;
   background:color-mix(in srgb,var(--v3-soft,#f4f6f2) 58%,transparent);
   color:var(--v3-text);
   box-shadow:none;
@@ -177,7 +186,7 @@
   overflow:hidden;
   text-overflow:ellipsis;
   white-space:nowrap;
-  font-size:8.2px;
+  font-size:8.1px;
   font-weight:650;
   letter-spacing:.01em;
 }
@@ -185,12 +194,12 @@
 .mai-finance-v4-metric-primary>strong,
 .mai-finance-v4-metric-asset>strong{
   min-width:0;
-  margin-top:9px;
+  margin-top:8px;
   overflow:hidden;
   text-overflow:ellipsis;
   white-space:nowrap;
   color:var(--v3-text);
-  font-size:13px;
+  font-size:12.5px;
   line-height:1.12;
   font-weight:720;
   letter-spacing:-.022em;
@@ -205,7 +214,7 @@
   -webkit-box-orient:vertical;
   white-space:normal;
   color:var(--v3-muted);
-  font-size:7px;
+  font-size:6.8px;
   line-height:1.25;
 }
 .mai-finance-v4-metric[data-positive="true"]>strong,
@@ -218,7 +227,6 @@
 .mai-finance-v4-metric-caption{display:none}
 .mai-finance-v4-metric-progress{display:none}
 
-.mai-finance-v4-overview-list{margin-top:0!important;padding-top:0!important}
 .mai-finance-v4-overview-list .mai-finance-v4-section-head{margin-bottom:7px}
 .mai-finance-v4-overview-list .mai-finance-v4-section-head h2{font-size:13px;letter-spacing:-.01em}
 
@@ -293,8 +301,7 @@ html[data-mai-theme="dark"] .mai-finance-v4-shared-filters select{background:var
 
 @media(max-width:900px){
   .mai-finance-v4-header{align-items:center!important}
-  .mai-finance-v4-overview-metrics{grid-auto-columns:106px}
-  .mai-finance-v4-metric,.mai-finance-v4-metric-primary,.mai-finance-v4-metric-asset{flex-basis:106px;min-width:106px!important;width:106px!important;min-height:106px!important;height:106px!important}
+  .mai-finance-v4-metric,.mai-finance-v4-metric-primary,.mai-finance-v4-metric-asset{flex-basis:102px!important;min-width:102px!important;width:102px!important;min-height:102px!important;height:102px!important}
   .mai-finance-v4-shared-filters .mai-finance-v4-search{flex-basis:100%}
   .mai-finance-v4-shared-filters select{flex:1 1 calc(50% - 3px)}
 }
@@ -304,15 +311,14 @@ html[data-mai-theme="dark"] .mai-finance-v4-shared-filters select{background:var
   .mai-finance-v4-shared-filters{margin-bottom:11px!important}
   .mai-finance-v4-shared-filters select{flex:1 1 calc(50% - 3px);min-width:0}
   .mai-finance-v4-clear-filters{flex:0 0 auto}
-  .mai-finance-v4-overview-metrics{grid-auto-columns:102px;gap:7px;margin-bottom:17px}
-  .mai-finance-v4-metric,.mai-finance-v4-metric-primary,.mai-finance-v4-metric-asset{flex-basis:102px;min-width:102px!important;width:102px!important;min-height:102px!important;height:102px!important;padding:9px}
-  .mai-finance-v4-metric strong,.mai-finance-v4-metric-primary>strong,.mai-finance-v4-metric-asset>strong{font-size:12px}
-  .mai-finance-v4-metric-label>span:last-child{font-size:8px}
+  html body .mai-v3-workspace .mai-v4-finance > .mai-finance-v4-overview-metrics{gap:7px!important;margin-bottom:17px!important}
+  .mai-finance-v4-metric,.mai-finance-v4-metric-primary,.mai-finance-v4-metric-asset{flex-basis:98px!important;min-width:98px!important;width:98px!important;min-height:98px!important;height:98px!important;padding:8px}
+  .mai-finance-v4-metric strong,.mai-finance-v4-metric-primary>strong,.mai-finance-v4-metric-asset>strong{font-size:11.8px}
+  .mai-finance-v4-metric-label>span:last-child{font-size:7.8px}
   .mai-finance-v4-category-picker{min-width:210px}
 }
 @media(max-width:380px){
-  .mai-finance-v4-overview-metrics{grid-auto-columns:98px}
-  .mai-finance-v4-metric,.mai-finance-v4-metric-primary,.mai-finance-v4-metric-asset{flex-basis:98px;min-width:98px!important;width:98px!important;min-height:98px!important;height:98px!important;padding:8px}
-  .mai-finance-v4-metric strong,.mai-finance-v4-metric-primary>strong,.mai-finance-v4-metric-asset>strong{font-size:11.5px}
-  .mai-finance-v4-metric small,.mai-finance-v4-metric-primary small,.mai-finance-v4-metric-asset small{font-size:6.8px}
+  .mai-finance-v4-metric,.mai-finance-v4-metric-primary,.mai-finance-v4-metric-asset{flex-basis:94px!important;min-width:94px!important;width:94px!important;min-height:94px!important;height:94px!important;padding:8px}
+  .mai-finance-v4-metric strong,.mai-finance-v4-metric-primary>strong,.mai-finance-v4-metric-asset>strong{font-size:11.2px}
+  .mai-finance-v4-metric small,.mai-finance-v4-metric-primary small,.mai-finance-v4-metric-asset small{font-size:6.6px}
 }
