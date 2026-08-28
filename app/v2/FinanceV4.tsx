@@ -63,6 +63,19 @@ function parseMoneyInput(value: string) {
   return Number.isFinite(parsed) ? Math.max(0, parsed) : Number.NaN
 }
 
+function monthSequence(start: string, end: string) {
+  if (!/^\d{4}-\d{2}$/.test(start) || !/^\d{4}-\d{2}$/.test(end) || start > end) return []
+  const result: string[] = []
+  let cursor = start
+  for (let guard = 0; guard < 1200 && cursor <= end; guard += 1) {
+    result.push(cursor)
+    const date = new Date(`${cursor}-15T12:00:00`)
+    date.setMonth(date.getMonth() + 1)
+    cursor = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
+  }
+  return result
+}
+
 export function FinanceV4({ state, today, commit, createRequest, inspect: _inspect }: { state: MaiState; today: string; commit: Commit; createRequest?: string; inspect: (item: InspectableItem) => void }) {
   const savedTabs = state.configs.areaTabs && typeof state.configs.areaTabs === 'object' ? state.configs.areaTabs as Record<string, string> : {}
   const savedTab = String(savedTabs.finance || 'overview')
@@ -100,14 +113,23 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
   }
   const signed = (item: Row, value: number) => item.tipo === 'receita' ? value : -value
 
-  function fixedForMonthAt(monthKey: string): Row[] {
+  function fixedRuleAtMonth(rule: Row, monthKey: string): Row | null {
+    if (rule.ativo === false) return null
+    const start = String(rule.mes_inicio || '').slice(0, 7)
+    const end = String(rule.mes_fim || '').slice(0, 7)
+    if ((start && monthKey < start) || (end && monthKey > end)) return null
+    const occurrence = occurrences.find(item => String(item.fixo_id) === String(rule.id) && String(item.competencia) === monthKey)
+    if (occurrence?.ignorado) return null
     const maxDay = new Date(Number(monthKey.slice(0, 4)), Number(monthKey.slice(5, 7)), 0).getDate()
-    return fixed.filter(rule => rule.ativo !== false && (!rule.mes_inicio || monthKey >= String(rule.mes_inicio).slice(0, 7)) && (!rule.mes_fim || monthKey <= String(rule.mes_fim).slice(0, 7))).flatMap(rule => {
-      const occurrence = occurrences.find(item => String(item.fixo_id) === String(rule.id) && String(item.competencia) === monthKey)
-      if (occurrence?.ignorado) return []
-      const day = Math.min(maxDay, Math.max(1, Number(rule.dia_mes || 1)))
-      const status = String(occurrence?.status || rule.status || 'pendente')
-      return [{ ...rule, ...occurrence, id: rule.id, _isFixed: true, occurrenceKey: `${rule.id}|${monthKey}`, data: occurrence?.data_override || `${monthKey}-${String(day).padStart(2, '0')}`, valor: occurrence?.valor_override === '' || occurrence?.valor_override == null ? clampMoney(rule.valor) : clampMoney(occurrence.valor_override), status, valor_pago: occurrence?.valor_pago ?? rule.valor_pago ?? (status === 'pago' ? clampMoney(rule.valor) : 0), recorrencia: 'fixo' } as Row]
+    const day = Math.min(maxDay, Math.max(1, Number(rule.dia_mes || 1)))
+    const status = String(occurrence?.status || rule.status || 'pendente')
+    return { ...rule, ...occurrence, id: rule.id, _isFixed: true, occurrenceKey: `${rule.id}|${monthKey}`, data: occurrence?.data_override || `${monthKey}-${String(day).padStart(2, '0')}`, valor: occurrence?.valor_override === '' || occurrence?.valor_override == null ? clampMoney(rule.valor) : clampMoney(occurrence.valor_override), status, valor_pago: occurrence?.valor_pago ?? rule.valor_pago ?? (status === 'pago' ? clampMoney(rule.valor) : 0), recorrencia: 'fixo' } as Row
+  }
+
+  function fixedForMonthAt(monthKey: string): Row[] {
+    return fixed.flatMap(rule => {
+      const item = fixedRuleAtMonth(rule, monthKey)
+      return item ? [item] : []
     })
   }
 
@@ -127,7 +149,22 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
   const initialBalance = accounts.reduce((sum, account) => sum + Number(account.saldo_inicial || 0), 0)
   const looseCashBalance = transactions.filter(item => !item.ignorar_calculo && !String(item.conta_id || '').startsWith('card|') && !item.cartao_id).reduce((sum, item) => sum + signed(item, paidAmount(item)), 0) + monthFixed.filter(item => !item.ignorar_calculo && !String(item.conta_id || '').startsWith('card|') && !item.cartao_id).reduce((sum, item) => sum + signed(item, paidAmount(item)), 0)
   const realBalance = accounts.length ? accounts.reduce((sum, account) => sum + accountBalance(account), 0) : looseCashBalance
-  const projectedBalance = initialBalance + transactions.filter(item => !item.ignorar_calculo).reduce((sum, item) => sum + signed(item, clampMoney(item.valor)), 0) + monthFixed.filter(item => !item.ignorar_calculo).reduce((sum, item) => sum + signed(item, clampMoney(item.valor)), 0)
+  const projectedTransactionsTotal = transactions.filter(item => {
+    if (item.ignorar_calculo) return false
+    const itemMonth = dateKey(item.data).slice(0, 7)
+    return /^\d{4}-\d{2}$/.test(itemMonth) && itemMonth <= month
+  }).reduce((sum, item) => sum + signed(item, clampMoney(item.valor)), 0)
+  const projectedFixedTotal = fixed.reduce((total, rule) => {
+    if (rule.ativo === false || rule.ignorar_calculo) return total
+    const ruleStart = String(rule.mes_inicio || dateKey(rule.data).slice(0, 7) || today.slice(0, 7)).slice(0, 7)
+    const configuredEnd = String(rule.mes_fim || '').slice(0, 7)
+    const ruleEnd = configuredEnd && configuredEnd < month ? configuredEnd : month
+    return total + monthSequence(ruleStart, ruleEnd).reduce((sum, monthKey) => {
+      const item = fixedRuleAtMonth(rule, monthKey)
+      return item && !item.ignorar_calculo ? sum + signed(item, clampMoney(item.valor)) : sum
+    }, 0)
+  }, 0)
+  const projectedBalance = initialBalance + projectedTransactionsTotal + projectedFixedTotal
   const totalBoxes = boxes.reduce((sum, item) => sum + clampMoney(item.saldo), 0)
   const totalInvested = investments.reduce((sum, item) => sum + clampMoney(item.aportado), 0)
   const totalInvestmentValue = investments.reduce((sum, item) => sum + clampMoney(item.valor_atual), 0)
@@ -432,7 +469,7 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
     <header className="mai-v3-area-header mai-finance-v4-header"><div><h1>Finanças</h1><p>Veja sua situação, decida rápido e registre sem atrito.</p></div>{showMonth ? <div className="mai-finance-v4-month"><button type="button" onClick={() => moveMonth(-1)} aria-label="Mês anterior">‹</button><button type="button" onClick={() => setMonth(today.slice(0, 7))}><strong>{monthLabel(month)}</strong><small>{month === today.slice(0, 7) ? 'mês atual' : 'voltar ao mês atual'}</small></button><button type="button" onClick={() => moveMonth(1)} aria-label="Próximo mês">›</button></div> : null}</header>
     <div className="mai-v3-area-tabs mai-finance-v4-tabs">{tabs.map(item => <button key={item.id} data-active={tab === item.id} onClick={() => setTab(item.id)}>{item.icon ? <span className="material-symbols-rounded">{item.icon}</span> : null}<span>{item.label}</span></button>)}</div>
 
-    {tab === 'overview' ? <><div className="mai-finance-v4-overview-metrics"><article className="mai-finance-v4-metric" data-negative={realBalance < 0}><div className="mai-finance-v4-metric-label"><span className="material-symbols-rounded">account_balance_wallet</span><span>Saldo Atual</span></div><strong>{money.format(realBalance)}</strong><small>Saldo consolidado agora</small></article><article className="mai-finance-v4-metric" data-negative={projectedBalance < 0}><div className="mai-finance-v4-metric-label"><span className="material-symbols-rounded">trending_up</span><span>Previsto</span></div><strong>{money.format(projectedBalance)}</strong><small>Saldo consolidado projetado</small></article><article className="mai-finance-v4-metric" data-positive={monthIncome > 0}><div className="mai-finance-v4-metric-label"><span className="material-symbols-rounded">south_west</span><span>Receitas</span></div><strong>{money.format(monthIncome)}</strong><small>{monthLabel(month)}</small></article><article className="mai-finance-v4-metric" data-negative={monthExpense > 0}><div className="mai-finance-v4-metric-label"><span className="material-symbols-rounded">north_east</span><span>Despesas</span></div><strong>{money.format(monthExpense)}</strong><small>{monthLabel(month)}</small></article><article className="mai-finance-v4-metric"><div className="mai-finance-v4-metric-label"><span className="material-symbols-rounded">credit_card</span><span>Cartões</span></div><strong>{money.format(monthInvoice)}</strong><small>Faturas do mês</small></article><article className="mai-finance-v4-metric" data-positive={monthResult > 0} data-negative={monthResult < 0}><div className="mai-finance-v4-metric-label"><span className="material-symbols-rounded">balance</span><span>Balanço Mensal</span></div><strong>{money.format(monthResult)}</strong><small>Receitas − despesas</small></article></div><section className="mai-v3-simple-section mai-finance-v4-overview-list"><div className="mai-finance-v4-section-head"><div><h2>{filtersActive ? 'Lançamentos filtrados' : 'Últimos lançamentos'}</h2><small>{filtered.length} em {monthLabel(month)}</small></div><button type="button" onClick={() => openNew('transaction')}><span className="material-symbols-rounded">add</span>Adicionar lançamento</button></div><div className="mai-v3-finance-rows mai-v3-simple-list">{recent.map(transactionRow)}{!recent.length ? <div className="mai-v3-empty-line">Nenhum lançamento encontrado.</div> : null}</div></section></> : null}
+    {tab === 'overview' ? <><div className="mai-finance-v4-overview-metrics"><article className="mai-finance-v4-metric" data-negative={realBalance < 0}><div className="mai-finance-v4-metric-label"><span className="material-symbols-rounded">account_balance_wallet</span><span>Saldo Atual</span></div><strong>{money.format(realBalance)}</strong><small>Saldo consolidado agora</small></article><article className="mai-finance-v4-metric" data-negative={projectedBalance < 0}><div className="mai-finance-v4-metric-label"><span className="material-symbols-rounded">trending_up</span><span>Previsto</span></div><strong>{money.format(projectedBalance)}</strong><small>Acumulado até {monthLabel(month)}</small></article><article className="mai-finance-v4-metric" data-positive={monthIncome > 0}><div className="mai-finance-v4-metric-label"><span className="material-symbols-rounded">south_west</span><span>Receitas</span></div><strong>{money.format(monthIncome)}</strong><small>{monthLabel(month)}</small></article><article className="mai-finance-v4-metric" data-negative={monthExpense > 0}><div className="mai-finance-v4-metric-label"><span className="material-symbols-rounded">north_east</span><span>Despesas</span></div><strong>{money.format(monthExpense)}</strong><small>{monthLabel(month)}</small></article><article className="mai-finance-v4-metric"><div className="mai-finance-v4-metric-label"><span className="material-symbols-rounded">credit_card</span><span>Cartões</span></div><strong>{money.format(monthInvoice)}</strong><small>Faturas do mês</small></article><article className="mai-finance-v4-metric" data-positive={monthResult > 0} data-negative={monthResult < 0}><div className="mai-finance-v4-metric-label"><span className="material-symbols-rounded">balance</span><span>Balanço Mensal</span></div><strong>{money.format(monthResult)}</strong><small>Receitas − despesas</small></article></div><section className="mai-v3-simple-section mai-finance-v4-overview-list"><div className="mai-finance-v4-section-head"><div><h2>{filtersActive ? 'Lançamentos filtrados' : 'Últimos lançamentos'}</h2><small>{filtered.length} em {monthLabel(month)}</small></div><button type="button" onClick={() => openNew('transaction')}><span className="material-symbols-rounded">add</span>Adicionar lançamento</button></div><div className="mai-v3-finance-rows mai-v3-simple-list">{recent.map(transactionRow)}{!recent.length ? <div className="mai-v3-empty-line">Nenhum lançamento encontrado.</div> : null}</div></section></> : null}
 
     {tab === 'transactions' ? <section className="mai-v3-simple-section"><div className="mai-finance-v4-section-head"><div><h2>Lançamentos</h2><small>{filtered.length} no período · únicos, parcelados e fixos</small></div><button type="button" onClick={() => openNew('transaction')}><span className="material-symbols-rounded">add</span>Adicionar lançamento</button></div><div className="mai-v3-finance-rows mai-v3-simple-list">{filtered.map(transactionRow)}{!filtered.length ? <div className="mai-v3-empty-line">Nenhum lançamento encontrado.</div> : null}</div></section> : null}
     {tab === 'accounts' ? <section className="mai-v3-simple-section"><div className="mai-finance-v4-section-head"><div><h2>Contas</h2><small>Saldos reais e conciliação.</small></div><button type="button" onClick={() => openNew('account')}><span className="material-symbols-rounded">add</span>Adicionar conta</button></div><div className="mai-v3-account-list mai-finance-v4-entity-list mai-finance-v4-account-list">{visibleAccounts.map(account => <article key={String(account.id)} className="mai-finance-v4-entity-row"><FinanceEntityIcon photo={String(account.foto || '')} icon="account_balance" color={String(account.cor || '#718269')} /><button type="button" className="mai-finance-v4-entity-identity" onClick={() => openExisting('account', account)}><strong>{account.nome}</strong><small>Saldo inicial {money.format(Number(account.saldo_inicial || 0))}</small></button><span className="mai-finance-v4-entity-summary"><b>{money.format(accountBalance(account))}</b><small>saldo atual</small></span><button type="button" className="mai-finance-v4-row-action" onClick={() => reconcile(account)}><span className="material-symbols-rounded">sync_alt</span><span>Conciliar</span></button></article>)}</div></section> : null}
