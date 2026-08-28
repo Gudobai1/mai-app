@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { drivePreviewUrl, trashDriveAsset, uploadDataUrlToDrive } from './DriveAsset'
+import { cacheDriveAsset, driveAssetUrl, drivePreviewUrl, trashDriveAsset, uploadDataUrlToDrive } from './DriveAsset'
 
 type PickerProps = {
   value?: string
@@ -51,8 +51,9 @@ async function compactPhoto(file: File): Promise<string> {
 }
 
 export function FinanceEntityIcon({ photo, icon, color, className = '' }: IconProps) {
-  return <span className={`mai-finance-entity-icon ${photo ? 'has-photo' : ''} ${className}`.trim()} style={{ '--finance-entity-color': color || 'var(--v3-accent)' } as React.CSSProperties}>
-    {photo ? <img src={photo} alt="" /> : <span className="material-symbols-rounded">{icon}</span>}
+  const photoUrl = driveAssetUrl(photo)
+  return <span className={`mai-finance-entity-icon ${photoUrl ? 'has-photo' : ''} ${className}`.trim()} style={{ '--finance-entity-color': color || 'var(--v3-accent)' } as React.CSSProperties}>
+    {photoUrl ? <img src={photoUrl} alt="" /> : <span className="material-symbols-rounded">{icon}</span>}
   </span>
 }
 
@@ -69,7 +70,9 @@ export function FinanceEntityPhotoPicker({ value, fallbackIcon, color, onChange 
       const dataUrl = await compactPhoto(file)
       const safeBase = file.name.replace(/\.[^.]+$/, '').trim().replace(/[^a-zA-Z0-9À-ÿ _-]+/g, '').slice(0, 70) || 'icone'
       const asset = await uploadDataUrlToDrive(dataUrl, `MAI - ${safeBase}.webp`, 'image/webp')
-      onChange(drivePreviewUrl(asset.idDrive))
+      const reference = drivePreviewUrl(asset.idDrive)
+      await cacheDriveAsset(reference).catch(() => null)
+      onChange(reference)
       if (previous) void trashDriveAsset(previous)
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Não foi possível usar esta imagem.')
@@ -88,7 +91,7 @@ export function FinanceEntityPhotoPicker({ value, fallbackIcon, color, onChange 
     <FinanceEntityIcon photo={value} icon={fallbackIcon} color={color} className="mai-finance-photo-preview" />
     <div className="mai-finance-photo-copy">
       <strong>Foto do ícone</strong>
-      <small>Opcional. A imagem é otimizada, salva no Google Drive e o MAI guarda apenas a referência.</small>
+      <small>Opcional. O arquivo fica no Google Drive, a referência no MAI e uma cópia visual fica no cache do aplicativo para abrir instantaneamente.</small>
       <div className="mai-finance-photo-actions">
         <label data-busy={busy}>
           <span className="material-symbols-rounded">photo_camera</span>
