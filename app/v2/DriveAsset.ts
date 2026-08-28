@@ -15,7 +15,7 @@ function reconnectGoogle() {
   window.location.assign('/api/google/connect?mode=connect')
 }
 
-async function googleRpc(method: string, args: unknown[] = []) {
+export async function googleDriveRpc(method: string, args: unknown[] = []) {
   const response = await fetch('/api/google/rpc', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
@@ -45,7 +45,7 @@ export function driveIdFromAssetUrl(value: unknown) {
 }
 
 export async function uploadDataUrlToDrive(dataUrl: string, fileName: string, mime: string): Promise<DriveAsset> {
-  const response = await googleRpc('salvarAnexoDrive', [dataUrl, fileName, mime])
+  const response = await googleDriveRpc('salvarAnexoDrive', [dataUrl, fileName, mime])
   const item = response?.item || response || {}
   const idDrive = String(item.id || item.idDrive || '')
   if (!idDrive) throw new Error('O Google Drive não retornou o identificador do arquivo.')
@@ -61,5 +61,5 @@ export async function uploadDataUrlToDrive(dataUrl: string, fileName: string, mi
 export async function trashDriveAsset(value: unknown) {
   const id = driveIdFromAssetUrl(value)
   if (!id) return
-  await googleRpc('trashDriveItem', [id]).catch(() => null)
+  await googleDriveRpc('trashDriveItem', [id]).catch(() => null)
 }
