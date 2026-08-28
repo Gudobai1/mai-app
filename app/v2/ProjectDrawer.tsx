@@ -3,6 +3,7 @@
 import { useMemo, useRef, useState } from 'react'
 import type { MaiState } from '../../lib/v2/state'
 import type { Row } from './app-types'
+import { drivePreviewUrl, trashDriveAsset, uploadDataUrlToDrive } from './DriveAsset'
 import { MaiIcon } from './MaiIcons'
 import styles from './unified.module.css'
 import { useAutosaveDraft } from './useAutosaveDraft'
@@ -107,10 +108,26 @@ export function ProjectDrawer({ state, commit, onClose, onRemoved, projectId, pa
   async function chooseImage(file?: File) {
     if (!file) return
     setImageBusy(true)
+    const previous = String(draft.imagem_url || '')
     try {
-      const imagem_url = await resizeProjectImage(file)
-      setDraft(current => ({ ...current, imagem_url }))
+      const dataUrl = await resizeProjectImage(file)
+      const baseName = String(draft.nome || file.name.replace(/\.[^.]+$/, '') || 'Projeto').trim().replace(/[^a-zA-Z0-9À-ÿ _-]+/g, '').slice(0, 70) || 'Projeto'
+      const asset = await uploadDataUrlToDrive(dataUrl, `MAI - Projeto - ${baseName}.webp`, 'image/webp')
+      setDraft(current => ({ ...current, imagem_url: drivePreviewUrl(asset.idDrive) }))
+      if (previous) void trashDriveAsset(previous)
     } finally { setImageBusy(false) }
+  }
+
+  function selectIcon(icon: string) {
+    const previous = String(draft.imagem_url || '')
+    setDraft(current => ({ ...current, icone: icon, imagem_url: '' }))
+    if (previous) void trashDriveAsset(previous)
+  }
+
+  function clearImage() {
+    const previous = String(draft.imagem_url || '')
+    setDraft(current => ({ ...current, imagem_url: '' }))
+    if (previous) void trashDriveAsset(previous)
   }
 
   function persistProject(snapshot:{project:Row;sections:SectionDraft[]}) {
@@ -160,7 +177,9 @@ export function ProjectDrawer({ state, commit, onClose, onRemoved, projectId, pa
     if ((!existing && draft._persisted===false) || !confirm(`Excluir “${draft.nome}”? As tarefas serão movidas para Entrada.`)) return
     const id = String(draft.id)
     const fallbackParent = String(draft.parent_id || '')
+    const image = String(draft.imagem_url || '')
     commit(current => ({ ...current, projects: rows(current.projects).filter(item => String(item.id) !== id).map(item => String(item.parent_id || '') === id ? { ...item, parent_id: fallbackParent } : item), tasks: current.tasks.map(task => String(task.projeto_id || '') === id ? { ...task, projeto_id: 'entrada', secao: '' } : task) }))
+    if (image) void trashDriveAsset(image)
     onRemoved()
   }
 
@@ -174,8 +193,8 @@ export function ProjectDrawer({ state, commit, onClose, onRemoved, projectId, pa
         <label className="mai-project-field"><span>Nome</span><input autoFocus value={draft.nome || ''} onChange={event => setDraft({ ...draft, nome: event.target.value })} placeholder="Nome do projeto" /></label>
         <label className="mai-project-field"><span>Projeto pai</span><select value={draft.parent_id || ''} onChange={event => setDraft({ ...draft, parent_id: event.target.value })}><option value="">Nenhum — projeto principal</option>{parentOptions.map(item => <option key={String(item.id)} value={item.id}>{item.nome}</option>)}</select></label>
         <section className="mai-project-config-section"><header><strong>Cor</strong><span>Escolha uma cor pronta</span></header><div className="mai-project-color-grid">{COLORS.map(([color, label]) => <button type="button" key={color} title={label} data-active={String(draft.cor) === color} onClick={() => setDraft({ ...draft, cor: color })}><i style={{ background: color }} /><span>{label}</span></button>)}</div></section>
-        <section className="mai-project-config-section"><header><strong>Ícone</strong><span>Identidade visual do projeto</span></header><div className="mai-project-icon-grid">{ICONS.map(icon => <button type="button" key={icon} data-active={String(draft.icone) === icon && !draft.imagem_url} onClick={() => setDraft({ ...draft, icone: icon, imagem_url: '' })}><MaiIcon name={icon} size={19} /></button>)}</div></section>
-        <section className="mai-project-config-section"><header><strong>Imagem</strong><span>Opcional; substitui o ícone</span></header><div className="mai-project-image-actions"><label>{imageBusy ? 'Processando…' : 'Escolher imagem'}<input hidden type="file" accept="image/*" disabled={imageBusy} onChange={event => void chooseImage(event.target.files?.[0])} /></label>{draft.imagem_url ? <button type="button" onClick={() => setDraft({ ...draft, imagem_url: '' })}>Remover imagem</button> : null}</div></section>
+        <section className="mai-project-config-section"><header><strong>Ícone</strong><span>Identidade visual do projeto</span></header><div className="mai-project-icon-grid">{ICONS.map(icon => <button type="button" key={icon} data-active={String(draft.icone) === icon && !draft.imagem_url} onClick={() => selectIcon(icon)}><MaiIcon name={icon} size={19} /></button>)}</div></section>
+        <section className="mai-project-config-section"><header><strong>Imagem</strong><span>Opcional; arquivo no Google Drive, referência no MAI</span></header><div className="mai-project-image-actions"><label>{imageBusy ? 'Enviando…' : 'Escolher imagem'}<input hidden type="file" accept="image/*" disabled={imageBusy} onChange={event => { const file = event.currentTarget.files?.[0]; event.currentTarget.value = ''; void chooseImage(file) }} /></label>{draft.imagem_url ? <button type="button" onClick={clearImage}>Remover imagem</button> : null}</div></section>
       </div> : <div className="mai-project-settings-body"><section className="mai-project-config-section mai-sections-manager"><header><strong>Seções do projeto</strong><span>Use seções para organizar a lista e o quadro.</span></header><div className="mai-add-section"><input value={sectionName} onChange={event => setSectionName(event.target.value)} onKeyDown={event => { if (event.key === 'Enter') { event.preventDefault(); addSection() } }} placeholder="Nova seção" /><button type="button" onClick={addSection}>Adicionar</button></div><div className="mai-section-list">{sectionDrafts.map((section, index) => <div key={section.id}><span className="mai-section-grip">⋮⋮</span><input value={section.name} onChange={event => renameSection(section.id, event.target.value)} /><div><button type="button" disabled={index === 0} onClick={() => moveSection(section.id, -1)}>↑</button><button type="button" disabled={index === sectionDrafts.length - 1} onClick={() => moveSection(section.id, 1)}>↓</button><button type="button" className="mai-section-remove" onClick={() => removeSection(section.id)}>×</button></div></div>)}</div>{!sectionDrafts.length ? <div className="mai-project-empty-sections"><strong>Sem seções</strong><span>Você pode continuar usando uma lista simples ou criar seções aqui.</span></div> : null}</section></div>}
 
       <footer className="mai-project-settings-footer"><div>{draft._persisted!==false ? <><button type="button" onClick={archive}>Arquivar</button><button type="button" className={styles.dangerButton} onClick={remove}>Excluir</button></> : <span />}</div><span className="mai-autosave-status">Alterações salvas automaticamente</span></footer>
