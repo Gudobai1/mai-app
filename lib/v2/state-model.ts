@@ -79,7 +79,7 @@ export function emptyState(): MaiState {
     notes: [],
     events: [],
     eventCompletions: [],
-    finance: { transactions: [], categories: [], accounts: [], cards: [], fixed: [], fixedOccurrences: [] },
+    finance: { transactions: [], categories: [], accounts: [], cards: [], fixed: [], fixedOccurrences: [], boxes: [], investments: [] },
     goals: [],
     goalCategories: [],
     health: {
@@ -157,6 +157,8 @@ export function normalizeState(value: unknown): MaiState {
       cards: stateRows(finance.cards),
       fixed: stateRows(finance.fixed),
       fixedOccurrences: stateRows(finance.fixedOccurrences),
+      boxes: stateRows(finance.boxes),
+      investments: stateRows(finance.investments),
     },
     goals: stateRows(saved.goals),
     goalCategories: stateRows(saved.goalCategories),
