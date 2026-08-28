@@ -1,0 +1,63 @@
+/* Financeiro — correção final do painel Opções.
+   O AppTopBar já renderiza somente Filtros + Classificação em Finanças.
+   Esta folha é carregada por último para impedir regras antigas por posição
+   de esconderem o primeiro bloco, que agora é justamente Filtros. */
+
+html body .mai-app-topbar .mai-app-topbar-panel[data-view="finance"]{
+  display:grid!important;
+  visibility:visible!important;
+  opacity:1!important;
+}
+
+html body .mai-app-topbar .mai-app-topbar-panel[data-view="finance"] > .mai-app-topbar-panel-section,
+html body .mai-app-topbar .mai-app-topbar-panel[data-view="finance"] > .mai-app-topbar-panel-section:first-child,
+html body .mai-app-topbar .mai-app-topbar-panel[data-view="finance"] > .mai-app-topbar-panel-section:nth-child(1),
+html body .mai-app-topbar .mai-app-topbar-panel[data-view="finance"] > .mai-app-topbar-panel-section:nth-child(2){
+  display:grid!important;
+  visibility:visible!important;
+  opacity:1!important;
+  height:auto!important;
+  min-height:0!important;
+  max-height:none!important;
+  overflow:visible!important;
+}
+
+html body .mai-app-topbar .mai-app-topbar-panel[data-view="finance"] > .mai-app-topbar-panel-section > strong{
+  display:block!important;
+  visibility:visible!important;
+  opacity:1!important;
+}
+
+html body .mai-app-topbar .mai-app-topbar-panel[data-view="finance"] > .mai-app-topbar-panel-section > div{
+  display:grid!important;
+  visibility:visible!important;
+  opacity:1!important;
+  gap:6px!important;
+}
+
+html body .mai-app-topbar .mai-app-topbar-panel[data-view="finance"] .mai-app-topbar-select-line{
+  display:grid!important;
+  visibility:visible!important;
+  opacity:1!important;
+  grid-template-columns:88px minmax(0,1fr)!important;
+  min-height:34px!important;
+}
+
+html body .mai-app-topbar .mai-app-topbar-panel[data-view="finance"] .mai-app-topbar-select-line > span,
+html body .mai-app-topbar .mai-app-topbar-panel[data-view="finance"] .mai-app-topbar-select-line > select{
+  display:block!important;
+  visibility:visible!important;
+  opacity:1!important;
+}
+
+html body .mai-app-topbar .mai-app-topbar-panel[data-view="finance"] .mai-app-topbar-select-line > select{
+  width:100%!important;
+  min-width:0!important;
+  height:32px!important;
+}
+
+html body .mai-app-topbar .mai-app-topbar-panel[data-view="finance"] .mai-app-topbar-choices{
+  display:flex!important;
+  visibility:visible!important;
+  opacity:1!important;
+}
