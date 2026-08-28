@@ -61,3 +61,24 @@ html body .mai-app-topbar .mai-app-topbar-panel[data-view="finance"] .mai-app-to
   visibility:visible!important;
   opacity:1!important;
 }
+
+/* Emojis dos botões de navegação do Financeiro. */
+.mai-v3-workspace .mai-v4-finance > .mai-finance-v4-tabs > button{
+  gap:6px!important;
+}
+.mai-v3-workspace .mai-v4-finance > .mai-finance-v4-tabs > button > .material-symbols-rounded{
+  display:none!important;
+}
+.mai-v3-workspace .mai-v4-finance > .mai-finance-v4-tabs > button::before{
+  flex:0 0 auto;
+  font-size:13px;
+  line-height:1;
+  font-family:"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif;
+}
+.mai-v3-workspace .mai-v4-finance > .mai-finance-v4-tabs > button:nth-child(1)::before{content:"📊"}
+.mai-v3-workspace .mai-v4-finance > .mai-finance-v4-tabs > button:nth-child(2)::before{content:"💸"}
+.mai-v3-workspace .mai-v4-finance > .mai-finance-v4-tabs > button:nth-child(3)::before{content:"🏦"}
+.mai-v3-workspace .mai-v4-finance > .mai-finance-v4-tabs > button:nth-child(4)::before{content:"💳"}
+.mai-v3-workspace .mai-v4-finance > .mai-finance-v4-tabs > button:nth-child(5)::before{content:"🐷"}
+.mai-v3-workspace .mai-v4-finance > .mai-finance-v4-tabs > button:nth-child(6)::before{content:"📈"}
+.mai-v3-workspace .mai-v4-finance > .mai-finance-v4-tabs > button:nth-child(7)::before{content:"📑"}
