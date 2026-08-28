@@ -37,6 +37,14 @@ function financeFromText(value: string): SectionAction | null {
   return null
 }
 
+const financeListSelectors: Record<string, string> = {
+  finance: '.mai-v3-finance-rows',
+  'finance-account': '.mai-finance-v4-entity-list',
+  'finance-card': '.mai-finance-v4-card-list',
+  'finance-box': '.mai-finance-v4-goal-grid',
+  'finance-investment': '.mai-finance-v4-goal-grid',
+}
+
 function fallback(view: AppView, scope?: HTMLElement | null): SectionAction | null {
   const text = String(view)
   if (text === 'completed') return null
@@ -150,10 +158,10 @@ export function SectionInlineAdd({ view, onAdd }: Props) {
         event.preventDefault()
         event.stopPropagation()
 
-        // O Financeiro ainda mantém os handlers de criação dentro de cada seção.
-        // A interface pública, porém, usa somente este botão padrão do MAI.
         if (view === 'finance') {
-          const section = anchor.closest('section')
+          const selector = financeListSelectors[action.type]
+          const targetList = selector ? workspace.querySelector<HTMLElement>(selector) : null
+          const section = targetList?.closest('section') || anchor.closest('section')
           const financeAdd = section?.querySelector<HTMLButtonElement>('.mai-finance-v4-section-head > button')
           if (financeAdd) {
             financeAdd.click()
