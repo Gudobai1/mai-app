@@ -354,7 +354,7 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
   const recent = filtered.slice(0, 8)
   const catReport = (Object.entries(calculationItems.reduce((map: Record<string, number>, item) => { if (item.tipo !== 'receita') map[item.categoria || 'Sem categoria'] = (map[item.categoria || 'Sem categoria'] || 0) + clampMoney(item.valor); return map }, {})) as [string, number][]).sort((a, b) => b[1] - a[1])
   const visibleAccounts = originFilter !== 'all' ? accounts.filter(account => String(account.id) === originFilter) : filtersActive ? accounts.filter(account => filtered.some(item => String(item.conta_id || '') === String(account.id))) : accounts
-  const visibleCards = originFilter !== 'all' ? cards.filter(card => `card|${card.id}` === originFilter) : filtersActive ? cards.filter(card => filtered.some(item => String(item.conta_id || '') === `card|${card.id}` || String(item.cartao_id || '') === String(card.id))) : cards
+  const visibleCards = cards
   const accountSummary = draft ? originName(draft.conta_id, accounts, cards) : 'Sem origem'
 
   const transactionRow = (item: Row) => {
