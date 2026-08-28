@@ -42,7 +42,11 @@ export function AppTopBar({ state, today, view, taskScope, commit, onTaskScopeCh
   const goals = rows(state.goals)
   const notes = rows(state.notes).filter(item => item.ativo !== false && item.arquivado !== true)
   const habits = rows(state.habits).filter(item => item.ativo !== false)
-  const transactions = rows((state.finance || {}).transactions)
+  const finance = state.finance || {}
+  const transactions = rows(finance.transactions)
+  const financeAccounts = rows(finance.accounts)
+  const financeCards = rows(finance.cards)
+  const financeCategories = rows(finance.categories)
   const activeTasks = state.tasks.filter(task => !task.concluida)
   const overdue = activeTasks.filter(task => dateKey(task.data_vencimento) && dateKey(task.data_vencimento) < today).length
     + goals.filter(goal => { const day = dateKey(goal.prazo || goal.data_fim || goal.data_limite || goal.deadline); return day && day < today && goal.concluida !== true && !String(goal.status || '').toLocaleLowerCase('pt-BR').includes('conclu') }).length
@@ -60,7 +64,7 @@ export function AppTopBar({ state, today, view, taskScope, commit, onTaskScopeCh
   const upcomingOccurrence = upcomingFilters.occurrenceMode && typeof upcomingFilters.occurrenceMode === 'object' ? { ...occurrenceDefaults, ...upcomingFilters.occurrenceMode } : occurrenceDefaults
 
   const defaultSort: Partial<Record<AppView,string>> = {
-    today:'overdue', upcoming:'time', completed:'recent', tasks:'manual', habits:'name', goals:'date', notes:'recent', finance:'date', health:'recent', files:'name'
+    today:'overdue', upcoming:'time', completed:'recent', tasks:'manual', habits:'name', goals:'date', notes:'recent', finance:'date_desc', health:'recent', files:'name'
   }
   const sortMode = String(control.sort || defaultSort[view] || 'manual')
   const layoutMode = control.layout === 'kanban' ? 'kanban' : 'normal'
@@ -187,9 +191,14 @@ export function AppTopBar({ state, today, view, taskScope, commit, onTaskScopeCh
     </> : null}
 
     {view === 'finance' ? <>
-      <PanelSection title="Filtros"><SelectLine label="Tipo" value={String(filter.type || 'all')} onChange={value => patchFilter({ type:value })}><option value="all">Todos</option><option value="expense">Despesas</option><option value="income">Receitas</option></SelectLine><SelectLine label="Status" value={String(filter.status || 'all')} onChange={value => patchFilter({ status:value })}><option value="all">Todos</option><option value="pending">Pendentes</option><option value="paid">Pagos</option></SelectLine></PanelSection>
-      <PanelSection title="Classificação"><Choices value={sortMode} onChange={value => patchControl({ sort:value })} items={[{value:'date',label:'Data'},{value:'value',label:'Valor'},{value:'name',label:'Nome'}]}/></PanelSection>
-      <PanelSection title="Visualização"><Choices value={areaTabs.finance || 'overview'} onChange={value => setAreaTab('finance', value)} items={[{value:'overview',label:'Resumo'},{value:'transactions',label:'Lançamentos'},{value:'accounts',label:'Contas'},{value:'cards',label:'Cartões'}]}/><Choices value={advanced.finance ? 'advanced' : 'simple'} onChange={value => setAdvanced('finance', value === 'advanced')} items={[{value:'simple',label:'Simples'},{value:'advanced',label:'Avançada'}]}/></PanelSection>
+      <PanelSection title="Filtros">
+        <SelectLine label="Tipo" value={String(filter.type || 'all')} onChange={value => patchFilter({ type:value })}><option value="all">Todos</option><option value="expense">Despesas</option><option value="income">Receitas</option></SelectLine>
+        <SelectLine label="Status" value={String(filter.status || 'all')} onChange={value => patchFilter({ status:value })}><option value="all">Todos</option><option value="pending">Pendentes</option><option value="partial">Parciais</option><option value="paid">Pagos</option><option value="overdue">Atrasados</option></SelectLine>
+        <SelectLine label="Categoria" value={String(filter.category || 'all')} onChange={value => patchFilter({ category:value })}><option value="all">Todas</option>{financeCategories.map(category => <option key={String(category.id)} value={String(category.nome || '')}>{String(category.nome || 'Sem nome')}</option>)}</SelectLine>
+        <SelectLine label="Origem" value={String(filter.origin || 'all')} onChange={value => patchFilter({ origin:value })}><option value="all">Todas</option>{financeAccounts.map(account => <option key={`account-${String(account.id)}`} value={String(account.id)}>{String(account.nome || 'Conta')}</option>)}{financeCards.map(card => <option key={`card-${String(card.id)}`} value={`card|${String(card.id)}`}>{String(card.nome || 'Cartão')}</option>)}</SelectLine>
+      </PanelSection>
+      <PanelSection title="Classificação"><Choices value={sortMode} onChange={value => patchControl({ sort:value })} items={[{value:'date_desc',label:'Recentes'},{value:'date_asc',label:'Antigos'},{value:'value_desc',label:'Maior valor'},{value:'value_asc',label:'Menor valor'},{value:'name',label:'Nome'}]}/></PanelSection>
+      <PanelSection title="Visualização"><Choices value={areaTabs.finance || 'overview'} onChange={value => setAreaTab('finance', value)} items={[{value:'overview',label:'Resumo'},{value:'transactions',label:'Lançamentos'},{value:'accounts',label:'Contas'},{value:'cards',label:'Cartões'},{value:'reports',label:'Relatórios'},{value:'categories',label:'Categorias'}]}/></PanelSection>
     </> : null}
 
     {view === 'health' ? <>
