@@ -57,15 +57,19 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
   const categories = rows(finance.categories)
   const fixed = rows(finance.fixed)
   const occurrences = rows(finance.fixedOccurrences)
+  const moduleFilters = state.configs.moduleFilters && typeof state.configs.moduleFilters === 'object' ? state.configs.moduleFilters as Record<string, Row> : {}
+  const financeFilter = moduleFilters.finance || {}
+  const moduleControls = state.configs.moduleControls && typeof state.configs.moduleControls === 'object' ? state.configs.moduleControls as Record<string, Row> : {}
+  const financeControl = moduleControls.finance || {}
+  const typeFilter = String(financeFilter.type || 'all')
+  const statusFilter = String(financeFilter.status || 'all')
+  const categoryFilter = String(financeFilter.category || 'all')
+  const originFilter = String(financeFilter.origin || 'all')
+  const order = String(financeControl.sort || 'date_desc')
   const [month, setMonth] = useState(today.slice(0, 7))
   const [draft, setDraft] = useState<Row | null>(null)
   const [kind, setKind] = useState<DraftKind>('transaction')
   const [createTool, setCreateTool] = useState('')
-  const [query, setQuery] = useState('')
-  const [statusFilter, setStatusFilter] = useState('')
-  const [categoryFilter, setCategoryFilter] = useState('')
-  const [originFilter, setOriginFilter] = useState('')
-  const [order, setOrder] = useState('date_desc')
   const [detailsOpen, setDetailsOpen] = useState(false)
   const [categoryDraftName, setCategoryDraftName] = useState('')
 
@@ -339,22 +343,21 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
   }
 
   function matchesFilters(item: Row) {
-    const text = query.trim().toLocaleLowerCase('pt-BR')
-    if (text && !`${item.titulo || ''} ${item.categoria || ''} ${cleanText(item.observacao)} ${originName(item.conta_id, accounts, cards)}`.toLocaleLowerCase('pt-BR').includes(text)) return false
     const status = String(item.status || 'pendente')
-    if (statusFilter === 'pago' && status !== 'pago') return false
-    if (statusFilter === 'pendente' && status !== 'pendente') return false
-    if (statusFilter === 'parcial' && status !== 'parcial') return false
-    if (statusFilter === 'atrasado' && (status === 'pago' || dateKey(item.data) >= today)) return false
-    if (categoryFilter && String(item.categoria || '') !== categoryFilter) return false
-    if (originFilter && String(item.conta_id || '') !== originFilter && String(item.cartao_id || '') !== originFilter.replace(/^card\|/, '')) return false
+    if (typeFilter === 'income' && item.tipo !== 'receita') return false
+    if (typeFilter === 'expense' && item.tipo === 'receita') return false
+    if (statusFilter === 'paid' && status !== 'pago') return false
+    if (statusFilter === 'pending' && status !== 'pendente') return false
+    if (statusFilter === 'partial' && status !== 'parcial') return false
+    if (statusFilter === 'overdue' && (status === 'pago' || dateKey(item.data) >= today)) return false
+    if (categoryFilter !== 'all' && String(item.categoria || '') !== categoryFilter) return false
+    if (originFilter !== 'all' && String(item.conta_id || '') !== originFilter && String(item.cartao_id || '') !== originFilter.replace(/^card\|/, '')) return false
     return true
   }
 
-  const filtered = useMemo(() => monthItems.filter(matchesFilters).sort((a, b) => order === 'date_asc' ? String(a.data).localeCompare(String(b.data)) : order === 'value_desc' ? clampMoney(b.valor) - clampMoney(a.valor) : order === 'value_asc' ? clampMoney(a.valor) - clampMoney(b.valor) : order === 'az' ? String(a.titulo).localeCompare(String(b.titulo), 'pt-BR') : String(b.data).localeCompare(String(a.data))), [monthItems, query, statusFilter, categoryFilter, originFilter, order, today])
+  const filtered = useMemo(() => monthItems.filter(matchesFilters).sort((a, b) => order === 'date_asc' ? String(a.data).localeCompare(String(b.data)) : order === 'value_desc' ? clampMoney(b.valor) - clampMoney(a.valor) : order === 'value_asc' ? clampMoney(a.valor) - clampMoney(b.valor) : order === 'name' ? String(a.titulo).localeCompare(String(b.titulo), 'pt-BR') : String(b.data).localeCompare(String(a.data))), [monthItems, typeFilter, statusFilter, categoryFilter, originFilter, order, today])
 
-  const filtersActive = Boolean(query.trim() || statusFilter || categoryFilter || originFilter)
-  const activeFilterCount = [query.trim(), statusFilter, categoryFilter, originFilter].filter(Boolean).length
+  const filtersActive = typeFilter !== 'all' || statusFilter !== 'all' || categoryFilter !== 'all' || originFilter !== 'all'
   const calculationItems = filtered.filter(item => !item.ignorar_calculo)
   const filteredIncome = calculationItems.filter(item => item.tipo === 'receita').reduce((sum, item) => sum + clampMoney(item.valor), 0)
   const filteredExpense = calculationItems.filter(item => item.tipo !== 'receita').reduce((sum, item) => sum + clampMoney(item.valor), 0)
@@ -366,26 +369,18 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
   const displayProjectedBalance = filtersActive ? filteredProjected : projectedBalance
   const recent = filtered.slice(0, 8)
   const catReport = (Object.entries(calculationItems.reduce((map: Record<string, number>, item) => { if (item.tipo !== 'receita') map[item.categoria || 'Sem categoria'] = (map[item.categoria || 'Sem categoria'] || 0) + clampMoney(item.valor); return map }, {})) as [string, number][]).sort((a, b) => b[1] - a[1])
-  const visibleAccounts = originFilter ? accounts.filter(account => String(account.id) === originFilter) : accounts
-  const visibleCards = originFilter ? cards.filter(card => `card|${card.id}` === originFilter) : cards
+  const visibleAccounts = originFilter !== 'all'
+    ? accounts.filter(account => String(account.id) === originFilter)
+    : filtersActive
+      ? accounts.filter(account => filtered.some(item => String(item.conta_id || '') === String(account.id)))
+      : accounts
+  const visibleCards = originFilter !== 'all'
+    ? cards.filter(card => `card|${card.id}` === originFilter)
+    : filtersActive
+      ? cards.filter(card => filtered.some(item => String(item.conta_id || '') === `card|${card.id}` || String(item.cartao_id || '') === String(card.id)))
+      : cards
   const visibleCategories = categories.filter(category => !filtersActive || filtered.some(item => String(item.categoria || '') === String(category.nome || '')))
   const accountSummary = draft ? originName(draft.conta_id, accounts, cards) : 'Sem origem'
-
-  function clearFilters() {
-    setQuery('')
-    setStatusFilter('')
-    setCategoryFilter('')
-    setOriginFilter('')
-  }
-
-  const filterBar = <div className="mai-finance-v4-filters mai-finance-v4-shared-filters" data-active={filtersActive}>
-    <label className="mai-finance-v4-search"><span className="material-symbols-rounded">search</span><input value={query} onChange={event => setQuery(event.target.value)} placeholder="Buscar lançamentos" /></label>
-    <select value={statusFilter} onChange={event => setStatusFilter(event.target.value)} aria-label="Filtrar por status"><option value="">Todos os status</option><option value="pago">Pago</option><option value="parcial">Parcial</option><option value="pendente">Pendente</option><option value="atrasado">Atrasado</option></select>
-    <select value={categoryFilter} onChange={event => setCategoryFilter(event.target.value)} aria-label="Filtrar por categoria"><option value="">Todas as categorias</option>{categories.map(item => <option key={String(item.id)} value={item.nome}>{item.nome}</option>)}</select>
-    <select value={originFilter} onChange={event => setOriginFilter(event.target.value)} aria-label="Filtrar por origem"><option value="">Todas as origens</option>{accounts.map(item => <option key={String(item.id)} value={item.id}>{item.nome}</option>)}{cards.map(item => <option key={String(item.id)} value={`card|${item.id}`}>{item.nome}</option>)}</select>
-    <select value={order} onChange={event => setOrder(event.target.value)} aria-label="Ordenar lançamentos"><option value="date_desc">Mais recentes</option><option value="date_asc">Mais antigos</option><option value="value_desc">Maior valor</option><option value="value_asc">Menor valor</option><option value="az">A–Z</option></select>
-    {filtersActive ? <button type="button" className="mai-finance-v4-clear-filters" onClick={clearFilters}><span className="material-symbols-rounded">filter_alt_off</span>Limpar{activeFilterCount > 1 ? ` (${activeFilterCount})` : ''}</button> : null}
-  </div>
 
   const transactionRow = (item: Row) => {
     const incomeItem = item.tipo === 'receita'
@@ -403,8 +398,6 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
     <header className="mai-v3-area-header mai-finance-v4-header"><div><h1>Finanças</h1><p>Veja sua situação, decida rápido e registre sem atrito.</p></div><div className="mai-finance-v4-month"><button type="button" onClick={() => moveMonth(-1)} aria-label="Mês anterior">‹</button><button type="button" onClick={() => setMonth(today.slice(0, 7))}><strong>{monthLabel(month)}</strong><small>{month === today.slice(0, 7) ? 'mês atual' : 'voltar ao mês atual'}</small></button><button type="button" onClick={() => moveMonth(1)} aria-label="Próximo mês">›</button></div></header>
 
     <div className="mai-finance-v4-topline"><div className="mai-v3-area-tabs mai-finance-v4-tabs">{([{ id: 'overview', label: 'Visão geral' }, { id: 'transactions', label: 'Lançamentos' }, { id: 'accounts', label: 'Contas' }, { id: 'cards', label: 'Cartões' }, { id: 'reports', label: 'Relatórios' }, { id: 'categories', label: 'Categorias' }] as { id: Tab; label: string }[]).map(item => <button key={item.id} data-active={tab === item.id} onClick={() => setTab(item.id)}>{item.label}</button>)}</div></div>
-
-    {filterBar}
 
     {tab === 'overview' ? <>
       <div className="mai-finance-v4-overview-metrics">
