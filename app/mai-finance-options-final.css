@@ -94,20 +94,13 @@ html body .mai-app-topbar .mai-app-topbar-panel[data-view="finance"] .mai-app-to
 .mai-v3-workspace .mai-v4-finance > .mai-finance-v4-tabs > button:nth-child(6)::before{content:"trending_up"}
 .mai-v3-workspace .mai-v4-finance > .mai-finance-v4-tabs > button:nth-child(7)::before{content:"analytics"}
 
-/*
-  Adição de itens no Financeiro usa exclusivamente o SectionInlineAdd,
-  o mesmo padrão estrutural e visual utilizado pelos demais módulos do MAI.
-  Os antigos CTAs próprios do Financeiro continuam apenas como handlers internos.
-*/
+/* Adição usa exclusivamente o SectionInlineAdd padrão do MAI. */
 .mai-v3-workspace .mai-v4-finance .mai-finance-v4-section-head > button,
 .mai-v3-workspace .mai-v4-finance .mai-finance-v4-empty-feature > button{
   display:none!important;
 }
 
-/*
-  Cartões — cada filho recebe sua coluna explicitamente. Isso neutraliza regras
-  legadas de .mai-v3-card-list que antes deslocavam nome, fatura e ícone.
-*/
+/* Cartões — estrutura explícita e independente do CSS legado. */
 .mai-v3-workspace .mai-v4-finance .mai-finance-v4-card-list{
   display:grid!important;
   width:100%!important;
@@ -233,7 +226,7 @@ html body .mai-app-topbar .mai-app-topbar-panel[data-view="finance"] .mai-app-to
   color:var(--v3-muted)!important;
 }
 
-/* Coluna 3: fatura + limite disponível. Exclui explicitamente o span do ícone. */
+/* Coluna 3: fatura + limite disponível. */
 .mai-v3-workspace .mai-v4-finance .mai-finance-v4-card-list > article > span:not(.mai-finance-entity-icon){
   grid-column:3!important;
   grid-row:1!important;
@@ -429,5 +422,83 @@ html body .mai-app-topbar .mai-app-topbar-panel[data-view="finance"] .mai-app-to
   .mai-v3-workspace .mai-v4-finance > .mai-finance-v4-header > .mai-finance-v4-month{
     grid-template-columns:32px minmax(140px,1fr) 32px!important;
     width:min(100%,230px)!important;
+  }
+}
+
+/*
+  Financeiro limpo: o cabeçalho de área deixa de compor a interface.
+  O seletor mensal participa da mesma linha das abas, antes de Visão geral.
+*/
+.mai-v3-workspace .mai-v4-finance{
+  display:grid!important;
+  grid-template-columns:max-content minmax(0,1fr)!important;
+  grid-auto-rows:auto!important;
+  column-gap:6px!important;
+  row-gap:0!important;
+  align-items:center!important;
+}
+.mai-v3-workspace .mai-v4-finance > .mai-finance-v4-header{
+  display:contents!important;
+}
+.mai-v3-workspace .mai-v4-finance > .mai-finance-v4-header > :not(.mai-finance-v4-month){
+  display:none!important;
+}
+.mai-v3-workspace .mai-v4-finance > .mai-finance-v4-header > .mai-finance-v4-month{
+  grid-column:1!important;
+  grid-row:1!important;
+  align-self:center!important;
+  grid-template-columns:28px minmax(124px,auto) 28px!important;
+  min-height:32px!important;
+  padding:0!important;
+  border:0!important;
+  border-radius:9px!important;
+  background:transparent!important;
+}
+.mai-v3-workspace .mai-v4-finance > .mai-finance-v4-header > .mai-finance-v4-month > button{
+  height:30px!important;
+  min-height:30px!important;
+}
+.mai-v3-workspace .mai-v4-finance > .mai-finance-v4-header > .mai-finance-v4-month > button:nth-child(2){
+  padding:0 6px!important;
+}
+.mai-v3-workspace .mai-v4-finance > .mai-finance-v4-tabs{
+  grid-column:1 / -1!important;
+  grid-row:1!important;
+  min-width:0!important;
+  margin:0!important;
+  align-self:center!important;
+}
+.mai-v3-workspace .mai-v4-finance:has(> .mai-finance-v4-header > .mai-finance-v4-month) > .mai-finance-v4-tabs{
+  grid-column:2!important;
+}
+.mai-v3-workspace .mai-v4-finance > .mai-finance-v4-overview-metrics,
+.mai-v3-workspace .mai-v4-finance > .mai-v3-simple-section,
+.mai-v3-workspace .mai-v4-finance > .mai-v3-create-layer{
+  grid-column:1 / -1!important;
+}
+
+/* Os cabeçalhos internos eram redundantes com a navegação e com o botão contextual de adição. */
+.mai-v3-workspace .mai-v4-finance .mai-finance-v4-section-head{
+  display:none!important;
+}
+
+@media(max-width:760px){
+  .mai-v3-workspace .mai-v4-finance{
+    grid-template-columns:max-content minmax(0,1fr)!important;
+    column-gap:4px!important;
+  }
+  .mai-v3-workspace .mai-v4-finance > .mai-finance-v4-header > .mai-finance-v4-month{
+    width:auto!important;
+    grid-template-columns:26px minmax(104px,auto) 26px!important;
+  }
+  .mai-v3-workspace .mai-v4-finance > .mai-finance-v4-header > .mai-finance-v4-month > button:nth-child(2) > small{
+    display:none!important;
+  }
+  .mai-v3-workspace .mai-v4-finance > .mai-finance-v4-tabs{
+    overflow-x:auto!important;
+    scrollbar-width:none!important;
+  }
+  .mai-v3-workspace .mai-v4-finance > .mai-finance-v4-tabs::-webkit-scrollbar{
+    display:none!important;
   }
 }
