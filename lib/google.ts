@@ -18,6 +18,11 @@ type GoogleTokens = {
   email?: string
 }
 
+type GoogleTokenError = {
+  error?: string
+  error_description?: string
+}
+
 export function allowedGoogleEmail() {
   return String(process.env.MAI_ALLOWED_GOOGLE_EMAIL || DEFAULT_ALLOWED_GOOGLE_EMAIL).trim().toLowerCase()
 }
@@ -63,7 +68,15 @@ export function googleConfig() {
   return { clientId, clientSecret, appUrl: appUrl.replace(/\/$/, '') }
 }
 
+function googleHeaders(init: RequestInit, accessToken?: string) {
+  return {
+    ...Object.fromEntries(new Headers(init.headers).entries()),
+    authorization: `Bearer ${accessToken || ''}`,
+  }
+}
+
 async function refresh(tokens: GoogleTokens) {
+  if (!tokens.refresh_token) throw new Error('GOOGLE_NOT_CONNECTED')
   const { clientId, clientSecret } = googleConfig()
   const response = await fetch('https://oauth2.googleapis.com/token', {
     method: 'POST',
@@ -76,8 +89,14 @@ async function refresh(tokens: GoogleTokens) {
     }),
     cache: 'no-store',
   })
-  if (!response.ok) throw new Error('Não foi possível renovar a conexão Google')
-  const data = await response.json()
+  const data = await response.json().catch(() => null) as (GoogleTokenError & { access_token?: string; expires_in?: number }) | null
+  if (!response.ok || !data?.access_token) {
+    // invalid_grant é o retorno normal do Google quando o refresh token foi
+    // revogado, expirou ou deixou de ser válido. Para o MAI isso significa
+    // simplesmente que é necessário obter uma autorização nova.
+    if (data?.error === 'invalid_grant') throw new Error('GOOGLE_NOT_CONNECTED')
+    throw new Error(data?.error_description || data?.error || 'Não foi possível renovar a conexão Google')
+  }
   return {
     ...tokens,
     access_token: data.access_token,
@@ -87,16 +106,33 @@ async function refresh(tokens: GoogleTokens) {
 
 export async function authorizedGoogle(request: NextRequest) {
   let tokens = openTokens(request.cookies.get(GOOGLE_COOKIE)?.value)
-  if (!tokens || String(tokens.email || '').trim().toLowerCase() !== allowedGoogleEmail()) throw new Error('GOOGLE_NOT_CONNECTED')
+  if (!tokens || !tokens.refresh_token || String(tokens.email || '').trim().toLowerCase() !== allowedGoogleEmail()) throw new Error('GOOGLE_NOT_CONNECTED')
   if (!tokens.access_token || !tokens.expires_at || tokens.expires_at < Date.now() + 60_000) {
     tokens = await refresh(tokens)
   }
-  return {
-    tokens,
-    fetch: (url: string, init: RequestInit = {}) => fetch(url, {
+
+  const authenticatedFetch = async (url: string, init: RequestInit = {}) => {
+    let response = await fetch(url, {
       ...init,
-      headers: { ...Object.fromEntries(new Headers(init.headers).entries()), authorization: `Bearer ${tokens!.access_token}` },
+      headers: googleHeaders(init, tokens?.access_token),
       cache: 'no-store',
-    }),
+    })
+
+    // O Google também pode invalidar um access token antes do expires_at.
+    // Nesse caso renovamos uma única vez e repetimos a chamada original.
+    if (response.status === 401) {
+      tokens = await refresh(tokens!)
+      response = await fetch(url, {
+        ...init,
+        headers: googleHeaders(init, tokens.access_token),
+        cache: 'no-store',
+      })
+    }
+    return response
+  }
+
+  return {
+    get tokens() { return tokens! },
+    fetch: authenticatedFetch,
   }
 }
