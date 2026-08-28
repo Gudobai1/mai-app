@@ -23,10 +23,17 @@ export function useAutosaveDraft<T>({ value, enabled = true, delay = 260, identi
   const enabledRef = useRef(enabled)
 
   useEffect(() => { saveRef.current = save }, [save])
-  useEffect(() => { enabledRef.current = enabled }, [enabled])
 
   useEffect(() => {
     if (identityRef.current === identity) return
+
+    const latest = latestValueRef.current
+    const snapshot = latestSnapshotRef.current
+    if (enabledRef.current && latest != null && readyRef.current && snapshot && snapshot !== baselineRef.current) {
+      baselineRef.current = snapshot
+      void saveRef.current(latest)
+    }
+
     identityRef.current = identity
     baselineRef.current = ''
     latestSnapshotRef.current = ''
@@ -34,8 +41,18 @@ export function useAutosaveDraft<T>({ value, enabled = true, delay = 260, identi
   }, [identity])
 
   useEffect(() => {
+    const previous = latestValueRef.current
+    const previousSnapshot = latestSnapshotRef.current
+    const wasEnabled = enabledRef.current
+
     latestValueRef.current = value
+    enabledRef.current = enabled
+
     if (!enabled || value == null) {
+      if (wasEnabled && previous != null && readyRef.current && previousSnapshot && previousSnapshot !== baselineRef.current) {
+        baselineRef.current = previousSnapshot
+        void saveRef.current(previous)
+      }
       readyRef.current = false
       baselineRef.current = ''
       latestSnapshotRef.current = ''
