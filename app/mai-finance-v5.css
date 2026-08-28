@@ -1,19 +1,19 @@
 /* Financeiro V5 — navegação no padrão MAI + caixinhas e investimentos */
 
 /*
-  O AppTopBar esconde por padrão as abas internas dos módulos. No Financeiro,
-  porém, Visão geral/Lançamentos/Contas/Cartões/Caixinha/Investimentos/Relatórios
-  são a navegação primária e precisam permanecer visíveis no conteúdo.
+  No Financeiro, as áreas são navegação primária do próprio módulo e ficam
+  sempre visíveis. O padrão aqui segue os botões compactos do MAI: fundo
+  transparente por padrão, hover suave e seleção discreta, sem linhas.
 */
 .mai-v3-workspace .mai-v4-finance>.mai-finance-v4-tabs{
   display:flex!important;
   align-items:center!important;
-  gap:22px!important;
+  gap:5px!important;
   width:100%!important;
-  margin:0 0 28px!important;
+  margin:0 0 18px!important;
   padding:0!important;
   border:0!important;
-  border-bottom:1px solid var(--v3-line,#ecefeb)!important;
+  border-bottom:0!important;
   border-radius:0!important;
   background:transparent!important;
   overflow-x:auto!important;
@@ -23,37 +23,37 @@
 .mai-v3-workspace .mai-v4-finance>.mai-finance-v4-tabs>button{
   position:relative!important;
   flex:0 0 auto!important;
-  height:41px!important;
-  min-height:41px!important;
+  height:32px!important;
+  min-height:32px!important;
   display:inline-flex!important;
   align-items:center!important;
   gap:5px!important;
-  padding:0 1px!important;
+  padding:0 10px!important;
   border:0!important;
-  border-bottom:2px solid transparent!important;
-  border-radius:0!important;
+  border-bottom:0!important;
+  border-radius:9px!important;
   background:transparent!important;
   color:var(--v3-muted)!important;
   font:inherit!important;
-  font-size:11.5px!important;
-  font-weight:560!important;
+  font-size:10.5px!important;
+  font-weight:590!important;
   cursor:pointer!important;
   white-space:nowrap!important;
 }
-.mai-v3-workspace .mai-v4-finance>.mai-finance-v4-tabs>button:hover{color:var(--v3-text)!important;background:transparent!important}
+.mai-v3-workspace .mai-v4-finance>.mai-finance-v4-tabs>button:hover{
+  color:var(--v3-text)!important;
+  background:var(--v3-hover,#f1f4ef)!important;
+}
 .mai-v3-workspace .mai-v4-finance>.mai-finance-v4-tabs>button[data-active="true"]{
   color:var(--v3-accent-strong,#455340)!important;
-  border-bottom-color:var(--v3-accent,#6f8168)!important;
-  font-weight:700!important;
+  background:var(--v3-accent-soft,#eaf0e7)!important;
+  border:0!important;
+  font-weight:680!important;
 }
 .mai-v3-workspace .mai-v4-finance>.mai-finance-v4-tabs>button::after{content:none!important}
 .mai-v3-workspace .mai-v4-finance>.mai-finance-v4-tabs .material-symbols-rounded{font-size:15px!important;font-variation-settings:'FILL' 0,'wght' 400}
 
-/*
-  Em Finanças, Opções serve apenas para filtros e classificação.
-  Remove Layout (Kanban não se aplica aqui) e a antiga navegação duplicada
-  que aparecia na seção Visualização.
-*/
+/* Em Finanças, Opções serve apenas para filtros e classificação. */
 .mai-app-topbar-panel[data-view="finance"]>.mai-app-topbar-panel-section:first-child,
 .mai-app-topbar-panel[data-view="finance"]>.mai-app-topbar-panel-section:nth-child(4){
   display:none!important;
@@ -93,5 +93,5 @@
 html[data-mai-theme="dark"] .mai-finance-v4-goal-card{background:color-mix(in srgb,var(--v3-soft) 65%,transparent)}
 
 @media(max-width:1180px){.mai-finance-v4-overview-metrics{grid-template-columns:repeat(3,minmax(0,1fr))!important}}
-@media(max-width:760px){.mai-v3-workspace .mai-v4-finance>.mai-finance-v4-tabs{gap:18px!important;margin-bottom:22px!important}.mai-finance-v4-goal-grid{grid-template-columns:1fr}.mai-finance-v4-investment-summary{grid-template-columns:1fr 1fr}.mai-finance-v4-investment-summary>span:last-child{grid-column:1/-1}.mai-finance-v4-overview-metrics{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
-@media(max-width:420px){.mai-v3-workspace .mai-v4-finance>.mai-finance-v4-tabs{gap:15px!important}.mai-v3-workspace .mai-v4-finance>.mai-finance-v4-tabs>button{font-size:10.5px!important}.mai-finance-v4-goal-main{grid-template-columns:34px minmax(0,1fr)}.mai-finance-v4-goal-main>b{grid-column:2;justify-self:start}.mai-finance-v4-investment-summary{grid-template-columns:1fr}}
+@media(max-width:760px){.mai-v3-workspace .mai-v4-finance>.mai-finance-v4-tabs{gap:4px!important;margin-bottom:16px!important}.mai-v3-workspace .mai-v4-finance>.mai-finance-v4-tabs>button{height:30px!important;min-height:30px!important;padding:0 8px!important;font-size:10px!important}.mai-finance-v4-goal-grid{grid-template-columns:1fr}.mai-finance-v4-investment-summary{grid-template-columns:1fr 1fr}.mai-finance-v4-investment-summary>span:last-child{grid-column:1/-1}.mai-finance-v4-overview-metrics{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
+@media(max-width:420px){.mai-v3-workspace .mai-v4-finance>.mai-finance-v4-tabs{gap:3px!important}.mai-v3-workspace .mai-v4-finance>.mai-finance-v4-tabs>button{font-size:9.5px!important}.mai-finance-v4-goal-main{grid-template-columns:34px minmax(0,1fr)}.mai-finance-v4-goal-main>b{grid-column:2;justify-self:start}.mai-finance-v4-investment-summary{grid-template-columns:1fr}}
