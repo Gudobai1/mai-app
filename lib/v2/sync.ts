@@ -66,12 +66,22 @@ async function stateFetch(path: string, init: RequestInit = {}) {
   return response
 }
 
+function withoutEmbeddedFiles(value: unknown): unknown {
+  if (typeof value === 'string') return /^data:[^,]+,/i.test(value) ? '' : value
+  if (Array.isArray(value)) return value.map(withoutEmbeddedFiles)
+  if (!value || typeof value !== 'object') return value
+  return Object.fromEntries(Object.entries(value as Record<string, unknown>).map(([key, item]) => [key, withoutEmbeddedFiles(item)]))
+}
+
 function remoteSnapshot(state: MaiState): MaiState {
-  return {
+  const snapshot = {
     ...state,
     events: stateRows(state.events).filter((event: any) => event?.tipo !== 'google' && event?.tipo !== 'gcalendar' && event?.external_provider !== 'google'),
     drive: { ...(state.drive || {}), items: [] },
   }
+  // Supabase recebe somente dados, configurações e referências. Bytes embutidos
+  // (data URLs/base64) permanecem fora do estado remoto e são migrados ao Drive.
+  return withoutEmbeddedFiles(snapshot) as MaiState
 }
 
 function scheduleRetry() {
