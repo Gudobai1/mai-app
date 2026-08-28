@@ -63,7 +63,7 @@
 .mai-finance-v4-overview-metrics{grid-template-columns:repeat(6,minmax(0,1fr))!important}
 .mai-finance-v4-metric,.mai-finance-v4-metric-primary{grid-column:span 1!important;min-height:78px!important;height:78px!important}
 
-/* Caixinha e investimentos */
+/* Caixinhas e investimentos */
 .mai-finance-v4-goal-area{display:block!important;margin-top:0!important}
 .mai-finance-v4-goal-grid{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
 .mai-finance-v4-goal-card{
@@ -90,8 +90,63 @@
 .mai-finance-v4-feature-actions{display:flex;gap:6px}.mai-finance-v4-feature-actions button{height:34px;padding:0 10px;border:0;border-radius:9px;background:var(--v3-soft);color:var(--v3-muted);font:inherit;font-size:9.5px;font-weight:620;cursor:pointer}.mai-finance-v4-feature-actions button:hover{background:var(--v3-hover);color:var(--v3-text)}.mai-finance-v4-feature-actions .mai-finance-v4-positive-action{background:var(--v3-accent);color:#fff}
 .mai-finance-v4-movement-list{display:grid;gap:1px;margin-top:2px}.mai-finance-v4-movement-list>div{min-height:34px;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:0 3px}.mai-finance-v4-movement-list span{font-size:9px;color:var(--v3-muted)}.mai-finance-v4-movement-list strong{font-size:9.5px;color:var(--v3-text)}
 
+/*
+  Caixinhas: mais compactas que os cartões de investimento.
+  Mantém a leitura rápida e permite ver mais metas financeiras de uma vez.
+*/
+.mai-v4-finance:has(.mai-finance-v4-tabs>button:nth-child(5)[data-active="true"]) .mai-finance-v4-goal-grid{
+  grid-template-columns:repeat(3,minmax(0,1fr))!important;
+  gap:8px!important;
+  max-width:960px;
+}
+.mai-v4-finance:has(.mai-finance-v4-tabs>button:nth-child(5)[data-active="true"]) .mai-finance-v4-goal-card{
+  padding:10px!important;
+  border-radius:12px!important;
+}
+.mai-v4-finance:has(.mai-finance-v4-tabs>button:nth-child(5)[data-active="true"]) .mai-finance-v4-goal-main{
+  grid-template-columns:30px minmax(0,1fr) auto!important;
+  gap:8px!important;
+}
+.mai-v4-finance:has(.mai-finance-v4-tabs>button:nth-child(5)[data-active="true"]) .mai-finance-v4-goal-icon{
+  width:30px!important;
+  height:30px!important;
+  border-radius:9px!important;
+}
+.mai-v4-finance:has(.mai-finance-v4-tabs>button:nth-child(5)[data-active="true"]) .mai-finance-v4-goal-icon .material-symbols-rounded{font-size:17px!important}
+.mai-v4-finance:has(.mai-finance-v4-tabs>button:nth-child(5)[data-active="true"]) .mai-finance-v4-goal-copy strong{font-size:10.8px!important}
+.mai-v4-finance:has(.mai-finance-v4-tabs>button:nth-child(5)[data-active="true"]) .mai-finance-v4-goal-copy small{font-size:8px!important}
+.mai-v4-finance:has(.mai-finance-v4-tabs>button:nth-child(5)[data-active="true"]) .mai-finance-v4-goal-main>b{font-size:10.5px!important}
+.mai-v4-finance:has(.mai-finance-v4-tabs>button:nth-child(5)[data-active="true"]) .mai-finance-v4-progress{margin-top:9px!important;gap:4px!important}
+.mai-v4-finance:has(.mai-finance-v4-tabs>button:nth-child(5)[data-active="true"]) .mai-finance-v4-progress>i{height:4px!important}
+.mai-v4-finance:has(.mai-finance-v4-tabs>button:nth-child(5)[data-active="true"]) .mai-finance-v4-progress small{font-size:7.8px!important}
+.mai-v4-finance:has(.mai-finance-v4-tabs>button:nth-child(5)[data-active="true"]) .mai-finance-v4-quick-action{margin-top:6px!important;font-size:8.2px!important}
+.mai-v4-finance:has(.mai-finance-v4-tabs>button:nth-child(5)[data-active="true"]) .mai-finance-v4-empty-feature{
+  min-height:150px!important;
+  padding:20px!important;
+}
+
+/* Nome da área no plural; itens individuais continuam sendo “caixinha”. */
+.mai-v3-workspace .mai-v4-finance>.mai-finance-v4-tabs>button:nth-child(5)>span:last-child{
+  font-size:0!important;
+}
+.mai-v3-workspace .mai-v4-finance>.mai-finance-v4-tabs>button:nth-child(5)>span:last-child::after{
+  content:"Caixinhas";
+  font-size:10.5px;
+}
+.mai-v4-finance:has(.mai-finance-v4-tabs>button:nth-child(5)[data-active="true"]) .mai-finance-v4-goal-area .mai-finance-v4-section-head h2{
+  font-size:0!important;
+}
+.mai-v4-finance:has(.mai-finance-v4-tabs>button:nth-child(5)[data-active="true"]) .mai-finance-v4-goal-area .mai-finance-v4-section-head h2::after{
+  content:"Caixinhas";
+  font-size:13px;
+}
+
 html[data-mai-theme="dark"] .mai-finance-v4-goal-card{background:color-mix(in srgb,var(--v3-soft) 65%,transparent)}
 
-@media(max-width:1180px){.mai-finance-v4-overview-metrics{grid-template-columns:repeat(3,minmax(0,1fr))!important}}
-@media(max-width:760px){.mai-v3-workspace .mai-v4-finance>.mai-finance-v4-tabs{gap:4px!important;margin-bottom:16px!important}.mai-v3-workspace .mai-v4-finance>.mai-finance-v4-tabs>button{height:30px!important;min-height:30px!important;padding:0 8px!important;font-size:10px!important}.mai-finance-v4-goal-grid{grid-template-columns:1fr}.mai-finance-v4-investment-summary{grid-template-columns:1fr 1fr}.mai-finance-v4-investment-summary>span:last-child{grid-column:1/-1}.mai-finance-v4-overview-metrics{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
-@media(max-width:420px){.mai-v3-workspace .mai-v4-finance>.mai-finance-v4-tabs{gap:3px!important}.mai-v3-workspace .mai-v4-finance>.mai-finance-v4-tabs>button{font-size:9.5px!important}.mai-finance-v4-goal-main{grid-template-columns:34px minmax(0,1fr)}.mai-finance-v4-goal-main>b{grid-column:2;justify-self:start}.mai-finance-v4-investment-summary{grid-template-columns:1fr}}
+@media(max-width:1180px){
+  .mai-finance-v4-overview-metrics{grid-template-columns:repeat(3,minmax(0,1fr))!important}
+  .mai-v4-finance:has(.mai-finance-v4-tabs>button:nth-child(5)[data-active="true"]) .mai-finance-v4-goal-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+}
+@media(max-width:760px){.mai-v3-workspace .mai-v4-finance>.mai-finance-v4-tabs{gap:4px!important;margin-bottom:16px!important}.mai-v3-workspace .mai-v4-finance>.mai-finance-v4-tabs>button{height:30px!important;min-height:30px!important;padding:0 8px!important;font-size:10px!important}.mai-v3-workspace .mai-v4-finance>.mai-finance-v4-tabs>button:nth-child(5)>span:last-child::after{font-size:10px}.mai-finance-v4-goal-grid{grid-template-columns:1fr}.mai-v4-finance:has(.mai-finance-v4-tabs>button:nth-child(5)[data-active="true"]) .mai-finance-v4-goal-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}.mai-finance-v4-investment-summary{grid-template-columns:1fr 1fr}.mai-finance-v4-investment-summary>span:last-child{grid-column:1/-1}.mai-finance-v4-overview-metrics{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
+@media(max-width:480px){.mai-v4-finance:has(.mai-finance-v4-tabs>button:nth-child(5)[data-active="true"]) .mai-finance-v4-goal-grid{grid-template-columns:1fr!important}}
+@media(max-width:420px){.mai-v3-workspace .mai-v4-finance>.mai-finance-v4-tabs{gap:3px!important}.mai-v3-workspace .mai-v4-finance>.mai-finance-v4-tabs>button{font-size:9.5px!important}.mai-v3-workspace .mai-v4-finance>.mai-finance-v4-tabs>button:nth-child(5)>span:last-child::after{font-size:9.5px}.mai-finance-v4-goal-main{grid-template-columns:34px minmax(0,1fr)}.mai-finance-v4-goal-main>b{grid-column:2;justify-self:start}.mai-v4-finance:has(.mai-finance-v4-tabs>button:nth-child(5)[data-active="true"]) .mai-finance-v4-goal-main{grid-template-columns:30px minmax(0,1fr)!important}.mai-v4-finance:has(.mai-finance-v4-tabs>button:nth-child(5)[data-active="true"]) .mai-finance-v4-goal-main>b{grid-column:2;justify-self:start}.mai-finance-v4-investment-summary{grid-template-columns:1fr}}
