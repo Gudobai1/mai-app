@@ -100,12 +100,20 @@ html body .mai-app-topbar .mai-app-topbar-panel[data-view="finance"] .mai-app-to
   display:none!important;
 }
 
-/* Cartões — estrutura explícita e independente do CSS legado. */
+/* Contas e Cartões compartilham exatamente a mesma anatomia visual. */
+.mai-v3-workspace .mai-v4-finance .mai-finance-v4-account-list,
 .mai-v3-workspace .mai-v4-finance .mai-finance-v4-card-list{
   display:grid!important;
   width:100%!important;
   gap:3px!important;
+  margin:0!important;
+  padding:0!important;
+  border:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
 }
+
+.mai-v3-workspace .mai-v4-finance .mai-finance-v4-account-list > article,
 .mai-v3-workspace .mai-v4-finance .mai-finance-v4-card-list > article{
   position:relative!important;
   width:100%!important;
@@ -113,7 +121,7 @@ html body .mai-app-topbar .mai-app-topbar-panel[data-view="finance"] .mai-app-to
   min-height:64px!important;
   box-sizing:border-box!important;
   display:grid!important;
-  grid-template-columns:40px minmax(0,1fr) max-content!important;
+  grid-template-columns:40px minmax(0,1fr) max-content max-content!important;
   grid-template-rows:auto!important;
   align-items:center!important;
   justify-items:stretch!important;
@@ -125,6 +133,9 @@ html body .mai-app-topbar .mai-app-topbar-panel[data-view="finance"] .mai-app-to
   background:transparent!important;
   box-shadow:none!important;
 }
+
+.mai-v3-workspace .mai-v4-finance .mai-finance-v4-account-list > article::before,
+.mai-v3-workspace .mai-v4-finance .mai-finance-v4-account-list > article::after,
 .mai-v3-workspace .mai-v4-finance .mai-finance-v4-card-list > article::before,
 .mai-v3-workspace .mai-v4-finance .mai-finance-v4-card-list > article::after{
   content:none!important;
@@ -134,11 +145,14 @@ html body .mai-app-topbar .mai-app-topbar-panel[data-view="finance"] .mai-app-to
   border:0!important;
   background:none!important;
 }
+
+.mai-v3-workspace .mai-v4-finance .mai-finance-v4-account-list > article:hover,
 .mai-v3-workspace .mai-v4-finance .mai-finance-v4-card-list > article:hover{
   background:var(--v3-hover)!important;
 }
 
-/* Coluna 1: identidade visual. */
+/* Coluna 1: foto ou ícone. */
+.mai-v3-workspace .mai-v4-finance .mai-finance-v4-account-list > article > .mai-finance-entity-icon,
 .mai-v3-workspace .mai-v4-finance .mai-finance-v4-card-list > article > .mai-finance-entity-icon{
   grid-column:1!important;
   grid-row:1!important;
@@ -161,14 +175,20 @@ html body .mai-app-topbar .mai-app-topbar-panel[data-view="finance"] .mai-app-to
   color:var(--finance-entity-color,var(--v3-accent))!important;
   box-shadow:none!important;
 }
+
+.mai-v3-workspace .mai-v4-finance .mai-finance-v4-account-list > article > .mai-finance-entity-icon > .material-symbols-rounded,
 .mai-v3-workspace .mai-v4-finance .mai-finance-v4-card-list > article > .mai-finance-entity-icon > .material-symbols-rounded{
   display:block!important;
   font-size:20px!important;
 }
+
+.mai-v3-workspace .mai-v4-finance .mai-finance-v4-account-list > article > .mai-finance-entity-icon.has-photo,
 .mai-v3-workspace .mai-v4-finance .mai-finance-v4-card-list > article > .mai-finance-entity-icon.has-photo{
   background:var(--v3-soft)!important;
   box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--v3-line) 75%,transparent)!important;
 }
+
+.mai-v3-workspace .mai-v4-finance .mai-finance-v4-account-list > article > .mai-finance-entity-icon.has-photo > img,
 .mai-v3-workspace .mai-v4-finance .mai-finance-v4-card-list > article > .mai-finance-entity-icon.has-photo > img{
   width:100%!important;
   height:100%!important;
@@ -176,8 +196,9 @@ html body .mai-app-topbar .mai-app-topbar-panel[data-view="finance"] .mai-app-to
   object-fit:cover!important;
 }
 
-/* Coluna 2: nome + fechamento/vencimento. */
-.mai-v3-workspace .mai-v4-finance .mai-finance-v4-card-list > article > button{
+/* Coluna 2: identidade. */
+.mai-v3-workspace .mai-v4-finance .mai-finance-v4-account-list > article > .mai-finance-v4-entity-identity,
+.mai-v3-workspace .mai-v4-finance .mai-finance-v4-card-list > article > .mai-finance-v4-entity-identity{
   grid-column:2!important;
   grid-row:1!important;
   position:static!important;
@@ -202,7 +223,8 @@ html body .mai-app-topbar .mai-app-topbar-panel[data-view="finance"] .mai-app-to
   text-align:left!important;
   cursor:pointer!important;
 }
-.mai-v3-workspace .mai-v4-finance .mai-finance-v4-card-list > article > button strong{
+
+.mai-v3-workspace .mai-v4-finance .mai-finance-v4-entity-identity strong{
   display:block!important;
   min-width:0!important;
   max-width:100%!important;
@@ -214,7 +236,8 @@ html body .mai-app-topbar .mai-app-topbar-panel[data-view="finance"] .mai-app-to
   font-weight:650!important;
   color:var(--v3-text)!important;
 }
-.mai-v3-workspace .mai-v4-finance .mai-finance-v4-card-list > article > button small{
+
+.mai-v3-workspace .mai-v4-finance .mai-finance-v4-entity-identity small{
   display:block!important;
   min-width:0!important;
   max-width:100%!important;
@@ -226,8 +249,8 @@ html body .mai-app-topbar .mai-app-topbar-panel[data-view="finance"] .mai-app-to
   color:var(--v3-muted)!important;
 }
 
-/* Coluna 3: fatura + limite disponível. */
-.mai-v3-workspace .mai-v4-finance .mai-finance-v4-card-list > article > span:not(.mai-finance-entity-icon){
+/* Coluna 3: resumo financeiro. */
+.mai-v3-workspace .mai-v4-finance .mai-finance-v4-entity-summary{
   grid-column:3!important;
   grid-row:1!important;
   position:static!important;
@@ -249,7 +272,8 @@ html body .mai-app-topbar .mai-app-topbar-panel[data-view="finance"] .mai-app-to
   box-shadow:none!important;
   color:var(--v3-text)!important;
 }
-.mai-v3-workspace .mai-v4-finance .mai-finance-v4-card-list > article > span:not(.mai-finance-entity-icon) b{
+
+.mai-v3-workspace .mai-v4-finance .mai-finance-v4-entity-summary b{
   display:block!important;
   margin:0!important;
   font-size:11.5px!important;
@@ -258,7 +282,8 @@ html body .mai-app-topbar .mai-app-topbar-panel[data-view="finance"] .mai-app-to
   color:var(--v3-text)!important;
   white-space:nowrap!important;
 }
-.mai-v3-workspace .mai-v4-finance .mai-finance-v4-card-list > article > span:not(.mai-finance-entity-icon) small{
+
+.mai-v3-workspace .mai-v4-finance .mai-finance-v4-entity-summary small{
   display:block!important;
   margin:0!important;
   font-size:8.5px!important;
@@ -267,37 +292,90 @@ html body .mai-app-topbar .mai-app-topbar-panel[data-view="finance"] .mai-app-to
   white-space:nowrap!important;
 }
 
-/* Seletor de mês — componente compacto no padrão visual do MAI. */
-.mai-v3-workspace .mai-v4-finance > .mai-finance-v4-header{
-  display:flex!important;
-  visibility:visible!important;
-  align-items:flex-end!important;
-  justify-content:space-between!important;
-  flex-wrap:wrap!important;
-  gap:12px 20px!important;
+/* Coluna 4: ação contextual, discreta como o restante do MAI. */
+.mai-v3-workspace .mai-v4-finance .mai-finance-v4-row-action{
+  grid-column:4!important;
+  grid-row:1!important;
+  position:static!important;
+  inset:auto!important;
+  justify-self:end!important;
+  align-self:center!important;
+  width:auto!important;
+  min-width:0!important;
+  min-height:30px!important;
+  display:inline-flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  gap:5px!important;
+  margin:0!important;
+  padding:0 8px!important;
+  border:0!important;
+  border-radius:8px!important;
+  background:transparent!important;
+  color:var(--v3-muted)!important;
+  box-shadow:none!important;
+  font:inherit!important;
+  font-size:9px!important;
+  font-weight:620!important;
+  cursor:pointer!important;
+  white-space:nowrap!important;
 }
+
+.mai-v3-workspace .mai-v4-finance .mai-finance-v4-row-action:hover{
+  background:var(--v3-soft)!important;
+  color:var(--v3-text)!important;
+}
+
+.mai-v3-workspace .mai-v4-finance .mai-finance-v4-row-action > .material-symbols-rounded{
+  display:block!important;
+  font-size:15px!important;
+}
+
+/* Financeiro limpo: cabeçalho fora da composição; mês na linha das abas. */
+.mai-v3-workspace .mai-v4-finance{
+  display:grid!important;
+  grid-template-columns:max-content minmax(0,1fr)!important;
+  grid-auto-rows:auto!important;
+  column-gap:7px!important;
+  row-gap:0!important;
+  align-items:center!important;
+}
+
+.mai-v3-workspace .mai-v4-finance > .mai-finance-v4-header{
+  display:contents!important;
+}
+
+.mai-v3-workspace .mai-v4-finance > .mai-finance-v4-header > :not(.mai-finance-v4-month){
+  display:none!important;
+}
+
+/* Seletor sem ícone de calendário: somente setas, mês e ano. */
 .mai-v3-workspace .mai-v4-finance > .mai-finance-v4-header > .mai-finance-v4-month{
+  grid-column:1!important;
+  grid-row:1!important;
+  align-self:center!important;
   flex:0 0 auto!important;
   display:grid!important;
   visibility:visible!important;
   opacity:1!important;
-  grid-template-columns:32px minmax(146px,auto) 32px!important;
+  grid-template-columns:28px minmax(116px,auto) 28px!important;
   align-items:center!important;
-  gap:2px!important;
-  min-height:36px!important;
+  gap:1px!important;
+  min-height:32px!important;
   margin:0!important;
-  padding:2px!important;
-  border:1px solid color-mix(in srgb,var(--v3-line,#e6e9e4) 86%,transparent)!important;
-  border-radius:10px!important;
+  padding:0!important;
+  border:0!important;
+  border-radius:9px!important;
   background:transparent!important;
   box-shadow:none!important;
 }
+
 .mai-v3-workspace .mai-v4-finance > .mai-finance-v4-header > .mai-finance-v4-month > button{
   position:relative!important;
   min-width:0!important;
   width:auto!important;
-  height:32px!important;
-  min-height:32px!important;
+  height:30px!important;
+  min-height:30px!important;
   margin:0!important;
   padding:0!important;
   border:0!important;
@@ -308,10 +386,12 @@ html body .mai-app-topbar .mai-app-topbar-panel[data-view="finance"] .mai-app-to
   font:inherit!important;
   cursor:pointer!important;
 }
+
 .mai-v3-workspace .mai-v4-finance > .mai-finance-v4-header > .mai-finance-v4-month > button:hover{
   background:var(--v3-hover,#f1f4ef)!important;
   color:var(--v3-text)!important;
 }
+
 .mai-v3-workspace .mai-v4-finance > .mai-finance-v4-header > .mai-finance-v4-month > button:first-child,
 .mai-v3-workspace .mai-v4-finance > .mai-finance-v4-header > .mai-finance-v4-month > button:last-child{
   display:grid!important;
@@ -319,9 +399,9 @@ html body .mai-app-topbar .mai-app-topbar-panel[data-view="finance"] .mai-app-to
   overflow:hidden!important;
   font-size:0!important;
 }
+
 .mai-v3-workspace .mai-v4-finance > .mai-finance-v4-header > .mai-finance-v4-month > button:first-child::before,
-.mai-v3-workspace .mai-v4-finance > .mai-finance-v4-header > .mai-finance-v4-month > button:last-child::before,
-.mai-v3-workspace .mai-v4-finance > .mai-finance-v4-header > .mai-finance-v4-month > button:nth-child(2)::before{
+.mai-v3-workspace .mai-v4-finance > .mai-finance-v4-header > .mai-finance-v4-month > button:last-child::before{
   font-family:"Material Symbols Rounded"!important;
   font-weight:normal!important;
   font-style:normal!important;
@@ -336,34 +416,34 @@ html body .mai-app-topbar .mai-app-topbar-panel[data-view="finance"] .mai-app-to
   font-feature-settings:'liga'!important;
   font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 20!important;
 }
+
 .mai-v3-workspace .mai-v4-finance > .mai-finance-v4-header > .mai-finance-v4-month > button:first-child::before{
   content:"chevron_left"!important;
   font-size:18px!important;
 }
+
 .mai-v3-workspace .mai-v4-finance > .mai-finance-v4-header > .mai-finance-v4-month > button:last-child::before{
   content:"chevron_right"!important;
   font-size:18px!important;
 }
+
 .mai-v3-workspace .mai-v4-finance > .mai-finance-v4-header > .mai-finance-v4-month > button:nth-child(2){
   display:grid!important;
-  grid-template-columns:17px minmax(0,1fr)!important;
+  grid-template-columns:minmax(0,1fr)!important;
   grid-template-rows:auto auto!important;
   align-items:center!important;
-  column-gap:6px!important;
   row-gap:0!important;
-  padding:0 8px!important;
+  padding:0 7px!important;
   text-align:left!important;
 }
+
 .mai-v3-workspace .mai-v4-finance > .mai-finance-v4-header > .mai-finance-v4-month > button:nth-child(2)::before{
-  content:"calendar_month"!important;
-  grid-column:1!important;
-  grid-row:1 / 3!important;
-  align-self:center!important;
-  font-size:16px!important;
-  color:var(--v3-muted)!important;
+  content:none!important;
+  display:none!important;
 }
+
 .mai-v3-workspace .mai-v4-finance > .mai-finance-v4-header > .mai-finance-v4-month > button:nth-child(2) > strong{
-  grid-column:2!important;
+  grid-column:1!important;
   grid-row:1!important;
   display:block!important;
   margin:0!important;
@@ -374,8 +454,9 @@ html body .mai-app-topbar .mai-app-topbar-panel[data-view="finance"] .mai-app-to
   text-align:left!important;
   white-space:nowrap!important;
 }
+
 .mai-v3-workspace .mai-v4-finance > .mai-finance-v4-header > .mai-finance-v4-month > button:nth-child(2) > small{
-  grid-column:2!important;
+  grid-column:1!important;
   grid-row:2!important;
   display:block!important;
   margin:1px 0 0!important;
@@ -386,81 +467,6 @@ html body .mai-app-topbar .mai-app-topbar-panel[data-view="finance"] .mai-app-to
   white-space:nowrap!important;
 }
 
-@media(max-width:620px){
-  .mai-v3-workspace .mai-v4-finance .mai-finance-v4-card-list > article{
-    grid-template-columns:38px minmax(0,1fr)!important;
-    grid-template-rows:auto auto!important;
-    gap:3px 9px!important;
-    padding:7px 5px!important;
-  }
-  .mai-v3-workspace .mai-v4-finance .mai-finance-v4-card-list > article > .mai-finance-entity-icon{
-    grid-column:1!important;
-    grid-row:1 / 3!important;
-    width:36px!important;
-    height:36px!important;
-    min-width:36px!important;
-    min-height:36px!important;
-  }
-  .mai-v3-workspace .mai-v4-finance .mai-finance-v4-card-list > article > button{
-    grid-column:2!important;
-    grid-row:1!important;
-    min-height:0!important;
-  }
-  .mai-v3-workspace .mai-v4-finance .mai-finance-v4-card-list > article > span:not(.mai-finance-entity-icon){
-    grid-column:2!important;
-    grid-row:2!important;
-    justify-self:start!important;
-    justify-items:start!important;
-    min-width:0!important;
-  }
-}
-
-@media(max-width:720px){
-  .mai-v3-workspace .mai-v4-finance > .mai-finance-v4-header{
-    align-items:flex-start!important;
-  }
-  .mai-v3-workspace .mai-v4-finance > .mai-finance-v4-header > .mai-finance-v4-month{
-    grid-template-columns:32px minmax(140px,1fr) 32px!important;
-    width:min(100%,230px)!important;
-  }
-}
-
-/*
-  Financeiro limpo: o cabeçalho de área deixa de compor a interface.
-  O seletor mensal participa da mesma linha das abas, antes de Visão geral.
-*/
-.mai-v3-workspace .mai-v4-finance{
-  display:grid!important;
-  grid-template-columns:max-content minmax(0,1fr)!important;
-  grid-auto-rows:auto!important;
-  column-gap:6px!important;
-  row-gap:0!important;
-  align-items:center!important;
-}
-.mai-v3-workspace .mai-v4-finance > .mai-finance-v4-header{
-  display:contents!important;
-}
-.mai-v3-workspace .mai-v4-finance > .mai-finance-v4-header > :not(.mai-finance-v4-month){
-  display:none!important;
-}
-.mai-v3-workspace .mai-v4-finance > .mai-finance-v4-header > .mai-finance-v4-month{
-  grid-column:1!important;
-  grid-row:1!important;
-  align-self:center!important;
-  grid-template-columns:28px minmax(124px,auto) 28px!important;
-  min-height:32px!important;
-  padding:0!important;
-  border:0!important;
-  border-radius:9px!important;
-  background:transparent!important;
-}
-.mai-v3-workspace .mai-v4-finance > .mai-finance-v4-header > .mai-finance-v4-month > button{
-  height:30px!important;
-  min-height:30px!important;
-}
-.mai-v3-workspace .mai-v4-finance > .mai-finance-v4-header > .mai-finance-v4-month > button:nth-child(2){
-  padding:0 6px!important;
-}
 .mai-v3-workspace .mai-v4-finance > .mai-finance-v4-tabs{
   grid-column:1 / -1!important;
   grid-row:1!important;
@@ -468,16 +474,24 @@ html body .mai-app-topbar .mai-app-topbar-panel[data-view="finance"] .mai-app-to
   margin:0!important;
   align-self:center!important;
 }
+
 .mai-v3-workspace .mai-v4-finance:has(> .mai-finance-v4-header > .mai-finance-v4-month) > .mai-finance-v4-tabs{
   grid-column:2!important;
 }
+
 .mai-v3-workspace .mai-v4-finance > .mai-finance-v4-overview-metrics,
 .mai-v3-workspace .mai-v4-finance > .mai-v3-simple-section,
 .mai-v3-workspace .mai-v4-finance > .mai-v3-create-layer{
   grid-column:1 / -1!important;
 }
 
-/* Os cabeçalhos internos eram redundantes com a navegação e com o botão contextual de adição. */
+/* Respiração entre navegação e conteúdo. */
+.mai-v3-workspace .mai-v4-finance > .mai-finance-v4-overview-metrics,
+.mai-v3-workspace .mai-v4-finance > .mai-v3-simple-section{
+  margin-top:16px!important;
+}
+
+/* Os cabeçalhos internos são redundantes com a navegação e o botão contextual. */
 .mai-v3-workspace .mai-v4-finance .mai-finance-v4-section-head{
   display:none!important;
 }
@@ -489,7 +503,7 @@ html body .mai-app-topbar .mai-app-topbar-panel[data-view="finance"] .mai-app-to
   }
   .mai-v3-workspace .mai-v4-finance > .mai-finance-v4-header > .mai-finance-v4-month{
     width:auto!important;
-    grid-template-columns:26px minmax(104px,auto) 26px!important;
+    grid-template-columns:26px minmax(96px,auto) 26px!important;
   }
   .mai-v3-workspace .mai-v4-finance > .mai-finance-v4-header > .mai-finance-v4-month > button:nth-child(2) > small{
     display:none!important;
@@ -499,6 +513,57 @@ html body .mai-app-topbar .mai-app-topbar-panel[data-view="finance"] .mai-app-to
     scrollbar-width:none!important;
   }
   .mai-v3-workspace .mai-v4-finance > .mai-finance-v4-tabs::-webkit-scrollbar{
+    display:none!important;
+  }
+}
+
+@media(max-width:620px){
+  .mai-v3-workspace .mai-v4-finance .mai-finance-v4-account-list > article,
+  .mai-v3-workspace .mai-v4-finance .mai-finance-v4-card-list > article{
+    grid-template-columns:38px minmax(0,1fr) max-content!important;
+    grid-template-rows:auto auto!important;
+    gap:3px 9px!important;
+    padding:7px 5px!important;
+  }
+
+  .mai-v3-workspace .mai-v4-finance .mai-finance-v4-account-list > article > .mai-finance-entity-icon,
+  .mai-v3-workspace .mai-v4-finance .mai-finance-v4-card-list > article > .mai-finance-entity-icon{
+    grid-column:1!important;
+    grid-row:1 / 3!important;
+    width:36px!important;
+    height:36px!important;
+    min-width:36px!important;
+    min-height:36px!important;
+  }
+
+  .mai-v3-workspace .mai-v4-finance .mai-finance-v4-account-list > article > .mai-finance-v4-entity-identity,
+  .mai-v3-workspace .mai-v4-finance .mai-finance-v4-card-list > article > .mai-finance-v4-entity-identity{
+    grid-column:2!important;
+    grid-row:1!important;
+    min-height:0!important;
+  }
+
+  .mai-v3-workspace .mai-v4-finance .mai-finance-v4-entity-summary{
+    grid-column:2!important;
+    grid-row:2!important;
+    justify-self:start!important;
+    justify-items:start!important;
+    min-width:0!important;
+  }
+
+  .mai-v3-workspace .mai-v4-finance .mai-finance-v4-row-action{
+    grid-column:3!important;
+    grid-row:1 / 3!important;
+    align-self:center!important;
+  }
+}
+
+@media(max-width:480px){
+  .mai-v3-workspace .mai-v4-finance .mai-finance-v4-row-action{
+    width:30px!important;
+    padding:0!important;
+  }
+  .mai-v3-workspace .mai-v4-finance .mai-finance-v4-row-action > span:not(.material-symbols-rounded){
     display:none!important;
   }
 }
