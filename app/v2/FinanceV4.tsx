@@ -48,6 +48,21 @@ function moveDateForInstallment(key: string, index: number, interval: string) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
 }
 
+function monthDateForDay(month: string, rawDay: number) {
+  const year = Number(month.slice(0, 4))
+  const monthNumber = Number(month.slice(5, 7))
+  const maxDay = new Date(year, monthNumber, 0).getDate()
+  const day = Math.min(maxDay, Math.max(1, Number(rawDay || 1)))
+  return `${month}-${String(day).padStart(2, '0')}`
+}
+
+function parseMoneyInput(value: string) {
+  const cleaned = value.trim().replace(/R\$|\s/g, '')
+  const normalized = cleaned.includes(',') ? cleaned.replace(/\./g, '').replace(',', '.') : cleaned
+  const parsed = Number(normalized)
+  return Number.isFinite(parsed) ? Math.max(0, parsed) : Number.NaN
+}
+
 export function FinanceV4({ state, today, commit, createRequest, inspect: _inspect }: { state: MaiState; today: string; commit: Commit; createRequest?: string; inspect: (item: InspectableItem) => void }) {
   const savedTabs = state.configs.areaTabs && typeof state.configs.areaTabs === 'object' ? state.configs.areaTabs as Record<string, string> : {}
   const savedTab = String(savedTabs.finance || 'overview')
@@ -103,7 +118,12 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
   const monthIncome = monthCalculationItems.filter(item => item.tipo === 'receita').reduce((sum, item) => sum + clampMoney(item.valor), 0)
   const monthExpense = monthCalculationItems.filter(item => item.tipo !== 'receita').reduce((sum, item) => sum + clampMoney(item.valor), 0)
   const monthResult = monthIncome - monthExpense
-  const monthInvoice = monthCalculationItems.filter(item => item.tipo !== 'receita' && (String(item.conta_id || '').startsWith('card|') || item.cartao_id)).reduce((sum, item) => sum + clampMoney(item.valor), 0)
+  const monthInvoice = cards.reduce((sum, card) => {
+    const cardId = String(card.id)
+    const manual = monthItems.find(item => item.ajuste_fatura === true && String(item.ajuste_fatura_card_id || item.cartao_id || '') === cardId && String(item.competencia_fatura || dateKey(item.data).slice(0, 7)) === month)
+    if (manual) return sum + clampMoney(manual.valor)
+    return sum + monthCalculationItems.filter(item => !item.ajuste_fatura && item.tipo !== 'receita' && (String(item.conta_id || '') === `card|${cardId}` || String(item.cartao_id || '') === cardId)).reduce((cardSum, item) => cardSum + clampMoney(item.valor), 0)
+  }, 0)
   const initialBalance = accounts.reduce((sum, account) => sum + Number(account.saldo_inicial || 0), 0)
   const looseCashBalance = transactions.filter(item => !item.ignorar_calculo && !String(item.conta_id || '').startsWith('card|') && !item.cartao_id).reduce((sum, item) => sum + signed(item, paidAmount(item)), 0) + monthFixed.filter(item => !item.ignorar_calculo && !String(item.conta_id || '').startsWith('card|') && !item.cartao_id).reduce((sum, item) => sum + signed(item, paidAmount(item)), 0)
   const realBalance = accounts.length ? accounts.reduce((sum, account) => sum + accountBalance(account), 0) : looseCashBalance
@@ -113,7 +133,10 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
   const totalInvestmentValue = investments.reduce((sum, item) => sum + clampMoney(item.valor_atual), 0)
 
   function cardInvoice(card: Row, source: Row[] = monthItems) {
-    return source.filter(item => (String(item.conta_id || '') === `card|${card.id}` || String(item.cartao_id || '') === String(card.id)) && !item.ignorar_calculo && item.tipo !== 'receita').reduce((sum, item) => sum + clampMoney(item.valor), 0)
+    const cardId = String(card.id)
+    const manual = source.find(item => item.ajuste_fatura === true && String(item.ajuste_fatura_card_id || item.cartao_id || '') === cardId && String(item.competencia_fatura || dateKey(item.data).slice(0, 7)) === month)
+    if (manual) return clampMoney(manual.valor)
+    return source.filter(item => !item.ajuste_fatura && (String(item.conta_id || '') === `card|${cardId}` || String(item.cartao_id || '') === cardId) && !item.ignorar_calculo && item.tipo !== 'receita').reduce((sum, item) => sum + clampMoney(item.valor), 0)
   }
   function accountBalance(account: Row) {
     const accountId = String(account.id)
@@ -304,6 +327,44 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
     const diff = Number(answer) - accountBalance(account); if (Math.abs(diff) < 0.01) return
     commit(current => ({ ...current, finance: { ...current.finance, transactions: [{ id: uid('fin'), titulo: 'Ajuste de saldo', valor: Math.abs(diff), valor_pago: Math.abs(diff), tipo: diff >= 0 ? 'receita' : 'despesa', categoria: 'Ajuste', conta_id: account.id, cartao_id: '', data: today, status: 'pago', observacao: 'Conciliação bancária', pagamentos: [{ id: uid('pay'), data: today, valor: Math.abs(diff) }], anexos: [], ignorar_calculo: false, recorrencia: 'unico' }, ...rows(current.finance.transactions)] } }))
   }
+  function adjustCardInvoice(card: Row) {
+    const currentValue = cardInvoice(card, monthItems)
+    const answer = prompt(`Valor da fatura de “${card.nome}” em ${monthLabel(month)}:`, currentValue.toFixed(2).replace('.', ','))
+    if (answer === null) return
+    const value = parseMoneyInput(answer)
+    if (!Number.isFinite(value)) { alert('Digite um valor válido para a fatura.'); return }
+    const cardId = String(card.id)
+    const dueDate = monthDateForDay(month, Number(card.vencimento || 10))
+    commit(current => {
+      const list = rows(current.finance.transactions)
+      const existing = list.find(item => item.ajuste_fatura === true && String(item.ajuste_fatura_card_id || item.cartao_id || '') === cardId && String(item.competencia_fatura || dateKey(item.data).slice(0, 7)) === month)
+      const paid = existing ? Math.min(value, paidAmount(existing)) : 0
+      const status = value > 0 && paid >= value ? 'pago' : paid > 0 ? 'parcial' : 'pendente'
+      const next: Row = {
+        ...(existing || {}),
+        id: existing?.id || uid('invoice'),
+        titulo: `Fatura ${String(card.nome || 'Cartão')}`,
+        observacao: `Fatura ajustada manualmente em ${monthLabel(month)}.`,
+        valor: value,
+        valor_pago: paid,
+        tipo: 'despesa',
+        data: dueDate,
+        status,
+        categoria: 'Fatura do cartão',
+        conta_id: `card|${cardId}`,
+        cartao_id: cardId,
+        conta_pagamento_id: String(card.conta_id || ''),
+        anexos: rows(existing?.anexos),
+        pagamentos: rows(existing?.pagamentos),
+        ignorar_calculo: true,
+        recorrencia: 'unico',
+        ajuste_fatura: true,
+        ajuste_fatura_card_id: cardId,
+        competencia_fatura: month,
+      }
+      return { ...current, finance: { ...current.finance, transactions: existing ? list.map(item => String(item.id) === String(existing.id) ? next : item) : [next, ...list] } }
+    })
+  }
   function moveBoxValue(direction: 'in' | 'out') {
     if (!draft || kind !== 'box') return
     const answer = prompt(direction === 'in' ? 'Quanto deseja guardar?' : 'Quanto deseja retirar?', '0'); if (answer === null) return
@@ -350,7 +411,7 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
   const filteredIncome = calculationItems.filter(item => item.tipo === 'receita').reduce((sum, item) => sum + clampMoney(item.valor), 0)
   const filteredExpense = calculationItems.filter(item => item.tipo !== 'receita').reduce((sum, item) => sum + clampMoney(item.valor), 0)
   const filteredResult = filteredIncome - filteredExpense
-  const filteredInvoice = calculationItems.filter(item => item.tipo !== 'receita' && (String(item.conta_id || '').startsWith('card|') || item.cartao_id)).reduce((sum, item) => sum + clampMoney(item.valor), 0)
+  const filteredInvoice = filtersActive ? calculationItems.filter(item => item.tipo !== 'receita' && (String(item.conta_id || '').startsWith('card|') || item.cartao_id)).reduce((sum, item) => sum + clampMoney(item.valor), 0) : monthInvoice
   const recent = filtered.slice(0, 8)
   const catReport = (Object.entries(calculationItems.reduce((map: Record<string, number>, item) => { if (item.tipo !== 'receita') map[item.categoria || 'Sem categoria'] = (map[item.categoria || 'Sem categoria'] || 0) + clampMoney(item.valor); return map }, {})) as [string, number][]).sort((a, b) => b[1] - a[1])
   const visibleAccounts = originFilter !== 'all' ? accounts.filter(account => String(account.id) === originFilter) : filtersActive ? accounts.filter(account => filtered.some(item => String(item.conta_id || '') === String(account.id))) : accounts
@@ -359,7 +420,7 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
 
   const transactionRow = (item: Row) => {
     const incomeItem = item.tipo === 'receita'; const remaining = Math.max(0, clampMoney(item.valor) - paidAmount(item))
-    return <article key={`${item._isFixed ? 'fix' : 'tx'}-${String(item.id)}`} className="mai-finance-v4-row mai-item-row-v2" data-status={String(item.status || 'pendente')}><button type="button" className="mai-finance-v4-status" data-paid={item.status === 'pago'} data-partial={item.status === 'parcial'} title={item.status === 'pago' ? 'Marcar como pendente' : 'Marcar como pago'} onClick={() => togglePaid(item)}>{item.status === 'pago' ? '✓' : item.status === 'parcial' ? '◐' : ''}</button><button type="button" className="mai-finance-v4-row-main" onClick={() => openTransaction(item)}><span className="mai-item-copy-v2"><span className="mai-item-titleline-v2"><strong>{String(item.titulo || 'Lançamento')}</strong></span><span className="mai-item-subline-v2"><span>{naturalDate(dateKey(item.data), today)}</span><span>·</span><span>{item.categoria || 'Sem categoria'}</span>{item.conta_id ? <><span>·</span><span>{originName(item.conta_id, accounts, cards)}</span></> : null}{item._isFixed ? <><span>·</span><span>Fixo</span></> : item.lote_id ? <><span>·</span><span>Parcela {item.parcela_numero}/{item.parcelas_total}</span></> : null}</span></span><span className="mai-finance-v4-value" data-income={incomeItem}>{incomeItem ? '+' : '−'} {money.format(clampMoney(item.valor))}{item.status === 'parcial' ? <small>restam {money.format(remaining)}</small> : null}</span></button></article>
+    return <article key={`${item._isFixed ? 'fix' : 'tx'}-${String(item.id)}`} className="mai-finance-v4-row mai-item-row-v2" data-status={String(item.status || 'pendente')}><button type="button" className="mai-finance-v4-status" data-paid={item.status === 'pago'} data-partial={item.status === 'parcial'} title={item.status === 'pago' ? 'Marcar como pendente' : 'Marcar como pago'} onClick={() => togglePaid(item)}>{item.status === 'pago' ? '✓' : item.status === 'parcial' ? '◐' : ''}</button><button type="button" className="mai-finance-v4-row-main" onClick={() => openTransaction(item)}><span className="mai-item-copy-v2"><span className="mai-item-titleline-v2"><strong>{String(item.titulo || 'Lançamento')}</strong></span><span className="mai-item-subline-v2"><span>{naturalDate(dateKey(item.data), today)}</span><span>·</span><span>{item.categoria || 'Sem categoria'}</span>{item.conta_id ? <><span>·</span><span>{originName(item.conta_id, accounts, cards)}</span></> : null}{item.ajuste_fatura ? <><span>·</span><span>Fatura ajustada</span></> : item._isFixed ? <><span>·</span><span>Fixo</span></> : item.lote_id ? <><span>·</span><span>Parcela {item.parcela_numero}/{item.parcelas_total}</span></> : null}</span></span><span className="mai-finance-v4-value" data-income={incomeItem}>{incomeItem ? '+' : '−'} {money.format(clampMoney(item.valor))}{item.status === 'parcial' ? <small>restam {money.format(remaining)}</small> : null}</span></button></article>
   }
 
   const tabs: { id: Tab; label: string; icon?: string }[] = [
@@ -374,8 +435,8 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
     {tab === 'overview' ? <><div className="mai-finance-v4-overview-metrics"><article className="mai-finance-v4-metric" data-negative={realBalance < 0}><div className="mai-finance-v4-metric-label"><span className="material-symbols-rounded">account_balance_wallet</span><span>Saldo Atual</span></div><strong>{money.format(realBalance)}</strong><small>Saldo consolidado agora</small></article><article className="mai-finance-v4-metric" data-negative={projectedBalance < 0}><div className="mai-finance-v4-metric-label"><span className="material-symbols-rounded">trending_up</span><span>Previsto</span></div><strong>{money.format(projectedBalance)}</strong><small>Saldo consolidado projetado</small></article><article className="mai-finance-v4-metric" data-positive={monthIncome > 0}><div className="mai-finance-v4-metric-label"><span className="material-symbols-rounded">south_west</span><span>Receitas</span></div><strong>{money.format(monthIncome)}</strong><small>{monthLabel(month)}</small></article><article className="mai-finance-v4-metric" data-negative={monthExpense > 0}><div className="mai-finance-v4-metric-label"><span className="material-symbols-rounded">north_east</span><span>Despesas</span></div><strong>{money.format(monthExpense)}</strong><small>{monthLabel(month)}</small></article><article className="mai-finance-v4-metric"><div className="mai-finance-v4-metric-label"><span className="material-symbols-rounded">credit_card</span><span>Cartões</span></div><strong>{money.format(monthInvoice)}</strong><small>Faturas do mês</small></article><article className="mai-finance-v4-metric" data-positive={monthResult > 0} data-negative={monthResult < 0}><div className="mai-finance-v4-metric-label"><span className="material-symbols-rounded">balance</span><span>Balanço Mensal</span></div><strong>{money.format(monthResult)}</strong><small>Receitas − despesas</small></article></div><section className="mai-v3-simple-section mai-finance-v4-overview-list"><div className="mai-finance-v4-section-head"><div><h2>{filtersActive ? 'Lançamentos filtrados' : 'Últimos lançamentos'}</h2><small>{filtered.length} em {monthLabel(month)}</small></div><button type="button" onClick={() => openNew('transaction')}><span className="material-symbols-rounded">add</span>Adicionar lançamento</button></div><div className="mai-v3-finance-rows mai-v3-simple-list">{recent.map(transactionRow)}{!recent.length ? <div className="mai-v3-empty-line">Nenhum lançamento encontrado.</div> : null}</div></section></> : null}
 
     {tab === 'transactions' ? <section className="mai-v3-simple-section"><div className="mai-finance-v4-section-head"><div><h2>Lançamentos</h2><small>{filtered.length} no período · únicos, parcelados e fixos</small></div><button type="button" onClick={() => openNew('transaction')}><span className="material-symbols-rounded">add</span>Adicionar lançamento</button></div><div className="mai-v3-finance-rows mai-v3-simple-list">{filtered.map(transactionRow)}{!filtered.length ? <div className="mai-v3-empty-line">Nenhum lançamento encontrado.</div> : null}</div></section> : null}
-    {tab === 'accounts' ? <section className="mai-v3-simple-section"><div className="mai-finance-v4-section-head"><div><h2>Contas</h2><small>Saldos reais e conciliação.</small></div><button type="button" onClick={() => openNew('account')}><span className="material-symbols-rounded">add</span>Adicionar conta</button></div><div className="mai-v3-account-list mai-finance-v4-entity-list">{visibleAccounts.map(account => <article key={String(account.id)}><FinanceEntityIcon photo={String(account.foto || '')} icon="account_balance" color={String(account.cor || '#718269')} /><button type="button" onClick={() => openExisting('account', account)}><strong>{account.nome}</strong><small>Saldo inicial {money.format(Number(account.saldo_inicial || 0))}</small></button><b>{money.format(accountBalance(account))}</b><button type="button" className="mai-finance-v4-text-action" onClick={() => reconcile(account)}>Conciliar</button></article>)}</div></section> : null}
-    {tab === 'cards' ? <section className="mai-v3-simple-section"><div className="mai-finance-v4-section-head"><div><h2>Cartões</h2><small>Fatura, limite disponível e vencimento.</small></div><button type="button" onClick={() => openNew('card')}><span className="material-symbols-rounded">add</span>Adicionar cartão</button></div><div className="mai-v3-card-list mai-finance-v4-card-list">{visibleCards.map(card => { const invoice = cardInvoice(card, filtersActive ? calculationItems : monthItems); return <article key={String(card.id)}><FinanceEntityIcon photo={String(card.foto || '')} icon="credit_card" color={String(card.cor || '#8a7d72')} /><button type="button" onClick={() => openExisting('card', card)}><strong>{card.nome}</strong><small>Fecha dia {card.fechamento || '—'} · vence dia {card.vencimento || '—'}</small></button><span><b>{money.format(invoice)}</b><small>fatura · {money.format(Math.max(0, clampMoney(card.limite) - invoice))} disponível</small></span></article> })}</div></section> : null}
+    {tab === 'accounts' ? <section className="mai-v3-simple-section"><div className="mai-finance-v4-section-head"><div><h2>Contas</h2><small>Saldos reais e conciliação.</small></div><button type="button" onClick={() => openNew('account')}><span className="material-symbols-rounded">add</span>Adicionar conta</button></div><div className="mai-v3-account-list mai-finance-v4-entity-list mai-finance-v4-account-list">{visibleAccounts.map(account => <article key={String(account.id)} className="mai-finance-v4-entity-row"><FinanceEntityIcon photo={String(account.foto || '')} icon="account_balance" color={String(account.cor || '#718269')} /><button type="button" className="mai-finance-v4-entity-identity" onClick={() => openExisting('account', account)}><strong>{account.nome}</strong><small>Saldo inicial {money.format(Number(account.saldo_inicial || 0))}</small></button><span className="mai-finance-v4-entity-summary"><b>{money.format(accountBalance(account))}</b><small>saldo atual</small></span><button type="button" className="mai-finance-v4-row-action" onClick={() => reconcile(account)}><span className="material-symbols-rounded">sync_alt</span><span>Conciliar</span></button></article>)}</div></section> : null}
+    {tab === 'cards' ? <section className="mai-v3-simple-section"><div className="mai-finance-v4-section-head"><div><h2>Cartões</h2><small>Fatura, limite disponível e vencimento.</small></div><button type="button" onClick={() => openNew('card')}><span className="material-symbols-rounded">add</span>Adicionar cartão</button></div><div className="mai-v3-card-list mai-finance-v4-card-list mai-finance-v4-entity-list">{visibleCards.map(card => { const invoice = cardInvoice(card, monthItems); return <article key={String(card.id)} className="mai-finance-v4-entity-row mai-finance-v4-card-row"><FinanceEntityIcon photo={String(card.foto || '')} icon="credit_card" color={String(card.cor || '#8a7d72')} /><button type="button" className="mai-finance-v4-entity-identity" onClick={() => openExisting('card', card)}><strong>{card.nome}</strong><small>Fecha dia {card.fechamento || '—'} · vence dia {card.vencimento || '—'}</small></button><span className="mai-finance-v4-entity-summary"><b>{money.format(invoice)}</b><small>fatura · {money.format(Math.max(0, clampMoney(card.limite) - invoice))} disponível</small></span><button type="button" className="mai-finance-v4-row-action" onClick={() => adjustCardInvoice(card)}><span className="material-symbols-rounded">edit_note</span><span>Ajustar fatura</span></button></article> })}</div></section> : null}
 
     {tab === 'boxes' ? <section className="mai-v3-simple-section mai-finance-v4-goal-area"><div className="mai-finance-v4-section-head"><div><h2>Caixinha</h2><small>{money.format(totalBoxes)} guardados em {boxes.length} {boxes.length === 1 ? 'meta' : 'metas'}.</small></div><button type="button" onClick={() => openNew('box')}><span className="material-symbols-rounded">add</span>Nova caixinha</button></div><div className="mai-finance-v4-goal-grid">{boxes.map(box => { const target = clampMoney(box.meta); const current = clampMoney(box.saldo); const progress = target ? Math.min(100, current / target * 100) : 0; return <article key={String(box.id)} className="mai-finance-v4-goal-card" style={{ '--finance-item-color': box.cor || '#718269' } as React.CSSProperties}><button type="button" className="mai-finance-v4-goal-main" onClick={() => openExisting('box', box)}><FinanceEntityIcon photo={String(box.foto || '')} icon={String(box.icone || 'savings')} color={String(box.cor || '#718269')} className="mai-finance-v4-goal-icon" /><span className="mai-finance-v4-goal-copy"><strong>{box.nome}</strong><small>{box.prazo ? `Meta até ${naturalDate(dateKey(box.prazo), today)}` : 'Sem prazo definido'}</small></span><b>{money.format(current)}</b></button><div className="mai-finance-v4-progress"><i><b style={{ width: `${progress}%` }} /></i><small>{target ? `${Math.round(progress)}% de ${money.format(target)}` : 'Defina um valor-alvo'}</small></div><button type="button" className="mai-finance-v4-quick-action" onClick={() => { openExisting('box', box); setTimeout(() => { const el = document.querySelector('.mai-finance-v4-drawer-box .mai-finance-v4-positive-action') as HTMLButtonElement | null; el?.focus() }, 0) }}>Adicionar valor</button></article> })}{!boxes.length ? <div className="mai-finance-v4-empty-feature"><span className="material-symbols-rounded">savings</span><strong>Crie sua primeira caixinha</strong><small>Carro, casa, viagem, reserva ou qualquer objetivo que você queira construir aos poucos.</small><button type="button" onClick={() => openNew('box')}>Criar caixinha</button></div> : null}</div></section> : null}
 
