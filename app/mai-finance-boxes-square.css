@@ -102,20 +102,54 @@
 
 @media(max-width:760px){
   .mai-v4-finance:has(.mai-finance-v4-tabs>button:nth-child(5)[data-active="true"]) .mai-finance-v4-goal-grid{
-    grid-template-columns:repeat(auto-fill,minmax(175px,195px))!important;
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
     gap:10px!important;
   }
   .mai-v4-finance:has(.mai-finance-v4-tabs>button:nth-child(5)[data-active="true"]) .mai-finance-v4-goal-card{
-    min-height:175px!important;
-    padding:14px!important;
+    min-height:0!important;
+    aspect-ratio:1 / 1!important;
+    padding:12px!important;
+  }
+  .mai-v4-finance:has(.mai-finance-v4-tabs>button:nth-child(5)[data-active="true"]) .mai-finance-v4-goal-main{
+    grid-template-columns:34px minmax(0,1fr)!important;
+    gap:8px!important;
+  }
+  .mai-v4-finance:has(.mai-finance-v4-tabs>button:nth-child(5)[data-active="true"]) .mai-finance-v4-goal-icon{
+    width:34px!important;
+    height:34px!important;
+    border-radius:10px!important;
+  }
+  .mai-v4-finance:has(.mai-finance-v4-tabs>button:nth-child(5)[data-active="true"]) .mai-finance-v4-goal-main>b{
+    max-width:calc(100% - 20px)!important;
+    font-size:13px!important;
+  }
+  .mai-v4-finance:has(.mai-finance-v4-tabs>button:nth-child(5)[data-active="true"]) .mai-finance-v4-progress{
+    padding-top:8px!important;
+    gap:4px!important;
+  }
+  .mai-v4-finance:has(.mai-finance-v4-tabs>button:nth-child(5)[data-active="true"]) .mai-finance-v4-quick-action{
+    margin-top:6px!important;
+    font-size:8.5px!important;
   }
 }
 
 @media(max-width:480px){
   .mai-v4-finance:has(.mai-finance-v4-tabs>button:nth-child(5)[data-active="true"]) .mai-finance-v4-goal-grid{
-    grid-template-columns:minmax(165px,185px)!important;
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+    gap:8px!important;
   }
   .mai-v4-finance:has(.mai-finance-v4-tabs>button:nth-child(5)[data-active="true"]) .mai-finance-v4-goal-card{
-    min-height:165px!important;
+    min-height:0!important;
+    aspect-ratio:1 / 1!important;
+    padding:10px!important;
+  }
+  .mai-v4-finance:has(.mai-finance-v4-tabs>button:nth-child(5)[data-active="true"]) .mai-finance-v4-goal-copy small{
+    display:none!important;
+  }
+  .mai-v4-finance:has(.mai-finance-v4-tabs>button:nth-child(5)[data-active="true"]) .mai-finance-v4-progress small{
+    font-size:7.5px!important;
+    white-space:nowrap!important;
+    overflow:hidden!important;
+    text-overflow:ellipsis!important;
   }
 }
