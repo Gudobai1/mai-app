@@ -17,6 +17,7 @@ function safeName(value: unknown) {
 export async function GET(request: NextRequest) {
   try {
     const id = String(request.nextUrl.searchParams.get('id') || '').trim()
+    const appAsset = request.nextUrl.searchParams.get('asset') === '1'
     if (!id) return NextResponse.json({ error: 'Arquivo não informado' }, { status: 400 })
 
     const g = await authorizedGoogle(request)
@@ -43,7 +44,7 @@ export async function GET(request: NextRequest) {
     const headers = new Headers()
     headers.set('content-type', exported || upstream.headers.get('content-type') || meta.mimeType || 'application/octet-stream')
     headers.set('content-disposition', `inline; filename*=UTF-8''${encodeURIComponent(safeName(meta.name))}`)
-    headers.set('cache-control', 'private, max-age=60')
+    headers.set('cache-control', appAsset ? 'private, max-age=31536000, immutable' : 'private, max-age=60')
     headers.set('accept-ranges', upstream.headers.get('accept-ranges') || 'bytes')
     const contentLength = upstream.headers.get('content-length')
     const contentRange = upstream.headers.get('content-range')
