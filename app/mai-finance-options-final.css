@@ -93,3 +93,13 @@ html body .mai-app-topbar .mai-app-topbar-panel[data-view="finance"] .mai-app-to
 .mai-v3-workspace .mai-v4-finance > .mai-finance-v4-tabs > button:nth-child(5)::before{content:"savings"}
 .mai-v3-workspace .mai-v4-finance > .mai-finance-v4-tabs > button:nth-child(6)::before{content:"trending_up"}
 .mai-v3-workspace .mai-v4-finance > .mai-finance-v4-tabs > button:nth-child(7)::before{content:"analytics"}
+
+/*
+  Adição de itens no Financeiro usa exclusivamente o SectionInlineAdd,
+  o mesmo padrão estrutural e visual utilizado pelos demais módulos do MAI.
+  Os antigos CTAs próprios do Financeiro continuam apenas como handlers internos.
+*/
+.mai-v3-workspace .mai-v4-finance .mai-finance-v4-section-head > button,
+.mai-v3-workspace .mai-v4-finance .mai-finance-v4-empty-feature > button{
+  display:none!important;
+}
