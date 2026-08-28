@@ -8,6 +8,8 @@ export type DriveAsset = {
   url?: string
 }
 
+export const DRIVE_ASSET_CACHE = 'mai-assets-v1'
+
 function reconnectGoogle() {
   if (typeof window === 'undefined') return
   const returnTo = `${window.location.pathname}${window.location.search}${window.location.hash}`
@@ -31,7 +33,7 @@ export async function googleDriveRpc(method: string, args: unknown[] = []) {
 }
 
 export function drivePreviewUrl(id: string) {
-  return id ? `/api/google/drive/preview?id=${encodeURIComponent(id)}` : ''
+  return id ? `/api/google/drive/preview?id=${encodeURIComponent(id)}&asset=1` : ''
 }
 
 export function driveIdFromAssetUrl(value: unknown) {
@@ -42,6 +44,34 @@ export function driveIdFromAssetUrl(value: unknown) {
     if (url.pathname === '/api/google/drive/preview') return String(url.searchParams.get('id') || '')
   } catch {}
   return ''
+}
+
+export function driveAssetUrl(value: unknown) {
+  const text = String(value || '')
+  if (!text || text.startsWith('data:') || text.startsWith('blob:')) return text
+  const id = driveIdFromAssetUrl(text)
+  return id ? drivePreviewUrl(id) : text
+}
+
+export async function cacheDriveAsset(value: unknown) {
+  if (typeof window === 'undefined' || !('caches' in window)) return
+  const url = driveAssetUrl(value)
+  if (!url || !url.includes('/api/google/drive/preview') || !url.includes('asset=1')) return
+  const cache = await window.caches.open(DRIVE_ASSET_CACHE)
+  if (await cache.match(url)) return
+  const response = await fetch(url, { cache: 'no-store' })
+  if (response.ok && response.status === 200) await cache.put(url, response.clone())
+}
+
+export async function removeDriveAssetCache(value: unknown) {
+  if (typeof window === 'undefined' || !('caches' in window)) return
+  const id = driveIdFromAssetUrl(value)
+  if (!id) return
+  const cache = await window.caches.open(DRIVE_ASSET_CACHE)
+  await Promise.all([
+    cache.delete(drivePreviewUrl(id)),
+    cache.delete(`/api/google/drive/preview?id=${encodeURIComponent(id)}`),
+  ])
 }
 
 export async function uploadDataUrlToDrive(dataUrl: string, fileName: string, mime: string): Promise<DriveAsset> {
@@ -61,5 +91,6 @@ export async function uploadDataUrlToDrive(dataUrl: string, fileName: string, mi
 export async function trashDriveAsset(value: unknown) {
   const id = driveIdFromAssetUrl(value)
   if (!id) return
+  await removeDriveAssetCache(value).catch(() => null)
   await googleDriveRpc('trashDriveItem', [id]).catch(() => null)
 }
