@@ -8,6 +8,13 @@ export type DriveAsset = {
   url?: string
 }
 
+function reconnectGoogle() {
+  if (typeof window === 'undefined') return
+  const returnTo = `${window.location.pathname}${window.location.search}${window.location.hash}`
+  try { window.sessionStorage.setItem('mai-google-return-to', returnTo) } catch {}
+  window.location.assign('/api/google/connect?mode=connect')
+}
+
 async function googleRpc(method: string, args: unknown[] = []) {
   const response = await fetch('/api/google/rpc', {
     method: 'POST',
@@ -15,6 +22,10 @@ async function googleRpc(method: string, args: unknown[] = []) {
     body: JSON.stringify({ method, args }),
   })
   const data = await response.json().catch(() => null)
+  if (response.status === 401 || data?.error === 'GOOGLE_NOT_CONNECTED') {
+    reconnectGoogle()
+    throw new Error('Reconectando sua conta Google…')
+  }
   if (!response.ok) throw new Error(data?.error || 'Não foi possível acessar o Google Drive')
   return data?.payload
 }
