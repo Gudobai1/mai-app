@@ -62,7 +62,7 @@ html body .mai-app-topbar .mai-app-topbar-panel[data-view="finance"] .mai-app-to
   opacity:1!important;
 }
 
-/* Emojis dos botões de navegação do Financeiro. */
+/* Ícones Material Symbols nos botões de navegação do Financeiro. */
 .mai-v3-workspace .mai-v4-finance > .mai-finance-v4-tabs > button{
   gap:6px!important;
 }
@@ -71,14 +71,25 @@ html body .mai-app-topbar .mai-app-topbar-panel[data-view="finance"] .mai-app-to
 }
 .mai-v3-workspace .mai-v4-finance > .mai-finance-v4-tabs > button::before{
   flex:0 0 auto;
-  font-size:13px;
+  font-family:"Material Symbols Rounded";
+  font-size:15px;
   line-height:1;
-  font-family:"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif;
+  font-weight:normal;
+  font-style:normal;
+  letter-spacing:normal;
+  text-transform:none;
+  white-space:nowrap;
+  word-wrap:normal;
+  direction:ltr;
+  -webkit-font-feature-settings:'liga';
+  -webkit-font-smoothing:antialiased;
+  font-feature-settings:'liga';
+  font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 20;
 }
-.mai-v3-workspace .mai-v4-finance > .mai-finance-v4-tabs > button:nth-child(1)::before{content:"📊"}
-.mai-v3-workspace .mai-v4-finance > .mai-finance-v4-tabs > button:nth-child(2)::before{content:"💸"}
-.mai-v3-workspace .mai-v4-finance > .mai-finance-v4-tabs > button:nth-child(3)::before{content:"🏦"}
-.mai-v3-workspace .mai-v4-finance > .mai-finance-v4-tabs > button:nth-child(4)::before{content:"💳"}
-.mai-v3-workspace .mai-v4-finance > .mai-finance-v4-tabs > button:nth-child(5)::before{content:"🐷"}
-.mai-v3-workspace .mai-v4-finance > .mai-finance-v4-tabs > button:nth-child(6)::before{content:"📈"}
-.mai-v3-workspace .mai-v4-finance > .mai-finance-v4-tabs > button:nth-child(7)::before{content:"📑"}
+.mai-v3-workspace .mai-v4-finance > .mai-finance-v4-tabs > button:nth-child(1)::before{content:"dashboard"}
+.mai-v3-workspace .mai-v4-finance > .mai-finance-v4-tabs > button:nth-child(2)::before{content:"receipt_long"}
+.mai-v3-workspace .mai-v4-finance > .mai-finance-v4-tabs > button:nth-child(3)::before{content:"account_balance"}
+.mai-v3-workspace .mai-v4-finance > .mai-finance-v4-tabs > button:nth-child(4)::before{content:"credit_card"}
+.mai-v3-workspace .mai-v4-finance > .mai-finance-v4-tabs > button:nth-child(5)::before{content:"savings"}
+.mai-v3-workspace .mai-v4-finance > .mai-finance-v4-tabs > button:nth-child(6)::before{content:"trending_up"}
+.mai-v3-workspace .mai-v4-finance > .mai-finance-v4-tabs > button:nth-child(7)::before{content:"analytics"}
