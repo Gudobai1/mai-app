@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { drivePreviewUrl, trashDriveAsset, uploadDataUrlToDrive } from './DriveAsset'
 
 type PickerProps = {
   value?: string
@@ -63,8 +64,13 @@ export function FinanceEntityPhotoPicker({ value, fallbackIcon, color, onChange 
     if (!file) return
     setBusy(true)
     setError('')
+    const previous = value || ''
     try {
-      onChange(await compactPhoto(file))
+      const dataUrl = await compactPhoto(file)
+      const safeBase = file.name.replace(/\.[^.]+$/, '').trim().replace(/[^a-zA-Z0-9À-ÿ _-]+/g, '').slice(0, 70) || 'icone'
+      const asset = await uploadDataUrlToDrive(dataUrl, `MAI - ${safeBase}.webp`, 'image/webp')
+      onChange(drivePreviewUrl(asset.idDrive))
+      if (previous) void trashDriveAsset(previous)
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Não foi possível usar esta imagem.')
     } finally {
@@ -72,22 +78,28 @@ export function FinanceEntityPhotoPicker({ value, fallbackIcon, color, onChange 
     }
   }
 
+  async function remove() {
+    const previous = value || ''
+    onChange('')
+    if (previous) await trashDriveAsset(previous)
+  }
+
   return <div className="mai-finance-photo-picker">
     <FinanceEntityIcon photo={value} icon={fallbackIcon} color={color} className="mai-finance-photo-preview" />
     <div className="mai-finance-photo-copy">
       <strong>Foto do ícone</strong>
-      <small>Opcional. A imagem é recortada em quadrado e otimizada automaticamente.</small>
+      <small>Opcional. A imagem é otimizada, salva no Google Drive e o MAI guarda apenas a referência.</small>
       <div className="mai-finance-photo-actions">
         <label data-busy={busy}>
           <span className="material-symbols-rounded">photo_camera</span>
-          {busy ? 'Preparando…' : value ? 'Trocar foto' : 'Escolher foto'}
+          {busy ? 'Enviando…' : value ? 'Trocar foto' : 'Escolher foto'}
           <input type="file" accept="image/*" disabled={busy} onChange={event => {
             const file = event.currentTarget.files?.[0]
             event.currentTarget.value = ''
             void choose(file)
           }} />
         </label>
-        {value ? <button type="button" disabled={busy} onClick={() => onChange('')}>Remover</button> : null}
+        {value ? <button type="button" disabled={busy} onClick={() => void remove()}>Remover</button> : null}
       </div>
       {error ? <small className="mai-finance-photo-error">{error}</small> : null}
     </div>
