@@ -1,5 +1,22 @@
 /* Caixinhas — cards compactos em largura, mas encorpados e quase quadrados. */
 
+/* No Financeiro, o AppTopBar renderiza apenas Filtros + Classificação.
+   Estas regras garantem que nenhuma regra antiga da cascata esconda essas seções. */
+.mai-app-topbar-panel[data-view="finance"] > .mai-app-topbar-panel-section{
+  display:grid!important;
+  visibility:visible!important;
+  opacity:1!important;
+  max-height:none!important;
+  height:auto!important;
+  overflow:visible!important;
+}
+.mai-app-topbar-panel[data-view="finance"] > .mai-app-topbar-panel-section > strong,
+.mai-app-topbar-panel[data-view="finance"] > .mai-app-topbar-panel-section > div{
+  display:block!important;
+  visibility:visible!important;
+  opacity:1!important;
+}
+
 .mai-v4-finance:has(.mai-finance-v4-tabs>button:nth-child(5)[data-active="true"]) .mai-finance-v4-goal-grid{
   display:grid!important;
   grid-template-columns:repeat(auto-fill,minmax(190px,210px))!important;
@@ -17,6 +34,7 @@
   box-sizing:border-box!important;
   display:flex!important;
   flex-direction:column!important;
+  position:relative!important;
   padding:16px!important;
   border-radius:14px!important;
 }
@@ -26,6 +44,7 @@
   grid-template-columns:40px minmax(0,1fr)!important;
   align-items:center!important;
   gap:10px!important;
+  position:static!important;
 }
 
 .mai-v4-finance:has(.mai-finance-v4-tabs>button:nth-child(5)[data-active="true"]) .mai-finance-v4-goal-icon{
@@ -46,14 +65,20 @@
   font-size:9px!important;
 }
 
+/* Valor no centro geométrico do quadrado. */
 .mai-v4-finance:has(.mai-finance-v4-tabs>button:nth-child(5)[data-active="true"]) .mai-finance-v4-goal-main>b{
-  grid-column:1 / -1!important;
-  justify-self:center!important;
-  width:100%!important;
-  margin-top:12px!important;
+  position:absolute!important;
+  left:50%!important;
+  top:50%!important;
+  transform:translate(-50%,-50%)!important;
+  width:max-content!important;
+  max-width:calc(100% - 32px)!important;
+  margin:0!important;
+  padding:0!important;
   text-align:center!important;
   font-size:15px!important;
   line-height:1.15!important;
+  white-space:nowrap!important;
 }
 
 .mai-v4-finance:has(.mai-finance-v4-tabs>button:nth-child(5)[data-active="true"]) .mai-finance-v4-progress{
