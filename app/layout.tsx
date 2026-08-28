@@ -46,6 +46,7 @@ import './mai-autosave.css'
 import './mai-item-attachments.css'
 import './mai-file-preview.css'
 import './mai-dark-mode-v2.css'
+import './mai-finance-options-final.css'
 
 export const metadata: Metadata = {
   title: 'MAI — Meu Sistema',
