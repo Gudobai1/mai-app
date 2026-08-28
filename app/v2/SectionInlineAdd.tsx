@@ -27,6 +27,16 @@ function fromText(value: string): SectionAction | null {
   return null
 }
 
+function financeFromText(value: string): SectionAction | null {
+  const text = normalized(value)
+  if (/lancamento|transacao|movimentacao/.test(text)) return { type: 'finance', label: 'Adicionar lançamento' }
+  if (/\bcontas?\b/.test(text)) return { type: 'finance-account', label: 'Adicionar conta' }
+  if (/cartao|cartoes/.test(text)) return { type: 'finance-card', label: 'Adicionar cartão' }
+  if (/caixinha/.test(text)) return { type: 'finance-box', label: 'Adicionar caixinha' }
+  if (/investimento/.test(text)) return { type: 'finance-investment', label: 'Adicionar investimento' }
+  return null
+}
+
 function fallback(view: AppView, scope?: HTMLElement | null): SectionAction | null {
   const text = String(view)
   if (text === 'completed') return null
@@ -46,6 +56,9 @@ const listSelectors = [
   '.mai-v3-task-list',
   '.mai-v3-simple-list',
   '.mai-v3-finance-rows',
+  '.mai-finance-v4-entity-list',
+  '.mai-finance-v4-card-list',
+  '.mai-finance-v4-goal-grid',
   '.mai-v3-note-list',
   '.mai-v3-file-list',
   '.mai-v3-file-grid',
@@ -75,6 +88,10 @@ function listIn(section: HTMLElement): HTMLElement | null {
 function actionFor(section: HTMLElement, view: AppView): SectionAction | null {
   if (view === 'completed') return null
   const heading = section.querySelector('h2,h3')?.textContent || section.querySelector('header')?.textContent || ''
+  if (view === 'finance') {
+    const financeAction = financeFromText(heading)
+    if (financeAction) return financeAction
+  }
   const byHeading = fromText(heading)
   if (byHeading) return byHeading
 
@@ -132,6 +149,18 @@ export function SectionInlineAdd({ view, onAdd }: Props) {
       button.addEventListener('click', event => {
         event.preventDefault()
         event.stopPropagation()
+
+        // O Financeiro ainda mantém os handlers de criação dentro de cada seção.
+        // A interface pública, porém, usa somente este botão padrão do MAI.
+        if (view === 'finance') {
+          const section = anchor.closest('section')
+          const financeAdd = section?.querySelector<HTMLButtonElement>('.mai-finance-v4-section-head > button')
+          if (financeAdd) {
+            financeAdd.click()
+            return
+          }
+        }
+
         addRef.current(action.type)
       })
       host.appendChild(button)
