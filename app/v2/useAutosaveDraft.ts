@@ -13,6 +13,14 @@ type Options<T> = {
   serialize?: (value: T) => string
 }
 
+const shouldPersistNewItemImmediately = <T,>(value: T) => {
+  if (!value || typeof value !== 'object') return false
+  const record = value as Record<string, unknown>
+  if (record._persisted !== false) return false
+  const label = String(record.nome ?? record.titulo ?? '').trim()
+  return Boolean(label)
+}
+
 export function useAutosaveDraft<T>({ value, enabled = true, delay = 260, identity = '', save, serialize }: Options<T>) {
   const saveRef = useRef(save)
   const baselineRef = useRef('')
@@ -67,6 +75,15 @@ export function useAutosaveDraft<T>({ value, enabled = true, delay = 260, identi
       return
     }
     if (snapshot === baselineRef.current) return
+
+    // Itens novos precisam existir no estado assim que recebem um nome/título válido.
+    // Depois da primeira persistência, o próprio editor marca _persisted=true e
+    // as alterações seguintes voltam ao debounce normal do autosave.
+    if (shouldPersistNewItemImmediately(value)) {
+      baselineRef.current = snapshot
+      void saveRef.current(value)
+      return
+    }
 
     const timer = window.setTimeout(() => {
       baselineRef.current = snapshot
