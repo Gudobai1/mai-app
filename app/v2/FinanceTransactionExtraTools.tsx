@@ -47,8 +47,8 @@ export function FinanceTransactionExtraTools({
   addPayment: () => void
   removePayment: (index: number) => void
   generateInstallments: () => void
-  editFixedOccurrence: () => void
-  ignoreFixed: () => void
+  editFixedOccurrence?: () => void
+  ignoreFixed?: () => void
 }) {
   const payments = rows(draft.pagamentos)
   const hiddenFromHome = draft.ocultar_inicio === true || draft.ocultar_home === true
@@ -62,7 +62,8 @@ export function FinanceTransactionExtraTools({
 
   function appendPayment() {
     const remaining = Math.max(0, Number(draftPayment?.remaining || 0))
-    const amount = paymentAmount.trim() ? Number(paymentAmount.replace(',', '.')) : remaining
+    const normalized = paymentAmount.trim().replace(/\./g, '').replace(',', '.')
+    const amount = paymentAmount.trim() ? Number(normalized) : remaining
     if (!Number.isFinite(amount) || amount <= 0 || amount > remaining + 0.005 || !paymentDate) return
     const nextPayments = [...payments, { id: `pay-${crypto.randomUUID()}`, data: paymentDate, valor: amount, criado_em: new Date().toISOString() }]
     const total = clampMoney(draft.valor)
@@ -99,7 +100,7 @@ export function FinanceTransactionExtraTools({
         <label><span>Início</span><input type="month" value={String(draft.mes_inicio || month).slice(0, 7)} onChange={event => patch({ mes_inicio: event.target.value })}/></label>
         <label><span>Fim opcional</span><input type="month" value={String(draft.mes_fim || '').slice(0, 7)} onChange={event => patch({ mes_fim: event.target.value })}/></label>
         <button type="button" className="mai-finance-tool-switch" data-active={draft.ativo !== false} onClick={() => patch({ ativo: draft.ativo === false })}><MaiIcon name={draft.ativo !== false ? 'toggle_on' : 'toggle_off'} size={20}/><span>{draft.ativo !== false ? 'Ativo' : 'Pausado'}</span></button>
-        {draft._persisted ? <><button type="button" className="mai-finance-tool-action" onClick={editFixedOccurrence}><MaiIcon name="edit_calendar" size={18}/><span>Alterar somente este mês</span></button><button type="button" className="mai-finance-tool-action" onClick={ignoreFixed}><MaiIcon name="event_busy" size={18}/><span>Ignorar neste mês</span></button></> : null}
+        {draft._persisted && editFixedOccurrence && ignoreFixed ? <><button type="button" className="mai-finance-tool-action" onClick={editFixedOccurrence}><MaiIcon name="edit_calendar" size={18}/><span>Alterar somente este mês</span></button><button type="button" className="mai-finance-tool-action" onClick={ignoreFixed}><MaiIcon name="event_busy" size={18}/><span>Ignorar neste mês</span></button></> : null}
       </div>
     </CreateTool> : null}
 
