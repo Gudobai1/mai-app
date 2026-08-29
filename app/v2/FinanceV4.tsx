@@ -5,6 +5,7 @@ import type { MaiState } from '../../lib/v2/state'
 import type { InspectableItem } from './ContextDrawer'
 import { CreateCalendarPicker, CreateNumberEditor, CreateOptionList, CreateTool, createNaturalDate } from './CreateDrawerTools'
 import { FinanceEntityIcon, FinanceEntityPhotoPicker } from './FinanceEntityPhoto'
+import { FinanceTransactionCard } from './FinanceTransactionCard'
 import { ItemAttachments } from './ItemAttachments'
 import { MAI_ENTITY_ICONS, MaiIcon } from './MaiIcons'
 import { useAutosaveDraft } from './useAutosaveDraft'
@@ -415,6 +416,15 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
     commit(stateNow => ({ ...stateNow, finance: { ...stateNow.finance, transactions: rows(stateNow.finance.transactions).map(row => String(row.id) === String(item.id) ? { ...row, status: 'pago', valor_pago: total, pagamentos: payments } : row) } }))
   }
 
+  function setTransactionHomeVisible(item: Row, visible: boolean) {
+    commit(current => {
+      if (item._isFixed) {
+        return { ...current, finance: { ...current.finance, fixed: rows(current.finance.fixed).map(row => String(row.id) === String(item.id) ? { ...row, ocultar_inicio: !visible, ocultar_home: false } : row) } }
+      }
+      return { ...current, finance: { ...current.finance, transactions: rows(current.finance.transactions).map(row => String(row.id) === String(item.id) ? { ...row, ocultar_inicio: !visible, ocultar_home: false } : row) } }
+    })
+  }
+
   function setDraftPaymentStatus(value: string) {
     if (!draft || kind !== 'transaction') return
     if (value === 'pendente') {
@@ -570,16 +580,20 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
   const filteredInvoice = filtersActive ? calculationItems.filter(item => item.tipo !== 'receita' && (String(item.conta_id || '').startsWith('card|') || item.cartao_id)).reduce((sum, item) => sum + clampMoney(item.valor), 0) : monthInvoice
   const recent = filtered.slice(0, 8)
   const catReport = (Object.entries(calculationItems.reduce((map: Record<string, number>, item) => { if (item.tipo !== 'receita') map[item.categoria || 'Sem categoria'] = (map[item.categoria || 'Sem categoria'] || 0) + clampMoney(item.valor); return map }, {})) as [string, number][]).sort((a, b) => b[1] - a[1])
-  const visibleAccounts = originFilter !== 'all' ? accounts.filter(account => String(account.id) === originFilter) : filtersActive ? accounts.filter(account => filtered.some(item => String(item.conta_id || '') === String(account.id))) : accounts
+  const visibleAccounts = accounts
   const visibleCards = cards
   const accountSummary = draft ? originName(draft.conta_id, accounts, cards) : 'Sem origem'
 
-  const transactionRow = (item: Row) => {
-    const incomeItem = item.tipo === 'receita'
-    const currentPayment = paymentState(item)
-    const visibleValue = currentPayment.status === 'parcial' ? currentPayment.remaining : clampMoney(item.valor)
-    return <article key={`${item._isFixed ? 'fix' : 'tx'}-${String(item.id)}`} className="mai-finance-v4-row mai-item-row-v2" data-status={String(item.status || 'pendente')}><button type="button" className="mai-finance-v4-status" data-paid={item.status === 'pago'} data-partial={item.status === 'parcial'} title={item.status === 'pago' ? 'Marcar como pendente' : item.status === 'parcial' ? 'Completar pagamento' : 'Marcar como pago'} onClick={() => togglePaid(item)}>{item.status === 'pago' ? '✓' : item.status === 'parcial' ? '◐' : ''}</button><button type="button" className="mai-finance-v4-row-main" onClick={() => openTransaction(item)}><span className="mai-item-copy-v2"><span className="mai-item-titleline-v2"><strong>{String(item.titulo || 'Lançamento')}</strong></span><span className="mai-item-subline-v2"><span>{naturalDate(dateKey(item.data), today)}</span><span>·</span><span>{item.categoria || 'Sem categoria'}</span>{item.conta_id ? <><span>·</span><span>{originName(item.conta_id, accounts, cards)}</span></> : null}{item.ajuste_fatura ? <><span>·</span><span>Fatura ajustada</span></> : item._isFixed ? <><span>·</span><span>Fixo</span></> : item.lote_id ? <><span>·</span><span>Parcela {item.parcela_numero}/{item.parcelas_total}</span></> : null}</span></span><span className="mai-finance-v4-value" data-income={incomeItem}>{incomeItem ? '+' : '−'} {money.format(visibleValue)}{currentPayment.status === 'parcial' ? <small>restante · total {money.format(clampMoney(item.valor))} · pago {money.format(currentPayment.paid)}</small> : null}</span></button></article>
-  }
+  const transactionRow = (item: Row) => <FinanceTransactionCard
+    key={`${item._isFixed ? 'fix' : 'tx'}-${String(item.id)}`}
+    item={item}
+    accounts={accounts}
+    cards={cards}
+    today={today}
+    onOpen={() => openTransaction(item)}
+    onTogglePaid={() => togglePaid(item)}
+    onSetHomeVisible={visible => setTransactionHomeVisible(item, visible)}
+  />
 
   const tabs: { id: Tab; label: string; icon?: string }[] = [
     { id: 'overview', label: 'Visão geral' }, { id: 'transactions', label: 'Lançamentos' }, { id: 'accounts', label: 'Contas' }, { id: 'cards', label: 'Cartões' }, { id: 'boxes', label: 'Caixinha', icon: 'savings' }, { id: 'investments', label: 'Investimentos', icon: 'trending_up' }, { id: 'reports', label: 'Relatórios' },
