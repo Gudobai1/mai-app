@@ -31,6 +31,11 @@
 .mai-finance-tool-payment-summary{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:4px 10px;padding:7px 8px;border-radius:8px;background:var(--v3-soft,#f4f6f2)}
 .mai-finance-tool-payment-summary span{font-size:8.5px;color:var(--v3-muted)}
 .mai-finance-tool-payment-summary strong{font-size:9.5px;font-weight:670;color:var(--v3-text)}
+.mai-finance-tool-payment-entry{display:grid;grid-template-columns:minmax(90px,.8fr) minmax(130px,1fr) auto;align-items:end;gap:7px}
+.mai-finance-tool-payment-entry>label{min-width:0;display:grid;gap:4px}
+.mai-finance-tool-payment-entry>label>span{font-size:8.5px;font-weight:620;color:var(--v3-muted)}
+.mai-finance-tool-payment-entry input{width:100%;height:34px;box-sizing:border-box;padding:0 8px;border:0;border-radius:8px;outline:0;background:var(--v3-soft,#f4f6f2);color:var(--v3-text);font:inherit;font-size:9.5px}
+.mai-finance-tool-payment-entry>.mai-finance-tool-primary{height:34px;min-height:34px;white-space:nowrap}
 .mai-finance-tool-payment-list{display:grid;gap:2px}
 .mai-finance-tool-payment-list>div{min-height:31px;display:grid;grid-template-columns:minmax(0,1fr) auto 26px;align-items:center;gap:8px;padding:0 3px;border-radius:7px}
 .mai-finance-tool-payment-list>div:hover{background:var(--v3-hover)}
@@ -51,4 +56,6 @@
   .mai-finance-v4-unified-tools{gap:4px!important}
   .mai-finance-tool-grid{grid-template-columns:1fr}
   .mai-finance-tool-grid>button{grid-column:1}
+  .mai-finance-tool-payment-entry{grid-template-columns:1fr 1fr}
+  .mai-finance-tool-payment-entry>.mai-finance-tool-primary{grid-column:1/-1}
 }
