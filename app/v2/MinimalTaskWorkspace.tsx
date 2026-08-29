@@ -24,6 +24,7 @@ type Props = {
 }
 
 type SortMode = 'manual' | 'date' | 'priority' | 'project' | 'name'
+type DropPosition = 'before' | 'after'
 const rows = (value: unknown): Row[] => Array.isArray(value) ? value as Row[] : []
 const dayOf = (task: LegacyTask) => String(task.data_vencimento || '').slice(0, 10)
 const timeOf = (task: LegacyTask) => String(task.data_vencimento || '').includes('T') ? String(task.data_vencimento).slice(11, 16) : ''
@@ -91,6 +92,11 @@ export function MinimalTaskWorkspace(props: Props) {
     ? [...sections.map(section => ({ id: section, label: section, tasks: open.filter(task => String(task.secao || '') === section) })), { id: '', label: sections.length ? 'Sem seção' : 'Tarefas', tasks: open.filter(task => !task.secao || !sections.includes(String(task.secao))) }]
     : [{ id: '', label: 'Tarefas', tasks: open }]
 
+  function normalizedSection(task: LegacyTask) {
+    const value = String(task.secao || '')
+    return projectId && sections.includes(value) ? value : ''
+  }
+
   function savePrefs(patch: Row) {
     commit(current => ({ ...current, configs: { ...current.configs, taskWorkspaces: { ...taskPrefs(current), [scopeKey]: { ...(taskPrefs(current)[scopeKey] || {}), ...patch } } } }))
   }
@@ -112,23 +118,85 @@ export function MinimalTaskWorkspace(props: Props) {
     return <span className="mai-item-inline-tag mai-item-project-tag">{identity.imagem_url ? <img src={String(identity.imagem_url)} alt=""/> : <i style={{ background: String(identity.cor || '#8e968d') }}><MaiIcon name={String(identity.icone || (identity.id === 'entrada' ? 'inbox' : 'folder'))} size={9}/></i>}<span>{String(identity.nome || 'Entrada')}</span></span>
   }
 
-  function reorder(sourceId: string, targetId: string, targetSection?: string) {
+  function reorderInbox(sourceId: string, targetId: string, position: DropPosition) {
     if (!sourceId || !targetId || sourceId === targetId) return
     commit(current => {
-      const next = [...current.tasks]
-      const source = next.findIndex(task => task.id === sourceId)
-      const target = next.findIndex(task => task.id === targetId)
-      if (source < 0 || target < 0) return current
-      const [moved] = next.splice(source, 1)
-      const updated = { ...moved, secao: projectId ? targetSection ?? moved.secao : '' }
-      next.splice(target, 0, updated)
-      return { ...current, tasks: next.map((task, index) => ({ ...task, ordem: index })) }
+      const scoped = current.tasks
+        .filter(task => standaloneTask(task) && !task.concluida && String(task.projeto_id || 'entrada') === 'entrada')
+        .sort((a, b) => Number(a.ordem || 0) - Number(b.ordem || 0))
+        .map(task => String(task.id))
+      const sourceIndex = scoped.indexOf(sourceId)
+      if (sourceIndex < 0) return current
+      scoped.splice(sourceIndex, 1)
+      let targetIndex = scoped.indexOf(targetId)
+      if (targetIndex < 0) return current
+      if (position === 'after') targetIndex += 1
+      scoped.splice(targetIndex, 0, sourceId)
+      const rank = new Map(scoped.map((id, index) => [id, index]))
+      return { ...current, tasks: current.tasks.map(task => rank.has(String(task.id)) ? { ...task, ordem: rank.get(String(task.id))! } : task) }
     })
   }
 
-  function moveToSection(taskId: string, section: string) {
-    commit(current => ({ ...current, tasks: current.tasks.map(task => task.id === taskId ? { ...task, secao: section, ordem: Date.now() } : task) }))
+  function moveTaskToSection(sourceId: string, targetSection: string, targetId?: string, position: DropPosition = 'after') {
+    if (!sourceId || !projectId) return
+    const validSection = sections.includes(targetSection) ? targetSection : ''
+    commit(current => {
+      const sourceTask = current.tasks.find(task => String(task.id) === sourceId)
+      if (!sourceTask) return current
+
+      const targetTasks = current.tasks
+        .filter(task => standaloneTask(task)
+          && !task.concluida
+          && String(task.projeto_id || '') === projectId
+          && String(task.id) !== sourceId
+          && (sections.includes(String(task.secao || '')) ? String(task.secao || '') : '') === validSection)
+        .sort((a, b) => Number(a.ordem || 0) - Number(b.ordem || 0))
+        .map(task => String(task.id))
+
+      let insertIndex = targetId ? targetTasks.indexOf(targetId) : -1
+      if (insertIndex < 0) insertIndex = targetTasks.length
+      else if (position === 'after') insertIndex += 1
+      targetTasks.splice(insertIndex, 0, sourceId)
+
+      const rank = new Map(targetTasks.map((id, index) => [id, index]))
+      const baseOrder = Date.now()
+      return {
+        ...current,
+        tasks: current.tasks.map(task => {
+          const id = String(task.id)
+          if (id === sourceId) return { ...task, secao: validSection, ordem: baseOrder + (rank.get(id) || 0) }
+          if (rank.has(id)) return { ...task, ordem: baseOrder + rank.get(id)! }
+          return task
+        }),
+      }
+    })
     setRowMenu('')
+  }
+
+  function moveToSection(taskId: string, section: string) {
+    moveTaskToSection(taskId, section)
+  }
+
+  function dropOnTask(event: React.DragEvent<HTMLElement>, task: LegacyTask, groupId: string) {
+    event.preventDefault()
+    event.stopPropagation()
+    if (!dragId || dragId === String(task.id)) {
+      setDragId('')
+      return
+    }
+
+    const rect = event.currentTarget.getBoundingClientRect()
+    const position: DropPosition = event.clientY < rect.top + rect.height / 2 ? 'before' : 'after'
+
+    if (projectId) {
+      const sourceTask = state.tasks.find(item => String(item.id) === dragId)
+      if (!sourceTask) return
+      const sectionChanged = normalizedSection(sourceTask) !== groupId
+      if (sectionChanged || sortMode === 'manual') moveTaskToSection(dragId, groupId, String(task.id), position)
+    } else if (sortMode === 'manual') {
+      reorderInbox(dragId, String(task.id), position)
+    }
+    setDragId('')
   }
 
   function applySort(mode: SortMode) {
@@ -153,7 +221,8 @@ export function MinimalTaskWorkspace(props: Props) {
 
   const renderTask = (task:LegacyTask, completedTask=false, groupId='') => {
     const identity = projectIdentity(task.projeto_id)
-    return <SelectableTaskRow className="mai-v3-task-row mai-item-row-v2" taskId={String(task.id)} onOpen={() => inspectTask(task)} data-selected={selectedId === task.id} key={`${completedTask?'done-':''}${task.id}`} draggable={!completedTask && sortMode === 'manual'} onDragStart={() => setDragId(task.id)} onDragEnd={() => setDragId('')} onDragOver={event => event.preventDefault()} onDrop={event => { event.stopPropagation(); if (sortMode === 'manual') reorder(dragId, task.id, groupId); setDragId('') }}>
+    const canDrag = !completedTask && (Boolean(projectId) || sortMode === 'manual')
+    return <SelectableTaskRow className="mai-v3-task-row mai-item-row-v2" taskId={String(task.id)} onOpen={() => inspectTask(task)} data-selected={selectedId === task.id} key={`${completedTask?'done-':''}${task.id}`} draggable={canDrag} onDragStart={event => { setDragId(String(task.id)); event.dataTransfer.effectAllowed = 'move'; event.dataTransfer.setData('text/plain', String(task.id)) }} onDragEnd={() => setDragId('')} onDragOver={event => { if (canDrag) { event.preventDefault(); event.dataTransfer.dropEffect = 'move' } }} onDrop={event => dropOnTask(event, task, groupId)}>
       <button className="mai-v3-task-check" data-completed={completedTask||undefined} data-priority={completedTask?undefined:Number(task.prioridade||4)} aria-label={completedTask?`Reabrir ${task.titulo}`:`Concluir ${task.titulo}`} style={completedTask?undefined:{ borderColor: priorityColor(task.prioridade) }} onClick={event => { event.stopPropagation(); toggle(task) }}>{completedTask?'✓':''}</button>
       <span className="mai-item-copy-v2"><span className="mai-item-titleline-v2"><strong>{task.titulo}</strong></span><span className="mai-item-subline-v2"><span>{naturalDate(dayOf(task), today)}</span><span>·</span>{projectBadge(identity)}</span></span>
       {!completedTask?<><button className="mai-v3-task-more" aria-label={`Opções de ${task.titulo}`} onClick={event => { event.stopPropagation(); setRowMenu(current => current === task.id ? '' : task.id) }}>•••</button>{rowMenu === task.id ? <div className="mai-v3-task-row-menu" onClick={event=>event.stopPropagation()}><button onClick={() => { setRowMenu(''); inspectTask(task) }}>Editar</button>{projectId && sections.length ? <><span>Mover para</span>{sections.map(section => <button key={section} onClick={() => moveToSection(task.id, section)}>{section}</button>)}<button onClick={() => moveToSection(task.id, '')}>Sem seção</button></> : null}</div> : null}</>:null}
@@ -161,7 +230,7 @@ export function MinimalTaskWorkspace(props: Props) {
   }
 
   const taskLists = <>
-    <div className="mai-v3-project-sections">{sectionGroups.map(group => <section key={group.id || 'none'} onDragOver={event => event.preventDefault()} onDrop={() => { if (sortMode === 'manual' && dragId && group.tasks.length === 0) moveToSection(dragId, group.id) }}>
+    <div className="mai-v3-project-sections">{sectionGroups.map(group => <section key={group.id || 'none'} onDragOver={event => { if (dragId && projectId) { event.preventDefault(); event.dataTransfer.dropEffect = 'move' } }} onDrop={event => { event.preventDefault(); if (projectId && dragId) moveTaskToSection(dragId, group.id); setDragId('') }}>
       <h2>{group.label}</h2>
       <div className="mai-v3-task-list">{group.tasks.map(task => renderTask(task,false,group.id))}{!group.tasks.length ? <div className="mai-v3-empty-line">Nenhuma tarefa nesta seção.</div> : null}</div>
     </section>)}</div>
