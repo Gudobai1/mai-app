@@ -1,0 +1,202 @@
+/* MAI — seleção de tarefas e reordenação de subtarefas */
+
+.mai-item-row-v2[data-batch-selected="true"]{
+  position:relative!important;
+  background:color-mix(in srgb,var(--v3-accent,#60765a) 11%,transparent)!important;
+  box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--v3-accent,#60765a) 54%,transparent)!important;
+}
+
+.mai-item-row-v2[data-batch-selected="true"]:hover{
+  background:color-mix(in srgb,var(--v3-accent,#60765a) 15%,transparent)!important;
+}
+
+.mai-task-selection-bar{
+  position:sticky;
+  top:8px;
+  z-index:40;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  margin:0 0 12px;
+  padding:8px 10px;
+  border:1px solid var(--v3-line,#dde2dc);
+  border-radius:12px;
+  background:color-mix(in srgb,var(--v3-card,#fff) 94%,transparent);
+  box-shadow:0 8px 28px rgba(23,31,24,.08);
+  backdrop-filter:blur(14px);
+}
+
+.mai-task-selection-summary{
+  min-width:0;
+  display:flex;
+  align-items:center;
+  gap:7px;
+  color:var(--v3-text,#253026);
+}
+
+.mai-task-selection-summary>.material-symbols-rounded{
+  color:var(--v3-accent,#60765a);
+  font-size:18px;
+}
+
+.mai-task-selection-summary strong{
+  white-space:nowrap;
+  font-size:12px;
+  font-weight:700;
+}
+
+.mai-task-selection-summary small{
+  color:var(--v3-muted,#7b8379);
+  white-space:nowrap;
+  font-size:10px;
+}
+
+.mai-task-selection-actions{
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  gap:5px;
+  flex-wrap:wrap;
+}
+
+.mai-task-selection-actions>button,
+.mai-task-selection-select{
+  min-height:32px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:5px;
+  padding:0 9px;
+  border:1px solid var(--v3-line,#dde2dc);
+  border-radius:8px;
+  background:var(--v3-card,#fff);
+  color:var(--v3-text,#253026);
+  font:inherit;
+  font-size:11px;
+  font-weight:600;
+  cursor:pointer;
+}
+
+.mai-task-selection-actions>button:hover,
+.mai-task-selection-select:hover{
+  background:var(--v3-hover,#f2f4f1);
+}
+
+.mai-task-selection-select{
+  padding-right:5px;
+}
+
+.mai-task-selection-select>.material-symbols-rounded{
+  color:var(--v3-muted,#7b8379);
+  font-size:16px;
+}
+
+.mai-task-selection-select select{
+  min-width:74px;
+  max-width:145px;
+  height:30px;
+  padding:0 19px 0 0;
+  border:0;
+  outline:0;
+  background:transparent;
+  color:inherit;
+  font:inherit;
+  font-size:11px;
+  font-weight:600;
+  cursor:pointer;
+}
+
+.mai-task-selection-actions>.mai-task-selection-danger{
+  color:#a94e47;
+}
+
+.mai-task-selection-actions>.mai-task-selection-close{
+  width:32px;
+  padding:0;
+}
+
+.mai-sortable-subtask{
+  grid-template-columns:22px 22px minmax(0,1fr) 16px!important;
+  gap:7px!important;
+  align-items:center!important;
+  transition:background .14s ease,box-shadow .14s ease,transform .14s ease!important;
+}
+
+.mai-subtask-drag-handle{
+  width:22px;
+  height:30px;
+  min-width:22px;
+  display:grid;
+  place-items:center;
+  padding:0;
+  border:0;
+  border-radius:6px;
+  background:transparent;
+  color:var(--v3-muted,#7b8379);
+  cursor:grab;
+  touch-action:none;
+  user-select:none;
+  -webkit-user-select:none;
+}
+
+.mai-subtask-drag-handle:hover{
+  background:var(--v3-hover,#f2f4f1);
+  color:var(--v3-text,#253026);
+}
+
+.mai-subtask-drag-handle:active{
+  cursor:grabbing;
+}
+
+.mai-subtask-drag-handle>.material-symbols-rounded{
+  font-size:18px;
+}
+
+.mai-sortable-subtask[data-subtask-dragging="true"]{
+  opacity:.55;
+  transform:scale(.99);
+}
+
+.mai-sortable-subtask[data-subtask-over="true"]{
+  background:color-mix(in srgb,var(--v3-accent,#60765a) 10%,transparent)!important;
+  box-shadow:inset 0 2px 0 color-mix(in srgb,var(--v3-accent,#60765a) 72%,transparent)!important;
+}
+
+@media(max-width:760px){
+  .mai-task-selection-bar{
+    position:fixed;
+    left:10px;
+    right:10px;
+    top:auto;
+    bottom:calc(72px + env(safe-area-inset-bottom,0px));
+    z-index:180;
+    display:grid;
+    grid-template-columns:minmax(0,1fr);
+    gap:7px;
+    margin:0;
+    padding:9px;
+    border-radius:14px;
+    box-shadow:0 12px 36px rgba(23,31,24,.18);
+  }
+
+  .mai-task-selection-summary{
+    justify-content:space-between;
+  }
+
+  .mai-task-selection-summary small{
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+
+  .mai-task-selection-actions{
+    justify-content:flex-start;
+    flex-wrap:nowrap;
+    overflow-x:auto;
+    scrollbar-width:none;
+  }
+
+  .mai-task-selection-actions::-webkit-scrollbar{display:none}
+  .mai-task-selection-actions>button,
+  .mai-task-selection-select{flex:0 0 auto}
+}
