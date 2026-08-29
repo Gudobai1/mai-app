@@ -137,12 +137,13 @@ function normalizeTransactionPaymentState(value: unknown) {
   const payments = normalizePayments(item.pagamentos)
   if (!payments.length) return { ...item, pagamentos: [] }
   const total = moneyValue(item.valor)
+  if (!total) return { ...item, pagamentos: payments }
   const paid = Math.min(total, payments.reduce((sum, payment) => sum + payment.valor, 0))
   return {
     ...item,
     pagamentos: payments,
     valor_pago: paid,
-    status: total > 0 && paid >= total ? 'pago' : paid > 0 ? 'parcial' : 'pendente',
+    status: paid >= total ? 'pago' : paid > 0 ? 'parcial' : 'pendente',
   }
 }
 
