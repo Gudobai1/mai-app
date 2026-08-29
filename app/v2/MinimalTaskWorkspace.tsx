@@ -5,6 +5,7 @@ import type { LegacyTask, MaiState } from '../../lib/v2/state'
 import type { AppView, Row } from './app-types'
 import type { InspectableItem } from './ContextDrawer'
 import { MaiIcon } from './MaiIcons'
+import { SelectableTaskRow } from './TaskSelection'
 import { UnifiedTasks, type TaskWorkspaceView } from './UnifiedTasks'
 
 type Props = {
@@ -152,11 +153,11 @@ export function MinimalTaskWorkspace(props: Props) {
 
   const renderTask = (task:LegacyTask, completedTask=false, groupId='') => {
     const identity = projectIdentity(task.projeto_id)
-    return <article className="mai-v3-task-row mai-item-row-v2" data-selected={selectedId === task.id} key={`${completedTask?'done-':''}${task.id}`} draggable={!completedTask && sortMode === 'manual'} onClick={() => inspectTask(task)} onDragStart={() => setDragId(task.id)} onDragEnd={() => setDragId('')} onDragOver={event => event.preventDefault()} onDrop={event => { event.stopPropagation(); if (sortMode === 'manual') reorder(dragId, task.id, groupId); setDragId('') }}>
+    return <SelectableTaskRow className="mai-v3-task-row mai-item-row-v2" taskId={String(task.id)} onOpen={() => inspectTask(task)} data-selected={selectedId === task.id} key={`${completedTask?'done-':''}${task.id}`} draggable={!completedTask && sortMode === 'manual'} onDragStart={() => setDragId(task.id)} onDragEnd={() => setDragId('')} onDragOver={event => event.preventDefault()} onDrop={event => { event.stopPropagation(); if (sortMode === 'manual') reorder(dragId, task.id, groupId); setDragId('') }}>
       <button className="mai-v3-task-check" data-completed={completedTask||undefined} data-priority={completedTask?undefined:Number(task.prioridade||4)} aria-label={completedTask?`Reabrir ${task.titulo}`:`Concluir ${task.titulo}`} style={completedTask?undefined:{ borderColor: priorityColor(task.prioridade) }} onClick={event => { event.stopPropagation(); toggle(task) }}>{completedTask?'✓':''}</button>
       <span className="mai-item-copy-v2"><span className="mai-item-titleline-v2"><strong>{task.titulo}</strong></span><span className="mai-item-subline-v2"><span>{naturalDate(dayOf(task), today)}</span><span>·</span>{projectBadge(identity)}</span></span>
       {!completedTask?<><button className="mai-v3-task-more" aria-label={`Opções de ${task.titulo}`} onClick={event => { event.stopPropagation(); setRowMenu(current => current === task.id ? '' : task.id) }}>•••</button>{rowMenu === task.id ? <div className="mai-v3-task-row-menu" onClick={event=>event.stopPropagation()}><button onClick={() => { setRowMenu(''); inspectTask(task) }}>Editar</button>{projectId && sections.length ? <><span>Mover para</span>{sections.map(section => <button key={section} onClick={() => moveToSection(task.id, section)}>{section}</button>)}<button onClick={() => moveToSection(task.id, '')}>Sem seção</button></> : null}</div> : null}</>:null}
-    </article>
+    </SelectableTaskRow>
   }
 
   const taskLists = <>
