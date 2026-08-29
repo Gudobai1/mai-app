@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { cacheDriveAsset, driveAssetUrl, drivePreviewUrl, trashDriveAsset, uploadDataUrlToDrive } from './DriveAsset'
+import { MaiIcon } from './MaiIcons'
 
 type PickerProps = {
   value?: string
@@ -53,7 +54,7 @@ async function compactPhoto(file: File): Promise<string> {
 export function FinanceEntityIcon({ photo, icon, color, className = '' }: IconProps) {
   const photoUrl = driveAssetUrl(photo)
   return <span className={`mai-finance-entity-icon ${photoUrl ? 'has-photo' : ''} ${className}`.trim()} style={{ '--finance-entity-color': color || 'var(--v3-accent)' } as React.CSSProperties}>
-    {photoUrl ? <img src={photoUrl} alt="" /> : <span className="material-symbols-rounded">{icon}</span>}
+    {photoUrl ? <img src={photoUrl} alt="" /> : <MaiIcon name={icon} size={20} />}
   </span>
 }
 
@@ -91,10 +92,10 @@ export function FinanceEntityPhotoPicker({ value, fallbackIcon, color, onChange 
     <FinanceEntityIcon photo={value} icon={fallbackIcon} color={color} className="mai-finance-photo-preview" />
     <div className="mai-finance-photo-copy">
       <strong>Foto do ícone</strong>
-      <small>Opcional. O arquivo fica no Google Drive, a referência no MAI e uma cópia visual fica no cache do aplicativo para abrir instantaneamente.</small>
+      <small>Opcional. O arquivo fica no Google Drive; no MAI fica somente a referência. Ícones do sistema não são arquivos e sincronizam junto com o estado.</small>
       <div className="mai-finance-photo-actions">
         <label data-busy={busy}>
-          <span className="material-symbols-rounded">photo_camera</span>
+          <MaiIcon name="photo_camera" size={18} />
           {busy ? 'Enviando…' : value ? 'Trocar foto' : 'Escolher foto'}
           <input type="file" accept="image/*" disabled={busy} onChange={event => {
             const file = event.currentTarget.files?.[0]
