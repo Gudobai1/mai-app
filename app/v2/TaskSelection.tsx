@@ -34,6 +34,7 @@ type SelectionContextValue = {
 
 const TaskSelectionContext = createContext<SelectionContextValue | null>(null)
 
+const rows = (value: unknown): Row[] => Array.isArray(value) ? value as Row[] : []
 const dayOf = (task: LegacyTask) => String(task.data_vencimento || '').slice(0, 10)
 const timeOf = (task: LegacyTask) => String(task.data_vencimento || '').includes('T') ? String(task.data_vencimento).slice(11, 16) : ''
 
@@ -178,7 +179,7 @@ export function TaskSelectionBar({ state }: { state: MaiState }) {
   const selection = useTaskSelection()
   if (!selection.selectedTasks.length) return null
 
-  const projects = (Array.isArray(state.projects) ? state.projects : [])
+  const projects = rows(state.projects)
     .filter(project => project.ativo !== false)
     .sort((a, b) => Number(Boolean(b.favorito)) - Number(Boolean(a.favorito)) || Number(a.ordem || 0) - Number(b.ordem || 0) || String(a.nome || '').localeCompare(String(b.nome || ''), 'pt-BR', { sensitivity: 'base' }))
 
