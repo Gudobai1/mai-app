@@ -43,6 +43,7 @@ export type MaiState = {
 const NEW_TODAY_SECTIONS = ['summary', 'flow', 'goals', 'notes', 'health']
 const TODAY_BLOCKS = ['habits', 'goals', 'notes', 'finance', 'health']
 const DEFAULT_SIDE = ['habits', 'goals', 'notes', 'finance', 'health']
+const ICON_SYSTEM = 'material-symbols-rounded-v1'
 
 export function dateKey(date = new Date()) {
   const year = date.getFullYear()
@@ -59,6 +60,7 @@ export function emptyState(): MaiState {
       calendarios: [],
       theme: 'light',
       accentPalette: 'sage',
+      iconSystem: ICON_SYSTEM,
       lastView: 'home',
       taskModuleScope: 'entrada',
       sidebarProjectsOpen: true,
@@ -114,6 +116,37 @@ function normalizeSideBlocks(value: unknown) {
   return [...new Set(migrated)]
 }
 
+function moneyValue(value: unknown) {
+  const amount = Number(value || 0)
+  return Number.isFinite(amount) ? Math.max(0, amount) : 0
+}
+
+function normalizePayments(value: unknown) {
+  return stateRows(value)
+    .filter(item => item && typeof item === 'object')
+    .map(item => {
+      const payment = item as Record<string, unknown>
+      return { ...payment, valor: moneyValue(payment.valor) }
+    })
+    .filter(item => item.valor > 0)
+}
+
+function normalizeTransactionPaymentState(value: unknown) {
+  if (!value || typeof value !== 'object') return value
+  const item = value as Record<string, unknown>
+  const payments = normalizePayments(item.pagamentos)
+  if (!payments.length) return { ...item, pagamentos: [] }
+  const total = moneyValue(item.valor)
+  if (!total) return { ...item, pagamentos: payments }
+  const paid = Math.min(total, payments.reduce((sum, payment) => sum + payment.valor, 0))
+  return {
+    ...item,
+    pagamentos: payments,
+    valor_pago: paid,
+    status: paid >= total ? 'pago' : paid > 0 ? 'parcial' : 'pendente',
+  }
+}
+
 export function normalizeState(value: unknown): MaiState {
   const saved = value && typeof value === 'object' ? value as Partial<MaiState> : {}
   const fallback = emptyState()
@@ -131,6 +164,7 @@ export function normalizeState(value: unknown): MaiState {
       ...fallback.configs,
       ...(saved.configs || {}),
       calendarios: stateRows(saved.configs?.calendarios).map(String),
+      iconSystem: ICON_SYSTEM,
       todaySections: legacySections,
       todayMainSections: [],
       todaySideSections: sideSections,
@@ -151,12 +185,12 @@ export function normalizeState(value: unknown): MaiState {
     finance: {
       ...fallback.finance,
       ...finance,
-      transactions: stateRows(finance.transactions),
+      transactions: stateRows(finance.transactions).map(normalizeTransactionPaymentState),
       categories: stateRows(finance.categories),
       accounts: stateRows(finance.accounts),
       cards: stateRows(finance.cards),
       fixed: stateRows(finance.fixed),
-      fixedOccurrences: stateRows(finance.fixedOccurrences),
+      fixedOccurrences: stateRows(finance.fixedOccurrences).map(normalizeTransactionPaymentState),
       boxes: stateRows(finance.boxes),
       investments: stateRows(finance.investments),
     },
