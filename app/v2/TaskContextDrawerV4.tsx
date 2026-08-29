@@ -4,6 +4,7 @@ import { CSSProperties, ReactNode, useEffect, useMemo, useRef, useState } from '
 import type { MaiState } from '../../lib/v2/state'
 import type { InspectableItem } from './ContextDrawer'
 import { MaiIcon } from './MaiIcons'
+import { TaskSubtaskSortableV4 } from './TaskSubtaskSortableV4'
 import { useAutosaveDraft } from './useAutosaveDraft'
 
 type Row = Record<string, any>
@@ -267,11 +268,7 @@ export function TaskContextDrawerV4({ item, state, today, commit, onClose }: Pro
 
           <section className="mai-task-v4-section mai-task-v4-subtasks">
             <header><strong>Subtarefas</strong><small>{directChildren.filter(child => child.concluida).length}/{directChildren.length}</small></header>
-            <div className="mai-task-v4-subtask-list">{directChildren.map(child => <div className="mai-task-v4-subtask" key={String(child.id)}>
-              <button type="button" className="mai-task-v4-subtask-check" data-done={child.concluida === true || undefined} style={!child.concluida ? { borderColor: priorityColor(child.prioridade) } : undefined} onClick={() => toggleSubtask(String(child.id))}>{child.concluida ? '✓' : ''}</button>
-              <button type="button" className="mai-task-v4-subtask-main" onClick={() => setFocusId(String(child.id))}><strong>{child.titulo}</strong><small>{dateOnly(child.data_vencimento) ? formatDate(dateOnly(child.data_vencimento)) : 'Dentro desta tarefa'}</small></button>
-              <MaiIcon name="chevron" size={13}/>
-            </div>)}</div>
+            <TaskSubtaskSortableV4 parentId={activeId} tasks={directChildren} commit={commit} onToggle={toggleSubtask} onOpen={setFocusId}/>
             <div className="mai-task-v4-subtask-add"><span className="material-symbols-rounded">add</span><input value={subtaskTitle} placeholder="Adicionar subtarefa" onChange={event => setSubtaskTitle(event.target.value)} onKeyDown={event => { if (event.key === 'Enter') { event.preventDefault(); addSubtask() } }}/><button type="button" onClick={addSubtask}>Adicionar</button></div>
           </section>
 
