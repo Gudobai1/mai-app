@@ -1,30 +1,50 @@
-/* Configuração financeira: os cartões ficam limpos e as opções aparecem por ícones discretos. */
+/* Financeiro segue o mesmo padrão do editor do app: título, descrição e ferramentas por ícones. */
 
-.mai-v4-card-config-button{width:30px;height:30px;display:grid!important;place-items:center!important;padding:0!important;border:0!important;border-radius:8px!important;background:transparent!important;color:var(--v3-muted)!important;cursor:pointer!important;line-height:1!important}
-.mai-v4-card-config-button:hover,.mai-v4-card-config-button:focus-visible{background:var(--v3-hover)!important;color:var(--v3-text)!important;outline:0}
-.mai-v4-card-config-popover{position:absolute;z-index:90;top:34px;right:0;width:min(270px,calc(100vw - 32px));max-height:min(390px,60vh);overflow:auto;display:grid;gap:3px;padding:8px;border:1px solid var(--v3-line);border-radius:11px;background:var(--v3-card);box-shadow:0 14px 34px rgba(0,0,0,.12);text-align:left}
-.mai-v4-card-config-popover>strong{display:block;padding:4px 6px 6px;font-size:10px;font-weight:680;color:var(--v3-text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.mai-v4-card-config-popover>small{display:block;padding:0 6px 5px;font-size:8.5px;line-height:1.35;color:var(--v3-muted)}
-.mai-v4-card-config-popover>.mai-v4-card-config-subtitle{margin-top:5px;padding-top:8px;border-top:1px solid var(--v3-line);font-weight:650}
-.mai-v4-card-config-popover>button{min-height:34px;width:100%;display:grid;grid-template-columns:20px minmax(0,1fr);align-items:center;gap:7px;padding:5px 7px;border:0;border-radius:8px;background:transparent;color:var(--v3-text);font:inherit;font-size:9.5px;text-align:left;cursor:pointer}
-.mai-v4-card-config-popover>button:hover{background:var(--v3-hover)}
-.mai-v4-card-config-popover>button>span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-
-/* O mesmo cartão de lançamento é usado no Financeiro e na tela inicial. */
 .mai-finance-v4-row{position:relative}
-.mai-finance-v4-row-config{position:relative;display:grid;place-items:center}
-.mai-finance-v4-row-config>.mai-v4-card-config-button{opacity:.22;transition:opacity .12s ease}
-.mai-finance-v4-row:hover .mai-finance-v4-row-config>.mai-v4-card-config-button,.mai-finance-v4-row-config>.mai-v4-card-config-button:focus-visible{opacity:1}
 
-/* Cartões de entidades mantêm o affordance visual mínimo já usado pelo sistema. */
+/* Nenhum affordance artificial é desenhado por fora dos cartões. */
 .mai-finance-v4-entity-row,.mai-finance-v4-goal-card{position:relative}
 .mai-finance-v4-entity-identity,.mai-finance-v4-goal-main{position:relative}
-.mai-finance-v4-entity-identity{padding-right:36px!important}
-.mai-finance-v4-goal-main{padding-right:42px!important}
-.mai-finance-v4-entity-identity::after,.mai-finance-v4-goal-main::after{content:'tune';position:absolute;right:5px;top:50%;width:28px;height:28px;display:grid;place-items:center;transform:translateY(-50%);border-radius:8px;font-family:'Material Symbols Rounded';font-size:17px;font-weight:400;font-style:normal;line-height:1;color:var(--v3-muted);opacity:.18;transition:opacity .12s ease,background .12s ease,color .12s ease}
-.mai-finance-v4-entity-row:hover .mai-finance-v4-entity-identity::after,.mai-finance-v4-goal-card:hover .mai-finance-v4-goal-main::after,.mai-finance-v4-entity-identity:focus-visible::after,.mai-finance-v4-goal-main:focus-visible::after{opacity:1;background:var(--v3-hover);color:var(--v3-text)}
+.mai-finance-v4-entity-identity{padding-right:0!important}
+.mai-finance-v4-goal-main{padding-right:0!important}
+.mai-finance-v4-entity-identity::after,.mai-finance-v4-goal-main::after{content:none!important}
 
-/* Ações auxiliares continuam no cartão, mas sem botões textuais pesados. */
+/* A fileira do lançamento aceita todas as ferramentas sem criar uma segunda linguagem visual. */
+.mai-finance-v4-unified-tools{display:flex!important;align-items:center!important;flex-wrap:wrap!important;gap:5px!important;overflow:visible!important}
+.mai-finance-v4-unified-tools>.mai-task-v4-tool{flex:0 0 auto;min-width:0}
+
+/* Conteúdo aberto ao clicar nos ícones extras. */
+.mai-finance-tool-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.mai-finance-tool-grid>label{display:grid;gap:4px;min-width:0}
+.mai-finance-tool-grid>label>span{font-size:8.5px;font-weight:620;color:var(--v3-muted)}
+.mai-finance-tool-grid input,.mai-finance-tool-grid select{width:100%;height:34px;box-sizing:border-box;padding:0 8px;border:0;border-radius:8px;outline:0;background:var(--v3-soft,#f4f6f2);color:var(--v3-text);font:inherit;font-size:9.5px}
+.mai-finance-tool-grid>button{grid-column:1/-1}
+.mai-finance-tool-switch,.mai-finance-tool-action,.mai-finance-tool-primary{min-height:34px;display:flex;align-items:center;gap:7px;padding:6px 8px;border:0;border-radius:8px;background:transparent;color:var(--v3-text);font:inherit;font-size:9.5px;text-align:left;cursor:pointer}
+.mai-finance-tool-switch:hover,.mai-finance-tool-action:hover{background:var(--v3-hover)}
+.mai-finance-tool-switch[data-active="true"]{color:var(--v3-accent-strong,#52684e)}
+.mai-finance-tool-primary{justify-content:center;background:var(--v3-soft,#f4f6f2);font-weight:650}
+.mai-finance-tool-primary:hover{background:var(--v3-hover)}
+.mai-finance-tool-primary:disabled{opacity:.45;cursor:default}
+.mai-finance-tool-note{display:flex;align-items:center;gap:8px;padding:8px;color:var(--v3-muted);font-size:9px;line-height:1.4}
+
+.mai-finance-tool-payments{display:grid;gap:8px}
+.mai-finance-tool-payment-summary{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:4px 10px;padding:7px 8px;border-radius:8px;background:var(--v3-soft,#f4f6f2)}
+.mai-finance-tool-payment-summary span{font-size:8.5px;color:var(--v3-muted)}
+.mai-finance-tool-payment-summary strong{font-size:9.5px;font-weight:670;color:var(--v3-text)}
+.mai-finance-tool-payment-entry{display:grid;grid-template-columns:minmax(90px,.8fr) minmax(130px,1fr) auto;align-items:end;gap:7px}
+.mai-finance-tool-payment-entry>label{min-width:0;display:grid;gap:4px}
+.mai-finance-tool-payment-entry>label>span{font-size:8.5px;font-weight:620;color:var(--v3-muted)}
+.mai-finance-tool-payment-entry input{width:100%;height:34px;box-sizing:border-box;padding:0 8px;border:0;border-radius:8px;outline:0;background:var(--v3-soft,#f4f6f2);color:var(--v3-text);font:inherit;font-size:9.5px}
+.mai-finance-tool-payment-entry>.mai-finance-tool-primary{height:34px;min-height:34px;white-space:nowrap}
+.mai-finance-tool-payment-list{display:grid;gap:2px}
+.mai-finance-tool-payment-list>div{min-height:31px;display:grid;grid-template-columns:minmax(0,1fr) auto 26px;align-items:center;gap:8px;padding:0 3px;border-radius:7px}
+.mai-finance-tool-payment-list>div:hover{background:var(--v3-hover)}
+.mai-finance-tool-payment-list span,.mai-finance-tool-payment-list strong{font-size:9px}
+.mai-finance-tool-payment-list button{width:24px;height:24px;display:grid;place-items:center;padding:0;border:0;border-radius:7px;background:transparent;color:var(--v3-muted);cursor:pointer}
+.mai-finance-tool-payment-list button:hover{background:var(--v3-soft)}
+.mai-finance-tool-payment-list>small{padding:6px 3px;font-size:8.5px;color:var(--v3-muted)}
+
+/* Ações auxiliares de contas/cartões permanecem discretas dentro do próprio cartão. */
 .mai-finance-v4-row-action{width:30px!important;height:30px!important;min-width:30px!important;min-height:30px!important;display:grid!important;place-items:center!important;padding:0!important;border:0!important;border-radius:8px!important;background:transparent!important;color:var(--v3-muted)!important;cursor:pointer!important}
 .mai-finance-v4-row-action>span{display:none!important}
 .mai-finance-v4-row-action:hover{background:var(--v3-hover)!important;color:var(--v3-text)!important}
@@ -33,7 +53,9 @@
 .mai-finance-v4-quick-action:hover{background:var(--v3-hover)!important;color:var(--v3-text)!important}
 
 @media(max-width:720px){
-  .mai-finance-v4-row-config>.mai-v4-card-config-button{opacity:1}
-  .mai-v4-card-config-popover{position:fixed;top:auto;right:12px;bottom:74px;left:12px;width:auto;max-height:50vh}
-  .mai-finance-v4-entity-identity::after,.mai-finance-v4-goal-main::after{opacity:.65}
+  .mai-finance-v4-unified-tools{gap:4px!important}
+  .mai-finance-tool-grid{grid-template-columns:1fr}
+  .mai-finance-tool-grid>button{grid-column:1}
+  .mai-finance-tool-payment-entry{grid-template-columns:1fr 1fr}
+  .mai-finance-tool-payment-entry>.mai-finance-tool-primary{grid-column:1/-1}
 }

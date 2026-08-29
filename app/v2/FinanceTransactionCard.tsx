@@ -1,8 +1,5 @@
 'use client'
 
-import { useState } from 'react'
-import { MaiIcon } from './MaiIcons'
-
 type Row = Record<string, any>
 
 const rows = (value: unknown): Row[] => Array.isArray(value) ? value as Row[] : []
@@ -46,7 +43,6 @@ export function FinanceTransactionCard({
   today,
   onOpen,
   onTogglePaid,
-  onSetHomeVisible,
 }: {
   item: Row
   accounts: Row[]
@@ -54,13 +50,10 @@ export function FinanceTransactionCard({
   today: string
   onOpen: () => void
   onTogglePaid: () => void
-  onSetHomeVisible: (visible: boolean) => void
 }) {
-  const [menuOpen, setMenuOpen] = useState(false)
   const incomeItem = item.tipo === 'receita'
   const payment = financeCardPaymentState(item)
   const visibleValue = payment.status === 'parcial' ? payment.remaining : payment.total
-  const hiddenFromHome = item.ocultar_inicio === true || item.ocultar_home === true
   const title = String(item.titulo || item.descricao || item.nome || item.categoria || 'Lançamento')
 
   return <article className="mai-finance-v4-row mai-item-row-v2" data-status={payment.status}>
@@ -89,26 +82,5 @@ export function FinanceTransactionCard({
         {payment.status === 'parcial' ? <small>restante · total {money.format(payment.total)} · pago {money.format(payment.paid)}</small> : null}
       </span>
     </button>
-
-    <div className="mai-finance-v4-row-config">
-      <button
-        type="button"
-        className="mai-v4-card-config-button"
-        title="Configurar lançamento"
-        aria-label={`Configurar ${title}`}
-        onClick={() => setMenuOpen(value => !value)}
-      ><MaiIcon name="more_horiz" size={18} /></button>
-      {menuOpen ? <div className="mai-v4-card-config-popover">
-        <strong>{title}</strong>
-        <button type="button" onClick={() => { onSetHomeVisible(hiddenFromHome); setMenuOpen(false) }}>
-          <MaiIcon name={hiddenFromHome ? 'visibility' : 'visibility_off'} size={16} />
-          <span>{hiddenFromHome ? 'Mostrar na tela inicial' : 'Ocultar da tela inicial'}</span>
-        </button>
-        <button type="button" onClick={() => { setMenuOpen(false); onOpen() }}>
-          <MaiIcon name="edit" size={16} />
-          <span>Abrir detalhes</span>
-        </button>
-      </div> : null}
-    </div>
   </article>
 }
