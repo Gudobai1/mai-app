@@ -149,25 +149,25 @@ export function FinanceContextDrawerV4({ item, state, today, commit, onClose }: 
   useAutosaveDraft({ value: draft, identity: `finance-context:${String(draft?.id || '')}`, enabled: Boolean(draft), save: persistDraft, delay: 220 })
 
   if (!item || item.kind !== 'finance' || !draft) return null
-
-  const draftPayment = paymentState(draft)
-  const accountSummary = originName(draft.conta_id, accounts, cards)
+  const activeDraft = draft
+  const draftPayment = paymentState(activeDraft)
+  const accountSummary = originName(activeDraft.conta_id, accounts, cards)
 
   function setPaymentStatus(value: string) {
-    if (value === 'pendente') { setDraft({ ...draft, status: 'pendente', valor_pago: 0, pagamentos: [] }); return }
-    const total = clampMoney(draft.valor)
+    if (value === 'pendente') { setDraft({ ...activeDraft, status: 'pendente', valor_pago: 0, pagamentos: [] }); return }
+    const total = clampMoney(activeDraft.valor)
     if (!total) return
-    const current = paymentState(draft)
-    const existing = cleanPayments(draft.pagamentos, dateKey(draft.data))
+    const current = paymentState(activeDraft)
+    const existing = cleanPayments(activeDraft.pagamentos, dateKey(activeDraft.data))
     const payments = current.remaining > 0 ? [...existing, { id: uid('pay'), data: today, valor: current.remaining }] : existing
-    setDraft({ ...draft, status: 'pago', valor_pago: total, pagamentos: payments })
+    setDraft({ ...activeDraft, status: 'pago', valor_pago: total, pagamentos: payments })
   }
 
   function removePayment(index: number) {
-    const payments = cleanPayments(draft.pagamentos, dateKey(draft.data)).filter((_, position) => position !== index)
-    const paid = Math.min(clampMoney(draft.valor), payments.reduce((sum, payment) => sum + clampMoney(payment.valor), 0))
-    const total = clampMoney(draft.valor)
-    setDraft({ ...draft, pagamentos: payments, valor_pago: paid, status: total > 0 && paid >= total ? 'pago' : paid > 0 ? 'parcial' : 'pendente' })
+    const payments = cleanPayments(activeDraft.pagamentos, dateKey(activeDraft.data)).filter((_, position) => position !== index)
+    const paid = Math.min(clampMoney(activeDraft.valor), payments.reduce((sum, payment) => sum + clampMoney(payment.valor), 0))
+    const total = clampMoney(activeDraft.valor)
+    setDraft({ ...activeDraft, pagamentos: payments, valor_pago: paid, status: total > 0 && paid >= total ? 'pago' : paid > 0 ? 'parcial' : 'pendente' })
   }
 
   function addCategory() {
@@ -175,30 +175,30 @@ export function FinanceContextDrawerV4({ item, state, today, commit, onClose }: 
     if (!name) return
     const existing = categories.find(category => String(category.nome || '').trim().toLocaleLowerCase('pt-BR') === name.toLocaleLowerCase('pt-BR'))
     if (!existing) commit(current => ({ ...current, finance: { ...current.finance, categories: [...rows(current.finance.categories), { id: uid('cat'), nome: name }] } }))
-    setDraft({ ...draft, categoria: existing ? String(existing.nome) : name })
+    setDraft({ ...activeDraft, categoria: existing ? String(existing.nome) : name })
     setCategoryDraftName('')
     setOpenTool('')
   }
 
   function generateInstallments() {
-    if (draft.recorrencia !== 'parcelado' || !String(draft.titulo || '').trim()) return
-    const quantity = Math.max(2, Number(draft.parcelas || 2))
-    const lot = String(draft.lote_id || uid('lote'))
-    const total = clampMoney(draft.valor)
-    const installment = draft.dividir_total === false ? total : total / quantity
-    const baseTitle = String(draft.titulo || '').replace(/\s+\(\d+\/\d+\)$/, '').trim()
+    if (activeDraft.recorrencia !== 'parcelado' || !String(activeDraft.titulo || '').trim()) return
+    const quantity = Math.max(2, Number(activeDraft.parcelas || 2))
+    const lot = String(activeDraft.lote_id || uid('lote'))
+    const total = clampMoney(activeDraft.valor)
+    const installment = activeDraft.dividir_total === false ? total : total / quantity
+    const baseTitle = String(activeDraft.titulo || '').replace(/\s+\(\d+\/\d+\)$/, '').trim()
     const generated = Array.from({ length: quantity }, (_, index) => ({
-      ...draft,
-      id: index === 0 ? String(draft.id) : uid('fin'),
+      ...activeDraft,
+      id: index === 0 ? String(activeDraft.id) : uid('fin'),
       lote_id: lot,
       parcela_numero: index + 1,
       parcelas_total: quantity,
       titulo: `${baseTitle} (${index + 1}/${quantity})`,
       valor: installment,
-      data: moveDateForInstallment(dateKey(draft.data) || today, index, String(draft.intervalo_parcelas || 'mensal')),
-      status: index === 0 ? paymentState({ ...draft, valor: installment }).status : 'pendente',
+      data: moveDateForInstallment(dateKey(activeDraft.data) || today, index, String(activeDraft.intervalo_parcelas || 'mensal')),
+      status: index === 0 ? paymentState({ ...activeDraft, valor: installment }).status : 'pendente',
       valor_pago: index === 0 ? Math.min(installment, draftPayment.paid) : 0,
-      pagamentos: index === 0 ? cleanPayments(draft.pagamentos, dateKey(draft.data)) : [],
+      pagamentos: index === 0 ? cleanPayments(activeDraft.pagamentos, dateKey(activeDraft.data)) : [],
       recorrencia: 'unico',
       parcelas: undefined,
       intervalo_parcelas: undefined,
@@ -210,13 +210,13 @@ export function FinanceContextDrawerV4({ item, state, today, commit, onClose }: 
       _persisted: undefined,
       _isFixed: undefined,
     }))
-    commit(current => ({ ...current, finance: { ...current.finance, fixed: rows(current.finance.fixed).filter(row => String(row.id) !== String(draft.id)), fixedOccurrences: rows(current.finance.fixedOccurrences).filter(row => String(row.fixo_id) !== String(draft.id)), transactions: [...rows(current.finance.transactions).filter(row => String(row.id) !== String(draft.id) && String(row.lote_id || '') !== lot), ...generated] } }))
+    commit(current => ({ ...current, finance: { ...current.finance, fixed: rows(current.finance.fixed).filter(row => String(row.id) !== String(activeDraft.id)), fixedOccurrences: rows(current.finance.fixedOccurrences).filter(row => String(row.fixo_id) !== String(activeDraft.id)), transactions: [...rows(current.finance.transactions).filter(row => String(row.id) !== String(activeDraft.id) && String(row.lote_id || '') !== lot), ...generated] } }))
     setDraft({ ...generated[0], _persisted: true })
   }
 
   function removeDraft() {
     if (!confirm('Excluir este lançamento?')) return
-    commit(current => ({ ...current, finance: { ...current.finance, transactions: rows(current.finance.transactions).filter(row => String(row.id) !== String(draft.id)), fixed: rows(current.finance.fixed).filter(row => String(row.id) !== String(draft.id)), fixedOccurrences: rows(current.finance.fixedOccurrences).filter(row => String(row.fixo_id) !== String(draft.id)) } }))
+    commit(current => ({ ...current, finance: { ...current.finance, transactions: rows(current.finance.transactions).filter(row => String(row.id) !== String(activeDraft.id)), fixed: rows(current.finance.fixed).filter(row => String(row.id) !== String(activeDraft.id)), fixedOccurrences: rows(current.finance.fixedOccurrences).filter(row => String(row.fixo_id) !== String(activeDraft.id)) } }))
     onClose()
   }
 
@@ -224,18 +224,18 @@ export function FinanceContextDrawerV4({ item, state, today, commit, onClose }: 
     <form className="mai-v3-create-drawer mai-finance-v4-drawer mai-finance-v4-drawer-transaction" onSubmit={event => event.preventDefault()} onMouseDown={event => event.stopPropagation()}>
       <header className="mai-v3-drawer-header"><div><small>Salvamento automático</small><strong>Editar lançamento</strong></div><button type="button" className="mai-v3-close" onClick={onClose}>×</button></header>
       <div className="mai-v3-drawer-body mai-create-unified-body" onMouseDown={() => openTool && setOpenTool('')}>
-        <input className="mai-v3-title-input" autoFocus value={draft.titulo || ''} placeholder="Nome do lançamento" onMouseDown={event => event.stopPropagation()} onChange={event => setDraft({ ...draft, titulo: event.target.value })}/>
-        <textarea className="mai-v3-description-input mai-create-unified-description" rows={2} value={draft.observacao || ''} placeholder="Descrição" onMouseDown={event => event.stopPropagation()} onChange={event => setDraft({ ...draft, observacao: event.target.value })}/>
+        <input className="mai-v3-title-input" autoFocus value={activeDraft.titulo || ''} placeholder="Nome do lançamento" onMouseDown={event => event.stopPropagation()} onChange={event => setDraft({ ...activeDraft, titulo: event.target.value })}/>
+        <textarea className="mai-v3-description-input mai-create-unified-description" rows={2} value={activeDraft.observacao || ''} placeholder="Descrição" onMouseDown={event => event.stopPropagation()} onChange={event => setDraft({ ...activeDraft, observacao: event.target.value })}/>
         <div className="mai-task-v4-toolbar mai-context-unified-tools mai-create-unified-tools mai-finance-v4-unified-tools" onMouseDown={event => event.stopPropagation()}>
-          <CreateTool id="finance-date" icon="calendar_today" label="Data" summary={createNaturalDate(dateKey(draft.data), today)} color="#4f7cac" open={openTool} setOpen={setOpenTool}><CreateCalendarPicker value={dateKey(draft.data)} today={today} onChange={value => setDraft({ ...draft, data: value, dia_mes: Number(value.slice(8)), mes_inicio: draft.mes_inicio || value.slice(0, 7) })} close={() => setOpenTool('')}/></CreateTool>
-          <CreateTool id="finance-value" icon="payments" label="Valor" summary={money.format(clampMoney(draft.valor))} color="#4b8b6c" open={openTool} setOpen={setOpenTool}><CreateNumberEditor value={clampMoney(draft.valor)} onChange={value => { const payments = cleanPayments(draft.pagamentos, dateKey(draft.data)); const paid = Math.min(value, payments.reduce((sum, payment) => sum + clampMoney(payment.valor), 0)); setDraft({ ...draft, valor: value, valor_pago: paid, status: value > 0 && paid >= value ? 'pago' : paid > 0 ? 'parcial' : 'pendente' }) }}/></CreateTool>
-          <CreateTool id="finance-type" icon={draft.tipo === 'receita' ? 'arrow_downward' : 'arrow_upward'} label="Tipo" summary={draft.tipo === 'receita' ? 'Receita' : 'Despesa'} color={draft.tipo === 'receita' ? '#4b8b6c' : '#c85b52'} open={openTool} setOpen={setOpenTool}><CreateOptionList value={String(draft.tipo || 'despesa')} onChange={value => setDraft({ ...draft, tipo: value })} close={() => setOpenTool('')} options={[{ value:'despesa', label:'Despesa', icon:'arrow_upward' }, { value:'receita', label:'Receita', icon:'arrow_downward' }]}/></CreateTool>
+          <CreateTool id="finance-date" icon="calendar_today" label="Data" summary={createNaturalDate(dateKey(activeDraft.data), today)} color="#4f7cac" open={openTool} setOpen={setOpenTool}><CreateCalendarPicker value={dateKey(activeDraft.data)} today={today} onChange={value => setDraft({ ...activeDraft, data: value, dia_mes: Number(value.slice(8)), mes_inicio: activeDraft.mes_inicio || value.slice(0, 7) })} close={() => setOpenTool('')}/></CreateTool>
+          <CreateTool id="finance-value" icon="payments" label="Valor" summary={money.format(clampMoney(activeDraft.valor))} color="#4b8b6c" open={openTool} setOpen={setOpenTool}><CreateNumberEditor value={clampMoney(activeDraft.valor)} onChange={value => { const payments = cleanPayments(activeDraft.pagamentos, dateKey(activeDraft.data)); const paid = Math.min(value, payments.reduce((sum, payment) => sum + clampMoney(payment.valor), 0)); setDraft({ ...activeDraft, valor: value, valor_pago: paid, status: value > 0 && paid >= value ? 'pago' : paid > 0 ? 'parcial' : 'pendente' }) }}/></CreateTool>
+          <CreateTool id="finance-type" icon={activeDraft.tipo === 'receita' ? 'arrow_downward' : 'arrow_upward'} label="Tipo" summary={activeDraft.tipo === 'receita' ? 'Receita' : 'Despesa'} color={activeDraft.tipo === 'receita' ? '#4b8b6c' : '#c85b52'} open={openTool} setOpen={setOpenTool}><CreateOptionList value={String(activeDraft.tipo || 'despesa')} onChange={value => setDraft({ ...activeDraft, tipo: value })} close={() => setOpenTool('')} options={[{ value:'despesa', label:'Despesa', icon:'arrow_upward' }, { value:'receita', label:'Receita', icon:'arrow_downward' }]}/></CreateTool>
           <CreateTool id="finance-status" icon="task_alt" label="Status" summary={draftPayment.status === 'pago' ? 'Pago' : draftPayment.status === 'parcial' ? 'Parcial' : 'Pendente'} color="#5779a6" open={openTool} setOpen={setOpenTool}><CreateOptionList value={draftPayment.status === 'pago' ? 'pago' : 'pendente'} onChange={setPaymentStatus} close={() => setOpenTool('')} options={[{ value:'pendente', label:'Pendente / zerar pagamentos', icon:'schedule' }, { value:'pago', label:'Pago integralmente', icon:'check_circle' }]}/></CreateTool>
-          <CreateTool id="finance-category" icon="sell" label="Categoria" summary={String(draft.categoria || 'Não selecionado')} color="#b27a35" open={openTool} setOpen={setOpenTool}><div className="mai-finance-v4-category-picker"><CreateOptionList value={String(draft.categoria || '')} onChange={value => setDraft({ ...draft, categoria: value })} close={() => setOpenTool('')} options={[{ value:'', label:'Sem categoria', icon:'remove_circle' }, ...categories.map(category => ({ value:String(category.nome), label:String(category.nome), icon:'sell' }))]}/><div className="mai-finance-v4-category-create"><input value={categoryDraftName} onChange={event => setCategoryDraftName(event.target.value)} onKeyDown={event => { if (event.key === 'Enter') { event.preventDefault(); addCategory() } }} placeholder="Nova categoria"/><button type="button" onClick={addCategory}>Adicionar</button></div></div></CreateTool>
-          <CreateTool id="finance-account" icon="account_balance_wallet" label="Conta" summary={accountSummary} color="#75808b" open={openTool} setOpen={setOpenTool}><CreateOptionList value={String(draft.conta_id || '')} onChange={value => setDraft({ ...draft, conta_id: value })} close={() => setOpenTool('')} options={[{ value:'', label:'Sem origem', icon:'remove_circle' }, ...accounts.map(account => ({ value:String(account.id), label:String(account.nome || 'Conta'), icon:'account_balance' })), ...cards.map(card => ({ value:`card|${String(card.id)}`, label:String(card.nome || 'Cartão'), icon:'credit_card' }))]}/></CreateTool>
-          <FinanceTransactionExtraTools draft={draft} setDraft={setDraft} today={today} month={month} open={openTool} setOpen={setOpenTool} draftPayment={draftPayment} addPayment={() => {}} removePayment={removePayment} generateInstallments={generateInstallments}/>
+          <CreateTool id="finance-category" icon="sell" label="Categoria" summary={String(activeDraft.categoria || 'Não selecionado')} color="#b27a35" open={openTool} setOpen={setOpenTool}><div className="mai-finance-v4-category-picker"><CreateOptionList value={String(activeDraft.categoria || '')} onChange={value => setDraft({ ...activeDraft, categoria: value })} close={() => setOpenTool('')} options={[{ value:'', label:'Sem categoria', icon:'remove_circle' }, ...categories.map(category => ({ value:String(category.nome), label:String(category.nome), icon:'sell' }))]}/><div className="mai-finance-v4-category-create"><input value={categoryDraftName} onChange={event => setCategoryDraftName(event.target.value)} onKeyDown={event => { if (event.key === 'Enter') { event.preventDefault(); addCategory() } }} placeholder="Nova categoria"/><button type="button" onClick={addCategory}>Adicionar</button></div></div></CreateTool>
+          <CreateTool id="finance-account" icon="account_balance_wallet" label="Conta" summary={accountSummary} color="#75808b" open={openTool} setOpen={setOpenTool}><CreateOptionList value={String(activeDraft.conta_id || '')} onChange={value => setDraft({ ...activeDraft, conta_id: value })} close={() => setOpenTool('')} options={[{ value:'', label:'Sem origem', icon:'remove_circle' }, ...accounts.map(account => ({ value:String(account.id), label:String(account.nome || 'Conta'), icon:'account_balance' })), ...cards.map(card => ({ value:`card|${String(card.id)}`, label:String(card.nome || 'Cartão'), icon:'credit_card' }))]}/></CreateTool>
+          <FinanceTransactionExtraTools draft={activeDraft} setDraft={setDraft} today={today} month={month} open={openTool} setOpen={setOpenTool} draftPayment={draftPayment} addPayment={() => {}} removePayment={removePayment} generateInstallments={generateInstallments}/>
         </div>
-        <ItemAttachments attachments={rows(draft.anexos)} onChange={anexos => setDraft({ ...draft, anexos })}/>
+        <ItemAttachments attachments={rows(activeDraft.anexos)} onChange={anexos => setDraft({ ...activeDraft, anexos })}/>
       </div>
       <footer className="mai-v3-drawer-footer"><div><button type="button" className="mai-finance-v4-delete" onClick={removeDraft}><MaiIcon name="delete" size={18}/>Excluir</button></div><span className="mai-autosave-status">Alterações salvas automaticamente</span></footer>
     </form>
