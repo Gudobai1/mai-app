@@ -206,6 +206,102 @@ body[data-mai-subtask-dragging="true"] .mai-context-v3-scroll{
   overscroll-behavior:none!important;
 }
 
+/* Drawer de tarefa V4 — reordenação visual em tempo real. */
+.mai-task-v4-subtask-sortable-list{
+  position:relative!important;
+  overscroll-behavior:contain!important;
+}
+
+.mai-task-v4-subtask-sortable{
+  position:relative!important;
+  grid-template-columns:28px 22px minmax(0,1fr) 16px!important;
+  gap:7px!important;
+  align-items:center!important;
+  transition:transform .14s ease,opacity .14s ease,background .14s ease,box-shadow .14s ease!important;
+}
+
+.mai-task-v4-subtask-drag-handle{
+  width:28px!important;
+  min-width:28px!important;
+  height:36px!important;
+  display:grid!important;
+  place-items:center!important;
+  padding:0!important;
+  border:0!important;
+  border-radius:7px!important;
+  background:transparent!important;
+  color:var(--v3-muted,#7b8379)!important;
+  cursor:grab!important;
+  touch-action:none!important;
+  user-select:none!important;
+  -webkit-user-select:none!important;
+  -webkit-touch-callout:none!important;
+}
+
+.mai-task-v4-subtask-drag-handle:hover{
+  background:var(--v3-hover,#f2f4f1)!important;
+  color:var(--v3-text,#253026)!important;
+}
+
+.mai-task-v4-subtask-drag-handle:active{
+  cursor:grabbing!important;
+}
+
+.mai-task-v4-subtask-drag-handle>.material-symbols-rounded{
+  font-size:20px!important;
+}
+
+.mai-task-v4-subtask-sortable[data-dragging="true"]{
+  opacity:.16!important;
+  transform:scale(.985)!important;
+}
+
+.mai-task-v4-subtask-drag-ghost{
+  position:fixed!important;
+  z-index:10000!important;
+  display:grid!important;
+  grid-template-columns:28px 22px minmax(0,1fr) 16px!important;
+  gap:7px!important;
+  align-items:center!important;
+  margin:0!important;
+  padding:0 8px!important;
+  border:1px solid color-mix(in srgb,var(--v3-accent,#60765a) 28%,var(--v3-line,#dde2dc))!important;
+  border-radius:10px!important;
+  background:var(--v3-card,#fff)!important;
+  box-shadow:0 14px 34px rgba(23,31,24,.18)!important;
+  opacity:.97!important;
+  pointer-events:none!important;
+  transform:scale(1.015)!important;
+  transform-origin:center!important;
+}
+
+.mai-task-v4-subtask-drag-ghost .mai-task-v4-subtask-main{
+  min-width:0!important;
+  display:flex!important;
+  flex-direction:column!important;
+  align-items:flex-start!important;
+  justify-content:center!important;
+}
+
+.mai-task-v4-subtask-drag-ghost .mai-task-v4-subtask-main strong,
+.mai-task-v4-subtask-drag-ghost .mai-task-v4-subtask-main small{
+  max-width:100%!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+  white-space:nowrap!important;
+}
+
+body[data-mai-task-v4-subtask-dragging="true"]{
+  cursor:grabbing!important;
+  user-select:none!important;
+  -webkit-user-select:none!important;
+  overscroll-behavior:none!important;
+}
+
+body[data-mai-task-v4-subtask-dragging="true"] .mai-task-v4-scroll{
+  overscroll-behavior:none!important;
+}
+
 @media(max-width:760px){
   .mai-task-selection-bar{
     position:fixed;
@@ -252,5 +348,16 @@ body[data-mai-subtask-dragging="true"] .mai-context-v3-scroll{
     width:34px!important;
     min-width:34px!important;
     height:40px!important;
+  }
+
+  .mai-task-v4-subtask-sortable,
+  .mai-task-v4-subtask-drag-ghost{
+    grid-template-columns:34px 22px minmax(0,1fr) 16px!important;
+  }
+
+  .mai-task-v4-subtask-drag-handle{
+    width:34px!important;
+    min-width:34px!important;
+    height:42px!important;
   }
 }
