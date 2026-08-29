@@ -1,18 +1,15 @@
 /* Configuração financeira: os cartões ficam limpos e as opções aparecem por ícones discretos. */
 
-.mai-v4-today-finance-section>header{position:relative}
-.mai-v4-today-finance-section-config,.mai-v4-today-finance-card-config{position:relative;display:grid;place-items:center}
+.mai-v4-today-finance-card-config{position:relative;display:grid;place-items:center}
 .mai-v4-card-config-button{width:30px;height:30px;display:grid!important;place-items:center!important;padding:0!important;border:0!important;border-radius:8px!important;background:transparent!important;color:var(--v3-muted)!important;cursor:pointer!important;line-height:1!important}
 .mai-v4-card-config-button:hover,.mai-v4-card-config-button:focus-visible{background:var(--v3-hover)!important;color:var(--v3-text)!important;outline:0}
-.mai-v4-card-config-popover{position:absolute;z-index:90;top:34px;right:0;width:min(250px,calc(100vw - 32px));display:grid;gap:3px;padding:8px;border:1px solid var(--v3-line);border-radius:11px;background:var(--v3-card);box-shadow:0 14px 34px rgba(0,0,0,.12);text-align:left}
+.mai-v4-card-config-popover{position:absolute;z-index:90;top:34px;right:0;width:min(270px,calc(100vw - 32px));max-height:min(390px,60vh);overflow:auto;display:grid;gap:3px;padding:8px;border:1px solid var(--v3-line);border-radius:11px;background:var(--v3-card);box-shadow:0 14px 34px rgba(0,0,0,.12);text-align:left}
 .mai-v4-card-config-popover>strong{display:block;padding:4px 6px 6px;font-size:10px;font-weight:680;color:var(--v3-text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .mai-v4-card-config-popover>small{display:block;padding:0 6px 5px;font-size:8.5px;line-height:1.35;color:var(--v3-muted)}
-.mai-v4-card-config-popover>button{min-height:34px;width:100%;display:grid;grid-template-columns:20px minmax(0,1fr) auto;align-items:center;gap:7px;padding:5px 7px;border:0;border-radius:8px;background:transparent;color:var(--v3-text);font:inherit;font-size:9.5px;text-align:left;cursor:pointer}
+.mai-v4-card-config-popover>.mai-v4-card-config-subtitle{margin-top:5px;padding-top:8px;border-top:1px solid var(--v3-line);font-weight:650}
+.mai-v4-card-config-popover>button{min-height:34px;width:100%;display:grid;grid-template-columns:20px minmax(0,1fr);align-items:center;gap:7px;padding:5px 7px;border:0;border-radius:8px;background:transparent;color:var(--v3-text);font:inherit;font-size:9.5px;text-align:left;cursor:pointer}
 .mai-v4-card-config-popover>button:hover{background:var(--v3-hover)}
 .mai-v4-card-config-popover>button>span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.mai-v4-card-config-popover>button>em{font-size:8px;font-style:normal;color:var(--v3-muted)}
-.mai-v4-card-config-empty{padding:8px 6px;font-size:9px;color:var(--v3-muted)}
-.mai-v4-finance-visibility-popover{width:min(300px,calc(100vw - 32px));max-height:min(360px,60vh);overflow:auto}
 
 /* A linha financeira da tela inicial tem anatomia própria e previsível; não depende das regras antigas de .mai-item-row-v2. */
 .mai-v4-today-finance-card{position:relative;min-height:52px;width:100%;display:grid;grid-template-columns:minmax(0,1fr) 34px;align-items:center;gap:3px;padding:0 3px 0 0;border:0;border-radius:8px;background:transparent;color:var(--v3-text)}
@@ -28,6 +25,9 @@
 .mai-v4-today-finance-value>small{font-size:7.8px;line-height:1.15;color:var(--v3-muted);white-space:nowrap}
 .mai-v4-today-finance-card-config>.mai-v4-card-config-button{opacity:.22;transition:opacity .12s ease}
 .mai-v4-today-finance-card:hover .mai-v4-today-finance-card-config>.mai-v4-card-config-button,.mai-v4-today-finance-card-config>.mai-v4-card-config-button:focus-visible{opacity:1}
+.mai-v4-today-finance-empty-config{position:relative;min-height:52px;display:grid;grid-template-columns:minmax(0,1fr) 34px;align-items:center;gap:8px;padding:6px 3px 6px 6px;border-radius:8px;color:var(--v3-muted)}
+.mai-v4-today-finance-empty-config>span{min-width:0;display:grid;gap:2px}.mai-v4-today-finance-empty-config>span>strong{font-size:10px;font-weight:620;color:var(--v3-muted)}.mai-v4-today-finance-empty-config>span>small{font-size:8.5px;color:var(--v3-faint)}
+.mai-v4-today-finance-empty-config .mai-v4-card-config-button{opacity:.7}
 
 /* Cartões do Financeiro: editar/configurar sempre é representado pelo mesmo ícone minimalista. */
 .mai-finance-v4-entity-row,.mai-finance-v4-goal-card,.mai-finance-v4-row{position:relative}
