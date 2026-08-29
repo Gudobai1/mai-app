@@ -5,6 +5,7 @@ import type { LegacyTask, MaiState } from '../../lib/v2/state'
 import type { InspectableItem } from './ContextDrawer'
 import type { Row } from './app-types'
 import { MaiIcon } from './MaiIcons'
+import { SelectableTaskRow } from './TaskSelection'
 
 type Mode = 'today' | 'upcoming'
 type SortMode = 'manual' | 'date' | 'priority' | 'project' | 'name'
@@ -116,11 +117,11 @@ export function TaskDateView({ state, today, mode, commit, inspect, selectedId }
 
   function renderTask(task: LegacyTask) {
     const project = identity(task.projeto_id)
-    return <article className="mai-v3-task-row mai-item-row-v2" data-selected={selectedId === task.id} key={task.id} onClick={() => inspectTask(task)}>
+    return <SelectableTaskRow className="mai-v3-task-row mai-item-row-v2" taskId={String(task.id)} onOpen={() => inspectTask(task)} data-selected={selectedId === task.id} key={task.id}>
       <button className="mai-v3-task-check" data-priority={Number(task.prioridade||4)} aria-label={`Concluir ${task.titulo}`} style={{ borderColor: priorityColor(task.prioridade) }} onClick={event => { event.stopPropagation(); toggle(task) }} />
       <span className="mai-item-copy-v2"><span className="mai-item-titleline-v2"><strong>{task.titulo}</strong></span><span className="mai-item-subline-v2"><span>{naturalDate(dayOf(task), today)}</span><span>·</span>{projectBadge(project)}</span></span>
       <button className="mai-v3-task-more" aria-label={`Opções de ${task.titulo}`} onClick={event => { event.stopPropagation(); inspectTask(task) }}>•••</button>
-    </article>
+    </SelectableTaskRow>
   }
 
   if (sortMode === 'project') return <div className="mai-v4-task-date-view mai-v4-project-groups">
