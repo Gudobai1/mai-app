@@ -4,13 +4,12 @@ import { useState } from 'react'
 import type { MaiState } from '../../lib/v2/state'
 import type { AppView, Row } from './app-types'
 import type { InspectableItem } from './ContextDrawer'
-import { MaiIcon } from './MaiIcons'
+import { FinanceTransactionCard, financeCardPaymentState } from './FinanceTransactionCard'
 import { TodayCompact } from './TodayCompact'
 
 const rows=(value:unknown):Row[]=>Array.isArray(value)?value as Row[]:[]
 const values=(value:unknown):unknown[]=>Array.isArray(value)?value:[]
 const dateKey=(value:unknown)=>String(value||'').slice(0,10)
-const money=new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'})
 const priorityColor=(value:unknown)=>Number(value||4)===1?'#c85b52':Number(value||4)===2?'#c28a3d':Number(value||4)===3?'#7c9274':'var(--v3-line-strong)'
 const goalDate=(goal:Row)=>dateKey(goal.prazo||goal.data||goal.data_limite||goal.deadline)
 const txTitle=(item:Row)=>String(item.descricao||item.titulo||item.nome||item.categoria||'Lançamento')
@@ -45,18 +44,8 @@ function habitEligible(habit:Row,day:string){
   return !days.length||days.includes(new Date(`${day}T12:00:00`).getDay())
 }
 
-function financePayment(item:Row){
-  const total=Math.max(0,Number(item.valor||0)||0)
-  const payments=rows(item.pagamentos)
-  const historyPaid=payments.reduce((sum,payment)=>sum+Math.max(0,Number(payment.valor||0)||0),0)
-  const fallbackPaid=Math.max(0,Number(item.valor_pago||0)||0)||(paid(item.status)?total:0)
-  const paidValue=Math.min(total,payments.length?historyPaid:fallbackPaid)
-  return {total,paid:paidValue,remaining:Math.max(0,total-paidValue)}
-}
-
 export function TodayV4({state,today,commit,navigate,inspect,onSearch}:{state:MaiState;today:string;commit:(change:(current:MaiState)=>MaiState)=>void;navigate:(view:AppView)=>void;inspect:(item:InspectableItem)=>void;onSearch:()=>void;onMore:()=>void}){
   const [menuOpen,setMenuOpen]=useState(false)
-  const [financeMenuId,setFinanceMenuId]=useState('')
   const savedOrder=Array.isArray(state.configs.todayListOrder)?state.configs.todayListOrder.map(String).filter((id):id is SectionId=>DEFAULT_ORDER.includes(id as SectionId)):[]
   const order=[...savedOrder,...DEFAULT_ORDER.filter(id=>!savedOrder.includes(id))]
   const hidden=new Set(Array.isArray(state.configs.todayListHidden)?state.configs.todayListHidden.map(String):[])
@@ -70,26 +59,35 @@ export function TodayV4({state,today,commit,navigate,inspect,onSearch}:{state:Ma
   })
   const goals=rows(state.goals).filter(goal=>{const day=goalDate(goal);return Boolean(day)&&day<=today&&!String(goal.status||'').toLocaleLowerCase('pt-BR').includes('conclu')&&goal.concluida!==true}).sort((a,b)=>goalDate(a).localeCompare(goalDate(b)))
   const finance=state.finance||{}
+  const financeAccounts=rows(finance.accounts)
+  const financeCards=rows(finance.cards)
   const financeCandidates=rows(finance.transactions).filter(item=>{const day=dateKey(item.data);return Boolean(day)&&day<=today&&!item.ignorar_calculo&&!paid(item.status)}).sort((a,b)=>dateKey(a.data).localeCompare(dateKey(b.data)))
   const transactions=financeCandidates.filter(item=>item.ocultar_inicio!==true&&item.ocultar_home!==true)
-  const hiddenFinance=financeCandidates.filter(item=>item.ocultar_inicio===true||item.ocultar_home===true)
   const notes=[...rows(state.notes)].filter(note=>note.ativo!==false&&note.arquivado!==true&&!concluded(note)&&dateKey(note.data||note.updated_at||note.criado_em)===today).sort((a,b)=>String(b.data||b.updated_at||'').localeCompare(String(a.data||a.updated_at||''))).slice(0,8)
 
   function setHidden(id:SectionId){const next=new Set(hidden);next.has(id)?next.delete(id):next.add(id);commit(current=>({...current,configs:{...current.configs,todayListHidden:[...next]}}))}
   function move(id:SectionId,delta:number){const next=[...order];const index=next.indexOf(id);const target=index+delta;if(index<0||target<0||target>=next.length)return;[next[index],next[target]]=[next[target],next[index]];commit(current=>({...current,configs:{...current.configs,todayListOrder:next}}))}
   function setFinanceVisible(item:Row,visible:boolean){
     commit(current=>({...current,finance:{...current.finance,transactions:rows(current.finance.transactions).map(row=>String(row.id)===String(item.id)?{...row,ocultar_inicio:!visible,ocultar_home:false}:row)}}))
-    setFinanceMenuId('')
   }
-
-  const restoreButtons=(excludeId='')=>hiddenFinance.filter(item=>String(item.id)!==excludeId).map(item=><button type="button" key={`restore-${String(item.id)}`} onClick={()=>setFinanceVisible(item,true)}><MaiIcon name="visibility" size={16}/><span>Reexibir {txTitle(item)}</span></button>)
+  function toggleFinancePaid(item:Row){
+    const payment=financeCardPaymentState(item)
+    commit(current=>({...current,finance:{...current.finance,transactions:rows(current.finance.transactions).map(row=>{
+      if(String(row.id)!==String(item.id))return row
+      if(payment.status==='pago')return {...row,status:'pendente',valor_pago:0,pagamentos:[]}
+      if(payment.total<=0)return row
+      const existing=rows(row.pagamentos)
+      const pagamentos=payment.remaining>0?[...existing,{id:`pay-${crypto.randomUUID()}`,data:today,valor:payment.remaining}]:existing
+      return {...row,status:'pago',valor_pago:payment.total,pagamentos}
+    })}}))
+  }
 
   const sectionContent:Record<SectionId,React.ReactNode>={
     appointments:<TodayCompact part="appointments" state={state} today={today} commit={commit} navigate={navigate} inspect={inspect} onSearch={onSearch} onMore={()=>setMenuOpen(v=>!v)}/>,
     tasks:<TodayCompact part="tasks" state={state} today={today} commit={commit} navigate={navigate} inspect={inspect} onSearch={onSearch} onMore={()=>setMenuOpen(v=>!v)}/>,
     habits:<section className="mai-v4-today-list-section"><header><h2>Hábitos</h2></header><div className="mai-today-unified-list">{habits.map(habit=>{const value=Number(entries.find(entry=>String(entry.habito_id)===String(habit.id))?.valor||0);const target=Math.max(1,Number(habit.meta||1));const detail=target>1||habit.unidade?`${value} de ${target} ${String(habit.unidade||'')}`:'Pendente';return <button className="mai-today-unified-row mai-item-row-v2" key={String(habit.id)} onClick={()=>inspect({kind:'habit',sourceId:String(habit.id),title:String(habit.nome||'Hábito'),date:today,raw:habit})}><i className="mai-today-unified-dot" style={{borderColor:String(habit.cor_hex||'var(--v3-accent)')}}/><span className="mai-item-copy-v2"><span className="mai-item-titleline-v2"><strong>{String(habit.nome||'Hábito')}</strong></span><span className="mai-item-subline-v2"><span>Hoje</span><span>·</span><span>{detail}</span></span></span></button>})}{!habits.length?<div className="mai-v3-empty-line">Nenhum hábito previsto para hoje.</div>:null}</div></section>,
     goals:<section className="mai-v4-today-list-section"><header><h2>Metas</h2></header><div className="mai-today-unified-list">{goals.map(goal=>{const total=Math.max(1,Number(goal.progresso_total||100));const pct=Math.max(0,Math.min(100,Math.round(Number(goal.progresso_atual||0)/total*100)));const day=goalDate(goal);return <button className="mai-today-unified-row mai-item-row-v2" key={String(goal.id)} onClick={()=>inspect({kind:'goal',sourceId:String(goal.id),title:String(goal.titulo||'Meta'),date:day,raw:goal})}><i className="mai-today-unified-dot" style={{borderColor:priorityColor(goal.prioridade)}}/><span className="mai-item-copy-v2"><span className="mai-item-titleline-v2"><strong>{String(goal.titulo||'Meta')}</strong></span><span className="mai-item-subline-v2"><span>{naturalDate(day,today)}</span><span>·</span><span>{pct}%</span></span></span></button>})}{!goals.length?<div className="mai-v3-empty-line">Nenhuma meta pendente para hoje.</div>:null}</div></section>,
-    finance:<section className="mai-v4-today-list-section mai-v4-today-finance-section"><header><h2>Finanças</h2></header><div className="mai-today-unified-list">{transactions.map(item=>{const income=String(item.tipo||'').toLowerCase()==='receita';const day=dateKey(item.data);const payment=financePayment(item);const partial=payment.paid>0&&payment.remaining>0;const displayValue=partial?payment.remaining:payment.total;const id=String(item.id);return <article className="mai-v4-today-finance-card" key={id}><button className="mai-v4-today-finance-card-main" type="button" onClick={()=>inspect({kind:'finance',sourceId:id,title:txTitle(item),date:day,raw:item})}><i className="mai-today-unified-dot" style={{borderColor:income?'var(--mai-success, #5d8a68)':'var(--mai-danger, #c85b52)'}}/><span className="mai-v4-today-finance-copy"><strong>{txTitle(item)}</strong><small><span>{naturalDate(day,today)}</span>{partial?<><span>·</span><span>pago {money.format(payment.paid)}</span></>:null}</small></span><span className="mai-v4-today-finance-value" data-income={income}><b>{income?'+':'−'} {money.format(displayValue)}</b>{partial?<small>restante de {money.format(payment.total)}</small>:null}</span></button><div className="mai-v4-today-finance-card-config"><button type="button" className="mai-v4-card-config-button" title="Configurar lançamento" aria-label={`Configurar ${txTitle(item)}`} onClick={()=>setFinanceMenuId(current=>current===id?'':id)}><MaiIcon name="more_horiz" size={18}/></button>{financeMenuId===id?<div className="mai-v4-card-config-popover"><strong>{txTitle(item)}</strong><button type="button" onClick={()=>setFinanceVisible(item,false)}><MaiIcon name="visibility_off" size={16}/><span>Ocultar da tela inicial</span></button><button type="button" onClick={()=>{setFinanceMenuId('');inspect({kind:'finance',sourceId:id,title:txTitle(item),date:day,raw:item})}}><MaiIcon name="edit" size={16}/><span>Abrir detalhes</span></button>{hiddenFinance.length?<><small className="mai-v4-card-config-subtitle">Lançamentos ocultos</small>{restoreButtons(id)}</>:null}</div>:null}</div></article>})}{!transactions.length&&hiddenFinance.length?<div className="mai-v4-today-finance-empty-config"><span><strong>Nenhum lançamento visível.</strong><small>Há {hiddenFinance.length} {hiddenFinance.length===1?'lançamento oculto':'lançamentos ocultos'}.</small></span><div className="mai-v4-today-finance-card-config"><button type="button" className="mai-v4-card-config-button" title="Configurar lançamentos ocultos" aria-label="Configurar lançamentos ocultos" onClick={()=>setFinanceMenuId(current=>current==='__hidden__'?'':'__hidden__')}><MaiIcon name="tune" size={17}/></button>{financeMenuId==='__hidden__'?<div className="mai-v4-card-config-popover"><strong>Lançamentos ocultos</strong>{restoreButtons()}</div>:null}</div></div>:!transactions.length?<div className="mai-v3-empty-line">Nenhum lançamento pendente para hoje.</div>:null}</div></section>,
+    finance:<section className="mai-v4-today-list-section"><header><h2>Finanças</h2></header><div className="mai-today-unified-list mai-v3-finance-rows mai-v3-simple-list">{transactions.map(item=>{const day=dateKey(item.data);return <FinanceTransactionCard key={String(item.id)} item={item} accounts={financeAccounts} cards={financeCards} today={today} onOpen={()=>inspect({kind:'finance',sourceId:String(item.id),title:txTitle(item),date:day,raw:item})} onTogglePaid={()=>toggleFinancePaid(item)} onSetHomeVisible={visible=>setFinanceVisible(item,visible)}/>})}{!transactions.length?<div className="mai-v3-empty-line">{financeCandidates.length?'Nenhum lançamento visível na tela inicial.':'Nenhum lançamento pendente para hoje.'}</div>:null}</div></section>,
     notes:<section className="mai-v4-today-list-section"><header><h2>Notas</h2></header><div className="mai-today-unified-list">{notes.map(note=><button className="mai-today-unified-row mai-item-row-v2" key={String(note.id)} onClick={()=>inspect({kind:'note',sourceId:String(note.id),title:String(note.titulo||'Sem título'),date:dateKey(note.data||note.updated_at||note.criado_em),raw:note})}><i className="mai-today-unified-dot" style={{borderColor:'var(--v3-accent)'}}/><span className="mai-item-copy-v2"><span className="mai-item-titleline-v2"><strong>{String(note.titulo||'Sem título')}</strong></span><span className="mai-item-subline-v2"><span>Hoje</span></span></span></button>)}{!notes.length?<div className="mai-v3-empty-line">Nenhuma nota de hoje.</div>:null}</div></section>,
   }
 
