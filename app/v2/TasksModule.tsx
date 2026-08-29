@@ -6,6 +6,7 @@ import type { AppView, Row, TaskModuleScope } from './app-types'
 import { MaiIcon } from './MaiIcons'
 import { MinimalTaskWorkspace } from './MinimalTaskWorkspace'
 import { TaskDateView } from './TaskDateView'
+import { TaskSelectionBar, TaskSelectionProvider } from './TaskSelection'
 import type { TaskWorkspaceView } from './UnifiedTasks'
 
 const rows = (value: unknown): Row[] => Array.isArray(value) ? value as Row[] : []
@@ -40,67 +41,71 @@ export function TasksModule(props: Props) {
   const controls = props.state.configs.moduleControls && typeof props.state.configs.moduleControls === 'object' ? props.state.configs.moduleControls as Record<string, Row> : {}
   const kanban = controls.tasks?.layout === 'kanban'
 
-  return <div className={`mai-v4-tasks-module${kanban ? ' mai-v4-tasks-kanban' : ''}`}>
-    <header className="mai-v4-tasks-module-head">
-      <div><h1>Tarefas</h1><p>Entrada, datas e projetos no mesmo lugar.</p></div>
-    </header>
+  return <TaskSelectionProvider state={props.state} scopeKey={String(props.scope)} commit={props.commit} inspect={props.inspect}>
+    <div className={`mai-v4-tasks-module${kanban ? ' mai-v4-tasks-kanban' : ''}`}>
+      <header className="mai-v4-tasks-module-head">
+        <div><h1>Tarefas</h1><p>Entrada, datas e projetos no mesmo lugar.</p></div>
+      </header>
 
-    <div className="mai-v4-task-project-layout">
-      <main className="mai-v4-task-main">
-        {projectScope ? <MinimalTaskWorkspace
-          state={props.state}
-          today={props.today}
-          view={workspaceView}
-          commit={props.commit}
-          googleRpc={props.googleRpc}
-          onOpenAgenda={() => props.navigate('upcoming')}
-          inspect={props.inspect}
-          selectedId={props.selectedId}
-          onManageSections={props.onManageSections}
-          navigate={next => {
-            if (next === 'inbox') props.onScopeChange('entrada')
-            else if (String(next).startsWith('project:')) props.onScopeChange(next as TaskModuleScope)
-            else props.navigate(next)
-          }}
-          onNewProject={props.onNewProject}
-          onEditProject={props.onEditProject}
-        /> : <TaskDateView state={props.state} today={props.today} mode={props.scope as 'today'|'upcoming'} commit={props.commit} inspect={props.inspect} selectedId={props.selectedId}/>} 
-      </main>
+      <TaskSelectionBar state={props.state}/>
 
-      <aside className="mai-v4-project-rail">
-        <div className="mai-v4-project-list mai-v4-task-scope-list">
-          <div className="mai-v4-project-item-wrap">
-            <button className="mai-v4-project-item" data-active={props.scope === 'entrada'} onClick={() => props.onScopeChange('entrada')}>
-              <i className="mai-v4-project-icon mai-v4-task-scope-icon"><MaiIcon name="inbox" size={13}/></i>
-              <span><strong>Entrada</strong><small>{inboxCount} aberta{inboxCount === 1 ? '' : 's'}</small></span>
-            </button>
-          </div>
-          <div className="mai-v4-project-item-wrap">
-            <button className="mai-v4-project-item" data-active={props.scope === 'today'} onClick={() => props.onScopeChange('today')}>
-              <i className="mai-v4-project-icon mai-v4-task-scope-icon"><MaiIcon name="today" size={13}/></i>
-              <span><strong>Hoje</strong><small>{todayCount} tarefa{todayCount === 1 ? '' : 's'}</small></span>
-            </button>
-          </div>
-          <div className="mai-v4-project-item-wrap">
-            <button className="mai-v4-project-item" data-active={props.scope === 'upcoming'} onClick={() => props.onScopeChange('upcoming')}>
-              <i className="mai-v4-project-icon mai-v4-task-scope-icon"><MaiIcon name="upcoming" size={13}/></i>
-              <span><strong>Em breve</strong><small>{upcomingCount} futura{upcomingCount === 1 ? '' : 's'}</small></span>
-            </button>
-          </div>
-        </div>
+      <div className="mai-v4-task-project-layout">
+        <main className="mai-v4-task-main">
+          {projectScope ? <MinimalTaskWorkspace
+            state={props.state}
+            today={props.today}
+            view={workspaceView}
+            commit={props.commit}
+            googleRpc={props.googleRpc}
+            onOpenAgenda={() => props.navigate('upcoming')}
+            inspect={props.inspect}
+            selectedId={props.selectedId}
+            onManageSections={props.onManageSections}
+            navigate={next => {
+              if (next === 'inbox') props.onScopeChange('entrada')
+              else if (String(next).startsWith('project:')) props.onScopeChange(next as TaskModuleScope)
+              else props.navigate(next)
+            }}
+            onNewProject={props.onNewProject}
+            onEditProject={props.onEditProject}
+          /> : <TaskDateView state={props.state} today={props.today} mode={props.scope as 'today'|'upcoming'} commit={props.commit} inspect={props.inspect} selectedId={props.selectedId}/>} 
+        </main>
 
-        <header><div><strong>Projetos</strong></div><button onClick={props.onNewProject} title="Novo projeto" aria-label="Novo projeto"><MaiIcon name="plus" size={16}/></button></header>
-        <div className="mai-v4-project-list">
-          {projects.map(project => <div className="mai-v4-project-item-wrap" key={String(project.id)}>
-            <button className="mai-v4-project-item" data-active={activeProject === String(project.id)} onClick={() => props.onScopeChange(`project:${String(project.id)}`)}>
-              {project.imagem_url ? <img src={String(project.imagem_url)} alt=""/> : <i className="mai-v4-project-icon" style={{background:String(project.cor || 'var(--v3-accent)')}}><MaiIcon name={String(project.icone || 'folder')} size={13}/></i>}
-              <span><strong>{String(project.nome || 'Projeto')}</strong><small>{openTasks.filter(task => String(task.projeto_id || 'entrada') === String(project.id)).length} abertas</small></span>
-            </button>
-            <button className="mai-v4-project-edit" title="Editar projeto" aria-label={`Editar ${String(project.nome || 'projeto')}`} onClick={() => props.onEditProject(String(project.id))}><span className="material-symbols-rounded">more_horiz</span></button>
-          </div>)}
-          {!projects.length ? <div className="mai-v3-empty-line">Nenhum projeto criado.</div> : null}
-        </div>
-      </aside>
+        <aside className="mai-v4-project-rail">
+          <div className="mai-v4-project-list mai-v4-task-scope-list">
+            <div className="mai-v4-project-item-wrap">
+              <button className="mai-v4-project-item" data-active={props.scope === 'entrada'} onClick={() => props.onScopeChange('entrada')}>
+                <i className="mai-v4-project-icon mai-v4-task-scope-icon"><MaiIcon name="inbox" size={13}/></i>
+                <span><strong>Entrada</strong><small>{inboxCount} aberta{inboxCount === 1 ? '' : 's'}</small></span>
+              </button>
+            </div>
+            <div className="mai-v4-project-item-wrap">
+              <button className="mai-v4-project-item" data-active={props.scope === 'today'} onClick={() => props.onScopeChange('today')}>
+                <i className="mai-v4-project-icon mai-v4-task-scope-icon"><MaiIcon name="today" size={13}/></i>
+                <span><strong>Hoje</strong><small>{todayCount} tarefa{todayCount === 1 ? '' : 's'}</small></span>
+              </button>
+            </div>
+            <div className="mai-v4-project-item-wrap">
+              <button className="mai-v4-project-item" data-active={props.scope === 'upcoming'} onClick={() => props.onScopeChange('upcoming')}>
+                <i className="mai-v4-project-icon mai-v4-task-scope-icon"><MaiIcon name="upcoming" size={13}/></i>
+                <span><strong>Em breve</strong><small>{upcomingCount} futura{upcomingCount === 1 ? '' : 's'}</small></span>
+              </button>
+            </div>
+          </div>
+
+          <header><div><strong>Projetos</strong></div><button onClick={props.onNewProject} title="Novo projeto" aria-label="Novo projeto"><MaiIcon name="plus" size={16}/></button></header>
+          <div className="mai-v4-project-list">
+            {projects.map(project => <div className="mai-v4-project-item-wrap" key={String(project.id)}>
+              <button className="mai-v4-project-item" data-active={activeProject === String(project.id)} onClick={() => props.onScopeChange(`project:${String(project.id)}`)}>
+                {project.imagem_url ? <img src={String(project.imagem_url)} alt=""/> : <i className="mai-v4-project-icon" style={{background:String(project.cor || 'var(--v3-accent)')}}><MaiIcon name={String(project.icone || 'folder')} size={13}/></i>}
+                <span><strong>{String(project.nome || 'Projeto')}</strong><small>{openTasks.filter(task => String(task.projeto_id || 'entrada') === String(project.id)).length} abertas</small></span>
+              </button>
+              <button className="mai-v4-project-edit" title="Editar projeto" aria-label={`Editar ${String(project.nome || 'projeto')}`} onClick={() => props.onEditProject(String(project.id))}><span className="material-symbols-rounded">more_horiz</span></button>
+            </div>)}
+            {!projects.length ? <div className="mai-v3-empty-line">Nenhum projeto criado.</div> : null}
+          </div>
+        </aside>
+      </div>
     </div>
-  </div>
+  </TaskSelectionProvider>
 }
