@@ -71,6 +71,44 @@
   gap:1px!important;
 }
 
+/* Lançamentos financeiros: o item principal continua abrindo o lançamento e o olho só controla a home. */
+.mai-v4-today-finance-row{
+  display:grid!important;
+  grid-template-columns:minmax(0,1fr) 32px!important;
+  gap:4px!important;
+  padding:0 3px 0 0!important;
+}
+.mai-v4-today-finance-main{
+  min-width:0;
+  min-height:52px;
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:7px 6px;
+  border:0;
+  background:transparent;
+  color:inherit;
+  text-align:left;
+  cursor:pointer;
+}
+.mai-v4-today-finance-hide{
+  width:30px;
+  height:30px;
+  display:grid;
+  place-items:center;
+  align-self:center;
+  border:0;
+  border-radius:8px;
+  background:transparent;
+  color:var(--v3-muted);
+  cursor:pointer;
+  opacity:0;
+  transition:opacity .12s ease,background .12s ease,color .12s ease;
+}
+.mai-v4-today-finance-row:hover .mai-v4-today-finance-hide,.mai-v4-today-finance-hide:focus-visible{opacity:1}
+.mai-v4-today-finance-hide:hover{background:var(--v3-hover);color:var(--v3-text)}
+.mai-v4-today-finance-hide .material-symbols-rounded{font-size:17px}
+
 /* Remove por completo a antiga composição em coluna lateral. */
 .mai-v4-today-layout,
 .mai-v4-today-main,
@@ -86,6 +124,8 @@
   top:48px;
   right:0;
   width:min(290px,calc(100vw - 32px));
+  max-height:min(620px,calc(100vh - 90px));
+  overflow:auto;
   padding:10px;
   border:1px solid var(--v3-line);
   border-radius:12px;
@@ -99,6 +139,7 @@
   color:var(--v3-muted);
   font-weight:650;
 }
+.mai-v4-today-customize>strong:not(:first-child){margin-top:7px;padding-top:10px;border-top:1px solid var(--v3-line)}
 .mai-v4-today-customize>div{
   min-height:38px;
   display:grid;
@@ -123,6 +164,7 @@
   cursor:pointer;
 }
 .mai-v4-section-toggle .material-symbols-rounded{font-size:17px;color:var(--v3-accent)}
+.mai-v4-today-customize-label{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .mai-v4-today-customize>div>span{display:flex;align-items:center;padding-right:3px}
 .mai-v4-today-customize>div>span button{
   width:28px;
@@ -139,4 +181,5 @@
 @media(max-width:720px){
   .mai-v4-today-list{gap:20px}
   .mai-v4-today-customize{position:fixed;top:62px;right:12px}
+  .mai-v4-today-finance-hide{opacity:1}
 }
