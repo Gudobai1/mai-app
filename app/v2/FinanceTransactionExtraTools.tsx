@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import type { Dispatch, SetStateAction } from 'react'
 import { CreateTool } from './CreateDrawerTools'
 import { MaiIcon } from './MaiIcons'
@@ -30,7 +31,7 @@ export function FinanceTransactionExtraTools({
   open,
   setOpen,
   draftPayment,
-  addPayment,
+  addPayment: _legacyAddPayment,
   removePayment,
   generateInstallments,
   editFixedOccurrence,
@@ -51,11 +52,26 @@ export function FinanceTransactionExtraTools({
 }) {
   const payments = rows(draft.pagamentos)
   const hiddenFromHome = draft.ocultar_inicio === true || draft.ocultar_home === true
+  const [paymentAmount, setPaymentAmount] = useState('')
+  const [paymentDate, setPaymentDate] = useState(today)
   const paymentSummary = draftPayment
     ? draftPayment.status === 'pago' ? 'Quitado' : draftPayment.paid > 0 ? `${money.format(draftPayment.remaining)} restante` : 'Sem pagamentos'
     : 'Sem pagamentos'
 
   const patch = (value: Row) => setDraft(current => current ? { ...current, ...value } : current)
+
+  function appendPayment() {
+    const remaining = Math.max(0, Number(draftPayment?.remaining || 0))
+    const amount = paymentAmount.trim() ? Number(paymentAmount.replace(',', '.')) : remaining
+    if (!Number.isFinite(amount) || amount <= 0 || amount > remaining + 0.005 || !paymentDate) return
+    const nextPayments = [...payments, { id: `pay-${crypto.randomUUID()}`, data: paymentDate, valor: amount, criado_em: new Date().toISOString() }]
+    const total = clampMoney(draft.valor)
+    const paid = Math.min(total, nextPayments.reduce((sum, payment) => sum + clampMoney(payment.valor), 0))
+    patch({ pagamentos: nextPayments, valor_pago: paid, status: total > 0 && paid >= total ? 'pago' : paid > 0 ? 'parcial' : 'pendente' })
+    setPaymentAmount('')
+  }
+
+  void _legacyAddPayment
 
   return <>
     <CreateTool id="finance-recurrence" icon="repeat" label="Forma" summary={recurrenceLabel(draft)} color="#7b6f9d" open={open} setOpen={setOpen}>
@@ -90,7 +106,7 @@ export function FinanceTransactionExtraTools({
     <CreateTool id="finance-payments" icon="account_balance_wallet" label="Pagamentos" summary={paymentSummary} color="#4f7f75" open={open} setOpen={setOpen}>
       <div className="mai-finance-tool-payments">
         <div className="mai-finance-tool-payment-summary"><span>Pago</span><strong>{money.format(draftPayment?.paid || 0)}</strong><span>Restante</span><strong>{money.format(draftPayment?.remaining || 0)}</strong></div>
-        <button type="button" className="mai-finance-tool-primary" disabled={!draftPayment || draftPayment.remaining <= 0} onClick={addPayment}><MaiIcon name="add" size={18}/><span>{draftPayment && draftPayment.remaining <= 0 ? 'Quitado' : 'Adicionar pagamento'}</span></button>
+        {draftPayment && draftPayment.remaining > 0 ? <div className="mai-finance-tool-payment-entry"><label><span>Valor</span><input inputMode="decimal" placeholder={draftPayment.remaining.toFixed(2).replace('.', ',')} value={paymentAmount} onChange={event => setPaymentAmount(event.target.value)}/></label><label><span>Data</span><input type="date" value={paymentDate} onChange={event => setPaymentDate(event.target.value)}/></label><button type="button" className="mai-finance-tool-primary" onClick={appendPayment}><MaiIcon name="add" size={18}/><span>Registrar</span></button></div> : <div className="mai-finance-tool-note"><MaiIcon name="check_circle" size={18}/><span>Lançamento quitado.</span></div>}
         <div className="mai-finance-tool-payment-list">{payments.map((payment, index) => <div key={String(payment.id || index)}><span>{naturalDate(dateKey(payment.data), today)}</span><strong>{money.format(clampMoney(payment.valor))}</strong><button type="button" title="Remover pagamento" onClick={() => removePayment(index)}><MaiIcon name="close" size={16}/></button></div>)}{!payments.length ? <small>Nenhum pagamento registrado.</small> : null}</div>
       </div>
     </CreateTool>
