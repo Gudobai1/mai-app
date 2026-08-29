@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent, type TouchEvent as ReactTouchEvent } from 'react'
+import { useEffect, useMemo, useRef, useState, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent, type TouchEvent as ReactTouchEvent } from 'react'
 import type { LegacyTask, MaiState } from '../../lib/v2/state'
 import { MaiIcon } from './MaiIcons'
 
@@ -20,8 +20,6 @@ type MouseDrag = {
   startX: number
   startY: number
   active: boolean
-  overId: string
-  position: DropPosition
 }
 
 type TouchDrag = {
@@ -30,14 +28,6 @@ type TouchDrag = {
   startX: number
   startY: number
   active: boolean
-  overId: string
-  position: DropPosition
-}
-
-type VisualDrag = {
-  sourceId: string
-  overId: string
-  position: DropPosition
 }
 
 const dateOnly = (value: unknown) => String(value || '').slice(0, 10)
@@ -60,15 +50,39 @@ function dropTarget(clientX: number, clientY: number, sourceId: string) {
   }
 }
 
+function moveId(order: string[], sourceId: string, targetId: string, position: DropPosition) {
+  if (!sourceId || !targetId || sourceId === targetId) return order
+  const sourceIndex = order.indexOf(sourceId)
+  if (sourceIndex < 0) return order
+
+  const next = [...order]
+  next.splice(sourceIndex, 1)
+  const targetIndex = next.indexOf(targetId)
+  if (targetIndex < 0) return order
+  next.splice(position === 'after' ? targetIndex + 1 : targetIndex, 0, sourceId)
+  return next
+}
+
 export function SortableSubtaskList({ parentId, tasks, commit, onToggle, onOpen }: Props) {
-  const [visual, setVisual] = useState<VisualDrag | null>(null)
+  const [draggedId, setDraggedId] = useState('')
+  const [previewOrder, setPreviewOrder] = useState<string[] | null>(null)
+  const previewOrderRef = useRef<string[] | null>(null)
   const mouseDrag = useRef<MouseDrag | null>(null)
   const touchDrag = useRef<TouchDrag | null>(null)
   const holdTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const suppressClick = useRef(false)
 
+  const taskMap = useMemo(() => new Map(tasks.map(task => [String(task.id), task])), [tasks])
+  const displayedTasks = useMemo(() => {
+    if (!previewOrder) return tasks
+    const ordered = previewOrder.map(id => taskMap.get(id)).filter((task): task is LegacyTask => Boolean(task))
+    const known = new Set(previewOrder)
+    return [...ordered, ...tasks.filter(task => !known.has(String(task.id)))]
+  }, [previewOrder, taskMap, tasks])
+
   useEffect(() => () => {
     if (holdTimer.current) clearTimeout(holdTimer.current)
+    restoreDocumentDragState()
   }, [])
 
   function clearHold() {
@@ -76,34 +90,52 @@ export function SortableSubtaskList({ parentId, tasks, commit, onToggle, onOpen 
     holdTimer.current = null
   }
 
-  function resetVisual() {
-    setVisual(null)
+  function setOrder(order: string[] | null) {
+    previewOrderRef.current = order
+    setPreviewOrder(order)
   }
 
-  function reorder(sourceId: string, targetId: string, position: DropPosition) {
-    if (!sourceId || !targetId || sourceId === targetId) return
-    commit(current => {
-      const siblings = current.tasks
-        .filter(task => String(task.parent_id || '') === parentId)
-        .sort((a, b) => Number(a.ordem || 0) - Number(b.ordem || 0))
+  function beginPreview(sourceId: string) {
+    const order = tasks.map(task => String(task.id))
+    setOrder(order)
+    setDraggedId(sourceId)
+    document.body.dataset.maiSubtaskDragging = 'true'
+    document.body.style.userSelect = 'none'
+  }
 
-      const sourceIndex = siblings.findIndex(task => String(task.id) === sourceId)
-      if (sourceIndex < 0) return current
+  function restoreDocumentDragState() {
+    if (typeof document === 'undefined') return
+    delete document.body.dataset.maiSubtaskDragging
+    document.body.style.userSelect = ''
+  }
 
-      const next = [...siblings]
-      const [moved] = next.splice(sourceIndex, 1)
-      const targetIndex = next.findIndex(task => String(task.id) === targetId)
-      if (targetIndex < 0) return current
+  function previewMove(sourceId: string, targetId: string, position: DropPosition) {
+    const current = previewOrderRef.current || tasks.map(task => String(task.id))
+    const next = moveId(current, sourceId, targetId, position)
+    if (next.length === current.length && next.every((id, index) => id === current[index])) return
+    setOrder(next)
+  }
 
-      const insertIndex = position === 'after' ? targetIndex + 1 : targetIndex
-      next.splice(insertIndex, 0, moved)
+  function persistPreview() {
+    const order = previewOrderRef.current
+    if (!order?.length) return
+    const rank = new Map(order.map((id, index) => [id, index]))
+    commit(current => ({
+      ...current,
+      tasks: current.tasks.map(task => String(task.parent_id || '') === parentId && rank.has(String(task.id))
+        ? { ...task, ordem: rank.get(String(task.id))! }
+        : task),
+    }))
+  }
 
-      const order = new Map(next.map((task, index) => [String(task.id), index]))
-      return {
-        ...current,
-        tasks: current.tasks.map(task => order.has(String(task.id)) ? { ...task, ordem: order.get(String(task.id))! } : task),
-      }
-    })
+  function finishDrag(save: boolean) {
+    if (save) persistPreview()
+    clearHold()
+    mouseDrag.current = null
+    touchDrag.current = null
+    setDraggedId('')
+    setOrder(null)
+    restoreDocumentDragState()
   }
 
   function updateMouseTarget(event: PointerEvent) {
@@ -113,39 +145,28 @@ export function SortableSubtaskList({ parentId, tasks, commit, onToggle, onOpen 
     const distance = Math.hypot(event.clientX - current.startX, event.clientY - current.startY)
     if (!current.active && distance >= 4) {
       current.active = true
-      setVisual({ sourceId: current.sourceId, overId: '', position: 'before' })
+      suppressClick.current = true
+      beginPreview(current.sourceId)
     }
     if (!current.active) return
 
     event.preventDefault()
     const target = dropTarget(event.clientX, event.clientY, current.sourceId)
-    if (!target) return
-
-    current.overId = target.id
-    current.position = target.position
-    setVisual({ sourceId: current.sourceId, overId: target.id, position: target.position })
+    if (target) previewMove(current.sourceId, target.id, target.position)
   }
 
   function finishMouse(event: PointerEvent) {
     const current = mouseDrag.current
     if (!current || event.pointerId !== current.pointerId) return
-
-    if (current.active) {
-      event.preventDefault()
-      suppressClick.current = true
-      if (current.overId) reorder(current.sourceId, current.overId, current.position)
-    }
-
-    mouseDrag.current = null
-    resetVisual()
+    if (current.active) event.preventDefault()
+    finishDrag(current.active)
     window.removeEventListener('pointermove', updateMouseTarget)
     window.removeEventListener('pointerup', finishMouse)
     window.removeEventListener('pointercancel', cancelMouse)
   }
 
   function cancelMouse() {
-    mouseDrag.current = null
-    resetVisual()
+    finishDrag(false)
     window.removeEventListener('pointermove', updateMouseTarget)
     window.removeEventListener('pointerup', finishMouse)
     window.removeEventListener('pointercancel', cancelMouse)
@@ -162,8 +183,6 @@ export function SortableSubtaskList({ parentId, tasks, commit, onToggle, onOpen 
       startX: event.clientX,
       startY: event.clientY,
       active: false,
-      overId: '',
-      position: 'before',
     }
 
     window.addEventListener('pointermove', updateMouseTarget, { passive: false })
@@ -189,35 +208,25 @@ export function SortableSubtaskList({ parentId, tasks, commit, onToggle, onOpen 
 
     event.preventDefault()
     const target = dropTarget(touch.clientX, touch.clientY, current.sourceId)
-    if (!target) return
-
-    current.overId = target.id
-    current.position = target.position
-    setVisual({ sourceId: current.sourceId, overId: target.id, position: target.position })
+    if (target) previewMove(current.sourceId, target.id, target.position)
   }
 
   function finishTouch(event: TouchEvent) {
     const current = touchDrag.current
     if (!current) return
     clearHold()
-
     if (current.active) {
       event.preventDefault()
       suppressClick.current = true
-      if (current.overId) reorder(current.sourceId, current.overId, current.position)
     }
-
-    touchDrag.current = null
-    resetVisual()
+    finishDrag(current.active)
     window.removeEventListener('touchmove', updateTouchTarget)
     window.removeEventListener('touchend', finishTouch)
     window.removeEventListener('touchcancel', cancelTouch)
   }
 
   function cancelTouch() {
-    clearHold()
-    touchDrag.current = null
-    resetVisual()
+    finishDrag(false)
     window.removeEventListener('touchmove', updateTouchTarget)
     window.removeEventListener('touchend', finishTouch)
     window.removeEventListener('touchcancel', cancelTouch)
@@ -235,8 +244,6 @@ export function SortableSubtaskList({ parentId, tasks, commit, onToggle, onOpen 
       startX: touch.clientX,
       startY: touch.clientY,
       active: false,
-      overId: '',
-      position: 'before',
     }
 
     window.addEventListener('touchend', finishTouch, { passive: false })
@@ -247,7 +254,8 @@ export function SortableSubtaskList({ parentId, tasks, commit, onToggle, onOpen 
       const current = touchDrag.current
       if (!current || current.sourceId !== id) return
       current.active = true
-      setVisual({ sourceId: id, overId: '', position: 'before' })
+      suppressClick.current = true
+      beginPreview(id)
       window.addEventListener('touchmove', updateTouchTarget, { passive: false })
       holdTimer.current = null
       try { navigator.vibrate?.(8) } catch {}
@@ -262,29 +270,25 @@ export function SortableSubtaskList({ parentId, tasks, commit, onToggle, onOpen 
   }
 
   return <div className="mai-context-v3-subtask-list mai-sortable-subtask-list">
-    {tasks.map(child => {
+    {displayedTasks.map(child => {
       const id = String(child.id)
-      const dragging = visual?.sourceId === id
-      const overBefore = visual?.overId === id && visual.position === 'before'
-      const overAfter = visual?.overId === id && visual.position === 'after'
+      const dragging = draggedId === id
 
       return <div
         className="mai-context-v3-subtask mai-sortable-subtask"
         key={child.id}
         data-mai-subtask-id={id}
         data-subtask-dragging={dragging || undefined}
-        data-subtask-over-before={overBefore || undefined}
-        data-subtask-over-after={overAfter || undefined}
         onPointerDown={event => beginMouse(event, id)}
         onTouchStart={event => beginTouch(event, id)}
         onClickCapture={captureClick}
-        onContextMenu={event => { if (visual?.sourceId === id) event.preventDefault() }}
+        onContextMenu={event => { if (dragging) event.preventDefault() }}
       >
         <button
           type="button"
           className="mai-subtask-drag-handle"
           aria-label={`Reorganizar ${child.titulo}`}
-          title="Segure e arraste para reorganizar"
+          title="Arraste a subtarefa para reorganizar"
           onClick={event => { event.preventDefault(); event.stopPropagation() }}
         ><span className="material-symbols-rounded">drag_indicator</span></button>
         <button type="button" className="mai-context-v3-subtask-check" data-done={child.concluida === true} style={!child.concluida ? { borderColor: priorityColor(child.prioridade) } : undefined} onClick={() => onToggle(id)}>{child.concluida ? '✓' : ''}</button>
