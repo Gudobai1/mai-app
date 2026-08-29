@@ -38,18 +38,6 @@ function formatDate(value: string) {
   return new Date(`${value}T12:00:00`).toLocaleDateString('pt-BR', { day: 'numeric', month: 'short', year: 'numeric' })
 }
 
-function dropTarget(clientX: number, clientY: number, sourceId: string) {
-  const element = document.elementFromPoint(clientX, clientY) as HTMLElement | null
-  const row = element?.closest<HTMLElement>('[data-mai-subtask-id]')
-  const id = row?.dataset.maiSubtaskId || ''
-  if (!row || !id || id === sourceId) return null
-  const rect = row.getBoundingClientRect()
-  return {
-    id,
-    position: clientY >= rect.top + rect.height / 2 ? 'after' as const : 'before' as const,
-  }
-}
-
 function moveId(order: string[], sourceId: string, targetId: string, position: DropPosition) {
   if (!sourceId || !targetId || sourceId === targetId) return order
   const sourceIndex = order.indexOf(sourceId)
@@ -64,12 +52,14 @@ function moveId(order: string[], sourceId: string, targetId: string, position: D
 }
 
 export function SortableSubtaskList({ parentId, tasks, commit, onToggle, onOpen }: Props) {
+  const listRef = useRef<HTMLDivElement>(null)
   const [draggedId, setDraggedId] = useState('')
   const [previewOrder, setPreviewOrder] = useState<string[] | null>(null)
   const previewOrderRef = useRef<string[] | null>(null)
   const mouseDrag = useRef<MouseDrag | null>(null)
   const touchDrag = useRef<TouchDrag | null>(null)
   const holdTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const suppressTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const suppressClick = useRef(false)
 
   const taskMap = useMemo(() => new Map(tasks.map(task => [String(task.id), task])), [tasks])
@@ -81,7 +71,9 @@ export function SortableSubtaskList({ parentId, tasks, commit, onToggle, onOpen 
   }, [previewOrder, taskMap, tasks])
 
   useEffect(() => () => {
-    if (holdTimer.current) clearTimeout(holdTimer.current)
+    clearHold()
+    if (suppressTimer.current) clearTimeout(suppressTimer.current)
+    removeTouchListeners()
     restoreDocumentDragState()
   }, [])
 
@@ -101,12 +93,50 @@ export function SortableSubtaskList({ parentId, tasks, commit, onToggle, onOpen 
     setDraggedId(sourceId)
     document.body.dataset.maiSubtaskDragging = 'true'
     document.body.style.userSelect = 'none'
+    document.body.style.webkitUserSelect = 'none'
   }
 
   function restoreDocumentDragState() {
     if (typeof document === 'undefined') return
     delete document.body.dataset.maiSubtaskDragging
     document.body.style.userSelect = ''
+    document.body.style.webkitUserSelect = ''
+  }
+
+  function targetAtY(clientY: number, sourceId: string): { id: string; position: DropPosition } | null {
+    const root = listRef.current
+    if (!root) return null
+
+    const rows = Array.from(root.querySelectorAll<HTMLElement>('[data-mai-subtask-id]'))
+      .filter(row => row.dataset.maiSubtaskId && row.dataset.maiSubtaskId !== sourceId)
+    if (!rows.length) return null
+
+    const measured = rows.map(row => {
+      const rect = row.getBoundingClientRect()
+      return {
+        id: String(row.dataset.maiSubtaskId),
+        top: rect.top,
+        bottom: rect.bottom,
+        center: rect.top + rect.height / 2,
+      }
+    }).sort((a, b) => a.top - b.top)
+
+    const first = measured[0]
+    const last = measured[measured.length - 1]
+    if (clientY <= first.center) return { id: first.id, position: 'before' }
+    if (clientY >= last.center) return { id: last.id, position: 'after' }
+
+    let nearest = measured[0]
+    let distance = Math.abs(clientY - nearest.center)
+    for (const row of measured.slice(1)) {
+      const nextDistance = Math.abs(clientY - row.center)
+      if (nextDistance < distance) {
+        nearest = row
+        distance = nextDistance
+      }
+    }
+
+    return { id: nearest.id, position: clientY >= nearest.center ? 'after' : 'before' }
   }
 
   function previewMove(sourceId: string, targetId: string, position: DropPosition) {
@@ -128,6 +158,15 @@ export function SortableSubtaskList({ parentId, tasks, commit, onToggle, onOpen 
     }))
   }
 
+  function armClickSuppression() {
+    suppressClick.current = true
+    if (suppressTimer.current) clearTimeout(suppressTimer.current)
+    suppressTimer.current = setTimeout(() => {
+      suppressClick.current = false
+      suppressTimer.current = null
+    }, 500)
+  }
+
   function finishDrag(save: boolean) {
     if (save) persistPreview()
     clearHold()
@@ -145,13 +184,13 @@ export function SortableSubtaskList({ parentId, tasks, commit, onToggle, onOpen 
     const distance = Math.hypot(event.clientX - current.startX, event.clientY - current.startY)
     if (!current.active && distance >= 4) {
       current.active = true
-      suppressClick.current = true
+      armClickSuppression()
       beginPreview(current.sourceId)
     }
     if (!current.active) return
 
     event.preventDefault()
-    const target = dropTarget(event.clientX, event.clientY, current.sourceId)
+    const target = targetAtY(event.clientY, current.sourceId)
     if (target) previewMove(current.sourceId, target.id, target.position)
   }
 
@@ -207,7 +246,8 @@ export function SortableSubtaskList({ parentId, tasks, commit, onToggle, onOpen 
     }
 
     event.preventDefault()
-    const target = dropTarget(touch.clientX, touch.clientY, current.sourceId)
+    event.stopPropagation()
+    const target = targetAtY(touch.clientY, current.sourceId)
     if (target) previewMove(current.sourceId, target.id, target.position)
   }
 
@@ -217,19 +257,28 @@ export function SortableSubtaskList({ parentId, tasks, commit, onToggle, onOpen 
     clearHold()
     if (current.active) {
       event.preventDefault()
-      suppressClick.current = true
+      event.stopPropagation()
+      armClickSuppression()
     }
     finishDrag(current.active)
-    window.removeEventListener('touchmove', updateTouchTarget)
-    window.removeEventListener('touchend', finishTouch)
-    window.removeEventListener('touchcancel', cancelTouch)
+    removeTouchListeners()
   }
 
   function cancelTouch() {
     finishDrag(false)
-    window.removeEventListener('touchmove', updateTouchTarget)
-    window.removeEventListener('touchend', finishTouch)
-    window.removeEventListener('touchcancel', cancelTouch)
+    removeTouchListeners()
+  }
+
+  function addTouchListeners() {
+    document.addEventListener('touchmove', updateTouchTarget, { passive: false, capture: true })
+    document.addEventListener('touchend', finishTouch, { passive: false, capture: true })
+    document.addEventListener('touchcancel', cancelTouch, { capture: true })
+  }
+
+  function removeTouchListeners() {
+    document.removeEventListener('touchmove', updateTouchTarget, true)
+    document.removeEventListener('touchend', finishTouch, true)
+    document.removeEventListener('touchcancel', cancelTouch, true)
   }
 
   function beginTouch(event: ReactTouchEvent<HTMLDivElement>, id: string) {
@@ -246,30 +295,30 @@ export function SortableSubtaskList({ parentId, tasks, commit, onToggle, onOpen 
       active: false,
     }
 
-    window.addEventListener('touchend', finishTouch, { passive: false })
-    window.addEventListener('touchcancel', cancelTouch)
-
+    removeTouchListeners()
+    addTouchListeners()
     clearHold()
     holdTimer.current = setTimeout(() => {
       const current = touchDrag.current
       if (!current || current.sourceId !== id) return
       current.active = true
-      suppressClick.current = true
+      armClickSuppression()
       beginPreview(id)
-      window.addEventListener('touchmove', updateTouchTarget, { passive: false })
       holdTimer.current = null
-      try { navigator.vibrate?.(8) } catch {}
-    }, 280)
+      try { navigator.vibrate?.(12) } catch {}
+    }, 300)
   }
 
   function captureClick(event: ReactMouseEvent<HTMLDivElement>) {
     if (!suppressClick.current) return
     suppressClick.current = false
+    if (suppressTimer.current) clearTimeout(suppressTimer.current)
+    suppressTimer.current = null
     event.preventDefault()
     event.stopPropagation()
   }
 
-  return <div className="mai-context-v3-subtask-list mai-sortable-subtask-list">
+  return <div ref={listRef} className="mai-context-v3-subtask-list mai-sortable-subtask-list">
     {displayedTasks.map(child => {
       const id = String(child.id)
       const dragging = draggedId === id
@@ -282,13 +331,14 @@ export function SortableSubtaskList({ parentId, tasks, commit, onToggle, onOpen 
         onPointerDown={event => beginMouse(event, id)}
         onTouchStart={event => beginTouch(event, id)}
         onClickCapture={captureClick}
-        onContextMenu={event => { if (dragging) event.preventDefault() }}
+        onContextMenu={event => event.preventDefault()}
+        onDragStart={event => event.preventDefault()}
       >
         <button
           type="button"
           className="mai-subtask-drag-handle"
           aria-label={`Reorganizar ${child.titulo}`}
-          title="Arraste a subtarefa para reorganizar"
+          title="Segure e arraste a subtarefa para reorganizar"
           onClick={event => { event.preventDefault(); event.stopPropagation() }}
         ><span className="material-symbols-rounded">drag_indicator</span></button>
         <button type="button" className="mai-context-v3-subtask-check" data-done={child.concluida === true} style={!child.concluida ? { borderColor: priorityColor(child.prioridade) } : undefined} onClick={() => onToggle(id)}>{child.concluida ? '✓' : ''}</button>
