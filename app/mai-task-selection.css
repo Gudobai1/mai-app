@@ -116,6 +116,10 @@
   padding:0;
 }
 
+.mai-sortable-subtask-list{
+  overscroll-behavior:contain;
+}
+
 .mai-sortable-subtask{
   position:relative!important;
   grid-template-columns:28px 22px minmax(0,1fr) 16px!important;
@@ -125,7 +129,17 @@
   user-select:none!important;
   -webkit-user-select:none!important;
   -webkit-touch-callout:none!important;
+  -webkit-user-drag:none!important;
   transition:background .14s ease,opacity .14s ease,transform .14s ease!important;
+}
+
+.mai-sortable-subtask button,
+.mai-sortable-subtask strong,
+.mai-sortable-subtask small,
+.mai-sortable-subtask span{
+  user-select:none!important;
+  -webkit-user-select:none!important;
+  -webkit-touch-callout:none!important;
 }
 
 .mai-sortable-subtask:active{
@@ -184,6 +198,14 @@
 .mai-sortable-subtask[data-subtask-over-before="true"]::before{top:-1px}
 .mai-sortable-subtask[data-subtask-over-after="true"]::after{bottom:-1px}
 
+body[data-mai-subtask-dragging="true"]{
+  overscroll-behavior:none!important;
+}
+
+body[data-mai-subtask-dragging="true"] .mai-context-v3-scroll{
+  overscroll-behavior:none!important;
+}
+
 @media(max-width:760px){
   .mai-task-selection-bar{
     position:fixed;
@@ -223,6 +245,7 @@
 
   .mai-sortable-subtask{
     cursor:default!important;
+    -webkit-tap-highlight-color:transparent!important;
   }
 
   .mai-subtask-drag-handle{
