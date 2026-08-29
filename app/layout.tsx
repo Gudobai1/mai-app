@@ -47,6 +47,7 @@ import './mai-item-attachments.css'
 import './mai-file-preview.css'
 import './mai-dark-mode-v2.css'
 import './mai-finance-options-final.css'
+import './mai-finance-card-config-v1.css'
 
 export const metadata: Metadata = {
   title: 'MAI — Meu Sistema',
