@@ -4,6 +4,7 @@ import { FormEvent, ReactNode, useEffect, useMemo, useRef, useState } from 'reac
 import type { MaiState } from '../../lib/v2/state'
 import type { InspectableItem } from './ContextDrawer'
 import { MaiIcon } from './MaiIcons'
+import { SortableSubtaskList } from './SortableSubtaskList'
 
 type Row = Record<string, any>
 type Props = {
@@ -30,7 +31,6 @@ type PopoverProps = {
 const rows = (value: unknown): Row[] => Array.isArray(value) ? value as Row[] : []
 const dateOnly = (value: unknown) => String(value || '').slice(0, 10)
 const timeOnly = (value: unknown) => String(value || '').includes('T') ? String(value).slice(11, 16) : String(value || '').slice(0, 5)
-const priorityColor = (value: unknown) => Number(value || 4) === 1 ? '#c85b52' : Number(value || 4) === 2 ? '#c28a3d' : Number(value || 4) === 3 ? '#7c9274' : '#b8beb7'
 
 function addDays(key: string, amount: number) {
   const value = new Date(`${key}T12:00:00`)
@@ -330,11 +330,7 @@ export function ContextDrawerV2({ item, state, today, commit, googleRpc, refresh
 
           {active.kind === 'task' ? <section className="mai-context-v3-section mai-context-v3-subtasks">
             <header><span className="material-symbols-rounded">account_tree</span><strong>Subtarefas</strong><small>{directChildren.filter(child => child.concluida).length}/{directChildren.length}</small></header>
-            <div className="mai-context-v3-subtask-list">{directChildren.map(child => <div className="mai-context-v3-subtask" key={child.id}>
-              <button type="button" className="mai-context-v3-subtask-check" data-done={child.concluida === true} style={!child.concluida ? { borderColor: priorityColor(child.prioridade) } : undefined} onClick={() => toggleSubtask(child.id)}>{child.concluida ? '✓' : ''}</button>
-              <button type="button" className="mai-context-v3-subtask-main" onClick={() => setFocusId(child.id)}><strong>{child.titulo}</strong><small>{dateOnly(child.data_vencimento) ? `${formatDate(dateOnly(child.data_vencimento))} · tarefa com data` : 'Dentro desta tarefa'}</small></button>
-              <MaiIcon name="chevron" size={13}/>
-            </div>)}</div>
+            <SortableSubtaskList parentId={active.sourceId} tasks={directChildren} commit={commit} onToggle={toggleSubtask} onOpen={setFocusId}/>
             <div className="mai-context-v3-subtask-add"><span className="material-symbols-rounded">add</span><input value={subtaskTitle} placeholder="Adicionar subtarefa" onChange={e => setSubtaskTitle(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addSubtask() } }}/><button type="button" onClick={addSubtask}>Adicionar</button></div>
           </section> : null}
 
