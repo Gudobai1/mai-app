@@ -51,6 +51,7 @@ import './mai-finance-options-final.css'
 import './mai-finance-card-config-v1.css'
 import './mai-task-selection.css'
 import './ds/tokens.css'
+import './v2/shell/shell-overrides.css'
 
 const jakarta = Plus_Jakarta_Sans({
   subsets: ['latin'],

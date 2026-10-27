@@ -14,13 +14,13 @@ import { GoalsV4 } from './GoalsV4'
 import { HabitsV4 } from './HabitsV4'
 import { HealthQuickAddDrawer } from './HealthQuickAddDrawer'
 import { MinimalAreas, type SecondaryView } from './MinimalAreas'
-import { MobileBottomNav } from './MobileBottomNav'
 import { NotesV4 } from './NotesV4'
 import { ProjectDrawer } from './ProjectDrawer'
 import { QuickCreateDrawer } from './QuickCreateDrawer'
 import { SearchOverlay } from './SearchOverlay'
 import { SectionInlineAdd } from './SectionInlineAdd'
-import { ShellSidebar } from './ShellSidebar'
+import { ModernBottomNav } from './shell/ModernBottomNav'
+import { ModernSidebar } from './shell/ModernSidebar'
 import { TasksModule } from './TasksModule'
 import { TodayV4 } from './TodayV4'
 import { UpcomingV4 } from './UpcomingV4'
@@ -177,7 +177,6 @@ export function UnifiedAppUx() {
   const restoredView = useRef(false)
   const cleanedLegacyKanban = useRef(false)
   const [view, setView] = useState<AppView>('today')
-  const [sidebarOpen, setSidebarOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
   const [search, setSearch] = useState('')
   const [settingsOpen, setSettingsOpen] = useState(false)
@@ -250,7 +249,6 @@ export function UnifiedAppUx() {
 
   function setTaskScope(scope: TaskModuleScope) {
     setView('tasks')
-    setSidebarOpen(false)
     setSelected(null)
     runtime.commit(current => ({ ...current, configs: { ...current.configs, lastView: 'tasks', taskModuleScope: scope } }))
   }
@@ -263,7 +261,6 @@ export function UnifiedAppUx() {
     }
     const resolved = text === 'home' ? 'today' : next
     setView(resolved as AppView)
-    setSidebarOpen(false)
     setSelected(null)
     runtime.commit(current => ({ ...current, configs: { ...current.configs, lastView: resolved } }))
   }
@@ -300,7 +297,7 @@ export function UnifiedAppUx() {
   }
 
   return <div className={`${styles.appShell} mai-v3-shell`}>
-    <ShellSidebar state={runtime.state} view={view} sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} navigate={navigate} onSearch={() => setSearchOpen(true)} onSettings={() => setSettingsOpen(true)} profile={googleProfile} />
+    <ModernSidebar state={runtime.state} today={runtime.today} view={view} navigate={navigate} onSearch={() => setSearchOpen(true)} onAdd={() => contextualAdd()} onSettings={() => setSettingsOpen(true)} profile={googleProfile} />
 
     <main className={`${styles.main} mai-v3-main`}>
       <div className={`${styles.workspace} mai-v3-workspace`}>
@@ -335,7 +332,7 @@ export function UnifiedAppUx() {
       </div>
     </main>
 
-    <MobileBottomNav view={view} searchOpen={searchOpen} navigate={navigate} onSearch={() => setSearchOpen(true)} onSettings={() => setSettingsOpen(true)} />
+    <ModernBottomNav view={view} navigate={navigate} onSearch={() => setSearchOpen(true)} onAdd={() => contextualAdd()} onSettings={() => setSettingsOpen(true)} />
     <SectionInlineAdd view={view} onAdd={contextualAdd}/>
     {searchOpen ? <SearchOverlay state={runtime.state} query={search} setQuery={setSearch} onClose={() => setSearchOpen(false)} inspect={setSelected} navigate={navigate} openProject={id => setProjectDialog({ projectId:id, tab:'details' })} /> : null}
     {projectDialog ? <ProjectDrawer state={runtime.state} commit={runtime.commit} projectId={projectDialog.projectId} parentId={projectDialog.parentId} initialTab={projectDialog.tab} onClose={() => setProjectDialog(null)} onSaved={id => { const wasCreating = !projectDialog.projectId; setProjectDialog(null); if (wasCreating) setTaskScope(`project:${id}`) }} onRemoved={() => { setProjectDialog(null); setTaskScope('entrada') }} /> : null}
