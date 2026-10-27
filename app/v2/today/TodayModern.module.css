@@ -1,0 +1,480 @@
+/* MAI — tela Hoje no visual Moderno. Usa só tokens --ds-*. */
+
+.page {
+  font-family: var(--ds-font);
+  color: var(--ds-text);
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-s-5);
+  padding-top: var(--ds-s-2);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Cabeçalho */
+.header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--ds-s-4);
+}
+
+.eyebrow {
+  font-size: var(--ds-fs-sm);
+  font-weight: var(--ds-fw-medium);
+  color: var(--ds-muted);
+  text-transform: capitalize;
+}
+
+.greeting {
+  margin: 2px 0 0;
+  font-size: var(--ds-fs-2xl);
+  font-weight: var(--ds-fw-heavy);
+  letter-spacing: -0.025em;
+  line-height: 1.15;
+}
+
+.summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ds-s-2);
+  margin-top: var(--ds-s-3);
+}
+
+.headerActions {
+  position: relative;
+  flex-shrink: 0;
+}
+
+/* Personalizar */
+.customize.customize {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  z-index: 40;
+  width: min(300px, calc(100vw - 32px));
+  padding: var(--ds-s-2);
+  border-radius: var(--ds-r-lg);
+  background: var(--ds-surface);
+  box-shadow: var(--ds-shadow-modal);
+}
+
+.customizeTitle {
+  display: block;
+  padding: var(--ds-s-2) var(--ds-s-2) var(--ds-s-3);
+  font-size: var(--ds-fs-xs);
+  font-weight: var(--ds-fw-bold);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ds-muted);
+}
+
+.customizeRow {
+  display: flex;
+  align-items: center;
+  gap: var(--ds-s-1);
+  min-height: 44px;
+}
+
+.customizeToggle.customizeToggle {
+  flex: 1;
+  min-width: 0;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  gap: var(--ds-s-2);
+  padding: 0 var(--ds-s-2);
+  border: 0;
+  border-radius: var(--ds-r-sm);
+  background: transparent;
+  color: var(--ds-text);
+  font: inherit;
+  font-size: 14px;
+  font-weight: var(--ds-fw-medium);
+  text-align: left;
+  cursor: pointer;
+}
+
+.customizeToggle.customizeToggle:hover {
+  background: var(--ds-surface-2);
+}
+
+.customizeToggle.customizeToggle[aria-pressed='true'] > span:first-child {
+  color: var(--ds-accent);
+}
+
+/* Semana */
+.week {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: var(--ds-s-2);
+}
+
+.day {
+  height: 72px;
+  border-radius: var(--ds-r-lg);
+  background: var(--ds-surface);
+  box-shadow: var(--ds-shadow-1);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  color: var(--ds-text);
+}
+
+.dayToday {
+  background: var(--ds-text);
+  color: var(--ds-bg);
+  box-shadow: none;
+}
+
+.dayPast {
+  color: var(--ds-muted);
+}
+
+.dayName {
+  font-size: var(--ds-fs-xs);
+  font-weight: var(--ds-fw-bold);
+  opacity: 0.8;
+  text-transform: capitalize;
+}
+
+.dayNumber {
+  font-size: 18px;
+  font-weight: var(--ds-fw-heavy);
+}
+
+.dayLoad {
+  height: 5px;
+  border-radius: 3px;
+  margin-top: 3px;
+  background: var(--ds-line-strong);
+}
+
+.dayToday .dayLoad {
+  background: var(--ds-accent);
+}
+
+/* Destaque "A seguir" */
+.next {
+  display: flex;
+  align-items: center;
+  gap: var(--ds-s-4);
+}
+
+.nextIcon {
+  width: 52px;
+  height: 52px;
+  border-radius: 16px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  background: var(--ds-on-accent-soft);
+}
+
+.nextBody {
+  flex: 1;
+  min-width: 0;
+}
+
+.nextEyebrow {
+  font-size: var(--ds-fs-sm);
+  font-weight: var(--ds-fw-medium);
+  opacity: 0.85;
+}
+
+.nextTitle {
+  font-size: var(--ds-fs-xl);
+  font-weight: var(--ds-fw-heavy);
+  letter-spacing: var(--ds-tracking-tight);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.nextMeta {
+  font-size: var(--ds-fs-sm);
+  font-weight: var(--ds-fw-regular);
+  opacity: 0.85;
+}
+
+/* Grade de seções (masonry por colunas, respeita a ordem escolhida) */
+.grid {
+  columns: 2 360px;
+  column-gap: var(--ds-s-5);
+}
+
+.grid > * {
+  break-inside: avoid;
+  margin-bottom: var(--ds-s-5);
+}
+
+.grid > *:last-child {
+  margin-bottom: 0;
+}
+
+.empty {
+  padding: var(--ds-s-3) 0 var(--ds-s-2);
+  font-size: var(--ds-fs-sm);
+  font-weight: var(--ds-fw-medium);
+  color: var(--ds-muted);
+}
+
+.groupLabel {
+  display: flex;
+  justify-content: space-between;
+  margin: var(--ds-s-3) 0 var(--ds-s-1);
+  font-size: var(--ds-fs-xs);
+  font-weight: var(--ds-fw-bold);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ds-muted);
+}
+
+.groupLabel:first-child {
+  margin-top: var(--ds-s-1);
+}
+
+.late {
+  color: var(--ds-danger);
+  font-weight: var(--ds-fw-bold);
+}
+
+/* Linhas clicáveis (compromissos, metas, notas, finanças) */
+.rows {
+  display: flex;
+  flex-direction: column;
+}
+
+.row.row {
+  appearance: none;
+  width: 100%;
+  min-height: 60px;
+  display: flex;
+  align-items: center;
+  gap: var(--ds-s-3);
+  padding: var(--ds-s-2) 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--ds-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.row.row + .row.row,
+.rowWrap + .rowWrap {
+  border-top: 1px solid var(--ds-line);
+}
+
+.row.row:focus-visible,
+.habitMain.habitMain:focus-visible,
+.habitInfo.habitInfo:focus-visible {
+  outline: 2px solid var(--ds-accent);
+  outline-offset: 2px;
+  border-radius: var(--ds-r-sm);
+}
+
+.rowPassed {
+  opacity: 0.55;
+}
+
+.rowWrap {
+  display: flex;
+  align-items: center;
+  gap: var(--ds-s-3);
+}
+
+.rowWrap > .row.row {
+  flex: 1;
+  min-width: 0;
+}
+
+.rowBody {
+  flex: 1;
+  min-width: 0;
+}
+
+.rowTitle {
+  font-size: var(--ds-fs-md);
+  font-weight: var(--ds-fw-medium);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rowSub {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 3px;
+  font-size: 12px;
+  font-weight: var(--ds-fw-medium);
+  color: var(--ds-muted);
+}
+
+.rowSub > * {
+  min-width: 0;
+}
+
+.amount {
+  font-size: 14px;
+  font-weight: var(--ds-fw-bold);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.amountIncome {
+  color: var(--ds-success);
+}
+
+.eventTile {
+  width: 40px;
+  height: 40px;
+  border-radius: 13px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+}
+
+.projectTag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  max-width: 160px;
+  height: 22px;
+  padding: 0 8px;
+  border-radius: var(--ds-r-full);
+  background: var(--ds-surface-2);
+  color: var(--ds-text-2);
+  font-size: var(--ds-fs-xs);
+  font-weight: var(--ds-fw-bold);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.projectDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.priority {
+  flex-shrink: 0;
+}
+
+.goalProgress {
+  margin-top: var(--ds-s-2);
+}
+
+/* Hábitos */
+.habits {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(118px, 1fr));
+  gap: var(--ds-s-2);
+}
+
+.habit {
+  border-radius: var(--ds-r-lg);
+  background: var(--ds-surface-2);
+  padding: var(--ds-s-3) var(--ds-s-2);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  text-align: center;
+}
+
+.habitMain.habitMain {
+  appearance: none;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  border-radius: 14px;
+  transition: transform var(--ds-dur-fast) var(--ds-ease);
+}
+
+.habitMain.habitMain:active {
+  transform: scale(0.92);
+}
+
+.habitInfo.habitInfo {
+  appearance: none;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--ds-text);
+  font: inherit;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.habitName {
+  max-width: 100%;
+  font-size: var(--ds-fs-sm);
+  font-weight: var(--ds-fw-bold);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.habitValue {
+  font-size: var(--ds-fs-xs);
+  font-weight: var(--ds-fw-medium);
+  color: var(--ds-muted);
+}
+
+@media (max-width: 900px) {
+  .page {
+    gap: var(--ds-s-4);
+    padding-top: 0;
+  }
+
+  .greeting {
+    font-size: var(--ds-fs-xl);
+  }
+
+  .week {
+    gap: 6px;
+  }
+
+  .day {
+    height: 60px;
+    border-radius: 18px;
+  }
+
+  .dayNumber {
+    font-size: 16px;
+  }
+
+  .grid {
+    columns: 1;
+  }
+
+  .grid > * {
+    margin-bottom: var(--ds-s-4);
+  }
+
+  .habits {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  .habit {
+    padding: var(--ds-s-3) 4px;
+  }
+}
+
+@media (max-width: 380px) {
+  .habits {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}

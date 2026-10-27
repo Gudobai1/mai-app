@@ -14,3 +14,16 @@
     inset: 0 0 calc(88px + env(safe-area-inset-bottom)) 0 !important;
   }
 }
+
+/* Telas já migradas para o visual Moderno usam o fundo do design system. */
+html body .mai-v3-shell[data-view="today"],
+html body .mai-v3-shell[data-view="today"] .mai-v3-main,
+html body .mai-v3-shell[data-view="today"] .mai-v3-workspace {
+  background: var(--ds-bg) !important;
+  color: var(--ds-text) !important;
+}
+
+html body .mai-v3-shell[data-view="today"] .mai-app-topbar {
+  background: color-mix(in srgb, var(--ds-bg) 92%, transparent) !important;
+  border-color: transparent !important;
+}

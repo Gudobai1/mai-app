@@ -234,7 +234,7 @@ html[data-mai-theme="dark"] .mai-v3-shell {
 .mai-v3-inbox-project-empty { padding:14px 8px; color:var(--v3-muted); font-size:11px; }
 
 /* Dark mode: remover os fundos claros restantes da camada V3 */
-html[data-mai-theme="dark"] .mai-v3-shell button { color:inherit; }
+:where(html[data-mai-theme="dark"] .mai-v3-shell) button { color:inherit; }
 html[data-mai-theme="dark"] .mai-v3-filter-popover select,
 html[data-mai-theme="dark"] .mai-v3-more-filter,
 html[data-mai-theme="dark"] .mai-v3-kind-switch,

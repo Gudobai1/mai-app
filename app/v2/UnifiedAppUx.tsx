@@ -22,7 +22,7 @@ import { SectionInlineAdd } from './SectionInlineAdd'
 import { ModernBottomNav } from './shell/ModernBottomNav'
 import { ModernSidebar } from './shell/ModernSidebar'
 import { TasksModule } from './TasksModule'
-import { TodayV4 } from './TodayV4'
+import { TodayModern } from './today/TodayModern'
 import { UpcomingV4 } from './UpcomingV4'
 import { useMaiRuntime } from './useMaiRuntime'
 import styles from './unified.module.css'
@@ -296,14 +296,14 @@ export function UnifiedAppUx() {
     return { ...source, items: filteredItems }
   }
 
-  return <div className={`${styles.appShell} mai-v3-shell`}>
+  return <div className={`${styles.appShell} mai-v3-shell`} data-view={String(view)}>
     <ModernSidebar state={runtime.state} today={runtime.today} view={view} navigate={navigate} onSearch={() => setSearchOpen(true)} onAdd={() => contextualAdd()} onSettings={() => setSettingsOpen(true)} profile={googleProfile} />
 
     <main className={`${styles.main} mai-v3-main`}>
       <div className={`${styles.workspace} mai-v3-workspace`}>
         {runtime.ready ? <AppTopBar state={runtime.state} today={runtime.today} view={view} taskScope={taskScope} commit={runtime.commit} onTaskScopeChange={setTaskScope} onSettings={() => setSettingsOpen(true)} /> : null}
         {!runtime.ready ? <div className={styles.loadingState}>Carregando seu MAI…</div> : <>
-          {view === 'today' ? <TodayV4 state={viewState} today={runtime.today} commit={runtime.commit} navigate={navigate} inspect={setSelected} onSearch={() => setSearchOpen(true)} onMore={() => setSettingsOpen(true)}/> : null}
+          {view === 'today' ? <TodayModern state={viewState} today={runtime.today} commit={runtime.commit} navigate={navigate} inspect={setSelected} profileName={String(googleProfile?.name || runtime.state.configs.profileName || runtime.state.configs.userName || '')}/> : null}
           {view === 'upcoming' ? <UpcomingV4 state={viewState} today={runtime.today} commit={runtime.commit} inspect={setSelected}/> : null}
           {view === 'completed' ? <CompletedV4 state={viewState} today={runtime.today} commit={runtime.commit} inspect={setSelected}/> : null}
           {view === 'tasks' ? <TasksModule
