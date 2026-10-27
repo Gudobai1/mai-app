@@ -99,7 +99,7 @@ export function useMaiRuntime() {
 
   useEffect(() => {
     document.documentElement.dataset.maiTheme = String(state.configs.theme || 'light')
-    document.documentElement.dataset.maiAccent = String(state.configs.accentPalette || 'sage')
+    delete document.documentElement.dataset.maiAccent
   }, [state.configs.theme, state.configs.accentPalette])
 
   // Regra global de persistência do MAI:
