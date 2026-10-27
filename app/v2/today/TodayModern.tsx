@@ -4,7 +4,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode }
 import { financeSummary } from '../../../lib/v2/finance-summary'
 import { plannerItems, type PlannerItem } from '../../../lib/v2/planner'
 import type { MaiState } from '../../../lib/v2/state'
-import { Button, Card, Check, Icon, IconButton, IconTile, ListItem, ProgressBar, SectionHeader, Tag, type Tone } from '../../ds'
+import { Button, Card, Check, Icon, IconTile, ListItem, ProgressBar, SectionHeader, Tag, type Tone } from '../../ds'
 import type { AppView, Row } from '../app-types'
 import type { InspectableItem } from '../ContextDrawer'
 import { financeCardPaymentState } from '../FinanceTransactionCard'
@@ -190,9 +190,89 @@ export function TodayModern({ state, today, commit, navigate, inspect, profileNa
     if (element) element.scrollLeft = element.clientWidth * WEEKS_BEFORE
   }, [today])
 
-  const scrollWeeks = (direction: number) => {
+  const weekIndexOf = (key: string) => weeks.findIndex(week => week.some(item => item.key === key))
+
+  const scrollToWeek = (index: number, smooth = true) => {
     const element = weeksRef.current
-    if (element) element.scrollBy({ left: direction * element.clientWidth, behavior: 'smooth' })
+    if (!element) return
+    const clamped = Math.max(0, Math.min(weeks.length - 1, index))
+    element.scrollTo({ left: clamped * element.clientWidth, behavior: smooth ? 'smooth' : 'auto' })
+  }
+
+  // Rodinha do mouse sobre a faixa: uma semana por gesto. Touchpad lateral segue nativo.
+  useEffect(() => {
+    const element = weeksRef.current
+    if (!element) return
+    let locked = false
+    const onWheel = (event: WheelEvent) => {
+      if (Math.abs(event.deltaX) >= Math.abs(event.deltaY)) return
+      event.preventDefault()
+      if (locked || Math.abs(event.deltaY) < 4) return
+      locked = true
+      const current = Math.round(element.scrollLeft / element.clientWidth)
+      scrollToWeek(current + (event.deltaY > 0 ? 1 : -1))
+      window.setTimeout(() => { locked = false }, 380)
+    }
+    element.addEventListener('wheel', onWheel, { passive: false })
+    return () => element.removeEventListener('wheel', onWheel)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [weeks.length])
+
+  // Arrastar com o mouse (no toque, a rolagem nativa já faz isso).
+  const drag = useRef<{ startX: number; startLeft: number; moved: boolean; pointerId: number } | null>(null)
+  const suppressClick = useRef(false)
+
+  const onWeeksPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (event.pointerType !== 'mouse' || event.button !== 0) return
+    const element = weeksRef.current
+    if (!element) return
+    drag.current = { startX: event.clientX, startLeft: element.scrollLeft, moved: false, pointerId: event.pointerId }
+  }
+
+  const onWeeksPointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
+    const state = drag.current
+    const element = weeksRef.current
+    if (!state || !element) return
+    const delta = event.clientX - state.startX
+    if (!state.moved && Math.abs(delta) > 6) {
+      state.moved = true
+      element.setPointerCapture(state.pointerId)
+      element.style.scrollSnapType = 'none'
+      element.style.cursor = 'grabbing'
+    }
+    if (state.moved) element.scrollLeft = state.startLeft - delta
+  }
+
+  const endDrag = () => {
+    const state = drag.current
+    const element = weeksRef.current
+    drag.current = null
+    if (!state || !element || !state.moved) return
+    suppressClick.current = true
+    window.setTimeout(() => { suppressClick.current = false }, 0)
+    const delta = element.scrollLeft - state.startLeft
+    const startWeek = Math.round(state.startLeft / element.clientWidth)
+    const target = Math.abs(delta) > element.clientWidth * 0.15 ? startWeek + (delta > 0 ? 1 : -1) : startWeek
+    element.style.cursor = ''
+    scrollToWeek(target)
+    window.setTimeout(() => { element.style.scrollSnapType = '' }, 420)
+  }
+
+  // Teclado: ← → mudam o dia e passam de semana sozinhos.
+  const onDayKeyDown = (event: React.KeyboardEvent<HTMLButtonElement>, key: string) => {
+    if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return
+    event.preventDefault()
+    const date = new Date(`${key}T12:00:00`)
+    date.setDate(date.getDate() + (event.key === 'ArrowRight' ? 1 : -1))
+    const next = toKey(date)
+    const index = weekIndexOf(next)
+    if (index < 0) return
+    setSelected(next)
+    if (index !== weekIndexOf(key)) scrollToWeek(index)
+    window.requestAnimationFrame(() => {
+      const button = weeksRef.current?.querySelector<HTMLButtonElement>(`[data-day="${next}"]`)
+      button?.focus({ preventScroll: true })
+    })
   }
 
   const goToToday = () => {
@@ -548,6 +628,13 @@ export function TodayModern({ state, today, commit, navigate, inspect, profileNa
 
   const firstName = String(profileName || '').trim().split(/\s+/)[0]
   const dayLabel = capitalize(new Date(`${day}T12:00:00`).toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' }))
+  const shortDayLabel = capitalize(new Date(`${day}T12:00:00`).toLocaleDateString('pt-BR', { weekday: 'short', day: 'numeric', month: 'short' }).replace(/\./g, ''))
+  const summaryParts = [
+    plural(events.length, 'compromisso', 'compromissos'),
+    plural(tasks.length, 'tarefa', 'tarefas'),
+    ...(lateCount ? [plural(lateCount, 'atrasada', 'atrasadas')] : []),
+    ...(habits.length ? [`${habitsDone} de ${habits.length} hábitos`] : []),
+  ]
   const title = isToday ? `${greetingFor(clock.getHours())}${firstName && firstName !== 'Meu' ? `, ${firstName}` : ''}` : naturalDate(day, today) === 'Amanhã' || naturalDate(day, today) === 'Ontem' ? naturalDate(day, today) : capitalize(new Date(`${day}T12:00:00`).toLocaleDateString('pt-BR', { weekday: 'long' }))
 
   // Colunas do computador. No celular vira uma coluna só, na ordem salva.
@@ -584,8 +671,12 @@ export function TodayModern({ state, today, commit, navigate, inspect, profileNa
     <div className={styles.page}>
       <header className={styles.header}>
         <div className={styles.headerText}>
-          <div className={styles.eyebrow}>{dayLabel}</div>
           <h1 className={styles.greeting}>{title}</h1>
+          <p className={styles.subline}>
+            <span className={styles.dateLong}>{dayLabel}</span>
+            <span className={styles.dateShort}>{shortDayLabel}</span>
+            {summaryParts.map(part => <span key={part}> · {part}</span>)}
+          </p>
         </div>
         <div className={styles.headerActions}>
           {!isToday ? <Button variant="secondary" size="sm" pill icon="undo" onClick={goToToday}>Hoje</Button> : null}
@@ -593,39 +684,36 @@ export function TodayModern({ state, today, commit, navigate, inspect, profileNa
         </div>
       </header>
 
-      <div className={styles.summary}>
-        <Tag tone="sky" icon="event">{plural(events.length, 'compromisso', 'compromissos')}</Tag>
-        <Tag tone="neutral" icon="checklist">{plural(tasks.length, 'tarefa', 'tarefas')}</Tag>
-        {lateCount ? <Tag tone="rose" icon="schedule">{plural(lateCount, 'atrasada', 'atrasadas')}</Tag> : null}
-        {habits.length ? <Tag tone="mint" icon="autorenew">{habitsDone} de {habits.length} hábitos</Tag> : null}
-        {goals.length ? <Tag tone="lilac" icon="flag">{plural(goals.length, 'meta', 'metas')}</Tag> : null}
-      </div>
-
-      <div className={styles.weeksWrap}>
-        <IconButton icon="chevron_left" label="Semana anterior" variant="ghost" size={36} className={styles.weekArrow} onClick={() => scrollWeeks(-1)} />
-        <div className={styles.weeks} ref={weeksRef}>
-          {weeks.map(week => (
-            <div key={week[0].key} className={styles.week}>
-              {week.map(item => (
-                <button
-                  key={item.key}
-                  type="button"
-                  className={`${styles.day} ${item.key === day ? styles.daySelected : ''} ${item.isToday ? styles.dayIsToday : ''} ${item.isPast ? styles.dayPast : ''}`}
-                  aria-pressed={item.key === day}
-                  aria-label={capitalize(new Date(`${item.key}T12:00:00`).toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' }))}
-                  onClick={() => setSelected(item.key)}
-                >
-                  <span className={styles.dayName}>{item.number === 1 ? item.month : item.name}</span>
-                  <span className={styles.dayNumber}>{item.number}</span>
-                  <span className={styles.dayLoad} aria-hidden="true">
-                    {Array.from({ length: item.load }, (_, index) => <i key={index} />)}
-                  </span>
-                </button>
-              ))}
-            </div>
-          ))}
-        </div>
-        <IconButton icon="chevron_right" label="Próxima semana" variant="ghost" size={36} className={styles.weekArrow} onClick={() => scrollWeeks(1)} />
+      <div
+        className={styles.weeks}
+        ref={weeksRef}
+        onPointerDown={onWeeksPointerDown}
+        onPointerMove={onWeeksPointerMove}
+        onPointerUp={endDrag}
+        onPointerCancel={endDrag}
+        onClickCapture={event => { if (suppressClick.current) { event.preventDefault(); event.stopPropagation() } }}
+        aria-label="Dias (role para os lados para ver outras semanas)"
+      >
+        {weeks.map(week => (
+          <div key={week[0].key} className={styles.week}>
+            {week.map(item => (
+              <button
+                key={item.key}
+                type="button"
+                data-day={item.key}
+                className={`${styles.day} ${item.key === day ? styles.daySelected : ''} ${item.isToday ? styles.dayIsToday : ''} ${item.isPast ? styles.dayPast : ''}`}
+                aria-pressed={item.key === day}
+                aria-label={capitalize(new Date(`${item.key}T12:00:00`).toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' }))}
+                onClick={() => setSelected(item.key)}
+                onKeyDown={event => onDayKeyDown(event, item.key)}
+              >
+                <span className={styles.dayName}>{item.number === 1 ? item.month : item.name}</span>
+                <span className={styles.dayNumber}>{item.number}</span>
+                <span className={styles.dayDot} data-on={item.load > 0 || undefined} aria-hidden="true" />
+              </button>
+            ))}
+          </div>
+        ))}
       </div>
 
       <div className={styles.board}>
