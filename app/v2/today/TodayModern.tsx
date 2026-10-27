@@ -1,12 +1,12 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { financeSummary } from '../../../lib/v2/finance-summary'
 import { plannerItems, type PlannerItem } from '../../../lib/v2/planner'
 import type { MaiState } from '../../../lib/v2/state'
 import { Button, Card, Check, Icon, IconButton, IconTile, ListItem, ProgressBar, SectionHeader, Tag, type Tone } from '../../ds'
 import type { AppView, Row } from '../app-types'
 import type { InspectableItem } from '../ContextDrawer'
-import { financeSummary } from '../../../lib/v2/finance-summary'
 import { financeCardPaymentState } from '../FinanceTransactionCard'
 import { resolveMaiIcon } from '../MaiIcons'
 import styles from './TodayModern.module.css'
@@ -14,10 +14,10 @@ import styles from './TodayModern.module.css'
 /*
  * Tela Hoje — visual Moderno.
  *
- * Mantém tudo o que a TodayV4 fazia (seções, ordem e visibilidade salvas,
- * filtros e classificação do topo, concluir tarefa, marcar lançamento como
- * pago, abrir qualquer item no painel lateral) e acrescenta: semana, cartão
- * "A seguir" e registro rápido de hábitos.
+ * Mostra o dia escolhido na faixa de semanas (hoje por padrão). Mantém as
+ * seções, a ordem e a visibilidade salvas (editadas em Opções), filtros e
+ * classificação, concluir tarefa, marcar lançamento como pago e abrir
+ * qualquer item no painel lateral.
  */
 
 type Commit = (change: (current: MaiState) => MaiState) => void
@@ -29,18 +29,18 @@ type Props = {
   navigate: (view: AppView) => void
   inspect: (item: InspectableItem) => void
   profileName?: string
-  /** Botão "Opções" do topo (filtros e classificação), embutido no cabeçalho. */
+  /** Botão "Opções" (filtros, classificação e seções). */
   options?: ReactNode
-  onSearch: () => void
-  onAdd: () => void
 }
 
 const DEFAULT_ORDER = ['appointments', 'tasks', 'habits', 'goals', 'finance', 'notes'] as const
 type SectionId = typeof DEFAULT_ORDER[number]
-const SECTION_LABELS: Record<SectionId, string> = { appointments: 'Compromissos', tasks: 'Tarefas', habits: 'Hábitos', goals: 'Metas', finance: 'Finanças', notes: 'Notas' }
 
 type TodayFilters = { project: string; priority: string }
 type SortMode = 'overdue' | 'date' | 'priority' | 'project' | 'title' | 'name'
+
+const WEEKS_BEFORE = 4
+const WEEKS_AFTER = 12
 
 const rows = (value: unknown): Row[] => (Array.isArray(value) ? (value as Row[]) : [])
 const values = (value: unknown): unknown[] => (Array.isArray(value) ? value : [])
@@ -55,6 +55,7 @@ const txTitle = (item: Row) => String(item.descricao || item.titulo || item.nome
 const hiddenFromAgenda = (habit: Row) => habit.ocultar_agenda === true || String(habit.ocultar_agenda || '').toLowerCase() === 'true' || habit.ocultarAgenda === true || habit.mostrar_agenda === false || habit.mostrar_hoje_agenda === false
 const failedEntry = (entry?: Row) => entry?.falhou === true || String(entry?.status || '').toLowerCase() === 'falha'
 const plural = (count: number, one: string, many: string) => `${count} ${count === 1 ? one : many}`
+const capitalize = (text: string) => text.charAt(0).toLocaleUpperCase('pt-BR') + text.slice(1)
 
 const HABIT_TONES: Tone[] = ['lilac', 'sky', 'peach', 'mint', 'rose', 'accent']
 const PRIORITY_COLOR: Record<number, string> = { 1: 'var(--ds-rose-fg)', 2: 'var(--ds-peach-fg)', 3: 'var(--ds-sky-fg)' }
@@ -70,6 +71,7 @@ function naturalDate(key: string, today: string) {
   const target = new Date(`${key}T12:00:00`)
   const diff = Math.round((target.getTime() - base.getTime()) / 86_400_000)
   if (diff === -1) return 'Ontem'
+  if (diff === 1) return 'Amanhã'
   return target.toLocaleDateString('pt-BR', { day: 'numeric', month: 'short', year: target.getFullYear() !== base.getFullYear() ? 'numeric' : undefined }).replace('.', '')
 }
 
@@ -107,26 +109,21 @@ function minutesOf(time: string) {
   return Number.isFinite(hour) ? hour * 60 + (Number.isFinite(minute) ? minute : 0) : NaN
 }
 
-export function TodayModern({ state, today, commit, inspect, profileName, options, onSearch, onAdd }: Props) {
-  const [customizeOpen, setCustomizeOpen] = useState(false)
-  const customizeRef = useRef<HTMLDivElement | null>(null)
+export function TodayModern({ state, today, commit, navigate, inspect, profileName, options }: Props) {
   const [clock, setClock] = useState(() => new Date())
+  const [selected, setSelected] = useState(today)
+  const weeksRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
     const timer = window.setInterval(() => setClock(new Date()), 60_000)
     return () => window.clearInterval(timer)
   }, [])
 
-  useEffect(() => {
-    if (!customizeOpen) return
-    const onDown = (event: MouseEvent) => {
-      if (customizeRef.current && !customizeRef.current.contains(event.target as Node)) setCustomizeOpen(false)
-    }
-    const onKey = (event: KeyboardEvent) => { if (event.key === 'Escape') setCustomizeOpen(false) }
-    document.addEventListener('mousedown', onDown)
-    window.addEventListener('keydown', onKey)
-    return () => { document.removeEventListener('mousedown', onDown); window.removeEventListener('keydown', onKey) }
-  }, [customizeOpen])
+  // Quando o dia vira, volta para o novo "hoje".
+  useEffect(() => { setSelected(today) }, [today])
+
+  const day = selected
+  const isToday = day === today
 
   /* ---------------------------------------------------------- Preferências */
 
@@ -139,25 +136,9 @@ export function TodayModern({ state, today, commit, inspect, profileName, option
   const rawSort = String(moduleControls.today?.sort || 'overdue')
   const sortMode: SortMode = (['overdue', 'date', 'priority', 'project', 'title', 'name'] as const).includes(rawSort as SortMode) ? (rawSort as SortMode) : 'overdue'
 
-  function toggleHidden(id: SectionId) {
-    const next = new Set(hidden)
-    if (next.has(id)) next.delete(id)
-    else next.add(id)
-    commit(current => ({ ...current, configs: { ...current.configs, todayListHidden: [...next] } }))
-  }
-
-  function moveSection(id: SectionId, delta: number) {
-    const next = [...order]
-    const index = next.indexOf(id)
-    const target = index + delta
-    if (index < 0 || target < 0 || target >= next.length) return
-    ;[next[index], next[target]] = [next[target], next[index]]
-    commit(current => ({ ...current, configs: { ...current.configs, todayListOrder: next } }))
-  }
-
   /* ---------------------------------------------------------------- Projetos */
 
-  const projects = useMemo(() => rows(state.projects).filter(item => item.ativo !== false).sort((a, b) => Number(Boolean(b.favorito)) - Number(Boolean(a.favorito)) || Number(a.ordem || 0) - Number(b.ordem || 0) || String(a.nome || '').localeCompare(String(b.nome || ''), 'pt-BR', { sensitivity: 'base' })), [state.projects])
+  const projects = useMemo(() => rows(state.projects).filter(item => item.ativo !== false), [state.projects])
   const projectMap = useMemo(() => new Map(projects.map(project => [String(project.id), project])), [projects])
   const projectName = (projectId: unknown) => {
     const id = String(projectId || 'entrada')
@@ -168,55 +149,73 @@ export function TodayModern({ state, today, commit, inspect, profileName, option
 
   /* ------------------------------------------------------------------ Tempo */
 
-  const todayIsCurrent = toKey(clock) === today
+  const clockIsToday = toKey(clock) === today
   const nowMinutes = clock.getHours() * 60 + clock.getMinutes()
 
-  /* -------------------------------------------------------------- Semana */
+  /* ------------------------------------------------------- Faixa de semanas */
 
-  const week = useMemo(() => {
+  const weeks = useMemo(() => {
     const base = new Date(`${today}T12:00:00`)
-    const offset = (base.getDay() + 6) % 7
-    const monday = new Date(base)
-    monday.setDate(base.getDate() - offset)
-    const days = Array.from({ length: 7 }, (_, index) => {
-      const date = new Date(monday)
-      date.setDate(monday.getDate() + index)
+    const sunday = new Date(base)
+    sunday.setDate(base.getDate() - base.getDay())
+    sunday.setDate(sunday.getDate() - WEEKS_BEFORE * 7)
+    const total = (WEEKS_BEFORE + 1 + WEEKS_AFTER) * 7
+    const all = Array.from({ length: total }, (_, index) => {
+      const date = new Date(sunday)
+      date.setDate(sunday.getDate() + index)
       return date
     })
-    const start = toKey(days[0])
-    const end = toKey(days[6])
     const load = new Map<string, number>()
-    plannerItems(state, start, end).forEach(item => {
+    plannerItems(state, toKey(all[0]), toKey(all[all.length - 1])).forEach(item => {
       if ((item.kind === 'task' || item.kind === 'event') && !item.completed) load.set(item.date, (load.get(item.date) || 0) + 1)
     })
-    return days.map(date => {
+    const list = all.map(date => {
       const key = toKey(date)
       return {
         key,
         name: date.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', ''),
         number: date.getDate(),
-        load: Math.min(load.get(key) || 0, 6),
+        month: date.toLocaleDateString('pt-BR', { month: 'short' }).replace('.', ''),
+        load: Math.min(load.get(key) || 0, 5),
         isToday: key === today,
         isPast: key < today,
       }
     })
+    return Array.from({ length: WEEKS_BEFORE + 1 + WEEKS_AFTER }, (_, index) => list.slice(index * 7, index * 7 + 7))
   }, [state, today])
+
+  // Abre já na semana atual.
+  useLayoutEffect(() => {
+    const element = weeksRef.current
+    if (element) element.scrollLeft = element.clientWidth * WEEKS_BEFORE
+  }, [today])
+
+  const scrollWeeks = (direction: number) => {
+    const element = weeksRef.current
+    if (element) element.scrollBy({ left: direction * element.clientWidth, behavior: 'smooth' })
+  }
+
+  const goToToday = () => {
+    setSelected(today)
+    const element = weeksRef.current
+    if (element) element.scrollTo({ left: element.clientWidth * WEEKS_BEFORE, behavior: 'smooth' })
+  }
 
   /* --------------------------------------------------------- Compromissos */
 
-  const plan = useMemo(() => plannerItems(state, today, today), [state, today])
-  const eventDone = (eventId: unknown) => rows(state.eventCompletions).some(entry => String(entry.evento_id || String(entry.chave || '').split('|')[0]) === String(eventId) && dateKey(entry.data || String(entry.chave || '').split('|')[1]) === today && entry.concluida !== false)
+  const plan = useMemo(() => plannerItems(state, day, day), [state, day])
   const events = useMemo(() => {
+    const eventDone = (eventId: unknown) => rows(state.eventCompletions).some(entry => String(entry.evento_id || String(entry.chave || '').split('|')[0]) === String(eventId) && dateKey(entry.data || String(entry.chave || '').split('|')[1]) === day && entry.concluida !== false)
     const planned = plan.filter(item => item.kind === 'event' && !item.completed)
     const spanning: PlannerItem[] = rows(state.events).filter(event => {
       const start = dateKey(event.data_inicio)
       const end = dateKey(event.data_fim || event.data_termino || event.end)
-      return start && end && start < today && end >= today && !eventDone(event.id)
+      return start && end && start < day && end >= day && !eventDone(event.id)
     }).map(event => ({
-      id: `span:${event.id}:${today}`,
+      id: `span:${event.id}:${day}`,
       sourceId: String(event.id),
       kind: 'event' as const,
-      date: today,
+      date: day,
       time: String(event.hora_inicio || ''),
       title: String(event.titulo || 'Compromisso'),
       subtitle: 'Em andamento',
@@ -235,25 +234,26 @@ export function TodayModern({ state, today, commit, inspect, profileName, option
       const rank = (item: PlannerItem) => (item.subtitle === 'Em andamento' ? 0 : item.raw.dia_inteiro === true || !item.time ? 1 : 2)
       return rank(a) - rank(b) || `${a.time || '99:99'} ${a.title}`.localeCompare(`${b.time || '99:99'} ${b.title}`, 'pt-BR')
     })
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [plan, state.events, state.eventCompletions, today])
+  }, [plan, state.events, state.eventCompletions, day])
 
   const eventPassed = (item: PlannerItem) => {
-    if (!todayIsCurrent || !item.time || item.raw.dia_inteiro === true || item.subtitle === 'Em andamento') return false
+    if (day < today) return true
+    if (!isToday || !clockIsToday || !item.time || item.raw.dia_inteiro === true || item.subtitle === 'Em andamento') return false
     const end = minutesOf(String(item.raw.hora_fim || ''))
     const start = minutesOf(item.time)
     return Number.isFinite(end) ? end <= nowMinutes : Number.isFinite(start) && start < nowMinutes
   }
 
-  const nextEvent = todayIsCurrent
+  const nextEvent = isToday && clockIsToday
     ? events.find(item => item.time && item.raw.dia_inteiro !== true && item.subtitle !== 'Em andamento' && minutesOf(item.time) >= nowMinutes)
     : undefined
 
   /* ---------------------------------------------------------------- Tarefas */
 
   const tasks = useMemo(() => state.tasks.filter(task => {
-    const day = dateKey(task.data_vencimento)
-    if (task.concluida || !day || day > today) return false
+    const due = dateKey(task.data_vencimento)
+    if (task.concluida || !due) return false
+    if (isToday ? due > today : due !== day) return false
     if (filters.project !== 'all' && String(task.projeto_id || 'entrada') !== filters.project) return false
     if (filters.priority !== 'all' && String(Number(task.prioridade || 4)) !== filters.priority) return false
     return true
@@ -272,7 +272,7 @@ export function TodayModern({ state, today, commit, inspect, profileName, option
     if (aLate !== bLate) return aLate ? -1 : 1
     return aDay.localeCompare(bDay) || aTime.localeCompare(bTime) || Number(a.ordem || 0) - Number(b.ordem || 0) || titleCompare
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }), [state.tasks, today, filters.project, filters.priority, sortMode, projectMap])
+  }), [state.tasks, today, day, isToday, filters.project, filters.priority, sortMode, projectMap])
 
   const lateCount = tasks.filter(task => dateKey(task.data_vencimento) < today).length
 
@@ -285,9 +285,10 @@ export function TodayModern({ state, today, commit, inspect, profileName, option
 
   /* ---------------------------------------------------------------- Hábitos */
 
-  const todayEntries = rows(state.habitEntries).filter(entry => dateKey(entry.data) === today)
-  const habits = rows(state.habits).filter(habit => habit.ativo !== false && !hiddenFromAgenda(habit) && habitEligible(habit, today)).map((habit, index) => {
-    const entry = todayEntries.find(item => String(item.habito_id) === String(habit.id))
+  const canLogHabits = day <= today
+  const dayEntries = rows(state.habitEntries).filter(entry => dateKey(entry.data) === day)
+  const habits = rows(state.habits).filter(habit => habit.ativo !== false && !hiddenFromAgenda(habit) && habitEligible(habit, day)).map((habit, index) => {
+    const entry = dayEntries.find(item => String(item.habito_id) === String(habit.id))
     const target = Math.max(1, Number(habit.meta || 1))
     const value = Number(entry?.valor || 0)
     const failed = failedEntry(entry)
@@ -298,21 +299,20 @@ export function TodayModern({ state, today, commit, inspect, profileName, option
   const habitsDone = habits.filter(item => item.done).length
 
   function logHabit(item: (typeof habits)[number]) {
+    if (!canLogHabits) return
     const habitId = item.habit.id
     commit(current => {
       const all = rows(current.habitEntries)
-      const existing = all.find(entry => String(entry.habito_id) === String(habitId) && dateKey(entry.data) === today)
-      const others = all.filter(entry => !(String(entry.habito_id) === String(habitId) && dateKey(entry.data) === today))
+      const existing = all.find(entry => String(entry.habito_id) === String(habitId) && dateKey(entry.data) === day)
+      const others = all.filter(entry => !(String(entry.habito_id) === String(habitId) && dateKey(entry.data) === day))
       if (!item.quantitative) {
-        // Sim/não: alterna entre feito e sem registro.
         if (existing && !failedEntry(existing) && Number(existing.valor || 0) > 0) return { ...current, habitEntries: others }
-        return { ...current, habitEntries: [...others, { id: existing?.id || uid('hr'), habito_id: habitId, data: today, valor: item.target, falhou: false, status: '', criado_em: existing?.criado_em || new Date().toISOString() }] }
+        return { ...current, habitEntries: [...others, { id: existing?.id || uid('hr'), habito_id: habitId, data: day, valor: item.target, falhou: false, status: '', criado_em: existing?.criado_em || new Date().toISOString() }] }
       }
-      // Quantitativo: soma 1 por toque; ao passar da meta, volta a zero.
       const currentValue = existing && !failedEntry(existing) ? Number(existing.valor || 0) : 0
       const nextValue = currentValue >= item.target ? 0 : currentValue + 1
       if (nextValue === 0) return { ...current, habitEntries: others }
-      return { ...current, habitEntries: [...others, { id: existing?.id || uid('hr'), habito_id: habitId, data: today, valor: nextValue, falhou: false, status: '', criado_em: existing?.criado_em || new Date().toISOString() }] }
+      return { ...current, habitEntries: [...others, { id: existing?.id || uid('hr'), habito_id: habitId, data: day, valor: nextValue, falhou: false, status: '', criado_em: existing?.criado_em || new Date().toISOString() }] }
     })
   }
 
@@ -325,18 +325,18 @@ export function TodayModern({ state, today, commit, inspect, profileName, option
   /* ------------------------------------------------------------------ Metas */
 
   const goals = rows(state.goals).filter(goal => {
-    const day = goalDate(goal)
-    return Boolean(day) && day <= today && !concluded(goal)
+    const due = goalDate(goal)
+    return Boolean(due) && (isToday ? due <= today : due === day) && !concluded(goal)
   }).sort((a, b) => goalDate(a).localeCompare(goalDate(b)))
 
   /* ---------------------------------------------------------------- Finanças */
 
+  const summary = useMemo(() => financeSummary(state, today), [state, today])
   const finance = state.finance || {}
-  const financeCandidates = rows(finance.transactions).filter(item => {
-    const day = dateKey(item.data)
-    return Boolean(day) && day <= today && !item.ignorar_calculo && !isPaid(item.status)
+  const transactions = rows(finance.transactions).filter(item => {
+    const due = dateKey(item.data)
+    return Boolean(due) && (isToday ? due <= today : due === day) && !item.ignorar_calculo && !isPaid(item.status) && item.ocultar_inicio !== true && item.ocultar_home !== true
   }).sort((a, b) => dateKey(a.data).localeCompare(dateKey(b.data)))
-  const transactions = financeCandidates.filter(item => item.ocultar_inicio !== true && item.ocultar_home !== true)
 
   function toggleFinancePaid(item: Row) {
     const payment = financeCardPaymentState(item)
@@ -358,17 +358,13 @@ export function TodayModern({ state, today, commit, inspect, profileName, option
 
   /* ------------------------------------------------------------------- Notas */
 
-  const notes = rows(state.notes).filter(note => note.ativo !== false && note.arquivado !== true && !concluded(note) && dateKey(note.data || note.updated_at || note.criado_em) === today).sort((a, b) => String(b.data || b.updated_at || '').localeCompare(String(a.data || a.updated_at || ''))).slice(0, 8)
+  const notes = rows(state.notes).filter(note => note.ativo !== false && note.arquivado !== true && !concluded(note) && dateKey(note.data || note.updated_at || note.criado_em) === day).sort((a, b) => String(b.data || b.updated_at || '').localeCompare(String(a.data || a.updated_at || ''))).slice(0, 8)
 
   /* ---------------------------------------------------------------- Seções */
 
-  const summary = useMemo(() => financeSummary(state, today), [state, today])
-  const monthName = new Date(`${today}T12:00:00`).toLocaleDateString('pt-BR', { month: 'long' })
-  const weekMax = Math.max(1, ...summary.weekExpenses.map(item => item.value))
-
   const renderTask = (task: Row) => {
-    const day = dateKey(task.data_vencimento)
-    const late = day < today
+    const due = dateKey(task.data_vencimento)
+    const late = due < today
     const time = timeKey(task.data_vencimento)
     const priority = Number(task.prioridade || 4)
     return (
@@ -379,7 +375,7 @@ export function TodayModern({ state, today, commit, inspect, profileName, option
         onOpen={() => inspectTask(task)}
         subtitle={<>
           <span className={styles.projectTag}><span className={styles.projectDot} style={{ background: projectColor(task.projeto_id) }} />{projectName(task.projeto_id)}</span>
-          <span className={late ? styles.late : undefined}>{naturalDate(day, today)}{time ? ` · ${time}` : ''}</span>
+          <span className={late ? styles.late : undefined}>{naturalDate(due, today)}{time ? ` · ${time}` : ''}</span>
         </>}
         trailing={PRIORITY_COLOR[priority] ? <span className={styles.priority} title={`Prioridade ${priority}`} style={{ color: PRIORITY_COLOR[priority] }}><Icon name="flag" size={18} /></span> : undefined}
       />
@@ -419,7 +415,7 @@ export function TodayModern({ state, today, commit, inspect, profileName, option
               )
             })}
           </div>
-        ) : <div className={styles.empty}>Nenhum compromisso para hoje.</div>}
+        ) : <div className={styles.empty}>Nenhum compromisso.</div>}
       </Card>
     ),
     tasks: (
@@ -436,7 +432,7 @@ export function TodayModern({ state, today, commit, inspect, profileName, option
               ))}
             </div>
           ) : <div role="list">{tasks.map(renderTask)}</div>
-        ) : <div className={styles.empty}>Nada pendente para hoje. Aproveite!</div>}
+        ) : <div className={styles.empty}>{isToday ? 'Nada pendente para hoje.' : 'Nenhuma tarefa neste dia.'}</div>}
       </Card>
     ),
     habits: (
@@ -448,10 +444,10 @@ export function TodayModern({ state, today, commit, inspect, profileName, option
               const name = String(item.habit.nome || 'Hábito')
               return (
                 <div key={String(item.habit.id)} className={styles.habit}>
-                  <button type="button" className={styles.habitMain} onClick={() => logHabit(item)} aria-label={item.quantitative ? `Registrar mais 1 em ${name}` : item.done ? `Desmarcar ${name}` : `Marcar ${name} como feito`} title={item.quantitative ? 'Toque para somar 1' : 'Toque para marcar'}>
+                  <button type="button" className={styles.habitMain} disabled={!canLogHabits} onClick={() => logHabit(item)} aria-label={item.quantitative ? `Registrar mais 1 em ${name}` : item.done ? `Desmarcar ${name}` : `Marcar ${name} como feito`}>
                     <IconTile icon={item.done ? 'check' : resolveMaiIcon(String(item.habit.icone || 'repeat'))} tone={item.done ? 'mint' : item.tone} solid={item.done} size={40} />
                   </button>
-                  <button type="button" className={styles.habitInfo} onClick={() => inspect({ kind: 'habit', sourceId: String(item.habit.id), title: name, date: today, raw: item.habit })}>
+                  <button type="button" className={styles.habitInfo} onClick={() => inspect({ kind: 'habit', sourceId: String(item.habit.id), title: name, date: day, raw: item.habit })}>
                     <span className={styles.habitName}>{name}</span>
                     <span className={styles.habitValue}>{habitValueLabel(item)}</span>
                   </button>
@@ -459,7 +455,7 @@ export function TodayModern({ state, today, commit, inspect, profileName, option
               )
             })}
           </div>
-        ) : <div className={styles.empty}>Nenhum hábito previsto para hoje.</div>}
+        ) : <div className={styles.empty}>Nenhum hábito previsto.</div>}
       </Card>
     ),
     goals: (
@@ -470,70 +466,62 @@ export function TodayModern({ state, today, commit, inspect, profileName, option
             {goals.map(goal => {
               const total = Math.max(1, Number(goal.progresso_total || 100))
               const pct = Math.max(0, Math.min(100, Math.round((Number(goal.progresso_atual || 0) / total) * 100)))
-              const day = goalDate(goal)
+              const due = goalDate(goal)
               const title = String(goal.titulo || 'Meta')
               return (
-                <button key={String(goal.id)} type="button" className={styles.row} onClick={() => inspect({ kind: 'goal', sourceId: String(goal.id), title, date: day, raw: goal })}>
+                <button key={String(goal.id)} type="button" className={styles.row} onClick={() => inspect({ kind: 'goal', sourceId: String(goal.id), title, date: due, raw: goal })}>
                   <IconTile icon="flag" tone="lilac" />
                   <span className={styles.rowBody}>
                     <span className={styles.rowTitle}>{title}</span>
-                    <span className={styles.rowSub}><span className={day < today ? styles.late : undefined}>{naturalDate(day, today)}</span><span>· {pct}%</span></span>
+                    <span className={styles.rowSub}><span className={due < today ? styles.late : undefined}>{naturalDate(due, today)}</span><span>· {pct}%</span></span>
                     <span className={styles.goalProgress}><ProgressBar value={pct} tone="lilac" label={`Progresso de ${title}`} height={6} /></span>
                   </span>
                 </button>
               )
             })}
           </div>
-        ) : <div className={styles.empty}>Nenhuma meta vencendo hoje.</div>}
+        ) : <div className={styles.empty}>Nenhuma meta vencendo.</div>}
       </Card>
     ),
     finance: (
       <div className={styles.stack}>
-        {summary.hasData ? (
-          <Card variant="inverse" padding="md">
-            <div className={styles.balanceHead}><span>Saldo atual</span><Icon name="account_balance_wallet" size={22} /></div>
-            <div className={styles.balanceValue}>{money.format(summary.balance)}</div>
-            <div className={summary.monthResult >= 0 ? styles.balancePositive : styles.balanceNegative}>
-              {summary.monthResult >= 0 ? '+' : '−'}{money.format(Math.abs(summary.monthResult))} em {monthName}
-            </div>
-            <div className={styles.bars} aria-label="Gastos de cada dia desta semana">
-              {summary.weekExpenses.map(item => (
-                <span key={item.date} className={styles.barSlot} title={`${naturalDate(item.date, today)}: ${money.format(item.value)}`}>
-                  <span className={`${styles.bar} ${item.date === today ? styles.barToday : ''}`} style={{ height: `${Math.max(6, Math.round((item.value / weekMax) * 100))}%` }} />
-                </span>
-              ))}
-            </div>
-            <div className={styles.barsLegend}><span>Gastos da semana</span><span>{money.format(summary.weekExpenses.reduce((sum, item) => sum + item.value, 0))}</span></div>
-          </Card>
-        ) : null}
-        <Card padding="md">
-          <SectionHeader title="A pagar" meta={transactions.length ? String(transactions.length) : undefined} />
-          {transactions.length ? (
+        <button type="button" className={styles.balanceCard} onClick={() => navigate('finance')} aria-label="Abrir Finanças">
+          <span className={styles.balanceHead}><span>Saldo atual</span><Icon name="chevron_right" size={22} /></span>
+          <span className={`${styles.balanceValue} ${summary.balance < 0 ? styles.negative : ''}`}>{money.format(summary.balance)}</span>
+          <span className={styles.balanceStats}>
+            <span className={styles.balanceStat}><span>Previsto</span><strong className={summary.projected < 0 ? styles.negative : undefined}>{money.format(summary.projected)}</strong></span>
+            <span className={styles.balanceStat}><span>A pagar</span><strong>{money.format(summary.toPay)}</strong></span>
+            <span className={styles.balanceStat}><span>A receber</span><strong className={styles.positive}>{money.format(summary.toReceive)}</strong></span>
+          </span>
+        </button>
+        {transactions.length ? (
+          <Card padding="md">
+            <SectionHeader title={isToday ? 'Contas de hoje' : 'Contas do dia'} meta={String(transactions.length)} />
             <div className={styles.rows}>
               {transactions.map(item => {
-                const day = dateKey(item.data)
+                const due = dateKey(item.data)
                 const income = String(item.tipo || '').toLocaleLowerCase('pt-BR') === 'receita'
                 const payment = financeCardPaymentState(item)
                 const title = txTitle(item)
                 return (
                   <div key={String(item.id)} className={styles.rowWrap}>
-                    <Check checked={payment.status === 'pago'} late={day < today} label={`${income ? 'Marcar como recebido' : 'Marcar como pago'}: ${title}`} onCheckedChange={() => toggleFinancePaid(item)} />
-                    <button type="button" className={styles.row} onClick={() => inspect({ kind: 'finance', sourceId: String(item.id), title, date: day, raw: item })}>
+                    <Check checked={payment.status === 'pago'} late={due < today} label={`${income ? 'Marcar como recebido' : 'Marcar como pago'}: ${title}`} onCheckedChange={() => toggleFinancePaid(item)} />
+                    <button type="button" className={styles.row} onClick={() => inspect({ kind: 'finance', sourceId: String(item.id), title, date: due, raw: item })}>
                       <span className={styles.rowBody}>
                         <span className={styles.rowTitle}>{title}</span>
                         <span className={styles.rowSub}>
-                          <span className={day < today ? styles.late : undefined}>{naturalDate(day, today)}</span>
+                          <span className={due < today ? styles.late : undefined}>{naturalDate(due, today)}</span>
                           {payment.status === 'parcial' ? <Tag tone="peach">Parcial</Tag> : null}
                         </span>
                       </span>
-                      <span className={`${styles.amount} ${income ? styles.amountIncome : ''}`}>{income ? '+' : ''}{money.format(payment.remaining || payment.total)}</span>
+                      <span className={`${styles.amount} ${income ? styles.positive : ''}`}>{income ? '+' : ''}{money.format(payment.remaining || payment.total)}</span>
                     </button>
                   </div>
                 )
               })}
             </div>
-          ) : <div className={styles.empty}>{financeCandidates.length ? 'Nenhum lançamento visível na tela inicial.' : 'Nada para pagar hoje.'}</div>}
-        </Card>
+          </Card>
+        ) : null}
       </div>
     ),
     notes: (
@@ -551,7 +539,7 @@ export function TodayModern({ state, today, commit, inspect, profileName, option
               )
             })}
           </div>
-        ) : <div className={styles.empty}>Nenhuma nota de hoje.</div>}
+        ) : <div className={styles.empty}>Nenhuma nota.</div>}
       </Card>
     ),
   }
@@ -559,11 +547,10 @@ export function TodayModern({ state, today, commit, inspect, profileName, option
   /* ---------------------------------------------------------------- Página */
 
   const firstName = String(profileName || '').trim().split(/\s+/)[0]
-  const greeting = `${greetingFor(clock.getHours())}${firstName && firstName !== 'Meu' ? `, ${firstName}` : ''}`
-  const rawDate = new Date(`${today}T12:00:00`).toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })
-  const dateLabel = rawDate.charAt(0).toLocaleUpperCase('pt-BR') + rawDate.slice(1)
+  const dayLabel = capitalize(new Date(`${day}T12:00:00`).toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' }))
+  const title = isToday ? `${greetingFor(clock.getHours())}${firstName && firstName !== 'Meu' ? `, ${firstName}` : ''}` : naturalDate(day, today) === 'Amanhã' || naturalDate(day, today) === 'Ontem' ? naturalDate(day, today) : capitalize(new Date(`${day}T12:00:00`).toLocaleDateString('pt-BR', { weekday: 'long' }))
 
-  // Colunas do computador (como no mockup). No celular vira uma coluna só, na ordem salva.
+  // Colunas do computador. No celular vira uma coluna só, na ordem salva.
   const COLUMN: Record<SectionId, 'main' | 'middle' | 'side'> = { tasks: 'main', appointments: 'middle', notes: 'middle', habits: 'side', finance: 'side', goals: 'side' }
   const visible = order.filter(id => !hidden.has(id))
   const column = (name: 'main' | 'middle' | 'side', extra?: ReactNode) => (
@@ -597,50 +584,48 @@ export function TodayModern({ state, today, commit, inspect, profileName, option
     <div className={styles.page}>
       <header className={styles.header}>
         <div className={styles.headerText}>
-          <div className={styles.eyebrow}>{dateLabel}</div>
-          <h1 className={styles.greeting}>{greeting}</h1>
-          <div className={styles.summary}>
-            <Tag tone="sky" icon="event">{plural(events.length, 'compromisso', 'compromissos')}</Tag>
-            <Tag tone="neutral" icon="checklist">{plural(tasks.length, 'tarefa', 'tarefas')}</Tag>
-            {lateCount ? <Tag tone="rose" icon="schedule">{plural(lateCount, 'atrasada', 'atrasadas')}</Tag> : null}
-            {habits.length ? <Tag tone="mint" icon="autorenew">{habitsDone} de {habits.length} hábitos</Tag> : null}
-          </div>
+          <div className={styles.eyebrow}>{dayLabel}</div>
+          <h1 className={styles.greeting}>{title}</h1>
         </div>
-        <div className={styles.headerActions} ref={customizeRef}>
-          <button type="button" className={styles.searchButton} onClick={onSearch}>
-            <Icon name="search" size={20} filled={false} />
-            <span>Buscar ou criar…</span>
-            <span className={styles.kbd}>Ctrl K</span>
-          </button>
-          <Button icon="add" onClick={onAdd} className={styles.newButton}>Novo</Button>
+        <div className={styles.headerActions}>
+          {!isToday ? <Button variant="secondary" size="sm" pill icon="undo" onClick={goToToday}>Hoje</Button> : null}
           {options ? <div className={styles.options}>{options}</div> : null}
-          <IconButton icon="dashboard_customize" label="Personalizar Hoje" filled={false} onClick={() => setCustomizeOpen(value => !value)} aria-expanded={customizeOpen} />
-          {customizeOpen ? (
-            <div className={styles.customize} role="dialog" aria-label="Personalizar Hoje">
-              <span className={styles.customizeTitle}>Seções da tela Hoje</span>
-              {order.map((id, index) => (
-                <div key={id} className={styles.customizeRow}>
-                  <button type="button" className={styles.customizeToggle} aria-pressed={!hidden.has(id)} onClick={() => toggleHidden(id)}>
-                    <Icon name={hidden.has(id) ? 'check_box_outline_blank' : 'check_box'} size={22} filled={!hidden.has(id)} />
-                    <span>{id === 'appointments' ? 'Agenda' : id === 'finance' ? 'Finanças' : SECTION_LABELS[id]}</span>
-                  </button>
-                  <IconButton icon="arrow_upward" label={`Mover ${SECTION_LABELS[id]} para cima`} variant="ghost" size={36} disabled={index === 0} onClick={() => moveSection(id, -1)} />
-                  <IconButton icon="arrow_downward" label={`Mover ${SECTION_LABELS[id]} para baixo`} variant="ghost" size={36} disabled={index === order.length - 1} onClick={() => moveSection(id, 1)} />
-                </div>
-              ))}
-            </div>
-          ) : null}
         </div>
       </header>
 
-      <div className={styles.week} aria-label="Semana">
-        {week.map(day => (
-          <div key={day.key} className={`${styles.day} ${day.isToday ? styles.dayToday : day.isPast ? styles.dayPast : ''}`} aria-current={day.isToday ? 'date' : undefined}>
-            <span className={styles.dayName}>{day.name}</span>
-            <span className={styles.dayNumber}>{day.number}</span>
-            <span className={styles.dayLoad} style={{ width: day.load ? day.load * 6 : 0 }} aria-hidden="true" />
-          </div>
-        ))}
+      <div className={styles.summary}>
+        <Tag tone="sky" icon="event">{plural(events.length, 'compromisso', 'compromissos')}</Tag>
+        <Tag tone="neutral" icon="checklist">{plural(tasks.length, 'tarefa', 'tarefas')}</Tag>
+        {lateCount ? <Tag tone="rose" icon="schedule">{plural(lateCount, 'atrasada', 'atrasadas')}</Tag> : null}
+        {habits.length ? <Tag tone="mint" icon="autorenew">{habitsDone} de {habits.length} hábitos</Tag> : null}
+        {goals.length ? <Tag tone="lilac" icon="flag">{plural(goals.length, 'meta', 'metas')}</Tag> : null}
+      </div>
+
+      <div className={styles.weeksWrap}>
+        <IconButton icon="chevron_left" label="Semana anterior" variant="ghost" size={36} className={styles.weekArrow} onClick={() => scrollWeeks(-1)} />
+        <div className={styles.weeks} ref={weeksRef}>
+          {weeks.map(week => (
+            <div key={week[0].key} className={styles.week}>
+              {week.map(item => (
+                <button
+                  key={item.key}
+                  type="button"
+                  className={`${styles.day} ${item.key === day ? styles.daySelected : ''} ${item.isToday ? styles.dayIsToday : ''} ${item.isPast ? styles.dayPast : ''}`}
+                  aria-pressed={item.key === day}
+                  aria-label={capitalize(new Date(`${item.key}T12:00:00`).toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' }))}
+                  onClick={() => setSelected(item.key)}
+                >
+                  <span className={styles.dayName}>{item.number === 1 ? item.month : item.name}</span>
+                  <span className={styles.dayNumber}>{item.number}</span>
+                  <span className={styles.dayLoad} aria-hidden="true">
+                    {Array.from({ length: item.load }, (_, index) => <i key={index} />)}
+                  </span>
+                </button>
+              ))}
+            </div>
+          ))}
+        </div>
+        <IconButton icon="chevron_right" label="Próxima semana" variant="ghost" size={36} className={styles.weekArrow} onClick={() => scrollWeeks(1)} />
       </div>
 
       <div className={styles.board}>

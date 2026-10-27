@@ -6,12 +6,12 @@
 @media (max-width: 900px) {
   /* Espaço para a barra flutuante no rodapé. */
   html body .mai-v3-shell .mai-v3-workspace {
-    padding-bottom: calc(104px + env(safe-area-inset-bottom)) !important;
+    padding-bottom: calc(112px + env(safe-area-inset-bottom)) !important;
   }
 
   /* A busca não fica escondida atrás da barra flutuante. */
   html body .mai-global-search-layer {
-    inset: 0 0 calc(88px + env(safe-area-inset-bottom)) 0 !important;
+    inset: 0 0 calc(96px + env(safe-area-inset-bottom)) 0 !important;
   }
 }
 
@@ -27,3 +27,21 @@ html body .mai-v3-shell[data-view="today"] .mai-app-topbar {
   background: color-mix(in srgb, var(--ds-bg) 92%, transparent) !important;
   border-color: transparent !important;
 }
+
+/* Painel Opções: ordem e visibilidade das seções da tela Hoje. */
+.mai-app-topbar-sections { display: grid; gap: 2px; }
+.mai-app-topbar-section-row { display: flex; align-items: center; gap: 2px; }
+.mai-app-topbar-section-toggle {
+  flex: 1; min-width: 0; height: 34px; display: flex; align-items: center; gap: 8px;
+  padding: 0 6px; border: 0; border-radius: 8px; background: transparent;
+  color: var(--v3-text, #303630); font: inherit; font-size: 12px; text-align: left; cursor: pointer;
+}
+.mai-app-topbar-section-toggle .material-symbols-rounded { font-size: 19px; color: var(--v3-muted, #8d958b); }
+.mai-app-topbar-section-toggle[data-active="true"] .material-symbols-rounded { color: var(--ds-accent); font-variation-settings: 'FILL' 1; }
+.mai-app-topbar-section-toggle:hover, .mai-app-topbar-section-move:hover:not(:disabled) { background: var(--v3-hover, #f1f4ef); }
+.mai-app-topbar-section-move {
+  width: 30px; height: 30px; display: grid; place-items: center; border: 0; border-radius: 8px;
+  background: transparent; color: var(--v3-muted, #8d958b); cursor: pointer;
+}
+.mai-app-topbar-section-move:disabled { opacity: .3; cursor: default; }
+.mai-app-topbar-section-move .material-symbols-rounded { font-size: 17px; }

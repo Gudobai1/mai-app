@@ -42,8 +42,12 @@ export type FinanceSummary = {
   monthIncome: number
   monthExpense: number
   monthResult: number
-  /** Despesas por dia (segunda a domingo da semana de `today`). */
-  weekExpenses: Array<{ date: string; value: number }>
+  /** Saldo previsto ao fim do mês corrente. */
+  projected: number
+  /** Despesas ainda não pagas com vencimento até o fim do mês. */
+  toPay: number
+  /** Receitas ainda não recebidas com data até o fim do mês. */
+  toReceive: number
 }
 
 export function financeSummary(state: MaiState, today: string): FinanceSummary {
@@ -146,22 +150,34 @@ export function financeSummary(state: MaiState, today: string): FinanceSummary {
   const looseCashBalance = transactions.filter(item => !item.ignorar_calculo && !String(item.conta_id || '').startsWith('card|') && !item.cartao_id).reduce((sum, item) => sum + signed(item, paidAmountThrough(item, today)), 0) + fixedCashTotalThrough(today)
   const balance = accounts.length ? accounts.reduce((sum, account) => sum + accountBalance(account), 0) : looseCashBalance
 
-  // Gastos da semana: despesas comuns e fixas com data em cada dia (sem ajustes de fatura).
-  const base = new Date(`${today}T12:00:00`)
-  const monday = new Date(base)
-  monday.setDate(base.getDate() - ((base.getDay() + 6) % 7))
-  const weekDays = Array.from({ length: 7 }, (_, index) => {
-    const date = new Date(monday)
-    date.setDate(monday.getDate() + index)
-    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
-  })
-  const weekMonths = [...new Set(weekDays.map(day => day.slice(0, 7)))]
-  const weekFixed = weekMonths.flatMap(monthKey => fixed.flatMap(rule => {
-    const item = fixedRuleAtMonth(rule, monthKey)
-    return item ? [item] : []
-  }))
-  const expenseItems = [...transactions, ...weekFixed].filter(item => !item.ignorar_calculo && !item.ajuste_fatura && item.tipo !== 'receita')
-  const weekExpenses = weekDays.map(date => ({ date, value: expenseItems.filter(item => dateKey(item.data) === date).reduce((sum, item) => sum + clampMoney(item.valor), 0) }))
+  // Saldo previsto até o fim do mês (mesma regra do card "Previsto" de Finanças).
+  const initialBalance = accounts.reduce((sum, account) => sum + Number(account.saldo_inicial || 0), 0)
+  const projectedTransactionsTotal = transactions.filter(item => {
+    if (item.ignorar_calculo) return false
+    const itemMonth = dateKey(item.data).slice(0, 7)
+    return /^\d{4}-\d{2}$/.test(itemMonth) && itemMonth <= month
+  }).reduce((sum, item) => sum + signed(item, clampMoney(item.valor)), 0)
+  const projectedFixedTotal = fixed.reduce((total, rule) => {
+    if (rule.ativo === false || rule.ignorar_calculo) return total
+    const ruleStart = String(rule.mes_inicio || dateKey(rule.data).slice(0, 7) || month).slice(0, 7)
+    const configuredEnd = String(rule.mes_fim || '').slice(0, 7)
+    const ruleEnd = configuredEnd && configuredEnd < month ? configuredEnd : month
+    return total + monthSequence(ruleStart, ruleEnd).reduce((sum, monthKey) => {
+      const item = fixedRuleAtMonth(rule, monthKey)
+      return item && !item.ignorar_calculo ? sum + signed(item, clampMoney(item.valor)) : sum
+    }, 0)
+  }, 0)
+  const projected = initialBalance + projectedTransactionsTotal + projectedFixedTotal
+
+  // A pagar / a receber até o fim do mês: o que falta quitar (compras no cartão
+  // entram pela fatura, não uma a uma).
+  const monthEnd = `${month}-31`
+  const isCardPurchase = (item: Row) => !item.ajuste_fatura && (String(item.conta_id || '').startsWith('card|') || Boolean(item.cartao_id))
+  const remaining = (item: Row) => Math.max(0, clampMoney(item.valor) - paidAmountThrough(item, '9999-12-31'))
+  const openItems = [...transactions.filter(item => dateKey(item.data) && dateKey(item.data) <= monthEnd), ...monthFixed]
+    .filter(item => !item.ignorar_calculo && !isCardPurchase(item))
+  const toPay = openItems.filter(item => item.tipo !== 'receita').reduce((sum, item) => sum + remaining(item), 0)
+  const toReceive = openItems.filter(item => item.tipo === 'receita').reduce((sum, item) => sum + remaining(item), 0)
 
   return {
     hasData: transactions.length > 0 || fixed.length > 0 || accounts.length > 0,
@@ -169,6 +185,8 @@ export function financeSummary(state: MaiState, today: string): FinanceSummary {
     monthIncome,
     monthExpense,
     monthResult: monthIncome - monthExpense,
-    weekExpenses,
+    projected,
+    toPay,
+    toReceive,
   }
 }

@@ -21,6 +21,10 @@ const rows = (value: unknown): Row[] => Array.isArray(value) ? value as Row[] : 
 const dateKey = (value: unknown) => String(value || '').slice(0, 10)
 const paid = (value: unknown) => ['pago','paga','quitado','quitada','concluido','concluida','concluído','concluída'].includes(String(value || '').toLocaleLowerCase('pt-BR'))
 
+const TODAY_SECTIONS = ['appointments', 'tasks', 'habits', 'goals', 'finance', 'notes'] as const
+type TodaySectionId = typeof TODAY_SECTIONS[number]
+const TODAY_SECTION_LABELS: Record<TodaySectionId, string> = { appointments: 'Agenda', tasks: 'Tarefas', habits: 'Hábitos', goals: 'Metas', finance: 'Finanças', notes: 'Notas' }
+
 function PanelSection({ title, children }: { title:string; children:ReactNode }) {
   return <section className="mai-app-topbar-panel-section"><strong>{title}</strong><div>{children}</div></section>
 }
@@ -106,6 +110,23 @@ export function AppTopBar({ state, today, view, taskScope, commit, onTaskScopeCh
   const patchFilter = (patch:Row) => patchConfig('moduleFilters', { ...moduleFilters, [String(view)]:{ ...filter, ...patch } })
   const patchControl = (patch:Row) => patchConfig('moduleControls', { ...moduleControls, [String(view)]:{ ...control, ...patch } })
   const setAreaTab = (area:string, tab:string) => patchConfig('areaTabs', { ...areaTabs, [area]:tab })
+  const savedTodayOrder = Array.isArray(configs.todayListOrder) ? configs.todayListOrder.map(String).filter((id: string): id is TodaySectionId => TODAY_SECTIONS.includes(id as TodaySectionId)) : []
+  const todayOrder: TodaySectionId[] = [...savedTodayOrder, ...TODAY_SECTIONS.filter(id => !savedTodayOrder.includes(id))]
+  const todayHidden = new Set<string>(Array.isArray(configs.todayListHidden) ? configs.todayListHidden.map(String) : [])
+  const toggleTodaySection = (id: TodaySectionId) => {
+    const next = new Set(todayHidden)
+    if (next.has(id)) next.delete(id)
+    else next.add(id)
+    patchConfig('todayListHidden', [...next])
+  }
+  const moveTodaySection = (id: TodaySectionId, delta: number) => {
+    const next = [...todayOrder]
+    const index = next.indexOf(id)
+    const target = index + delta
+    if (index < 0 || target < 0 || target >= next.length) return
+    ;[next[index], next[target]] = [next[target], next[index]]
+    patchConfig('todayListOrder', next)
+  }
   const setAdvanced = (area:string, value:boolean) => patchConfig('advancedAreas', { ...advanced, [area]:value })
 
   useEffect(() => {
@@ -119,7 +140,7 @@ export function AppTopBar({ state, today, view, taskScope, commit, onTaskScopeCh
   const density = String(control.density || 'comfortable')
 
   const panel = <div className="mai-app-topbar-panel" data-view={String(view)}>
-    {view !== 'finance' ? <PanelSection title="Layout"><Choices value={layoutMode} onChange={value => patchControl({ layout:value })} items={[{value:'normal',label:'Normal'},{value:'kanban',label:'Kanban'}]}/></PanelSection> : null}
+    {view !== 'finance' && view !== 'today' ? <PanelSection title="Layout"><Choices value={layoutMode} onChange={value => patchControl({ layout:value })} items={[{value:'normal',label:'Normal'},{value:'kanban',label:'Kanban'}]}/></PanelSection> : null}
 
     {view === 'today' ? <>
       <PanelSection title="Filtros">
@@ -127,7 +148,15 @@ export function AppTopBar({ state, today, view, taskScope, commit, onTaskScopeCh
         <SelectLine label="Prioridade" value={String(todayFilters.priority || 'all')} onChange={value => patchToday({ priority:value })}>{priorityOptions}</SelectLine>
       </PanelSection>
       <PanelSection title="Classificação"><Choices value={sortMode} onChange={value => patchControl({ sort:value })} items={[{value:'overdue',label:'Atrasados'},{value:'date',label:'Data'},{value:'priority',label:'Prioridade'},{value:'project',label:'Projeto'},{value:'title',label:'Título'}]}/></PanelSection>
-      <PanelSection title="Visualização"><Choices value={density} onChange={value => patchControl({ density:value })} items={[{value:'comfortable',label:'Padrão'},{value:'compact',label:'Compacta'}]}/></PanelSection>
+      <PanelSection title="Seções">
+        <div className="mai-app-topbar-sections">
+          {todayOrder.map((id, index) => <div key={id} className="mai-app-topbar-section-row">
+            <button type="button" className="mai-app-topbar-section-toggle" data-active={!todayHidden.has(id)} aria-pressed={!todayHidden.has(id)} onClick={() => toggleTodaySection(id)}><span className="material-symbols-rounded">{todayHidden.has(id) ? 'check_box_outline_blank' : 'check_box'}</span>{TODAY_SECTION_LABELS[id]}</button>
+            <button type="button" className="mai-app-topbar-section-move" disabled={index === 0} onClick={() => moveTodaySection(id, -1)} aria-label={`Mover ${TODAY_SECTION_LABELS[id]} para cima`}><span className="material-symbols-rounded">arrow_upward</span></button>
+            <button type="button" className="mai-app-topbar-section-move" disabled={index === todayOrder.length - 1} onClick={() => moveTodaySection(id, 1)} aria-label={`Mover ${TODAY_SECTION_LABELS[id]} para baixo`}><span className="material-symbols-rounded">arrow_downward</span></button>
+          </div>)}
+        </div>
+      </PanelSection>
     </> : null}
 
     {view === 'upcoming' ? <>
