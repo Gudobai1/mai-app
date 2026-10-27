@@ -324,6 +324,40 @@ export function TodayModern({ state, today, commit, navigate, inspect, profileNa
     return Number.isFinite(end) ? end <= nowMinutes : Number.isFinite(start) && start < nowMinutes
   }
 
+  const [showPast, setShowPast] = useState(false)
+  const pastEvents = events.filter(eventPassed)
+  const upcomingEvents = events.filter(item => !eventPassed(item))
+  const eventIsNow = (item: PlannerItem) => {
+    if (!isToday || !clockIsToday) return false
+    if (item.subtitle === 'Em andamento') return true
+    if (!item.time || item.raw.dia_inteiro === true) return false
+    return minutesOf(item.time) <= nowMinutes && !eventPassed(item)
+  }
+
+  const renderEvent = (item: PlannerItem, passed: boolean) => {
+    const color = String(item.raw.categoria_cor || item.color || '') || 'var(--ds-accent)'
+    const allDay = item.raw.dia_inteiro === true || !item.time
+    const spanning = item.subtitle === 'Em andamento'
+    const end = String(item.raw.hora_fim || '').slice(0, 5)
+    const now = eventIsNow(item)
+    const startsIn = !passed && !now && isToday && clockIsToday && !allDay && !spanning ? minutesOf(item.time) - nowMinutes : NaN
+    const source = spanning ? (item.raw.tipo === 'google' || item.raw.tipo === 'gcalendar' ? 'Google Agenda' : String(item.raw.categoria || 'Compromisso')) : item.subtitle
+    return (
+      <button key={item.id} type="button" className={`${styles.agendaRow} ${now ? styles.agendaRowNow : ''} ${passed ? styles.rowPassed : ''}`} onClick={() => inspectPlanner(item)}>
+        <span className={styles.agendaTime}>
+          <span className={styles.agendaStart}>{spanning ? 'Hoje' : allDay ? 'Dia' : item.time}</span>
+          <span className={styles.agendaEnd}>{spanning ? 'todo' : allDay ? 'todo' : end || ' '}</span>
+        </span>
+        <span className={styles.rowBody}>
+          <span className={`${styles.agendaTitle} ${passed ? styles.strike : ''}`}>{item.title}</span>
+          <span className={styles.rowSub}><span className={styles.calDot} style={{ background: color }} />{spanning ? 'Em andamento' : source}{item.recurring ? <Icon name="repeat" size={14} /> : null}</span>
+        </span>
+        {now ? <span className={styles.nowPill} style={{ color, background: `color-mix(in srgb, ${color} 18%, transparent)` }}>Agora</span>
+          : Number.isFinite(startsIn) && startsIn >= 0 ? <span className={styles.startsIn}>{untilLabel(startsIn)}</span> : null}
+      </button>
+    )
+  }
+
   const nextEvent = isToday && clockIsToday
     ? events.find(item => item.time && item.raw.dia_inteiro !== true && item.subtitle !== 'Em andamento' && minutesOf(item.time) >= nowMinutes)
     : undefined
@@ -479,21 +513,15 @@ export function TodayModern({ state, today, commit, navigate, inspect, profileNa
       <Card padding="md">
         <SectionHeader title="Agenda" meta={events.length ? plural(events.length, 'compromisso', 'compromissos') : undefined} />
         {events.length ? (
-          <div className={styles.eventList}>
-            {events.map(item => {
-              const color = String(item.raw.categoria_cor || item.color || '') || 'var(--ds-accent)'
-              const detail = item.subtitle === 'Em andamento' ? 'Em andamento' : item.raw.dia_inteiro === true || !item.time ? 'Dia inteiro' : `${item.time}${item.raw.hora_fim ? ` – ${String(item.raw.hora_fim).slice(0, 5)}` : ''}`
-              const passed = eventPassed(item)
-              return (
-                <button key={item.id} type="button" className={`${styles.event} ${passed ? styles.rowPassed : ''}`} onClick={() => inspectPlanner(item)}>
-                  <span className={styles.eventTile} style={{ background: `color-mix(in srgb, ${color} 18%, var(--ds-surface))`, color }}><Icon name="event" size={20} /></span>
-                  <span className={styles.rowBody}>
-                    <span className={`${styles.rowTitle} ${passed ? styles.strike : ''}`}>{item.title}</span>
-                    <span className={styles.rowSub}>{detail}{item.recurring ? <Icon name="repeat" size={14} /> : null}</span>
-                  </span>
-                </button>
-              )
-            })}
+          <div className={styles.agenda}>
+            {pastEvents.length && upcomingEvents.length ? (
+              <button type="button" className={styles.pastToggle} aria-expanded={showPast} onClick={() => setShowPast(value => !value)}>
+                <Icon name={showPast ? 'expand_less' : 'expand_more'} size={18} filled={false} />
+                {pastEvents.length === 1 ? '1 já passou' : `${pastEvents.length} já passaram`}
+              </button>
+            ) : null}
+            {(showPast || !upcomingEvents.length ? pastEvents : []).map(item => renderEvent(item, true))}
+            {upcomingEvents.map(item => renderEvent(item, false))}
           </div>
         ) : <div className={styles.empty}>Nenhum compromisso.</div>}
       </Card>

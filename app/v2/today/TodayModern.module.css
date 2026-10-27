@@ -489,22 +489,46 @@
 
 /* --------------------------------------------------------------- Agenda */
 
-.eventList {
+.agenda {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 4px;
+  margin: 0 -8px;
 }
 
-.event.event {
+.pastToggle.pastToggle {
+  appearance: none;
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 30px;
+  padding: 0 10px 0 6px;
+  border: 0;
+  border-radius: var(--ds-r-full);
+  background: transparent;
+  color: var(--ds-muted);
+  font: inherit;
+  font-size: 12px;
+  font-weight: var(--ds-fw-bold);
+  cursor: pointer;
+}
+
+.pastToggle.pastToggle:hover {
+  background: var(--ds-surface-2);
+  color: var(--ds-text);
+}
+
+.agendaRow.agendaRow {
   appearance: none;
   width: 100%;
   display: flex;
   align-items: center;
-  gap: var(--ds-s-3);
-  padding: 10px;
+  gap: 14px;
+  padding: 12px;
   border: 0;
   border-radius: 16px;
-  background: var(--ds-surface-2);
+  background: transparent;
   color: var(--ds-text);
   font: inherit;
   text-align: left;
@@ -512,22 +536,73 @@
   transition: background-color var(--ds-dur-fast) var(--ds-ease);
 }
 
-.event.event:hover {
+.agendaRow.agendaRow:hover {
+  background: var(--ds-surface-2);
+}
+
+.agendaRow.agendaRow:focus-visible,
+.pastToggle.pastToggle:focus-visible {
+  outline: 2px solid var(--ds-accent);
+  outline-offset: 2px;
+}
+
+.agendaRowNow.agendaRowNow,
+.agendaRowNow.agendaRowNow:hover {
   background: var(--ds-surface-hover);
 }
 
-.event .rowTitle {
-  font-size: 14px;
-  font-weight: var(--ds-fw-bold);
+.agendaTime {
+  width: 52px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  font-variant-numeric: tabular-nums;
 }
 
-.eventTile {
-  width: 40px;
-  height: 40px;
-  border-radius: 13px;
+.agendaStart {
+  font-size: 16px;
+  font-weight: var(--ds-fw-heavy);
+  line-height: 1.2;
+}
+
+.agendaEnd {
+  font-size: 12px;
+  font-weight: var(--ds-fw-medium);
+  color: var(--ds-muted);
+}
+
+.agendaTitle {
+  font-size: var(--ds-fs-md);
+  font-weight: var(--ds-fw-bold);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.calDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
   flex-shrink: 0;
-  display: grid;
-  place-items: center;
+}
+
+.nowPill {
+  flex-shrink: 0;
+  height: 24px;
+  padding: 0 10px;
+  border-radius: var(--ds-r-full);
+  display: inline-flex;
+  align-items: center;
+  font-size: 11px;
+  font-weight: var(--ds-fw-heavy);
+}
+
+.startsIn {
+  flex-shrink: 0;
+  font-size: 12px;
+  font-weight: var(--ds-fw-bold);
+  color: var(--ds-muted);
+  white-space: nowrap;
 }
 
 /* -------------------------------------------------------------- Hábitos */
