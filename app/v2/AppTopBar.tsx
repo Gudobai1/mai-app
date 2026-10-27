@@ -129,18 +129,13 @@ export function AppTopBar({ state, today, view, taskScope, commit, onTaskScopeCh
   }
   const setAdvanced = (area:string, value:boolean) => patchConfig('advancedAreas', { ...advanced, [area]:value })
 
-  useEffect(() => {
-    const workspace = document.querySelector('.mai-v3-workspace') as HTMLElement | null
-    if (workspace) workspace.dataset.maiDensity = String(control.density || 'comfortable')
-  }, [view, control.density])
 
   const projectOptions = <><option value="all">Todos</option><option value="entrada">Entrada</option>{projects.map(project => <option key={String(project.id)} value={String(project.id)}>{String(project.nome || 'Projeto')}</option>)}</>
   const priorityOptions = <><option value="all">Todas</option><option value="1">Alta</option><option value="2">Média</option><option value="3">Baixa</option><option value="4">Sem prioridade</option></>
   const recurrenceOptions = <><option value="all">Todas as ocorrências</option><option value="next">Somente a próxima</option></>
-  const density = String(control.density || 'comfortable')
 
   const panel = <div className="mai-app-topbar-panel" data-view={String(view)}>
-    {view !== 'finance' && view !== 'today' ? <PanelSection title="Layout"><Choices value={layoutMode} onChange={value => patchControl({ layout:value })} items={[{value:'normal',label:'Normal'},{value:'kanban',label:'Kanban'}]}/></PanelSection> : null}
+    {view === 'tasks' ? <PanelSection title="Layout"><Choices value={layoutMode} onChange={value => patchControl({ layout:value })} items={[{value:'normal',label:'Normal'},{value:'kanban',label:'Kanban'}]}/></PanelSection> : null}
 
     {view === 'today' ? <>
       <PanelSection title="Filtros">
@@ -186,7 +181,6 @@ export function AppTopBar({ state, today, view, taskScope, commit, onTaskScopeCh
     {view === 'completed' ? <>
       <PanelSection title="Filtros"><SelectLine label="Tipo" value={String(filter.kind || 'all')} onChange={value => patchFilter({ kind:value })}><option value="all">Todos</option><option value="task">Tarefas</option><option value="event">Compromissos</option><option value="habit">Hábitos</option><option value="goal">Metas</option><option value="finance">Finanças</option><option value="note">Notas</option></SelectLine></PanelSection>
       <PanelSection title="Classificação"><Choices value={sortMode} onChange={value => patchControl({ sort:value })} items={[{value:'recent',label:'Recentes'},{value:'oldest',label:'Antigos'},{value:'title',label:'Título'}]}/></PanelSection>
-      <PanelSection title="Visualização"><Choices value={density} onChange={value => patchControl({ density:value })} items={[{value:'comfortable',label:'Padrão'},{value:'compact',label:'Compacta'}]}/></PanelSection>
     </> : null}
 
     {view === 'tasks' ? <>
@@ -210,13 +204,13 @@ export function AppTopBar({ state, today, view, taskScope, commit, onTaskScopeCh
     {view === 'goals' ? <>
       <PanelSection title="Filtros"><SelectLine label="Situação" value={String(filter.status || 'all')} onChange={value => patchFilter({ status:value })}><option value="all">Em andamento + pausadas</option><option value="active">Em andamento</option><option value="paused">Pausadas</option></SelectLine><SelectLine label="Prioridade" value={String(filter.priority || 'all')} onChange={value => patchFilter({ priority:value })}>{priorityOptions}</SelectLine></PanelSection>
       <PanelSection title="Classificação"><Choices value={sortMode} onChange={value => patchControl({ sort:value })} items={[{value:'date',label:'Prazo'},{value:'priority',label:'Prioridade'},{value:'progress',label:'Progresso'},{value:'name',label:'Nome'}]}/></PanelSection>
-      <PanelSection title="Visualização"><Choices value={advanced.goals ? 'advanced' : 'simple'} onChange={value => setAdvanced('goals', value === 'advanced')} items={[{value:'simple',label:'Simples'},{value:'advanced',label:'Avançada'}]}/><Choices value={density} onChange={value => patchControl({ density:value })} items={[{value:'comfortable',label:'Padrão'},{value:'compact',label:'Compacta'}]}/></PanelSection>
+      <PanelSection title="Visualização"><Choices value={advanced.goals ? 'advanced' : 'simple'} onChange={value => setAdvanced('goals', value === 'advanced')} items={[{value:'simple',label:'Simples'},{value:'advanced',label:'Avançada'}]}/></PanelSection>
     </> : null}
 
     {view === 'notes' ? <>
       <PanelSection title="Filtros"><SelectLine label="Notas" value={String(filter.pinned || 'all')} onChange={value => patchFilter({ pinned:value })}><option value="all">Todas</option><option value="pinned">Fixadas</option><option value="unpinned">Não fixadas</option></SelectLine></PanelSection>
       <PanelSection title="Classificação"><Choices value={sortMode} onChange={value => patchControl({ sort:value })} items={[{value:'recent',label:'Recentes'},{value:'oldest',label:'Antigas'},{value:'name',label:'Título'}]}/></PanelSection>
-      <PanelSection title="Visualização"><Choices value={advanced.notes ? 'advanced' : 'simple'} onChange={value => setAdvanced('notes', value === 'advanced')} items={[{value:'simple',label:'Simples'},{value:'advanced',label:'Avançada'}]}/><Choices value={density} onChange={value => patchControl({ density:value })} items={[{value:'comfortable',label:'Padrão'},{value:'compact',label:'Compacta'}]}/></PanelSection>
+      <PanelSection title="Visualização"><Choices value={advanced.notes ? 'advanced' : 'simple'} onChange={value => setAdvanced('notes', value === 'advanced')} items={[{value:'simple',label:'Simples'},{value:'advanced',label:'Avançada'}]}/></PanelSection>
     </> : null}
 
     {view === 'finance' ? <>
@@ -232,13 +226,13 @@ export function AppTopBar({ state, today, view, taskScope, commit, onTaskScopeCh
     {view === 'health' ? <>
       <PanelSection title="Filtros"><SelectLine label="Período" value={String(filter.period || '30')} onChange={value => patchFilter({ period:value })}><option value="7">7 dias</option><option value="30">30 dias</option><option value="all">Todo histórico</option></SelectLine></PanelSection>
       <PanelSection title="Classificação"><Choices value={sortMode} onChange={value => patchControl({ sort:value })} items={[{value:'recent',label:'Recentes'},{value:'oldest',label:'Antigos'}]}/></PanelSection>
-      <PanelSection title="Visualização"><Choices value={areaTabs.health || 'today'} onChange={value => setAreaTab('health', value)} items={[{value:'today',label:'Hoje'},{value:'history',label:'Histórico'}]}/><Choices value={density} onChange={value => patchControl({ density:value })} items={[{value:'comfortable',label:'Padrão'},{value:'compact',label:'Compacta'}]}/></PanelSection>
+      <PanelSection title="Visualização"><Choices value={areaTabs.health || 'today'} onChange={value => setAreaTab('health', value)} items={[{value:'today',label:'Hoje'},{value:'history',label:'Histórico'}]}/></PanelSection>
     </> : null}
 
     {view === 'files' ? <>
       <PanelSection title="Filtros"><SelectLine label="Tipo" value={String(filter.kind || 'all')} onChange={value => patchFilter({ kind:value })}><option value="all">Todos</option><option value="folder">Pastas</option><option value="file">Arquivos</option></SelectLine></PanelSection>
       <PanelSection title="Classificação"><Choices value={sortMode} onChange={value => patchControl({ sort:value })} items={[{value:'name',label:'Nome'},{value:'recent',label:'Recentes'}]}/></PanelSection>
-      <PanelSection title="Visualização"><Choices value={areaTabs.files || 'list'} onChange={value => setAreaTab('files', value)} items={[{value:'list',label:'Lista'},{value:'grid',label:'Grade'}]}/><Choices value={density} onChange={value => patchControl({ density:value })} items={[{value:'comfortable',label:'Padrão'},{value:'compact',label:'Compacta'}]}/></PanelSection>
+      <PanelSection title="Visualização"><Choices value={areaTabs.files || 'list'} onChange={value => setAreaTab('files', value)} items={[{value:'list',label:'Lista'},{value:'grid',label:'Grade'}]}/></PanelSection>
     </> : null}
   </div>
 
