@@ -36,22 +36,19 @@
   line-height: 1.15;
 }
 
-.summary {
-  display: flex;
-  flex-wrap: nowrap;
-  gap: var(--ds-s-2);
-  margin-top: calc(var(--ds-s-2) * -1);
-  overflow-x: auto;
-  scrollbar-width: none;
-  -webkit-overflow-scrolling: touch;
+/* Linha de resumo: data + contagens, uma linha só. */
+.subline {
+  margin: 6px 0 0;
+  font-size: 14px;
+  font-weight: var(--ds-fw-medium);
+  color: var(--ds-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.summary::-webkit-scrollbar {
+.dateShort {
   display: none;
-}
-
-.summary > * {
-  flex-shrink: 0;
 }
 
 .headerActions {
@@ -95,6 +92,16 @@
   font-weight: var(--ds-fw-bold) !important;
 }
 
+.options :global(.mai-app-topbar-menu-button) > span:last-child {
+  display: none !important;
+}
+
+.options :global(.mai-app-topbar-menu-button) {
+  width: 44px !important;
+  padding: 0 !important;
+  justify-content: center !important;
+}
+
 .options :global(.mai-app-topbar-menu-button[data-active='true']) {
   background: var(--ds-accent-soft) !important;
   color: var(--ds-accent) !important;
@@ -106,25 +113,17 @@
 
 /* ---------------------------------------------------------------- Semana */
 
-.weeksWrap {
-  display: flex;
-  align-items: center;
-  gap: var(--ds-s-2);
-  margin-top: calc(var(--ds-s-1) * -1);
-}
-
-.weekArrow.weekArrow {
-  flex-shrink: 0;
-}
-
 .weeks {
-  flex: 1;
-  min-width: 0;
   display: flex;
   overflow-x: auto;
   scroll-snap-type: x mandatory;
   overscroll-behavior-x: contain;
   scrollbar-width: none;
+  cursor: grab;
+  user-select: none;
+  /* As pontas esmaecem para indicar que há mais semanas para os lados. */
+  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 18px, #000 calc(100% - 18px), transparent 100%);
+  mask-image: linear-gradient(90deg, transparent 0, #000 18px, #000 calc(100% - 18px), transparent 100%);
 }
 
 .weeks::-webkit-scrollbar {
@@ -135,28 +134,28 @@
   flex: 0 0 100%;
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
-  gap: 10px;
-  padding: 2px 1px 4px;
+  gap: 8px;
+  padding: 2px 6px;
   box-sizing: border-box;
   scroll-snap-align: start;
 }
 
 .day.day {
   appearance: none;
-  height: 74px;
+  height: 58px;
   border: 0;
-  border-radius: var(--ds-r-lg);
+  border-radius: 14px;
   background: var(--ds-surface);
-  box-shadow: var(--ds-shadow-1);
+  box-shadow: none;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 2px;
+  gap: 1px;
   padding: 0;
   color: var(--ds-text);
   font: inherit;
-  cursor: pointer;
+  cursor: inherit;
   transition: background-color var(--ds-dur-fast) var(--ds-ease), transform var(--ds-dur-fast) var(--ds-ease);
 }
 
@@ -177,45 +176,50 @@
   color: var(--ds-muted);
 }
 
-.dayIsToday.dayIsToday {
+.dayIsToday.dayIsToday .dayNumber {
   color: var(--ds-accent);
-  box-shadow: inset 0 0 0 2px var(--ds-accent);
 }
 
-.daySelected.daySelected {
-  background: var(--ds-text);
-  color: var(--ds-bg);
-  box-shadow: none;
+.daySelected.daySelected,
+.daySelected.daySelected:hover {
+  background: var(--ds-accent);
+  color: var(--ds-on-accent);
+}
+
+.daySelected.daySelected .dayNumber {
+  color: var(--ds-on-accent);
 }
 
 .dayName {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: var(--ds-fw-medium);
   opacity: 0.75;
   text-transform: capitalize;
 }
 
 .dayNumber {
-  font-size: 18px;
+  font-size: 16px;
+  font-weight: var(--ds-fw-bold);
+}
+
+.daySelected .dayNumber {
   font-weight: var(--ds-fw-heavy);
 }
 
-.dayLoad {
-  height: 5px;
-  margin-top: 3px;
-  display: flex;
-  gap: 3px;
+.dayDot {
+  width: 4px;
+  height: 4px;
+  margin-top: 2px;
+  border-radius: 50%;
+  background: transparent;
 }
 
-.dayLoad > i {
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
+.dayDot[data-on] {
   background: var(--ds-line-strong);
 }
 
-.daySelected .dayLoad > i {
-  background: var(--ds-accent);
+.daySelected .dayDot[data-on] {
+  background: var(--ds-on-accent);
 }
 
 /* ----------------------------------------------------- Grade (3 colunas) */
@@ -693,21 +697,27 @@
     justify-content: center !important;
   }
 
-  .weekArrow.weekArrow {
-    display: none;
-  }
-
   .week {
-    gap: 6px;
+    gap: 5px;
+    padding: 2px 4px;
   }
 
   .day.day {
-    height: 64px;
-    border-radius: 18px;
+    height: 54px;
+    border-radius: 14px;
   }
 
-  .dayNumber {
-    font-size: 16px;
+  .subline {
+    font-size: 13px;
+    margin-top: 4px;
+  }
+
+  .dateLong {
+    display: none;
+  }
+
+  .dateShort {
+    display: inline;
   }
 
   /* Uma coluna só, na ordem escolhida em Personalizar. */
