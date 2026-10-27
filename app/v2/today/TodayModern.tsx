@@ -629,11 +629,11 @@ export function TodayModern({ state, today, commit, navigate, inspect, profileNa
   const firstName = String(profileName || '').trim().split(/\s+/)[0]
   const dayLabel = capitalize(new Date(`${day}T12:00:00`).toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' }))
   const shortDayLabel = capitalize(new Date(`${day}T12:00:00`).toLocaleDateString('pt-BR', { weekday: 'short', day: 'numeric', month: 'short' }).replace(/\./g, ''))
-  const summaryParts = [
-    plural(events.length, 'compromisso', 'compromissos'),
-    plural(tasks.length, 'tarefa', 'tarefas'),
-    ...(lateCount ? [plural(lateCount, 'atrasada', 'atrasadas')] : []),
-    ...(habits.length ? [`${habitsDone} de ${habits.length} hábitos`] : []),
+  const summaryParts: Array<{ icon: string; value: string; label: string; alert?: boolean }> = [
+    { icon: 'event', value: String(events.length), label: plural(events.length, 'compromisso', 'compromissos') },
+    { icon: 'checklist', value: String(tasks.length), label: plural(tasks.length, 'tarefa', 'tarefas') },
+    ...(lateCount ? [{ icon: 'schedule', value: String(lateCount), label: plural(lateCount, 'atrasada', 'atrasadas'), alert: true }] : []),
+    ...(habits.length ? [{ icon: 'autorenew', value: `${habitsDone}/${habits.length}`, label: `${habitsDone} de ${habits.length} hábitos` }] : []),
   ]
   const title = isToday ? `${greetingFor(clock.getHours())}${firstName && firstName !== 'Meu' ? `, ${firstName}` : ''}` : naturalDate(day, today) === 'Amanhã' || naturalDate(day, today) === 'Ontem' ? naturalDate(day, today) : capitalize(new Date(`${day}T12:00:00`).toLocaleDateString('pt-BR', { weekday: 'long' }))
 
@@ -675,7 +675,12 @@ export function TodayModern({ state, today, commit, navigate, inspect, profileNa
           <p className={styles.subline}>
             <span className={styles.dateLong}>{dayLabel}</span>
             <span className={styles.dateShort}>{shortDayLabel}</span>
-            {summaryParts.map(part => <span key={part}> · {part}</span>)}
+            {summaryParts.map(part => (
+              <span key={part.icon} className={`${styles.stat} ${part.alert ? styles.statAlert : ''}`} title={part.label} aria-label={part.label}>
+                <Icon name={part.icon} size={16} filled={false} />
+                <span aria-hidden="true">{part.value}</span>
+              </span>
+            ))}
           </p>
         </div>
         <div className={styles.headerActions}>
