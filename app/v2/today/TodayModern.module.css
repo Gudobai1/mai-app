@@ -51,6 +51,24 @@
   display: none;
 }
 
+.subline {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.stat {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-variant-numeric: tabular-nums;
+}
+
+.statAlert {
+  color: var(--ds-danger);
+  font-weight: var(--ds-fw-bold);
+}
+
 .headerActions {
   position: relative;
   flex-shrink: 0;
@@ -718,6 +736,10 @@
 
   .dateShort {
     display: inline;
+  }
+
+  .subline {
+    gap: 12px;
   }
 
   /* Uma coluna só, na ordem escolhida em Personalizar. */
