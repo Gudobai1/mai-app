@@ -1,0 +1,16 @@
+/*
+ * MAI — ajustes globais da navegação Moderna.
+ * Compensa regras antigas (com !important) enquanto o CSS legado é migrado.
+ */
+
+@media (max-width: 900px) {
+  /* Espaço para a barra flutuante no rodapé. */
+  html body .mai-v3-shell .mai-v3-workspace {
+    padding-bottom: calc(104px + env(safe-area-inset-bottom)) !important;
+  }
+
+  /* A busca não fica escondida atrás da barra flutuante. */
+  html body .mai-global-search-layer {
+    inset: 0 0 calc(88px + env(safe-area-inset-bottom)) 0 !important;
+  }
+}
