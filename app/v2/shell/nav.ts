@@ -12,6 +12,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { id: 'today', label: 'Hoje', icon: 'today' },
       { id: 'upcoming', label: 'Em breve', icon: 'event_upcoming' },
       { id: 'tasks', label: 'Tarefas', icon: 'checklist' },
+      { id: 'completed', label: 'Concluídos', icon: 'task_alt' },
     ],
   },
   {
@@ -31,8 +32,6 @@ export const NAV_GROUPS: NavGroup[] = [
     ],
   },
 ]
-
-export const COMPLETED_ITEM: NavItem = { id: 'completed', label: 'Concluídos', icon: 'task_alt' }
 
 /** Tarefas abertas que vencem hoje ou já venceram (só tarefas principais). */
 export function todayCounts(state: MaiState, today: string) {

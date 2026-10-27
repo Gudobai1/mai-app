@@ -3,7 +3,7 @@
 import type { MaiState } from '../../../lib/v2/state'
 import { Icon, IconButton } from '../../ds'
 import type { AppView } from '../app-types'
-import { COMPLETED_ITEM, NAV_GROUPS, todayCounts, type NavItem } from './nav'
+import { NAV_GROUPS, todayCounts, type NavItem } from './nav'
 import styles from './ModernShell.module.css'
 
 type GoogleProfile = { name: string; picture?: string; email?: string } | null
@@ -16,10 +16,12 @@ type Props = {
   onSearch: () => void
   onAdd: () => void
   onSettings: () => void
+  onToggleTheme: () => void
+  dark: boolean
   profile?: GoogleProfile
 }
 
-export function ModernSidebar({ state, today, view, navigate, onSearch, onAdd, onSettings, profile }: Props) {
+export function ModernSidebar({ state, today, view, navigate, onSearch, onAdd, onSettings, onToggleTheme, dark, profile }: Props) {
   const profileName = String(profile?.name || state.configs.profileName || state.configs.userName || 'Meu perfil')
   const profileInitial = profileName.trim().slice(0, 1).toLocaleUpperCase('pt-BR') || 'M'
   const counts = todayCounts(state, today)
@@ -54,6 +56,9 @@ export function ModernSidebar({ state, today, view, navigate, onSearch, onAdd, o
       <div className={styles.brand}>
         <span className={styles.logo} aria-hidden="true">M</span>
         <span className={styles.brandName}>MAI</span>
+        <button type="button" className={styles.themeToggle} aria-pressed={dark} aria-label={dark ? 'Usar tema claro' : 'Usar tema escuro'} title={dark ? 'Tema claro' : 'Tema escuro'} onClick={onToggleTheme}>
+          <Icon name={dark ? 'dark_mode' : 'light_mode'} size={20} />
+        </button>
       </div>
 
       <div className={styles.actions}>
@@ -77,7 +82,6 @@ export function ModernSidebar({ state, today, view, navigate, onSearch, onAdd, o
       </nav>
 
       <div className={styles.footer}>
-        {renderItem(COMPLETED_ITEM)}
         <div className={styles.profileRow}>
           <button type="button" className={styles.profile} onClick={onSettings} title={profile?.email || profileName}>
             <span className={styles.avatar}>

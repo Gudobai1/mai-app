@@ -41,6 +41,37 @@
   font-size: var(--ds-fs-lg);
 }
 
+.themeToggle.themeToggle {
+  appearance: none;
+  margin-left: auto;
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 12px;
+  background: var(--ds-surface-2);
+  color: var(--ds-muted);
+  cursor: pointer;
+  transition: background-color var(--ds-dur-fast) var(--ds-ease), color var(--ds-dur-fast) var(--ds-ease);
+}
+
+.themeToggle.themeToggle:hover {
+  color: var(--ds-text);
+}
+
+.themeToggle.themeToggle[aria-pressed='true'] {
+  background: var(--ds-accent-soft);
+  color: var(--ds-accent);
+}
+
+.themeToggle.themeToggle:focus-visible {
+  outline: 2px solid var(--ds-accent);
+  outline-offset: 2px;
+}
+
 .brandName {
   font-size: 19px;
   font-weight: var(--ds-fw-heavy);
@@ -278,26 +309,25 @@
   .mobileNav {
     position: fixed;
     z-index: 1250;
-    left: 12px;
-    right: 12px;
+    left: 50%;
     bottom: max(12px, env(safe-area-inset-bottom));
-    height: 64px;
+    transform: translateX(-50%);
+    width: min(calc(100vw - 48px), 380px);
+    height: 72px;
     display: grid;
     grid-template-columns: repeat(5, minmax(0, 1fr));
     align-items: center;
-    padding: 0 4px;
+    padding: 0 6px;
     box-sizing: border-box;
-    border-radius: 22px;
-    background: color-mix(in srgb, var(--ds-surface) 94%, transparent);
+    border-radius: 24px;
+    background: var(--ds-surface);
     box-shadow: var(--ds-shadow-float);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
     font-family: var(--ds-font);
   }
 
   .tab.tab {
     appearance: none;
-    height: 56px;
+    height: 60px;
     min-width: 0;
     display: flex;
     flex-direction: column;
@@ -323,8 +353,8 @@
 
   .tabAdd.tabAdd {
     justify-self: center;
-    width: 52px;
-    height: 52px;
+    width: 56px;
+    height: 56px;
     border-radius: 18px;
     background: var(--ds-accent);
     color: var(--ds-on-accent);
@@ -382,6 +412,11 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
+  }
+
+  .sheetHeaderActions {
+    display: flex;
+    gap: var(--ds-s-2);
   }
 
   .sheetTitle {

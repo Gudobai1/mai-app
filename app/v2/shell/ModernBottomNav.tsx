@@ -3,19 +3,23 @@
 import { useEffect, useState } from 'react'
 import { Icon, IconButton, IconTile, type Tone } from '../../ds'
 import type { AppView } from '../app-types'
-import { COMPLETED_ITEM, NAV_GROUPS } from './nav'
+import { NAV_GROUPS } from './nav'
 import styles from './ModernShell.module.css'
 
 type Props = {
   view: AppView
+  searchOpen: boolean
   navigate: (view: AppView) => void
   onSearch: () => void
   onAdd: () => void
   onSettings: () => void
+  onToggleTheme: () => void
+  dark: boolean
 }
 
-/** Áreas que ficam fora da barra e aparecem na folha "Mais". */
 const sheetTones: Partial<Record<string, Tone>> = {
+  tasks: 'accent',
+  completed: 'mint',
   habits: 'mint',
   goals: 'lilac',
   health: 'rose',
@@ -24,9 +28,10 @@ const sheetTones: Partial<Record<string, Tone>> = {
   files: 'accent',
 }
 
-const barViews = new Set(['today', 'tasks', 'upcoming'])
+/** Áreas com botão próprio na barra; as demais ficam na folha de módulos. */
+const barViews = new Set(['today', 'upcoming'])
 
-export function ModernBottomNav({ view, navigate, onSearch, onAdd, onSettings }: Props) {
+export function ModernBottomNav({ view, searchOpen, navigate, onSearch, onAdd, onSettings, onToggleTheme, dark }: Props) {
   const [sheetOpen, setSheetOpen] = useState(false)
 
   useEffect(() => {
@@ -48,7 +53,7 @@ export function ModernBottomNav({ view, navigate, onSearch, onAdd, onSettings }:
   }
 
   const tab = (id: AppView, label: string, icon: string) => {
-    const active = view === id && !sheetOpen
+    const active = view === id && !sheetOpen && !searchOpen
     return (
       <button type="button" className={styles.tab} aria-current={active ? 'page' : undefined} onClick={() => go(id)}>
         <Icon name={icon} size={24} filled={active} />
@@ -57,7 +62,7 @@ export function ModernBottomNav({ view, navigate, onSearch, onAdd, onSettings }:
     )
   }
 
-  const moreActive = sheetOpen || !barViews.has(String(view))
+  const modulesActive = sheetOpen || (!barViews.has(String(view)) && !searchOpen)
   const sheetGroups = NAV_GROUPS.map(group => ({ ...group, items: group.items.filter(item => !barViews.has(String(item.id))) })).filter(group => group.items.length)
 
   return (
@@ -65,17 +70,15 @@ export function ModernBottomNav({ view, navigate, onSearch, onAdd, onSettings }:
       {sheetOpen ? (
         <div className={styles.sheetLayer}>
           <button type="button" className={styles.scrim} aria-label="Fechar" onClick={() => setSheetOpen(false)} />
-          <section className={styles.sheet} role="dialog" aria-modal="true" aria-labelledby="mai-more-title">
+          <section className={styles.sheet} role="dialog" aria-modal="true" aria-labelledby="mai-modules-title">
             <div className={styles.handle} aria-hidden="true" />
             <header className={styles.sheetHeader}>
-              <h2 id="mai-more-title" className={styles.sheetTitle}>Mais</h2>
-              <IconButton icon="close" label="Fechar" size={40} onClick={() => setSheetOpen(false)} />
+              <h2 id="mai-modules-title" className={styles.sheetTitle}>Módulos</h2>
+              <div className={styles.sheetHeaderActions}>
+                <IconButton icon={dark ? 'dark_mode' : 'light_mode'} label={dark ? 'Usar tema claro' : 'Usar tema escuro'} size={40} onClick={onToggleTheme} aria-pressed={dark} />
+                <IconButton icon="close" label="Fechar" size={40} onClick={() => setSheetOpen(false)} />
+              </div>
             </header>
-
-            <button type="button" className={`${styles.search} ${styles.sheetSearch}`} onClick={() => { setSheetOpen(false); onSearch() }}>
-              <Icon name="search" size={20} filled={false} />
-              <span>Buscar em tudo</span>
-            </button>
 
             {sheetGroups.map(group => (
               <div key={group.label}>
@@ -92,11 +95,6 @@ export function ModernBottomNav({ view, navigate, onSearch, onAdd, onSettings }:
             ))}
 
             <div className={styles.sheetRows}>
-              <button type="button" className={styles.sheetRow} aria-current={view === COMPLETED_ITEM.id ? 'page' : undefined} onClick={() => go(COMPLETED_ITEM.id)}>
-                <Icon name={COMPLETED_ITEM.icon} size={22} filled={false} />
-                <span>{COMPLETED_ITEM.label}</span>
-                <Icon name="chevron_right" size={20} />
-              </button>
               <button type="button" className={styles.sheetRow} onClick={() => { setSheetOpen(false); onSettings() }}>
                 <Icon name="tune" size={22} filled={false} />
                 <span>Ajustes</span>
@@ -109,14 +107,17 @@ export function ModernBottomNav({ view, navigate, onSearch, onAdd, onSettings }:
 
       <nav className={styles.mobileNav} aria-label="Navegação principal">
         {tab('today', 'Hoje', 'today')}
-        {tab('tasks', 'Tarefas', 'checklist')}
-        <button type="button" className={`${styles.tab} ${styles.tabAdd}`} aria-label="Adicionar" onClick={() => { setSheetOpen(false); onAdd() }}>
-          <Icon name="add" size={28} weight={600} />
-        </button>
         {tab('upcoming', 'Em breve', 'event_upcoming')}
-        <button type="button" className={styles.tab} aria-expanded={sheetOpen} aria-current={moreActive && !sheetOpen ? 'page' : undefined} onClick={() => setSheetOpen(value => !value)}>
-          <Icon name="grid_view" size={24} filled={moreActive} />
-          <span>Mais</span>
+        <button type="button" className={`${styles.tab} ${styles.tabAdd}`} aria-label="Adicionar" onClick={() => { setSheetOpen(false); onAdd() }}>
+          <Icon name="add" size={30} weight={600} />
+        </button>
+        <button type="button" className={styles.tab} aria-current={searchOpen && !sheetOpen ? 'page' : undefined} onClick={() => { setSheetOpen(false); onSearch() }}>
+          <Icon name="search" size={24} filled={searchOpen} weight={searchOpen ? 600 : 400} />
+          <span>Pesquisa</span>
+        </button>
+        <button type="button" className={styles.tab} aria-expanded={sheetOpen} aria-current={modulesActive && !sheetOpen ? 'page' : undefined} onClick={() => setSheetOpen(value => !value)}>
+          <Icon name="grid_view" size={24} filled={modulesActive} />
+          <span>Módulos</span>
         </button>
       </nav>
     </>
