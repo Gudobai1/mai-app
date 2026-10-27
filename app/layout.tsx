@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { Plus_Jakarta_Sans } from 'next/font/google'
 import { PwaRegister } from './PwaRegister'
 import './ux-polish.css'
 import './ux-shell.css'
@@ -49,6 +50,14 @@ import './mai-dark-mode-v2.css'
 import './mai-finance-options-final.css'
 import './mai-finance-card-config-v1.css'
 import './mai-task-selection.css'
+import './ds/tokens.css'
+
+const jakarta = Plus_Jakarta_Sans({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700', '800'],
+  variable: '--font-jakarta',
+  display: 'swap',
+})
 
 export const metadata: Metadata = {
   title: 'MAI — Meu Sistema',
@@ -59,11 +68,11 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="pt-BR">
+    <html lang="pt-BR" className={jakarta.variable}>
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..24,400,0,0&display=swap" rel="stylesheet" />
+        <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..24,400..600,0..1,0&display=swap" rel="stylesheet" />
       </head>
       <body style={{ margin: 0 }}><PwaRegister />{children}</body>
     </html>
