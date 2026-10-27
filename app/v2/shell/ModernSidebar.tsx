@@ -1,7 +1,7 @@
 'use client'
 
 import type { MaiState } from '../../../lib/v2/state'
-import { Icon, IconButton } from '../../ds'
+import { Icon } from '../../ds'
 import type { AppView } from '../app-types'
 import { NAV_GROUPS, todayCounts, type NavItem } from './nav'
 import styles from './ModernShell.module.css'
@@ -56,9 +56,6 @@ export function ModernSidebar({ state, today, view, navigate, onSearch, onAdd, o
       <div className={styles.brand}>
         <span className={styles.logo} aria-hidden="true">M</span>
         <span className={styles.brandName}>MAI</span>
-        <button type="button" className={styles.themeToggle} aria-pressed={dark} aria-label={dark ? 'Usar tema claro' : 'Usar tema escuro'} title={dark ? 'Tema claro' : 'Tema escuro'} onClick={onToggleTheme}>
-          <Icon name={dark ? 'dark_mode' : 'light_mode'} size={20} />
-        </button>
       </div>
 
       <div className={styles.actions}>
@@ -90,7 +87,9 @@ export function ModernSidebar({ state, today, view, navigate, onSearch, onAdd, o
             </span>
             <span>{profileName}</span>
           </button>
-          <IconButton icon="tune" label="Ajustes" variant="ghost" size={40} onClick={onSettings} />
+          <button type="button" className={styles.themeToggle} aria-pressed={dark} aria-label={dark ? 'Usar tema claro' : 'Usar tema escuro'} title={dark ? 'Tema claro' : 'Tema escuro'} onClick={onToggleTheme}>
+            <Icon name={dark ? 'dark_mode' : 'light_mode'} size={20} />
+          </button>
         </div>
       </div>
     </aside>
