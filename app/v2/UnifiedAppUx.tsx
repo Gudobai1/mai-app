@@ -301,9 +301,9 @@ export function UnifiedAppUx() {
 
     <main className={`${styles.main} mai-v3-main`}>
       <div className={`${styles.workspace} mai-v3-workspace`}>
-        {runtime.ready ? <AppTopBar state={runtime.state} today={runtime.today} view={view} taskScope={taskScope} commit={runtime.commit} onTaskScopeChange={setTaskScope} onSettings={() => setSettingsOpen(true)} /> : null}
+        {runtime.ready && view !== 'today' ? <AppTopBar state={runtime.state} today={runtime.today} view={view} taskScope={taskScope} commit={runtime.commit} onTaskScopeChange={setTaskScope} onSettings={() => setSettingsOpen(true)} /> : null}
         {!runtime.ready ? <div className={styles.loadingState}>Carregando seu MAI…</div> : <>
-          {view === 'today' ? <TodayModern state={viewState} today={runtime.today} commit={runtime.commit} navigate={navigate} inspect={setSelected} profileName={String(googleProfile?.name || runtime.state.configs.profileName || runtime.state.configs.userName || '')}/> : null}
+          {view === 'today' ? <TodayModern state={viewState} today={runtime.today} commit={runtime.commit} navigate={navigate} inspect={setSelected} profileName={String(googleProfile?.name || runtime.state.configs.profileName || runtime.state.configs.userName || '')} onSearch={() => setSearchOpen(true)} onAdd={() => contextualAdd()} options={<AppTopBar state={runtime.state} today={runtime.today} view={view} taskScope={taskScope} commit={runtime.commit} onTaskScopeChange={setTaskScope} onSettings={() => setSettingsOpen(true)} />}/> : null}
           {view === 'upcoming' ? <UpcomingV4 state={viewState} today={runtime.today} commit={runtime.commit} inspect={setSelected}/> : null}
           {view === 'completed' ? <CompletedV4 state={viewState} today={runtime.today} commit={runtime.commit} inspect={setSelected}/> : null}
           {view === 'tasks' ? <TasksModule

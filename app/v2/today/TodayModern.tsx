@@ -3,9 +3,10 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { plannerItems, type PlannerItem } from '../../../lib/v2/planner'
 import type { MaiState } from '../../../lib/v2/state'
-import { Button, Card, Check, Icon, IconButton, IconTile, List, ListItem, ProgressBar, SectionHeader, Tag, type Tone } from '../../ds'
+import { Button, Card, Check, Icon, IconButton, IconTile, ListItem, ProgressBar, SectionHeader, Tag, type Tone } from '../../ds'
 import type { AppView, Row } from '../app-types'
 import type { InspectableItem } from '../ContextDrawer'
+import { financeSummary } from '../../../lib/v2/finance-summary'
 import { financeCardPaymentState } from '../FinanceTransactionCard'
 import { resolveMaiIcon } from '../MaiIcons'
 import styles from './TodayModern.module.css'
@@ -28,6 +29,10 @@ type Props = {
   navigate: (view: AppView) => void
   inspect: (item: InspectableItem) => void
   profileName?: string
+  /** Botão "Opções" do topo (filtros e classificação), embutido no cabeçalho. */
+  options?: ReactNode
+  onSearch: () => void
+  onAdd: () => void
 }
 
 const DEFAULT_ORDER = ['appointments', 'tasks', 'habits', 'goals', 'finance', 'notes'] as const
@@ -102,7 +107,7 @@ function minutesOf(time: string) {
   return Number.isFinite(hour) ? hour * 60 + (Number.isFinite(minute) ? minute : 0) : NaN
 }
 
-export function TodayModern({ state, today, commit, inspect, profileName }: Props) {
+export function TodayModern({ state, today, commit, inspect, profileName, options, onSearch, onAdd }: Props) {
   const [customizeOpen, setCustomizeOpen] = useState(false)
   const customizeRef = useRef<HTMLDivElement | null>(null)
   const [clock, setClock] = useState(() => new Date())
@@ -357,6 +362,10 @@ export function TodayModern({ state, today, commit, inspect, profileName }: Prop
 
   /* ---------------------------------------------------------------- Seções */
 
+  const summary = useMemo(() => financeSummary(state, today), [state, today])
+  const monthName = new Date(`${today}T12:00:00`).toLocaleDateString('pt-BR', { month: 'long' })
+  const weekMax = Math.max(1, ...summary.weekExpenses.map(item => item.value))
+
   const renderTask = (task: Row) => {
     const day = dateKey(task.data_vencimento)
     const late = day < today
@@ -392,17 +401,18 @@ export function TodayModern({ state, today, commit, inspect, profileName }: Prop
   const sections: Record<SectionId, ReactNode> = {
     appointments: (
       <Card padding="md">
-        <SectionHeader title="Compromissos" meta={events.length ? String(events.length) : undefined} />
+        <SectionHeader title="Agenda" meta={events.length ? plural(events.length, 'compromisso', 'compromissos') : undefined} />
         {events.length ? (
-          <div className={styles.rows}>
+          <div className={styles.eventList}>
             {events.map(item => {
               const color = String(item.raw.categoria_cor || item.color || '') || 'var(--ds-accent)'
               const detail = item.subtitle === 'Em andamento' ? 'Em andamento' : item.raw.dia_inteiro === true || !item.time ? 'Dia inteiro' : `${item.time}${item.raw.hora_fim ? ` – ${String(item.raw.hora_fim).slice(0, 5)}` : ''}`
+              const passed = eventPassed(item)
               return (
-                <button key={item.id} type="button" className={`${styles.row} ${eventPassed(item) ? styles.rowPassed : ''}`} onClick={() => inspectPlanner(item)}>
-                  <span className={styles.eventTile} style={{ background: `color-mix(in srgb, ${color} 16%, transparent)`, color }}><Icon name="event" size={20} /></span>
+                <button key={item.id} type="button" className={`${styles.event} ${passed ? styles.rowPassed : ''}`} onClick={() => inspectPlanner(item)}>
+                  <span className={styles.eventTile} style={{ background: `color-mix(in srgb, ${color} 18%, var(--ds-surface))`, color }}><Icon name="event" size={20} /></span>
                   <span className={styles.rowBody}>
-                    <span className={styles.rowTitle} style={{ display: 'block' }}>{item.title}</span>
+                    <span className={`${styles.rowTitle} ${passed ? styles.strike : ''}`}>{item.title}</span>
                     <span className={styles.rowSub}>{detail}{item.recurring ? <Icon name="repeat" size={14} /> : null}</span>
                   </span>
                 </button>
@@ -413,21 +423,21 @@ export function TodayModern({ state, today, commit, inspect, profileName }: Prop
       </Card>
     ),
     tasks: (
-      <section>
+      <Card padding="md">
         <SectionHeader title="Tarefas" meta={tasks.length ? (lateCount ? `${tasks.length} · ${lateCount} atrasada${lateCount === 1 ? '' : 's'}` : String(tasks.length)) : undefined} />
         {tasks.length ? (
           sortMode === 'project' && taskGroups.length ? (
-            <List>
+            <div role="list">
               {taskGroups.map(group => (
                 <div key={group.id}>
                   <div className={styles.groupLabel}><span>{group.name}</span><span>{group.items.length}</span></div>
                   {group.items.map(renderTask)}
                 </div>
               ))}
-            </List>
-          ) : <List>{tasks.map(renderTask)}</List>
-        ) : <Card padding="md"><div className={styles.empty}>Nada pendente para hoje. Aproveite!</div></Card>}
-      </section>
+            </div>
+          ) : <div role="list">{tasks.map(renderTask)}</div>
+        ) : <div className={styles.empty}>Nada pendente para hoje. Aproveite!</div>}
+      </Card>
     ),
     habits: (
       <Card padding="md">
@@ -439,7 +449,7 @@ export function TodayModern({ state, today, commit, inspect, profileName }: Prop
               return (
                 <div key={String(item.habit.id)} className={styles.habit}>
                   <button type="button" className={styles.habitMain} onClick={() => logHabit(item)} aria-label={item.quantitative ? `Registrar mais 1 em ${name}` : item.done ? `Desmarcar ${name}` : `Marcar ${name} como feito`} title={item.quantitative ? 'Toque para somar 1' : 'Toque para marcar'}>
-                    <IconTile icon={item.done ? 'check' : resolveMaiIcon(String(item.habit.icone || 'repeat'))} tone={item.done ? 'mint' : item.tone} solid={item.done} size={44} />
+                    <IconTile icon={item.done ? 'check' : resolveMaiIcon(String(item.habit.icone || 'repeat'))} tone={item.done ? 'mint' : item.tone} solid={item.done} size={40} />
                   </button>
                   <button type="button" className={styles.habitInfo} onClick={() => inspect({ kind: 'habit', sourceId: String(item.habit.id), title: name, date: today, raw: item.habit })}>
                     <span className={styles.habitName}>{name}</span>
@@ -466,9 +476,9 @@ export function TodayModern({ state, today, commit, inspect, profileName }: Prop
                 <button key={String(goal.id)} type="button" className={styles.row} onClick={() => inspect({ kind: 'goal', sourceId: String(goal.id), title, date: day, raw: goal })}>
                   <IconTile icon="flag" tone="lilac" />
                   <span className={styles.rowBody}>
-                    <span className={styles.rowTitle} style={{ display: 'block' }}>{title}</span>
+                    <span className={styles.rowTitle}>{title}</span>
                     <span className={styles.rowSub}><span className={day < today ? styles.late : undefined}>{naturalDate(day, today)}</span><span>· {pct}%</span></span>
-                    <div className={styles.goalProgress}><ProgressBar value={pct} tone="lilac" label={`Progresso de ${title}`} height={6} /></div>
+                    <span className={styles.goalProgress}><ProgressBar value={pct} tone="lilac" label={`Progresso de ${title}`} height={6} /></span>
                   </span>
                 </button>
               )
@@ -478,34 +488,53 @@ export function TodayModern({ state, today, commit, inspect, profileName }: Prop
       </Card>
     ),
     finance: (
-      <Card padding="md">
-        <SectionHeader title="Finanças" meta={transactions.length ? String(transactions.length) : undefined} />
-        {transactions.length ? (
-          <div className={styles.rows}>
-            {transactions.map(item => {
-              const day = dateKey(item.data)
-              const income = String(item.tipo || '').toLocaleLowerCase('pt-BR') === 'receita'
-              const payment = financeCardPaymentState(item)
-              const title = txTitle(item)
-              return (
-                <div key={String(item.id)} className={styles.rowWrap}>
-                  <Check checked={payment.status === 'pago'} late={day < today} label={`${income ? 'Marcar como recebido' : 'Marcar como pago'}: ${title}`} onCheckedChange={() => toggleFinancePaid(item)} />
-                  <button type="button" className={styles.row} onClick={() => inspect({ kind: 'finance', sourceId: String(item.id), title, date: day, raw: item })}>
-                    <span className={styles.rowBody}>
-                      <span className={styles.rowTitle} style={{ display: 'block' }}>{title}</span>
-                      <span className={styles.rowSub}>
-                        <span className={day < today ? styles.late : undefined}>{naturalDate(day, today)}</span>
-                        {payment.status === 'parcial' ? <Tag tone="peach">Parcial</Tag> : null}
+      <div className={styles.stack}>
+        {summary.hasData ? (
+          <Card variant="inverse" padding="md">
+            <div className={styles.balanceHead}><span>Saldo atual</span><Icon name="account_balance_wallet" size={22} /></div>
+            <div className={styles.balanceValue}>{money.format(summary.balance)}</div>
+            <div className={summary.monthResult >= 0 ? styles.balancePositive : styles.balanceNegative}>
+              {summary.monthResult >= 0 ? '+' : '−'}{money.format(Math.abs(summary.monthResult))} em {monthName}
+            </div>
+            <div className={styles.bars} aria-label="Gastos de cada dia desta semana">
+              {summary.weekExpenses.map(item => (
+                <span key={item.date} className={styles.barSlot} title={`${naturalDate(item.date, today)}: ${money.format(item.value)}`}>
+                  <span className={`${styles.bar} ${item.date === today ? styles.barToday : ''}`} style={{ height: `${Math.max(6, Math.round((item.value / weekMax) * 100))}%` }} />
+                </span>
+              ))}
+            </div>
+            <div className={styles.barsLegend}><span>Gastos da semana</span><span>{money.format(summary.weekExpenses.reduce((sum, item) => sum + item.value, 0))}</span></div>
+          </Card>
+        ) : null}
+        <Card padding="md">
+          <SectionHeader title="A pagar" meta={transactions.length ? String(transactions.length) : undefined} />
+          {transactions.length ? (
+            <div className={styles.rows}>
+              {transactions.map(item => {
+                const day = dateKey(item.data)
+                const income = String(item.tipo || '').toLocaleLowerCase('pt-BR') === 'receita'
+                const payment = financeCardPaymentState(item)
+                const title = txTitle(item)
+                return (
+                  <div key={String(item.id)} className={styles.rowWrap}>
+                    <Check checked={payment.status === 'pago'} late={day < today} label={`${income ? 'Marcar como recebido' : 'Marcar como pago'}: ${title}`} onCheckedChange={() => toggleFinancePaid(item)} />
+                    <button type="button" className={styles.row} onClick={() => inspect({ kind: 'finance', sourceId: String(item.id), title, date: day, raw: item })}>
+                      <span className={styles.rowBody}>
+                        <span className={styles.rowTitle}>{title}</span>
+                        <span className={styles.rowSub}>
+                          <span className={day < today ? styles.late : undefined}>{naturalDate(day, today)}</span>
+                          {payment.status === 'parcial' ? <Tag tone="peach">Parcial</Tag> : null}
+                        </span>
                       </span>
-                    </span>
-                    <span className={`${styles.amount} ${income ? styles.amountIncome : ''}`}>{income ? '+' : ''}{money.format(payment.remaining || payment.total)}</span>
-                  </button>
-                </div>
-              )
-            })}
-          </div>
-        ) : <div className={styles.empty}>{financeCandidates.length ? 'Nenhum lançamento visível na tela inicial.' : 'Nenhum lançamento pendente para hoje.'}</div>}
-      </Card>
+                      <span className={`${styles.amount} ${income ? styles.amountIncome : ''}`}>{income ? '+' : ''}{money.format(payment.remaining || payment.total)}</span>
+                    </button>
+                  </div>
+                )
+              })}
+            </div>
+          ) : <div className={styles.empty}>{financeCandidates.length ? 'Nenhum lançamento visível na tela inicial.' : 'Nada para pagar hoje.'}</div>}
+        </Card>
+      </div>
     ),
     notes: (
       <Card padding="md">
@@ -517,7 +546,7 @@ export function TodayModern({ state, today, commit, inspect, profileName }: Prop
               return (
                 <button key={String(note.id)} type="button" className={styles.row} onClick={() => inspect({ kind: 'note', sourceId: String(note.id), title, date: dateKey(note.data || note.updated_at || note.criado_em), raw: note })}>
                   <IconTile icon="sticky_note_2" tone="peach" />
-                  <span className={styles.rowBody}><span className={styles.rowTitle} style={{ display: 'block' }}>{title}</span></span>
+                  <span className={styles.rowBody}><span className={styles.rowTitle}>{title}</span></span>
                 </button>
               )
             })}
@@ -531,12 +560,43 @@ export function TodayModern({ state, today, commit, inspect, profileName }: Prop
 
   const firstName = String(profileName || '').trim().split(/\s+/)[0]
   const greeting = `${greetingFor(clock.getHours())}${firstName && firstName !== 'Meu' ? `, ${firstName}` : ''}`
-  const dateLabel = new Date(`${today}T12:00:00`).toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })
+  const rawDate = new Date(`${today}T12:00:00`).toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })
+  const dateLabel = rawDate.charAt(0).toLocaleUpperCase('pt-BR') + rawDate.slice(1)
+
+  // Colunas do computador (como no mockup). No celular vira uma coluna só, na ordem salva.
+  const COLUMN: Record<SectionId, 'main' | 'middle' | 'side'> = { tasks: 'main', appointments: 'middle', notes: 'middle', habits: 'side', finance: 'side', goals: 'side' }
+  const visible = order.filter(id => !hidden.has(id))
+  const column = (name: 'main' | 'middle' | 'side', extra?: ReactNode) => (
+    <div className={`${styles.column} ${styles[`col_${name}`]}`}>
+      {extra}
+      {visible.filter(id => COLUMN[id] === name).map(id => (
+        <div key={id} className={styles.slot} style={{ order: visible.indexOf(id) + 1 }}>{sections[id]}</div>
+      ))}
+    </div>
+  )
+
+  const nextCard = nextEvent ? (
+    <div className={styles.slot} style={{ order: 0 }}>
+      <Card variant="accent" padding="lg">
+        <div className={styles.nextHead}>
+          <span className={styles.nextIcon}><Icon name="event" size={24} /></span>
+          <span className={styles.nextEyebrow}>A seguir · {untilLabel(minutesOf(nextEvent.time) - nowMinutes)}</span>
+        </div>
+        <div className={styles.nextRow}>
+          <div className={styles.nextBody}>
+            <div className={styles.nextTitle}>{nextEvent.title}</div>
+            <div className={styles.nextMeta}>{nextEvent.time}{nextEvent.raw.hora_fim ? ` – ${String(nextEvent.raw.hora_fim).slice(0, 5)}` : ''}</div>
+          </div>
+          <Button variant="onAccent" pill onClick={() => inspectPlanner(nextEvent)}>Detalhes</Button>
+        </div>
+      </Card>
+    </div>
+  ) : null
 
   return (
     <div className={styles.page}>
       <header className={styles.header}>
-        <div>
+        <div className={styles.headerText}>
           <div className={styles.eyebrow}>{dateLabel}</div>
           <h1 className={styles.greeting}>{greeting}</h1>
           <div className={styles.summary}>
@@ -547,6 +607,13 @@ export function TodayModern({ state, today, commit, inspect, profileName }: Prop
           </div>
         </div>
         <div className={styles.headerActions} ref={customizeRef}>
+          <button type="button" className={styles.searchButton} onClick={onSearch}>
+            <Icon name="search" size={20} filled={false} />
+            <span>Buscar ou criar…</span>
+            <span className={styles.kbd}>Ctrl K</span>
+          </button>
+          <Button icon="add" onClick={onAdd} className={styles.newButton}>Novo</Button>
+          {options ? <div className={styles.options}>{options}</div> : null}
           <IconButton icon="dashboard_customize" label="Personalizar Hoje" filled={false} onClick={() => setCustomizeOpen(value => !value)} aria-expanded={customizeOpen} />
           {customizeOpen ? (
             <div className={styles.customize} role="dialog" aria-label="Personalizar Hoje">
@@ -555,7 +622,7 @@ export function TodayModern({ state, today, commit, inspect, profileName }: Prop
                 <div key={id} className={styles.customizeRow}>
                   <button type="button" className={styles.customizeToggle} aria-pressed={!hidden.has(id)} onClick={() => toggleHidden(id)}>
                     <Icon name={hidden.has(id) ? 'check_box_outline_blank' : 'check_box'} size={22} filled={!hidden.has(id)} />
-                    <span>{SECTION_LABELS[id]}</span>
+                    <span>{id === 'appointments' ? 'Agenda' : id === 'finance' ? 'Finanças' : SECTION_LABELS[id]}</span>
                   </button>
                   <IconButton icon="arrow_upward" label={`Mover ${SECTION_LABELS[id]} para cima`} variant="ghost" size={36} disabled={index === 0} onClick={() => moveSection(id, -1)} />
                   <IconButton icon="arrow_downward" label={`Mover ${SECTION_LABELS[id]} para baixo`} variant="ghost" size={36} disabled={index === order.length - 1} onClick={() => moveSection(id, 1)} />
@@ -576,22 +643,10 @@ export function TodayModern({ state, today, commit, inspect, profileName }: Prop
         ))}
       </div>
 
-      {nextEvent ? (
-        <Card variant="accent" padding="md">
-          <div className={styles.next}>
-            <span className={styles.nextIcon}><Icon name="event" size={26} /></span>
-            <div className={styles.nextBody}>
-              <div className={styles.nextEyebrow}>A seguir · {untilLabel(minutesOf(nextEvent.time) - nowMinutes)}</div>
-              <div className={styles.nextTitle}>{nextEvent.title}</div>
-              <div className={styles.nextMeta}>{nextEvent.time}{nextEvent.raw.hora_fim ? ` – ${String(nextEvent.raw.hora_fim).slice(0, 5)}` : ''}</div>
-            </div>
-            <Button variant="onAccent" pill onClick={() => inspectPlanner(nextEvent)}>Detalhes</Button>
-          </div>
-        </Card>
-      ) : null}
-
-      <div className={styles.grid}>
-        {order.filter(id => !hidden.has(id)).map(id => <div key={id}>{sections[id]}</div>)}
+      <div className={styles.board}>
+        {column('main', nextCard)}
+        {column('middle')}
+        {column('side')}
       </div>
     </div>
   )
