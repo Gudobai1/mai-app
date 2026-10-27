@@ -45,3 +45,10 @@ html body .mai-v3-shell[data-view="today"] .mai-app-topbar {
 }
 .mai-app-topbar-section-move:disabled { opacity: .3; cursor: default; }
 .mai-app-topbar-section-move .material-symbols-rounded { font-size: 17px; }
+
+/* As telas antigas passam a usar a cor principal do design system. */
+html body .mai-v3-shell {
+  --v3-accent: var(--ds-accent) !important;
+  --v3-accent-strong: var(--ds-accent-strong) !important;
+  --v3-accent-soft: var(--ds-accent-soft) !important;
+}

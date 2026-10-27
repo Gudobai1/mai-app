@@ -8,7 +8,7 @@
   --v3-line-strong:#dce1da;
   --v3-sidebar:#f6f7f4;
   --v3-hover:#f6f8f5;
-  --v3-sage:#6f8168;
+  --v3-sage:var(--ds-accent);
   --v3-sage-dark:#53634e;
   --v3-sage-soft:#e8eee5;
   --v3-white:#fff;

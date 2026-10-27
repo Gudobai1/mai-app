@@ -1,7 +1,7 @@
 /* UX 2026-08: navegação simples, conteúdo contextual e paletas completas. */
 
 /* A paleta controla toda a superfície do aplicativo, não apenas o destaque. */
-:root[data-mai-accent="sage"] [class*="appShell"]{--text:#202521;--muted:#667068;--faint:#929b94;--line:#e1e6df;--line-strong:#d2d9cf;--bg-primary:#fbfcfa;--bg-card:#fff;--bg-soft:#f3f6f1;--bg-hover:#e9eee6;--sidebar:#f4f7f2;--accent:#60765a;--accent-strong:#475e43;--accent-soft:#e5ede1;}
+:root[data-mai-accent="sage"] [class*="appShell"]{--text:#202521;--muted:#667068;--faint:#929b94;--line:#e1e6df;--line-strong:#d2d9cf;--bg-primary:#fbfcfa;--bg-card:#fff;--bg-soft:#f3f6f1;--bg-hover:#e9eee6;--sidebar:#f4f7f2;--accent:var(--ds-accent);--accent-strong:#475e43;--accent-soft:#e5ede1;}
 :root[data-mai-accent="blue"] [class*="appShell"]{--text:#1f2932;--muted:#64717c;--faint:#929da7;--line:#dee6ec;--line-strong:#ced9e2;--bg-primary:#fafcfd;--bg-card:#fff;--bg-soft:#f0f5f8;--bg-hover:#e5edf3;--sidebar:#f1f6f9;--accent:#486b8a;--accent-strong:#345775;--accent-soft:#e2edf5;}
 :root[data-mai-accent="graphite"] [class*="appShell"]{--text:#222725;--muted:#666e6a;--faint:#949a97;--line:#e1e5e3;--line-strong:#d2d8d5;--bg-primary:#fbfbfb;--bg-card:#fff;--bg-soft:#f2f4f3;--bg-hover:#e8ecea;--sidebar:#f3f5f4;--accent:#4f5b57;--accent-strong:#3c4844;--accent-soft:#e7ebe9;}
 :root[data-mai-accent="sand"] [class*="appShell"]{--text:#302821;--muted:#776b60;--faint:#a09488;--line:#ebe2d9;--line-strong:#ddd0c4;--bg-primary:#fdfbf8;--bg-card:#fff;--bg-soft:#f7f1eb;--bg-hover:#f0e7dd;--sidebar:#f8f3ed;--accent:#9b7757;--accent-strong:#785a40;--accent-soft:#f0e5da;}

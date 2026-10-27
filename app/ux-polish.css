@@ -1,7 +1,7 @@
 /* Camada de UX do MAI: compacta, contextual e sem navegação desnecessária. */
 
 /* Paletas do aplicativo */
-:root[data-mai-accent="sage"] [class*="appShell"] { --accent:#60765a; --accent-strong:#496244; --accent-soft:#e7eee3; }
+:root[data-mai-accent="sage"] [class*="appShell"] { --accent:var(--ds-accent); --accent-strong:var(--ds-accent-strong); --accent-soft:#e7eee3; }
 :root[data-mai-accent="blue"] [class*="appShell"] { --accent:#486b8a; --accent-strong:#365875; --accent-soft:#e6edf3; }
 :root[data-mai-accent="graphite"] [class*="appShell"] { --accent:#4f5b57; --accent-strong:#3d4844; --accent-soft:#e9eceb; }
 :root[data-mai-accent="sand"] [class*="appShell"] { --accent:#9b7757; --accent-strong:#7c5e44; --accent-soft:#f3ece5; }
