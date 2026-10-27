@@ -54,7 +54,12 @@
 .subline {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 8px;
+}
+
+.dateLong,
+.dateShort {
+  margin-right: 4px;
 }
 
 .stat {
@@ -200,12 +205,12 @@
 
 .daySelected.daySelected,
 .daySelected.daySelected:hover {
-  background: var(--ds-accent);
-  color: var(--ds-on-accent);
+  background: var(--ds-text);
+  color: var(--ds-bg);
 }
 
 .daySelected.daySelected .dayNumber {
-  color: var(--ds-on-accent);
+  color: var(--ds-bg);
 }
 
 .dayName {
@@ -237,7 +242,7 @@
 }
 
 .daySelected .dayDot[data-on] {
-  background: var(--ds-on-accent);
+  background: var(--ds-bg);
 }
 
 /* ----------------------------------------------------- Grade (3 colunas) */
@@ -739,7 +744,7 @@
   }
 
   .subline {
-    gap: 12px;
+    gap: 6px;
   }
 
   /* Uma coluna só, na ordem escolhida em Personalizar. */

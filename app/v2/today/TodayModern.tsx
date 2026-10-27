@@ -629,11 +629,11 @@ export function TodayModern({ state, today, commit, navigate, inspect, profileNa
   const firstName = String(profileName || '').trim().split(/\s+/)[0]
   const dayLabel = capitalize(new Date(`${day}T12:00:00`).toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' }))
   const shortDayLabel = capitalize(new Date(`${day}T12:00:00`).toLocaleDateString('pt-BR', { weekday: 'short', day: 'numeric', month: 'short' }).replace(/\./g, ''))
-  const summaryParts: Array<{ icon: string; value: string; label: string; alert?: boolean }> = [
-    { icon: 'event', value: String(events.length), label: plural(events.length, 'compromisso', 'compromissos') },
-    { icon: 'checklist', value: String(tasks.length), label: plural(tasks.length, 'tarefa', 'tarefas') },
-    ...(lateCount ? [{ icon: 'schedule', value: String(lateCount), label: plural(lateCount, 'atrasada', 'atrasadas'), alert: true }] : []),
-    ...(habits.length ? [{ icon: 'autorenew', value: `${habitsDone}/${habits.length}`, label: `${habitsDone} de ${habits.length} hábitos` }] : []),
+  const summaryParts: Array<{ icon: string; value: string; label: string; tone: Tone }> = [
+    { icon: 'event', value: String(events.length), label: plural(events.length, 'compromisso', 'compromissos'), tone: 'sky' },
+    { icon: 'checklist', value: String(tasks.length), label: plural(tasks.length, 'tarefa', 'tarefas'), tone: 'lilac' as Tone },
+    ...(lateCount ? [{ icon: 'schedule', value: String(lateCount), label: plural(lateCount, 'atrasada', 'atrasadas'), tone: 'rose' as Tone }] : []),
+    ...(habits.length ? [{ icon: 'autorenew', value: `${habitsDone}/${habits.length}`, label: `${habitsDone} de ${habits.length} hábitos`, tone: 'mint' as Tone }] : []),
   ]
   const title = isToday ? `${greetingFor(clock.getHours())}${firstName && firstName !== 'Meu' ? `, ${firstName}` : ''}` : naturalDate(day, today) === 'Amanhã' || naturalDate(day, today) === 'Ontem' ? naturalDate(day, today) : capitalize(new Date(`${day}T12:00:00`).toLocaleDateString('pt-BR', { weekday: 'long' }))
 
@@ -676,9 +676,8 @@ export function TodayModern({ state, today, commit, navigate, inspect, profileNa
             <span className={styles.dateLong}>{dayLabel}</span>
             <span className={styles.dateShort}>{shortDayLabel}</span>
             {summaryParts.map(part => (
-              <span key={part.icon} className={`${styles.stat} ${part.alert ? styles.statAlert : ''}`} title={part.label} aria-label={part.label}>
-                <Icon name={part.icon} size={16} filled={false} />
-                <span aria-hidden="true">{part.value}</span>
+              <span key={part.icon} className={styles.stat} title={part.label} aria-label={part.label}>
+                <Tag tone={part.tone} icon={part.icon}><span aria-hidden="true">{part.value}</span></Tag>
               </span>
             ))}
           </p>
