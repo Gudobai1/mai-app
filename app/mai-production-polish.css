@@ -1,7 +1,7 @@
 /* Ajustes finais da V3 para produção */
 
 .mai-v3-shell {
-  --v3-accent:#60765a;
+  --v3-accent:var(--ds-accent);
   --v3-accent-strong:#4d6348;
   --v3-accent-soft:#e8eee5;
   --v3-bg:#ffffff;

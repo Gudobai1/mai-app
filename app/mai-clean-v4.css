@@ -1,8 +1,8 @@
 /* MAI V4 — navegação, paletas e acabamento clean */
 
 .mai-v3-shell{
-  --v3-accent:#687d62;
-  --v3-accent-strong:#50634b;
+  --v3-accent:var(--ds-accent);
+  --v3-accent-strong:var(--ds-accent-strong);
   --v3-accent-soft:color-mix(in srgb,var(--v3-accent) 12%,#fff);
   --v3-bg:#ffffff;
   --v3-card:#ffffff;
@@ -29,7 +29,7 @@
   --line:var(--v3-line);
   --line-strong:var(--v3-line-strong);
 }
-html[data-mai-accent="sage"] .mai-v3-shell{--v3-accent:#687d62;--v3-accent-strong:#50634b}
+html[data-mai-accent="sage"] .mai-v3-shell{--v3-accent:var(--ds-accent);--v3-accent-strong:var(--ds-accent-strong)}
 html[data-mai-accent="blue"] .mai-v3-shell{--v3-accent:#426fc5;--v3-accent-strong:#3158a4}
 html[data-mai-accent="graphite"] .mai-v3-shell{--v3-accent:#666d78;--v3-accent-strong:#4e5560}
 html[data-mai-accent="sand"] .mai-v3-shell{--v3-accent:#b47732;--v3-accent-strong:#915a20}

@@ -100,7 +100,8 @@ export function useMaiRuntime() {
   useEffect(() => {
     document.documentElement.dataset.maiTheme = String(state.configs.theme || 'light')
     delete document.documentElement.dataset.maiAccent
-  }, [state.configs.theme, state.configs.accentPalette])
+    document.documentElement.dataset.maiColor = String(state.configs.accentColor || 'blue')
+  }, [state.configs.theme, state.configs.accentColor])
 
   // Regra global de persistência do MAI:
   // dados/configs/referências ficam no estado (cache + Supabase); bytes ficam no Drive.

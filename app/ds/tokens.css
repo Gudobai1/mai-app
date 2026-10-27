@@ -57,9 +57,9 @@
   --ds-line-strong: #C9CCD6;
 
   /* Destaque */
-  --ds-accent: #5B5FF5;
-  --ds-accent-strong: #4347D9;
-  --ds-accent-soft: #ECEDFF;
+  --ds-accent: #2563EB;
+  --ds-accent-strong: #1D4ED8;
+  --ds-accent-soft: #E0EAFF;
   --ds-on-accent: #FFFFFF;
   --ds-on-accent-soft: rgba(255, 255, 255, 0.2);
 
@@ -111,11 +111,11 @@ html[data-mai-theme="dark"],
   --ds-line: #23262E;
   --ds-line-strong: #3A3E48;
 
-  --ds-accent: #8B8EFF;
-  --ds-accent-strong: #A5A7FF;
-  --ds-accent-soft: #23244A;
-  --ds-on-accent: #0D0E12;
-  --ds-on-accent-soft: rgba(13, 14, 18, 0.14);
+  --ds-accent: #3B82F6;
+  --ds-accent-strong: #60A5FA;
+  --ds-accent-soft: #172238;
+  --ds-on-accent: #FFFFFF;
+  --ds-on-accent-soft: rgba(255, 255, 255, 0.2);
 
   --ds-inverse-bg: #262A33;
   --ds-inverse-text: #FFFFFF;
@@ -143,6 +143,25 @@ html[data-mai-theme="dark"],
 
   color-scheme: dark;
 }
+
+/*
+ * Cor principal escolhida em Ajustes (html[data-mai-color]). Azul é o padrão
+ * acima; cada opção define a versão clara e a escura.
+ */
+html[data-mai-color="teal"] { --ds-accent: #0F766E; --ds-accent-strong: #115E59; --ds-accent-soft: #D5F2EE; --ds-on-accent: #FFFFFF; --ds-on-accent-soft: rgba(255, 255, 255, 0.2); }
+html[data-mai-theme="dark"][data-mai-color="teal"] { --ds-accent: #0D9488; --ds-accent-strong: #2DD4BF; --ds-accent-soft: #0F2B29; --ds-on-accent: #FFFFFF; --ds-on-accent-soft: rgba(255, 255, 255, 0.2); }
+
+html[data-mai-color="green"] { --ds-accent: #15803D; --ds-accent-strong: #166534; --ds-accent-soft: #DCF5E4; --ds-on-accent: #FFFFFF; --ds-on-accent-soft: rgba(255, 255, 255, 0.2); }
+html[data-mai-theme="dark"][data-mai-color="green"] { --ds-accent: #16A34A; --ds-accent-strong: #4ADE80; --ds-accent-soft: #11291A; --ds-on-accent: #FFFFFF; --ds-on-accent-soft: rgba(255, 255, 255, 0.2); }
+
+html[data-mai-color="orange"] { --ds-accent: #C2410C; --ds-accent-strong: #9A3412; --ds-accent-soft: #FDE7DA; --ds-on-accent: #FFFFFF; --ds-on-accent-soft: rgba(255, 255, 255, 0.2); }
+html[data-mai-theme="dark"][data-mai-color="orange"] { --ds-accent: #EA580C; --ds-accent-strong: #FB923C; --ds-accent-soft: #2E1A0F; --ds-on-accent: #FFFFFF; --ds-on-accent-soft: rgba(255, 255, 255, 0.2); }
+
+html[data-mai-color="pink"] { --ds-accent: #DB2777; --ds-accent-strong: #BE185D; --ds-accent-soft: #FCE4EF; --ds-on-accent: #FFFFFF; --ds-on-accent-soft: rgba(255, 255, 255, 0.2); }
+html[data-mai-theme="dark"][data-mai-color="pink"] { --ds-accent: #DB2777; --ds-accent-strong: #F472B6; --ds-accent-soft: #2E1421; --ds-on-accent: #FFFFFF; --ds-on-accent-soft: rgba(255, 255, 255, 0.2); }
+
+html[data-mai-color="mono"] { --ds-accent: #0F1115; --ds-accent-strong: #000000; --ds-accent-soft: #ECEDF2; --ds-on-accent: #FFFFFF; --ds-on-accent-soft: rgba(255, 255, 255, 0.18); }
+html[data-mai-theme="dark"][data-mai-color="mono"] { --ds-accent: #F3F4F7; --ds-accent-strong: #FFFFFF; --ds-accent-soft: #23262E; --ds-on-accent: #0D0E12; --ds-on-accent-soft: rgba(13, 14, 18, 0.12); }
 
 @media (prefers-reduced-motion: reduce) {
   :root {
