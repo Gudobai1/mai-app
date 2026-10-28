@@ -42,6 +42,7 @@ const rows = (value: unknown): Row[] => (Array.isArray(value) ? (value as Row[])
 const PRIORITY_COLOR: Record<number, string> = { 1: 'var(--ds-danger)', 2: 'var(--ds-peach-fg)', 3: 'var(--ds-sky-fg)' }
 const WEEKDAY = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
 const LIST_CHUNK = 14
+const filterLabel: Record<Filter, string> = { all: 'Tudo', tasks: 'Tarefas', events: 'Compromissos' }
 
 const minutes = (time: string) => {
   const [h, m] = String(time || '').split(':').map(Number)
@@ -111,6 +112,7 @@ export function EmBreve({ state, today, commit, inspect, syncRange }: Props) {
   const [selected, setSelected] = useState(today)
   const [chunks, setChunks] = useState(1)
   const [lateOpen, setLateOpen] = useState(false)
+  const [filterOpen, setFilterOpen] = useState(false)
   const [miniView, setMiniView] = useState(monthStart(today))
 
   const setMode = (next: Mode) => {
@@ -408,8 +410,7 @@ export function EmBreve({ state, today, commit, inspect, syncRange }: Props) {
           return (
             <button key={day} type="button" data-active={selected === day || undefined} data-today={day === today || undefined} onClick={() => setSelected(day)}>
               <span>{WEEKDAY[dayDate(day).getDay()]}</span>
-              <b>{Number(day.slice(8))}</b>
-              <i>{items.slice(0, 3).map(entry => <u key={entry.id} style={{ background: entry.kind === 'event' ? entry.color : 'var(--ds-muted)' }} />)}</i>
+              <em><b>{Number(day.slice(8))}</b><i>{items.slice(0, 3).map(entry => <u key={entry.id} style={{ background: entry.kind === 'event' ? entry.color : 'var(--ds-muted)' }} />)}</i></em>
             </button>
           )
         })}
@@ -447,6 +448,15 @@ export function EmBreve({ state, today, commit, inspect, syncRange }: Props) {
   const monthKey = monthStart(anchor).slice(0, 7)
   const monthView = (
     <div className={styles.monthWrap}>
+      {mobile ? (
+        <div className={styles.monthTitle}>
+          <strong>{monthTitle(anchor)}</strong>
+          <span>
+            <button type="button" aria-label="Mês anterior" onClick={() => step(-1)}><Icon name="chevron_left" size={22} filled={false} /></button>
+            <button type="button" aria-label="Próximo mês" onClick={() => step(1)}><Icon name="chevron_right" size={22} filled={false} /></button>
+          </span>
+        </div>
+      ) : null}
       <div className={styles.month}>
         {WEEKDAY.map(name => <div key={name} className={styles.monthHead}>{name}</div>)}
         {gridDays.map(day => {
@@ -459,7 +469,7 @@ export function EmBreve({ state, today, commit, inspect, syncRange }: Props) {
               ) : (
                 <span className={styles.cellItems}>
                   {items.slice(0, 3).map(entry => (
-                    <span key={entry.id} data-kind={entry.kind} data-done={entry.done || undefined} style={{ '--ev': entry.color } as CSSProperties}><u />{entry.title}</span>
+                    <span key={entry.id} data-kind={entry.kind} data-done={entry.done || undefined} style={{ '--ev': entry.kind === 'event' ? entry.color : (entry.project?.color || 'var(--ds-line-strong)') } as CSSProperties}><u />{entry.title}</span>
                   ))}
                   {items.length > 3 ? <em>+{items.length - 3}</em> : null}
                 </span>
@@ -480,17 +490,23 @@ export function EmBreve({ state, today, commit, inspect, syncRange }: Props) {
           <span>{subtitle}</span>
           <h1>Em breve</h1>
         </div>
-        <div className={styles.controls}>
-          <div className={styles.segmented} role="tablist" aria-label="Visualização">
-            {([['list', 'Lista'], ['week', 'Semana'], ['month', 'Mês']] as [Mode, string][]).map(([id, label]) => (
-              <button key={id} type="button" role="tab" aria-selected={mode === id} data-active={mode === id || undefined} onClick={() => { setMode(id); if (id !== 'list') { setAnchor(selected || today) } }}>{label}</button>
-            ))}
-          </div>
-          <div className={styles.nav}>
-            {mode !== 'list' ? <button type="button" aria-label="Anterior" onClick={() => step(-1)}><Icon name="chevron_left" size={20} filled={false} /></button> : null}
-            <button type="button" className={styles.todayButton} onClick={goToday}>Hoje</button>
-            {mode !== 'list' ? <button type="button" aria-label="Próximo" onClick={() => step(1)}><Icon name="chevron_right" size={20} filled={false} /></button> : null}
-          </div>
+        <div className={styles.segmented} role="tablist" aria-label="Visualização">
+          {([['list', 'Lista'], ['week', 'Semana'], ['month', 'Mês']] as [Mode, string][]).map(([id, label]) => (
+            <button key={id} type="button" role="tab" aria-selected={mode === id} data-active={mode === id || undefined} onClick={() => { setMode(id); if (id !== 'list') { setAnchor(selected || today) } }}>{label}</button>
+          ))}
+        </div>
+        <div className={styles.nav}>
+          {mode !== 'list' ? <button type="button" className={styles.navStep} data-hide-mobile={mode === 'month' || undefined} aria-label="Anterior" onClick={() => step(-1)}><Icon name="chevron_left" size={20} filled={false} /></button> : null}
+          <button type="button" className={styles.todayButton} onClick={goToday}>Hoje</button>
+          {mode !== 'list' ? <button type="button" className={styles.navStep} data-hide-mobile={mode === 'month' || undefined} aria-label="Próximo" onClick={() => step(1)}><Icon name="chevron_right" size={20} filled={false} /></button> : null}
+        </div>
+        <div className={styles.filterMobile}>
+          <button type="button" onClick={() => setFilterOpen(value => !value)} aria-expanded={filterOpen}>{filterLabel[filter]}<Icon name="expand_more" size={16} filled={false} /></button>
+          {filterOpen ? (
+            <div className={styles.filterMenu} role="menu">
+              {(Object.keys(filterLabel) as Filter[]).map(id => <button key={id} type="button" role="menuitem" data-active={filter === id || undefined} onClick={() => { setFilter(id); setFilterOpen(false) }}>{filterLabel[id]}</button>)}
+            </div>
+          ) : null}
         </div>
       </header>
 
