@@ -50,9 +50,11 @@ export function AgendaStrip({ items, nowMinutes, isPassed, onOpen, bind }: Props
     <div className={styles.strip}>
       {allDay.map(item => (
         <button key={item.id} type="button" className={styles.allDay} style={{ '--ev': eventColor(item.raw) } as CSSProperties} onClick={() => onOpen(item)} {...bind(item)}>
-          <span className={styles.allDayTag}>{item.subtitle === 'Em andamento' ? 'Contínuo' : 'Dia todo'}</span>
+          <span className={styles.allDayStack}>
+            <span className={styles.allDayTag}>{item.subtitle === 'Em andamento' ? 'Contínuo' : 'Dia todo'}</span>
+            <small>{sourceOf(item)}</small>
+          </span>
           <strong>{item.title}</strong>
-          <small>{sourceOf(item)}</small>
         </button>
       ))}
 
@@ -71,10 +73,9 @@ export function AgendaStrip({ items, nowMinutes, isPassed, onOpen, bind }: Props
               {...bind(item)}
             >
               <span className={styles.rowDot} aria-hidden="true" />
-              <span className={styles.rowTime}>{hm(start)}{hasEnd ? ` – ${hm(end)}` : ''}</span>
+              <span className={styles.rowTime}><b>{hm(start)}{hasEnd ? ` – ${hm(end)}` : ''}</b><small>{sourceOf(item)}</small></span>
               <strong>{item.title}</strong>
               {item.recurring ? <Icon name="repeat" size={12} /> : null}
-              <small>{sourceOf(item)}</small>
             </button>
           ))}
         </div>
