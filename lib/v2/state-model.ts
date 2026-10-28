@@ -170,7 +170,7 @@ export function normalizeState(value: unknown): MaiState {
       todaySideSections: sideSections,
       todayHiddenSections: [...new Set(hiddenSections)],
       accentPalette: String(saved.configs?.accentPalette || 'sage'),
-      upcomingView: saved.configs?.upcomingView === 'month' ? 'month' : 'list',
+      upcomingView: saved.configs?.upcomingView === 'month' ? 'month' : saved.configs?.upcomingView === 'week' ? 'week' : 'list',
       taskModuleScope: String(saved.configs?.taskModuleScope || 'entrada'),
       upcomingFilters: saved.configs?.upcomingFilters && typeof saved.configs.upcomingFilters === 'object' ? saved.configs.upcomingFilters : fallback.configs.upcomingFilters,
     },
