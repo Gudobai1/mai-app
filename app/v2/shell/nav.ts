@@ -11,7 +11,7 @@ export type NavGroup = { label: string; items: NavItem[] }
  */
 export const NAV_GROUPS: NavGroup[] = [
   {
-    label: '',
+    label: 'Dia a dia',
     items: [
       { id: 'today', label: 'Hoje', icon: 'today' },
       { id: 'upcoming', label: 'Em breve', icon: 'event_upcoming' },
@@ -19,21 +19,21 @@ export const NAV_GROUPS: NavGroup[] = [
     ],
   },
   {
-    label: '',
+    label: 'Organizar',
     items: [
       { id: 'tasks', label: 'Tarefas', icon: 'checklist' },
       { id: 'finance', label: 'Finanças', icon: 'account_balance_wallet' },
     ],
   },
   {
-    label: '',
+    label: 'Evoluir',
     items: [
       { id: 'habits', label: 'Hábitos', icon: 'autorenew' },
       { id: 'goals', label: 'Metas', icon: 'flag' },
     ],
   },
   {
-    label: '',
+    label: 'Guardar',
     items: [
       { id: 'notes', label: 'Notas', icon: 'sticky_note_2' },
       { id: 'files', label: 'Arquivos', icon: 'folder' },
