@@ -71,7 +71,6 @@ export function TasksModern(props: Props) {
   const controls = (state.configs.moduleControls && typeof state.configs.moduleControls === 'object' ? state.configs.moduleControls : {}) as Record<string, Row>
   const rawSort = String(controls.tasks?.sort || 'manual')
   const sortMode: SortMode = (['manual', 'date', 'priority', 'project', 'name'].includes(rawSort) ? rawSort : 'manual') as SortMode
-  const kanbanPref = controls.tasks?.layout === 'kanban'
   const filters = (state.configs.moduleFilters && typeof state.configs.moduleFilters === 'object' ? (state.configs.moduleFilters as Record<string, Row>).tasks : null) || {}
   const priorityFilter = String(filters.priority || 'all')
 
@@ -92,7 +91,7 @@ export function TasksModern(props: Props) {
   const projectId = scope.startsWith('project:') ? scope.slice(8) : ''
   const project = projectId ? projectMap.get(projectId) : undefined
   const isProjectLike = scope === 'entrada' || Boolean(projectId)
-  const kanban = kanbanPref && Boolean(projectId)
+  const kanban = Boolean(projectId) && String(project?.visualizacao || '') === 'quadro'
 
   const all = state.tasks.filter(task => standalone(task) && (priorityFilter === 'all' || String(task.prioridade || 4) === priorityFilter))
   const open = all.filter(task => !task.concluida)
@@ -421,10 +420,11 @@ export function TasksModern(props: Props) {
   const root = projectId ? rootOf(project) : undefined
   const family = root ? [root, ...childrenOf(String(root.id))] : []
 
-  const setLayout = (layout: 'normal' | 'kanban') => commit(current => {
-    const map = (current.configs.moduleControls && typeof current.configs.moduleControls === 'object' ? current.configs.moduleControls : {}) as Record<string, Row>
-    return { ...current, configs: { ...current.configs, moduleControls: { ...map, tasks: { ...(map.tasks || {}), layout } } } }
-  })
+  /* Lista ou quadro é uma escolha de cada projeto. */
+  const setLayout = (layout: 'lista' | 'quadro') => {
+    if (!projectId) return
+    commit(current => ({ ...current, projects: rows(current.projects).map(item => String(item.id) === projectId ? { ...item, visualizacao: layout } : item) as typeof current.projects }))
+  }
 
   const [projectMenu, setProjectMenu] = useState(false)
   const projectMenuRef = useRef<HTMLButtonElement | null>(null)
@@ -690,10 +690,10 @@ export function TasksModern(props: Props) {
             <div className={styles.optionsPanel}>
               {projectId ? (
                 <>
-                  <span className={styles.optionsLabel}>Ver como</span>
+                  <span className={styles.optionsLabel}>Ver este projeto como</span>
                   <div className={styles.chips}>
-                    <button type="button" data-active={!kanban || undefined} onClick={() => setLayout('normal')}><Icon name="view_agenda" size={15} />Lista</button>
-                    <button type="button" data-active={kanban || undefined} onClick={() => setLayout('kanban')}><Icon name="view_kanban" size={15} />Quadro</button>
+                    <button type="button" data-active={!kanban || undefined} onClick={() => setLayout('lista')}><Icon name="view_agenda" size={15} />Lista</button>
+                    <button type="button" data-active={kanban || undefined} onClick={() => setLayout('quadro')}><Icon name="view_kanban" size={15} />Quadro</button>
                   </div>
                 </>
               ) : null}
@@ -758,10 +758,10 @@ export function TasksModern(props: Props) {
             <section key={group.id} className={styles.column} {...groupDropProps(group)} data-drop-zone={dragId ? 'true' : undefined}>
               <div className={styles.groupHead}>
                 <strong>{group.label}</strong>
-                {addButton(group)}
+                <small>{group.tasks.length}</small>
               </div>
               <div className={styles.cards} role="list">{group.tasks.map(task => renderTask(task, group))}</div>
-              {renderComposer(group)}
+              {renderComposer(group, true)}
             </section>
           ))}
           <button type="button" className={styles.newColumn} onClick={() => props.onManageSections(projectId)}><Icon name="add" size={17} filled={false} />Seção</button>
