@@ -1837,3 +1837,364 @@
   .navMore.navMore { margin-right: 10px; }
   .subnav { margin: -10px -20px 0; padding: 0 20px; }
 }
+
+/* =====================================================================
+ * Versão final (lista agrupada, minimalista)
+ * Topo em botões redondos · tarefas sem fundo · contexto abaixo do título
+ * ===================================================================== */
+
+.page.page {
+  gap: 0;
+}
+
+/* ------------------------------------------------------------- Topo */
+
+.nav.nav {
+  gap: 6px;
+  border-bottom: 0;
+  margin-bottom: 44px;
+}
+
+.navScroll.navScroll {
+  gap: 6px;
+  padding: 2px 32px 2px 0;
+}
+
+.pillIcon.pillIcon,
+.pill.pill,
+.pillRound.pillRound {
+  appearance: none;
+  flex-shrink: 0;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  border: 0;
+  border-radius: 17px;
+  background: var(--ds-surface);
+  color: var(--ds-text-2);
+  font: inherit;
+  font-size: 13px;
+  font-weight: var(--ds-fw-bold);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color var(--ds-dur-fast) var(--ds-ease), color var(--ds-dur-fast) var(--ds-ease);
+}
+
+.pillIcon.pillIcon {
+  gap: 5px;
+  padding: 0 11px 0 9px;
+}
+
+.pillIcon small,
+.pill small {
+  font-size: 12px;
+  font-weight: var(--ds-fw-bold);
+}
+
+.pillIcon.pillIcon[data-alert] small {
+  color: var(--ds-danger);
+}
+
+.pill.pill {
+  gap: 7px;
+  padding: 0 13px 0 7px;
+}
+
+.pill small {
+  opacity: 0.6;
+}
+
+.pillAvatar {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.pillRound.pillRound {
+  width: 34px;
+  justify-content: center;
+  padding: 0;
+  color: var(--ds-muted);
+}
+
+.pillIcon.pillIcon:hover,
+.pill.pill:hover,
+.pillRound.pillRound:hover {
+  background: var(--ds-surface-2);
+  color: var(--ds-text);
+}
+
+.pillIcon.pillIcon[data-active],
+.pill.pill[data-active] {
+  background: var(--ds-text);
+  color: var(--ds-bg);
+}
+
+.pillRound.pillRound[data-active] {
+  color: var(--ds-accent);
+}
+
+.nav .navDivider {
+  height: 20px;
+  margin: 0 4px;
+}
+
+/* ------------------------------------------- Subprojetos como pastas */
+
+.folders {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: -16px 0 32px;
+}
+
+.folder.folder,
+.folderAdd.folderAdd {
+  appearance: none;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 14px 0 11px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--ds-surface);
+  color: var(--ds-text-2);
+  font: inherit;
+  font-size: 13px;
+  font-weight: var(--ds-fw-bold);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.folder.folder small {
+  font-size: 11.5px;
+  color: var(--ds-muted);
+}
+
+.folder.folder:hover {
+  background: var(--ds-surface-2);
+  color: var(--ds-text);
+}
+
+.folder.folder[data-active] {
+  background: var(--ds-surface-2);
+  color: var(--ds-text);
+  box-shadow: inset 0 0 0 1.5px var(--ds-line-strong);
+}
+
+.folder.folder[data-back] {
+  background: transparent;
+  color: var(--ds-muted);
+  padding-left: 6px;
+}
+
+.folderAdd.folderAdd {
+  width: 40px;
+  justify-content: center;
+  padding: 0;
+  background: transparent;
+  box-shadow: inset 0 0 0 1.5px var(--ds-line);
+  color: var(--ds-muted);
+}
+
+.folderAdd.folderAdd:hover {
+  color: var(--ds-text);
+}
+
+/* ------------------------------------------------------------ Lista */
+
+.list.list {
+  gap: 34px;
+}
+
+.group.group {
+  gap: 0;
+}
+
+.list .groupHead.groupHead {
+  min-height: 0;
+  margin: 0;
+  padding: 0 6px 6px;
+  border-bottom: 1px solid var(--ds-line);
+}
+
+.list .groupHead strong {
+  font-size: 11.5px;
+  font-weight: var(--ds-fw-heavy);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ds-muted);
+}
+
+.list .groupHead[data-tone='danger'] strong {
+  color: var(--ds-danger);
+}
+
+.list .collapse.collapse {
+  gap: 6px;
+}
+
+.list .collapse.collapse[aria-expanded='true'] > span:first-child {
+  display: none;
+}
+
+.list .collapse small {
+  font-size: 11.5px;
+  font-weight: var(--ds-fw-bold);
+  color: var(--ds-muted);
+  opacity: 0.75;
+}
+
+.list .cards.cards {
+  gap: 0;
+}
+
+/* Tarefa sem fundo: linha com divisória fina. */
+.list .card.card {
+  gap: 12px;
+  padding: 12px 6px;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  border-bottom: 1px solid color-mix(in srgb, var(--ds-line) 70%, transparent);
+}
+
+.list .card.card:hover {
+  background: color-mix(in srgb, var(--ds-surface) 55%, transparent);
+}
+
+.list .card.card[data-selected] {
+  background: var(--ds-accent-soft);
+  box-shadow: none;
+}
+
+.list .card.card[data-drop] {
+  box-shadow: inset 0 2px 0 var(--ds-accent);
+}
+
+.list .cardTitle {
+  font-size: 14.5px;
+  font-weight: var(--ds-fw-medium);
+}
+
+.cardDesc.cardDesc {
+  margin-top: 1px;
+  color: var(--ds-muted);
+  opacity: 1;
+}
+
+.cardMeta.cardMeta {
+  margin-top: 3px;
+  gap: 4px 12px;
+  font-size: 12px;
+  font-weight: var(--ds-fw-medium);
+}
+
+.cardMeta > span[data-today] {
+  color: var(--ds-mint-fg);
+}
+
+/* Prioridade na cor do círculo de concluir. */
+.check.check[data-priority] {
+  border-color: var(--check-color);
+  background: color-mix(in srgb, var(--check-color) 14%, transparent);
+}
+
+.check.check[data-done] {
+  border-color: var(--ds-muted);
+  background: var(--ds-muted);
+  color: var(--ds-bg);
+}
+
+.expand.expand {
+  background: transparent;
+  color: var(--ds-muted);
+}
+
+.expand.expand[data-open] {
+  background: transparent;
+  color: var(--ds-accent);
+}
+
+/* Subtarefas abertas: recuadas, menores, sem fundo. */
+.list .subList.subList {
+  margin: 0;
+  padding: 0;
+  border-left: 0;
+  gap: 0;
+}
+
+.list .subRow.subRow {
+  min-height: 0;
+  padding: 9px 6px 9px 38px;
+  border-radius: 0;
+  background: transparent;
+  border-bottom: 1px solid color-mix(in srgb, var(--ds-line) 70%, transparent);
+}
+
+.list .subRow.subRow:hover {
+  background: color-mix(in srgb, var(--ds-surface) 55%, transparent);
+}
+
+.list .subTitle.subTitle {
+  font-weight: var(--ds-fw-medium);
+}
+
+.list .subCheck.subCheck[data-done] {
+  border-color: var(--ds-muted);
+  background: var(--ds-muted);
+  color: var(--ds-bg);
+}
+
+/* Adicionar: discreto. Em seções com tarefas, só aparece ao passar o mouse. */
+.addQuiet.addQuiet {
+  min-height: 40px;
+  padding: 0 6px;
+  color: #6c707c;
+  font-weight: var(--ds-fw-medium);
+}
+
+@media (hover: hover) {
+  .addQuiet.addQuiet[data-has-tasks] {
+    opacity: 0;
+    transition: opacity var(--ds-dur-fast) var(--ds-ease);
+  }
+
+  .group:hover .addQuiet.addQuiet[data-has-tasks],
+  .addQuiet.addQuiet[data-has-tasks]:focus-visible {
+    opacity: 1;
+  }
+}
+
+.doneToggle.doneToggle {
+  padding: 0 6px;
+}
+
+@media (max-width: 900px) {
+  .nav.nav {
+    margin: 0 -20px 30px;
+  }
+
+  .navScroll.navScroll {
+    padding: 2px 40px 2px 20px;
+  }
+
+  .nav > .pillRound {
+    margin-right: 20px;
+  }
+
+  .folders {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    margin: -12px -20px 26px;
+    padding: 0 20px;
+  }
+
+  .folders::-webkit-scrollbar {
+    display: none;
+  }
+}

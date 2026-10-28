@@ -212,7 +212,7 @@ export function TasksModern(props: Props) {
     if (!ok) return
     const set = new Set(ids)
     commit(current => ({ ...current, tasks: current.tasks.filter(task => !set.has(String(task.id))).map(task => set.has(String(task.parent_id || '')) ? { ...task, parent_id: '' } : task) }))
-    setSelected(new Set())
+    clearSelection()
   }
 
   /* ------------------------------------------------------- Arrastar/soltar */
@@ -254,17 +254,19 @@ export function TasksModern(props: Props) {
   /* ---------------------------------------------------------- Seleção */
 
   const [selected, setSelected] = useState<Set<string>>(new Set())
-  const selecting = selected.size > 0
+  const [selectMode, setSelectMode] = useState(false)
+  const selecting = selected.size > 0 || selectMode
+  const clearSelection = () => { setSelected(new Set()); setSelectMode(false) }
   const toggleSelect = (id: string) => setSelected(current => {
     const next = new Set(current)
     if (next.has(id)) next.delete(id)
     else next.add(id)
     return next
   })
-  useEffect(() => { setSelected(new Set()) }, [scope])
+  useEffect(() => { clearSelection() }, [scope])
   useEffect(() => {
     if (!selecting) return
-    const onKey = (event: KeyboardEvent) => { if (event.key === 'Escape') setSelected(new Set()) }
+    const onKey = (event: KeyboardEvent) => { if (event.key === 'Escape') clearSelection() }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [selecting])
@@ -478,7 +480,7 @@ export function TasksModern(props: Props) {
             {isSelected ? <Icon name="check" size={15} /> : null}
           </button>
         ) : (
-          <button type="button" className={styles.check} data-done={done || undefined} data-late={late || undefined} onClick={() => toggleTask(id)} aria-label={done ? `Reabrir ${String(task.titulo)}` : `Concluir ${String(task.titulo)}`}>
+          <button type="button" className={styles.check} data-done={done || undefined} data-priority={!done && PRIORITY_COLOR[priority] ? priority : undefined} style={!done && PRIORITY_COLOR[priority] ? ({ '--check-color': PRIORITY_COLOR[priority] } as React.CSSProperties) : undefined} onClick={() => toggleTask(id)} aria-label={done ? `Reabrir ${String(task.titulo)}` : `Concluir ${String(task.titulo)}`}>
             {done ? <Icon name="check" size={13} /> : null}
           </button>
         )}
@@ -487,19 +489,18 @@ export function TasksModern(props: Props) {
           {desc ? <span className={styles.cardDesc}>{desc}</span> : null}
           {(showDate || time || showProject || children.length || files || task.repeticao) ? (
             <span className={styles.cardMeta}>
-              {showDate ? <span data-late={late || undefined}><Icon name="calendar_today" size={13} />{naturalDate(due, today)}{time ? ` · ${time}` : ''}</span> : time ? <span><Icon name="schedule" size={13} />{time}</span> : null}
+              {showDate ? <span data-late={late || undefined} data-today={due === today || undefined}><Icon name="calendar_today" size={12} />{naturalDate(due, today)}{time ? ` · ${time}` : ''}</span> : time ? <span><Icon name="schedule" size={12} />{time}</span> : null}
               {showProject ? (
                 <span className={styles.metaProject}>
                   {projectMap.get(String(task.projeto_id || ''))?.imagem_url ? <img src={driveAssetUrl(projectMap.get(String(task.projeto_id))?.imagem_url)} alt="" /> : <i style={{ background: String(projectMap.get(String(task.projeto_id || ''))?.cor || 'var(--ds-accent)') }} />}
                   {projectName(task.projeto_id)}{task.secao ? <em> · {String(task.secao)}</em> : null}
                 </span>
               ) : null}
-              {files ? <span><Icon name="attach_file" size={13} />{files}</span> : null}
-              {task.repeticao ? <span><Icon name="repeat" size={13} /></span> : null}
+              {task.repeticao ? <span><Icon name="repeat" size={12} />{({ diariamente: 'Todo dia', semanalmente: 'Toda semana', 'semanal:1,2,3,4,5': 'Dias úteis', mensalmente: 'Todo mês', anualmente: 'Todo ano' } as Record<string, string>)[String(task.repeticao)] || 'Repete'}</span> : null}
+              {files ? <span><Icon name="attach_file" size={12} />{files}</span> : null}
             </span>
           ) : null}
         </button>
-        {PRIORITY_COLOR[priority] && !done ? <span className={styles.flag} style={{ color: PRIORITY_COLOR[priority] }} title={`Prioridade ${PRIORITIES[priority - 1]?.label || ''}`}><Icon name="flag" size={16} /></span> : null}
         {children.length ? (
           <button type="button" className={styles.expand} data-open={expanded || undefined} onClick={() => toggleSubs(id)} aria-expanded={expanded} aria-label={`${expanded ? 'Esconder' : 'Mostrar'} subtarefas de ${String(task.titulo || 'tarefa')}`}>
             <span>{children.filter(child => child.concluida).length}/{children.length}</span>
@@ -517,13 +518,12 @@ export function TasksModern(props: Props) {
             const grand = state.tasks.filter(item => String(item.parent_id || '') === childId)
             return (
               <div key={childId} role="listitem" className={styles.subRow} data-done={child.concluida || undefined}>
-                <button type="button" className={styles.subCheck} data-done={child.concluida || undefined} data-late={childLate || undefined} onClick={() => toggleTask(childId)} aria-label={child.concluida ? `Reabrir ${String(child.titulo)}` : `Concluir ${String(child.titulo)}`}>
+                <button type="button" className={styles.subCheck} data-done={child.concluida || undefined} style={!child.concluida && PRIORITY_COLOR[childPriority] ? ({ borderColor: PRIORITY_COLOR[childPriority] } as React.CSSProperties) : undefined} onClick={() => toggleTask(childId)} aria-label={child.concluida ? `Reabrir ${String(child.titulo)}` : `Concluir ${String(child.titulo)}`}>
                   {child.concluida ? <Icon name="check" size={11} /> : null}
                 </button>
                 <button type="button" className={styles.subTitle} onClick={() => openTask(child)}>{String(child.titulo || 'Subtarefa')}</button>
                 {grand.length ? <span className={styles.subMeta}><Icon name="account_tree" size={12} />{grand.filter(item => item.concluida).length}/{grand.length}</span> : null}
                 {childDue ? <span className={styles.subMeta} data-late={childLate || undefined}>{naturalDate(childDue, today)}</span> : null}
-                {PRIORITY_COLOR[childPriority] && !child.concluida ? <span className={styles.subFlag} style={{ color: PRIORITY_COLOR[childPriority] }}><Icon name="flag" size={13} /></span> : null}
               </div>
             )
           })}
@@ -553,7 +553,7 @@ export function TasksModern(props: Props) {
       </div>
     </div>
   ) : (always || !group.tasks.length) ? (
-    <button type="button" className={styles.addQuiet} onClick={() => { setComposer(group.id); setDraftTitle('') }}>
+    <button type="button" className={styles.addQuiet} data-has-tasks={group.tasks.length ? 'true' : undefined} onClick={() => { setComposer(group.id); setDraftTitle('') }}>
       <Icon name="add" size={17} filled={false} />Adicionar tarefa
     </button>
   ) : null
@@ -601,10 +601,10 @@ export function TasksModern(props: Props) {
           onClickCapture={event => { if (tabsSuppress.current) { event.preventDefault(); event.stopPropagation() } }}
           role="tablist"
         >
-          {scopeTabs.filter(tab => ['entrada', 'today', 'upcoming', 'nodate'].includes(tab.scope) || scope === tab.scope).map(tab => (
-            <button key={tab.scope} type="button" role="tab" className={styles.navTab} data-active={scope === tab.scope || undefined} aria-selected={scope === tab.scope} onClick={() => props.onScopeChange(tab.scope)}>
-              <span>{tab.label}</span>
-              {tab.scope === 'today' && counts.late ? <small data-alert>{tab.count}</small> : tab.count ? <small>{tab.count}</small> : null}
+          {scopeTabs.filter(tab => ['entrada', 'late', 'nodate'].includes(tab.scope) || scope === tab.scope).map(tab => (
+            <button key={tab.scope} type="button" role="tab" className={styles.pillIcon} data-active={scope === tab.scope || undefined} data-alert={tab.scope === 'late' && tab.count > 0 || undefined} aria-selected={scope === tab.scope} aria-label={tab.label} title={tab.label} onClick={() => props.onScopeChange(tab.scope)}>
+              <Icon name={tab.icon} size={17} style={{ color: scope === tab.scope ? undefined : tab.color }} />
+              {tab.count ? <small>{tab.count}</small> : null}
             </button>
           ))}
           <span className={styles.navDivider} aria-hidden="true" />
@@ -612,15 +612,16 @@ export function TasksModern(props: Props) {
             const id = String(item.id)
             const active = Boolean(projectId) && String(root?.id || '') === id
             return (
-              <button key={id} type="button" role="tab" className={styles.navTab} data-active={active || undefined} aria-selected={active} onClick={() => props.onScopeChange(`project:${id}`)} onDoubleClick={() => props.onEditProject(id)}>
-                {projectVisual(item, 'tab')}
+              <button key={id} type="button" role="tab" className={styles.pill} data-active={active || undefined} aria-selected={active} onClick={() => props.onScopeChange(`project:${id}`)} onDoubleClick={() => props.onEditProject(id)}>
+                {item.imagem_url ? <img className={styles.pillAvatar} src={driveAssetUrl(item.imagem_url)} alt="" /> : <span className={styles.pillAvatar} style={{ background: String(item.cor || 'var(--ds-line-strong)') }} />}
                 <span>{String(item.nome || 'Projeto')}</span>
                 {familyCount(id) ? <small>{familyCount(id)}</small> : null}
               </button>
             )
           })}
+          <button type="button" className={styles.pillRound} onClick={() => props.onNewProject()} aria-label="Novo projeto" title="Novo projeto"><Icon name="add" size={18} filled={false} /></button>
         </div>
-        <button ref={optionsRef} type="button" className={styles.navMore} data-active={priorityFilter !== 'all' || undefined} onClick={() => setOptionsOpen(true)} aria-label="Mais opções"><Icon name="more_horiz" size={20} filled={false} /></button>
+        <button ref={optionsRef} type="button" className={styles.pillRound} data-active={priorityFilter !== 'all' || undefined} onClick={() => setOptionsOpen(true)} aria-label="Mais opções"><Icon name="more_horiz" size={20} filled={false} /></button>
         {optionsOpen ? (
           <Floating anchor={optionsRef} title="Opções" width={300} onClose={() => setOptionsOpen(false)}>
             <div className={styles.optionsPanel}>
@@ -646,8 +647,10 @@ export function TasksModern(props: Props) {
                 ))}
               </div>
               <div className={styles.menuList}>
-                <button type="button" onClick={() => { setOptionsOpen(false); props.onScopeChange('late') }}><Icon name="warning" size={18} style={{ color: 'var(--ds-danger)' }} /><span>Atrasadas</span>{counts.late ? <small>{counts.late}</small> : null}</button>
+                <button type="button" onClick={() => { setOptionsOpen(false); props.onScopeChange('today') }}><Icon name="today" size={18} style={{ color: 'var(--ds-mint-fg)' }} /><span>Hoje</span>{counts.today ? <small>{counts.today}</small> : null}</button>
+                <button type="button" onClick={() => { setOptionsOpen(false); props.onScopeChange('upcoming') }}><Icon name="event_upcoming" size={18} style={{ color: 'var(--ds-lilac-fg)' }} /><span>Em breve</span>{counts.upcoming ? <small>{counts.upcoming}</small> : null}</button>
                 <button type="button" onClick={() => { setOptionsOpen(false); props.onScopeChange('all') }}><Icon name="select_all" size={18} /><span>Todas as tarefas</span><small>{counts.all}</small></button>
+                <button type="button" onClick={() => { setOptionsOpen(false); setSelectMode(true) }}><Icon name="check_box" size={18} /><span>Selecionar várias</span></button>
               </div>
               <div className={styles.menuList}>
                 {projectId ? (
@@ -664,18 +667,25 @@ export function TasksModern(props: Props) {
         ) : null}
       </nav>
 
-      {family.length > 1 ? (
-        <div className={styles.subnav} role="tablist" aria-label="Subprojetos">
-          {family.map(item => {
+      {projectId && family.length > 1 ? (
+        <div className={styles.folders} aria-label="Subprojetos">
+          {String(root?.id) !== projectId && root ? (
+            <button type="button" className={styles.folder} data-back onClick={() => props.onScopeChange(`project:${String(root.id)}`)}>
+              <Icon name="arrow_back" size={17} filled={false} />
+              <span>{String(root.nome || 'Projeto')}</span>
+            </button>
+          ) : null}
+          {family.filter(item => String(item.id) !== String(root?.id)).map(item => {
             const id = String(item.id)
-            const isRoot = id === String(root?.id)
             return (
-              <button key={id} type="button" role="tab" className={styles.subnavTab} data-active={projectId === id || undefined} aria-selected={projectId === id} onClick={() => props.onScopeChange(`project:${id}`)}>
-                {isRoot ? null : projectVisual(item, 'tab')}
-                {isRoot ? 'Principal' : String(item.nome || 'Subprojeto')}
+              <button key={id} type="button" className={styles.folder} data-active={projectId === id || undefined} onClick={() => props.onScopeChange(`project:${id}`)} onDoubleClick={() => props.onEditProject(id)}>
+                <Icon name={projectId === id ? 'folder_open' : 'folder'} size={18} style={{ color: String(item.cor || 'var(--ds-peach-fg)') }} />
+                <span>{String(item.nome || 'Subprojeto')}</span>
+                {projectCount(id) ? <small>{projectCount(id)}</small> : null}
               </button>
             )
           })}
+          <button type="button" className={styles.folderAdd} onClick={() => props.onNewProject(String(root?.id || projectId))} aria-label="Novo subprojeto" title="Novo subprojeto"><Icon name="add" size={18} filled={false} /></button>
         </div>
       ) : null}
 
@@ -705,16 +715,15 @@ export function TasksModern(props: Props) {
                     <button type="button" className={styles.collapse} onClick={() => toggleCollapsed(group.id)} aria-expanded={!isCollapsed}>
                       {group.projectId ? (group.projectId === 'entrada' ? <span className={styles.tabVisual} style={{ background: 'var(--ds-accent)' }}><Icon name="inbox" size={12} /></span> : projectVisual(projectMap.get(group.projectId), 'tab')) : null}
                       <strong>{group.label}</strong>
-                      {isCollapsed ? <small>{group.tasks.length}</small> : null}
+                      <small>{group.tasks.length}</small>
                     </button>
-                    {canAddIn(group) ? addButton(group) : null}
                   </div>
                 ) : null}
                 {!isCollapsed ? (
                   <>
                     <div className={styles.cards} role="list">{group.tasks.map(task => renderTask(task, group))}</div>
                     {!group.tasks.length && !canAddIn(group) ? <p className={styles.empty}>Nada por aqui.</p> : null}
-                    {canAddIn(group) ? renderComposer(group, !showHead) : null}
+                    {canAddIn(group) ? renderComposer(group, true) : null}
                   </>
                 ) : null}
               </section>
@@ -742,12 +751,12 @@ export function TasksModern(props: Props) {
       {selecting ? (
         <div className={styles.bulk} role="toolbar" aria-label="Ações das tarefas selecionadas">
           <div className={styles.bulkInfo}>
-            <button type="button" className={styles.bulkClose} onClick={() => setSelected(new Set())} aria-label="Limpar seleção"><Icon name="close" size={18} filled={false} /></button>
+            <button type="button" className={styles.bulkClose} onClick={() => clearSelection()} aria-label="Limpar seleção"><Icon name="close" size={18} filled={false} /></button>
             <strong>{plural(selected.size, 'selecionada', 'selecionadas')}</strong>
             <button type="button" className={styles.bulkAll} onClick={() => setSelected(new Set(visibleIds))}>Todas</button>
           </div>
           <div className={styles.bulkActions}>
-            <button type="button" onClick={() => { patchMany(selectedIds, () => ({ concluida: !allDone, concluida_em: !allDone ? new Date().toISOString() : '' })); setSelected(new Set()) }}><Icon name={allDone ? 'undo' : 'check_circle'} size={20} style={{ color: 'var(--ds-mint-fg)' }} /><span>{allDone ? 'Reabrir' : 'Concluir'}</span></button>
+            <button type="button" onClick={() => { patchMany(selectedIds, () => ({ concluida: !allDone, concluida_em: !allDone ? new Date().toISOString() : '' })); clearSelection() }}><Icon name={allDone ? 'undo' : 'check_circle'} size={20} style={{ color: 'var(--ds-mint-fg)' }} /><span>{allDone ? 'Reabrir' : 'Concluir'}</span></button>
             <button type="button" ref={bulkRefs.date} onClick={() => setBulkPicker('date')}><Icon name="calendar_today" size={20} style={{ color: 'var(--ds-accent)' }} /><span>Data</span></button>
             <button type="button" ref={bulkRefs.priority} onClick={() => setBulkPicker('priority')}><Icon name="flag" size={20} style={{ color: 'var(--ds-peach-fg)' }} /><span>Prioridade</span></button>
             <button type="button" ref={bulkRefs.move} onClick={() => setBulkPicker('move')}><Icon name="drive_file_move" size={20} style={{ color: 'var(--ds-lilac-fg)' }} /><span>Mover</span></button>
@@ -755,17 +764,17 @@ export function TasksModern(props: Props) {
           </div>
           {bulkPicker === 'date' ? (
             <Floating anchor={bulkRefs.date} title="Nova data" width={300} onClose={() => setBulkPicker('')}>
-              <DatePicker value="" today={today} onSelect={value => { setBulkPicker(''); patchMany(selectedIds, task => ({ data_vencimento: withDate(task, value) })); setSelected(new Set()) }} />
+              <DatePicker value="" today={today} onSelect={value => { setBulkPicker(''); patchMany(selectedIds, task => ({ data_vencimento: withDate(task, value) })); clearSelection() }} />
             </Floating>
           ) : null}
           {bulkPicker === 'priority' ? (
             <Floating anchor={bulkRefs.priority} title="Prioridade" onClose={() => setBulkPicker('')}>
-              <OptionList options={PRIORITIES} value="" onSelect={value => { setBulkPicker(''); patchMany(selectedIds, () => ({ prioridade: Number(value) })); setSelected(new Set()) }} />
+              <OptionList options={PRIORITIES} value="" onSelect={value => { setBulkPicker(''); patchMany(selectedIds, () => ({ prioridade: Number(value) })); clearSelection() }} />
             </Floating>
           ) : null}
           {bulkPicker === 'move' ? (
             <Floating anchor={bulkRefs.move} title="Mover para" width={260} onClose={() => setBulkPicker('')}>
-              <OptionList options={moveOptions} value="" onSelect={value => { setBulkPicker(''); patchMany(selectedIds, task => ({ projeto_id: value, secao: String(task.projeto_id || 'entrada') === value ? task.secao : '' })); setSelected(new Set()) }} />
+              <OptionList options={moveOptions} value="" onSelect={value => { setBulkPicker(''); patchMany(selectedIds, task => ({ projeto_id: value, secao: String(task.projeto_id || 'entrada') === value ? task.secao : '' })); clearSelection() }} />
             </Floating>
           ) : null}
         </div>
