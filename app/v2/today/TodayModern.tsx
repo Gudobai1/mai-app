@@ -12,6 +12,7 @@ import { driveAssetUrl } from '../DriveAsset'
 import { resolveMaiIcon } from '../MaiIcons'
 import { askConfirm } from '../shell/ConfirmDialog'
 import { useQuickMenu, type QuickMenuConfig } from '../shell/QuickMenu'
+import { AgendaStrip } from './AgendaStrip'
 import styles from './TodayModern.module.css'
 
 /*
@@ -335,48 +336,6 @@ export function TodayModern({ state, today, commit, navigate, inspect, profileNa
     if (item.subtitle === 'Em andamento') return true
     if (!item.time || item.raw.dia_inteiro === true) return false
     return minutesOf(item.time) <= nowMinutes && !eventPassed(item)
-  }
-
-  const nextEventId = events.find(item => !eventPassed(item) && !eventIsNow(item) && item.raw.dia_inteiro !== true && Boolean(item.time))?.id || ''
-
-  const renderEventRow = (item: PlannerItem) => {
-    const color = eventColor(item.raw)
-    const allDay = item.raw.dia_inteiro === true || !item.time
-    const spanning = item.subtitle === 'Em andamento'
-    const end = String(item.raw.hora_fim || '').slice(0, 5)
-    const now = eventIsNow(item)
-    const passed = eventPassed(item)
-    const isNext = item.id === nextEventId
-    const startMin = minutesOf(item.time)
-    const pill = now ? 'Agora' : isNext && isToday && clockIsToday ? untilLabel(startMin - nowMinutes) : ''
-    const time = spanning ? 'Contínuo' : allDay ? 'Dia todo' : item.time
-    const google = item.raw.tipo === 'google' || item.raw.tipo === 'gcalendar'
-    const calendarName = String(item.raw.calendario_nome || '')
-    const source = google ? (calendarName || 'Google Agenda') : String(item.raw.categoria || calendarName || 'MAI')
-    return (
-      <button
-        key={item.id}
-        type="button"
-        className={`${styles.item} ${styles.evRow} ${now ? styles.evRowNow : ''} ${passed ? styles.itemPassed : ''}`}
-        {...quick.bind(() => eventMenu(item))}
-        onClick={() => inspectPlanner(item)}
-      >
-        <span className={styles.evWhen}>
-          <span className={`${styles.evTime} ${allDay || spanning ? styles.evTimeWord : ''}`}>{time}</span>
-          {end && !allDay && !spanning ? <span className={styles.evEnd}>{end}</span> : null}
-        </span>
-        <span className={styles.taskBody}>
-          <span className={styles.taskTitle}>{item.title}</span>
-          <span className={styles.taskSub}>
-            <span className={styles.calDot} style={{ background: color }} />
-            <span className={styles.evSource}>{source}</span>
-            {google ? <span className={styles.evGoogle}>Google</span> : null}
-            {item.recurring ? <Icon name="repeat" size={13} /> : null}
-          </span>
-        </span>
-        {pill ? <span className={styles.evPill}>{pill}</span> : null}
-      </button>
-    )
   }
 
   /* ---------------------------------------------------------------- Tarefas */
@@ -744,7 +703,7 @@ export function TodayModern({ state, today, commit, navigate, inspect, profileNa
     appointments: (
       <section className={styles.block} aria-label="Agenda">
         <SectionHeader title="Agenda" meta={events.length ? plural(events.length, 'compromisso', 'compromissos') : undefined} />
-        {events.length ? <div className={styles.items}>{events.map(renderEventRow)}</div> : <div className={styles.empty}>Nenhum compromisso {isToday ? 'hoje' : 'neste dia'}.</div>}
+        {events.length ? <AgendaStrip items={events} nowMinutes={isToday && clockIsToday ? nowMinutes : null} isPassed={eventPassed} onOpen={inspectPlanner} bind={item => quick.bind(() => eventMenu(item))} /> : <div className={styles.empty}>Nenhum compromisso {isToday ? 'hoje' : 'neste dia'}.</div>}
       </section>
     ),
     tasks: (
