@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { financeSummary } from '../../../lib/v2/finance-summary'
 import { addDays, eventColor, plannerItems, type PlannerItem } from '../../../lib/v2/planner'
 import type { MaiState } from '../../../lib/v2/state'
@@ -498,6 +498,7 @@ export function TodayModern({ state, today, commit, navigate, inspect, profileNa
   /* ------------------------------------------------------- Edição rápida */
 
   const quick = useQuickMenu()
+  const [openSubs, setOpenSubs] = useState<Set<string>>(new Set())
   const tomorrow = addDays(today, 1)
   const nextMonday = (() => { const date = new Date(`${today}T12:00:00`); const add = ((8 - date.getDay()) % 7) || 7; return addDays(today, add) })()
   const dateChoices = [
@@ -655,6 +656,13 @@ export function TodayModern({ state, today, commit, navigate, inspect, profileNa
 
   const financeMode = ['summary', 'bills'].includes(String(state.configs.todayFinanceMode)) ? String(state.configs.todayFinanceMode) : 'both'
 
+  const toggleSubs = (id: string) => setOpenSubs(current => {
+    const next = new Set(current)
+    if (next.has(id)) next.delete(id)
+    else next.add(id)
+    return next
+  })
+
   const renderTask = (task: Row, grouped = false) => {
     const due = dateKey(task.data_vencimento)
     const late = due < today
@@ -663,8 +671,12 @@ export function TodayModern({ state, today, commit, navigate, inspect, profileNa
     const title = String(task.titulo || 'Tarefa')
     const description = plainText(task.descricao)
     const when = `${naturalDate(due, today)}${time ? ` · ${time}` : ''}`
+    const taskId = String(task.id)
+    const children = state.tasks.filter(item => String(item.parent_id || '') === taskId)
+    const expanded = openSubs.has(taskId)
     return (
-      <div key={String(task.id)} role="listitem" className={`${styles.item} ${styles.itemWrap} ${styles.task} ${task.concluida ? styles.itemPassed : ''}`} {...quick.bind(() => taskMenu(task))}>
+      <Fragment key={taskId}>
+      <div role="listitem" className={`${styles.item} ${styles.itemWrap} ${styles.task} ${task.concluida ? styles.itemPassed : ''}`} {...quick.bind(() => taskMenu(task))}>
         <Check className={styles.itemCheck} checked={Boolean(task.concluida)} late={late} label={`Concluir: ${title}`} onCheckedChange={() => toggleTask(String(task.id))} />
         <button type="button" className={styles.itemButton} onClick={() => inspectTask(task)}>
           <span className={styles.taskBody}>
@@ -684,7 +696,34 @@ export function TodayModern({ state, today, commit, navigate, inspect, profileNa
           </span>
           {PRIORITY_COLOR[priority] ? <span className={styles.priority} title={`Prioridade ${priority}`} style={{ color: PRIORITY_COLOR[priority] }}><Icon name="flag" size={15} /></span> : null}
         </button>
+        {children.length ? (
+          <button type="button" className={styles.expand} data-open={expanded || undefined} onClick={() => toggleSubs(taskId)} aria-expanded={expanded} aria-label={`${expanded ? 'Esconder' : 'Mostrar'} subtarefas de ${title}`}>
+            <span>{children.filter(child => child.concluida).length}/{children.length}</span>
+            <Icon name="expand_more" size={18} filled={false} />
+          </button>
+        ) : null}
       </div>
+      {expanded && children.length ? (
+        <div className={styles.subList} role="list" aria-label={`Subtarefas de ${title}`}>
+          {[...children].sort((a, b) => Number(Boolean(a.concluida)) - Number(Boolean(b.concluida)) || Number(a.ordem || 0) - Number(b.ordem || 0)).map(child => {
+            const childId = String(child.id)
+            const childDue = dateKey(child.data_vencimento)
+            const childLate = Boolean(childDue) && childDue < today && !child.concluida
+            const childPriority = Number(child.prioridade || 4)
+            return (
+              <div key={childId} role="listitem" className={styles.subRow} data-done={child.concluida || undefined}>
+                <button type="button" className={styles.subCheck} data-done={child.concluida || undefined} data-late={childLate || undefined} onClick={() => toggleTask(childId)} aria-label={child.concluida ? `Reabrir ${String(child.titulo)}` : `Concluir ${String(child.titulo)}`}>
+                  {child.concluida ? <Icon name="check" size={11} /> : null}
+                </button>
+                <button type="button" className={styles.subTitle} onClick={() => inspectTask(child)}>{String(child.titulo || 'Subtarefa')}</button>
+                {childDue ? <span className={styles.subMeta} data-late={childLate || undefined}>{naturalDate(childDue, today)}</span> : null}
+                {PRIORITY_COLOR[childPriority] && !child.concluida ? <span className={styles.subFlag} style={{ color: PRIORITY_COLOR[childPriority] }}><Icon name="flag" size={13} /></span> : null}
+              </div>
+            )
+          })}
+        </div>
+      ) : null}
+      </Fragment>
     )
   }
 
