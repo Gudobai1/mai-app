@@ -14,7 +14,6 @@
   min-width: 0;
   padding: 9px 12px;
   border: 0;
-  border-left: 3px solid var(--ev);
   border-radius: 10px;
   background: color-mix(in srgb, var(--ev) 14%, transparent);
   color: var(--ds-text);
@@ -57,95 +56,55 @@
   white-space: nowrap;
 }
 
-/* Linha do tempo horizontal */
-.scroller {
-  overflow-x: auto;
-  overscroll-behavior-x: contain;
-  scrollbar-width: none;
-  -webkit-overflow-scrolling: touch;
-  -webkit-mask-image: linear-gradient(to right, transparent, #000 14px, #000 calc(100% - 28px), transparent);
-  mask-image: linear-gradient(to right, transparent, #000 14px, #000 calc(100% - 28px), transparent);
-}
-
-.scroller::-webkit-scrollbar { display: none; }
-
-.track {
+/* Faixa fina com as 24h (celular) */
+.thin {
   position: relative;
-  flex-shrink: 0;
+  margin: 22px 0 6px;
+  border-radius: 8px;
+  background: var(--ds-surface-2);
 }
 
-.tick {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  border-left: 1px solid var(--ds-line);
-}
-
-.tick i {
-  position: absolute;
-  top: 0;
-  left: 6px;
-  font-style: normal;
-  font-size: 10.5px;
-  font-weight: var(--ds-fw-bold);
-  color: var(--ds-muted);
-}
-
-.block {
+.thinBlock {
   appearance: none;
   position: absolute;
-  height: 26px;
-  box-sizing: border-box;
-  display: flex;
-  align-items: center;
-  padding: 0 7px;
+  padding: 0;
   border: 0;
-  border-left: 3px solid var(--ev);
-  border-radius: 7px;
-  background: color-mix(in srgb, var(--ev) 18%, transparent);
-  color: var(--ds-text);
-  font: inherit;
-  text-align: left;
-  overflow: hidden;
+  border-radius: 6px;
+  background: var(--ev);
   cursor: pointer;
   -webkit-touch-callout: none;
   -webkit-user-select: none;
   user-select: none;
 }
 
-.block strong {
-  font-size: 11px;
-  font-weight: var(--ds-fw-heavy);
-  line-height: 1.2;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
+.thinBlock[data-passed] { opacity: 0.4; }
 
-.block[data-passed] { opacity: 0.45; }
-
-.now {
+.thinNow {
   position: absolute;
-  top: 12px;
-  bottom: 0;
+  top: -2px;
+  bottom: -2px;
   width: 2px;
   margin-left: -1px;
   background: var(--ds-danger);
   pointer-events: none;
 }
 
-.now::before {
-  content: '';
+.thinNow i {
   position: absolute;
-  top: -4px;
-  left: -4px;
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
+  bottom: calc(100% + 2px);
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 1px 6px;
+  border-radius: 6px;
   background: var(--ds-danger);
+  color: #fff;
+  font-style: normal;
+  font-size: 10px;
+  font-weight: var(--ds-fw-heavy);
+  line-height: 1.4;
 }
 
-/* Lista simples */
+/* Lista compacta: uma linha por compromisso */
 .list {
   display: flex;
   flex-direction: column;
@@ -153,11 +112,12 @@
 
 .row {
   appearance: none;
+  height: 38px;
   display: flex;
-  align-items: flex-start;
-  gap: 12px;
+  align-items: center;
+  gap: 10px;
   min-width: 0;
-  padding: 10px 0;
+  padding: 0;
   border: 0;
   border-top: 1px solid var(--ds-line);
   background: transparent;
@@ -171,36 +131,28 @@
 }
 
 .row:first-child { border-top: 0; }
-
 .row[data-passed] { opacity: 0.5; }
 
 .rowTime {
-  width: 44px;
+  width: 40px;
   flex-shrink: 0;
-  padding-top: 1px;
   font-size: 12px;
   font-weight: var(--ds-fw-heavy);
   color: var(--ds-muted);
   font-variant-numeric: tabular-nums;
 }
 
-.rowBar {
-  width: 3px;
-  align-self: stretch;
+.rowDot {
+  width: 8px;
+  height: 8px;
   flex-shrink: 0;
-  border-radius: 2px;
+  border-radius: 50%;
   background: var(--ev);
 }
 
-.rowBody {
+.row strong {
   flex: 1;
   min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.rowBody strong {
   font-size: 14px;
   font-weight: var(--ds-fw-medium);
   overflow: hidden;
@@ -208,21 +160,11 @@
   white-space: nowrap;
 }
 
-.rowBody small {
-  min-width: 0;
-  display: flex;
-  align-items: center;
-  gap: 6px;
+.row small {
+  flex-shrink: 0;
   font-size: 11.5px;
   font-weight: var(--ds-fw-medium);
   color: var(--ds-muted);
-  white-space: nowrap;
-}
-
-.rowBody small span {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .g {
