@@ -2,6 +2,10 @@
   position: fixed;
   inset: 0;
   z-index: 1500;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
   font-family: var(--ds-font);
   color: var(--ds-text);
 }

@@ -9,6 +9,15 @@
   -webkit-font-smoothing: antialiased;
 }
 
+/* No toque, segurar abre a edição rápida: nada de selecionar ou copiar texto. */
+@media (hover: none) {
+  .page {
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+  }
+}
+
 /* ------------------------------------------------------------ Cabeçalho */
 
 .header {
@@ -876,6 +885,9 @@
 
 .habit {
   position: relative;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
   min-width: 0;
   aspect-ratio: 1 / 1;
   display: flex;
