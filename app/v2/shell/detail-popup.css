@@ -1,0 +1,430 @@
+/*
+ * MAI — detalhes e criação em popup.
+ * Computador: janela no centro da tela, com a tela atrás escurecida.
+ * Celular: folha que sobe de baixo.
+ * Vale para os painéis antigos (tarefa, compromisso, hábito, conta, nota…)
+ * sem mexer no conteúdo deles; só a moldura e os campos mudam de visual.
+ */
+
+/* ---------------------------------------------------------------- Camada */
+
+html body .mai-v3-create-layer,
+html body .mai-context-layer,
+html body .mai-task-v4-layer,
+html body .mai-context-v3-layer {
+  position: fixed !important;
+  inset: 0 !important;
+  height: auto !important;
+  z-index: 1400 !important;
+  display: flex !important;
+  align-items: flex-start !important;
+  justify-content: center !important;
+  padding: max(6vh, 24px) 24px 24px !important;
+  box-sizing: border-box !important;
+  background: rgba(5, 6, 9, 0.55) !important;
+  backdrop-filter: blur(3px) !important;
+  -webkit-backdrop-filter: blur(3px) !important;
+  animation: mai-popup-fade 160ms ease-out both;
+}
+
+/* ---------------------------------------------------------------- Janela */
+
+html body .mai-v3-create-drawer,
+html body .mai-context-drawer,
+html body .mai-task-v4-drawer,
+html body .mai-context-v3-drawer {
+  position: relative !important;
+  inset: auto !important;
+  z-index: 1401 !important;
+  width: min(640px, 100%) !important;
+  max-width: 100% !important;
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: calc(100dvh - max(6vh, 24px) - 24px) !important;
+  margin: 0 auto !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+  border: 1px solid var(--ds-line) !important;
+  border-radius: 22px !important;
+  background: var(--ds-surface) !important;
+  color: var(--ds-text) !important;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.35) !important;
+  font-family: var(--ds-font) !important;
+  animation: mai-popup-in 200ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+/* O conteúdo rola por dentro; cabeçalho e rodapé ficam fixos. */
+html body .mai-task-v4-form,
+html body .mai-context-v3-form,
+html body .mai-v3-create-drawer > form {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+html body .mai-task-v4-scroll,
+html body .mai-context-v3-scroll,
+html body .mai-v3-drawer-body {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  overflow-y: auto !important;
+  padding: 8px 24px 24px !important;
+  background: transparent !important;
+}
+
+/* ------------------------------------------------------- Cabeçalho/rodapé */
+
+html body .mai-task-v4-top,
+html body .mai-context-v3-top,
+html body .mai-v3-drawer-header,
+html body .mai-context-drawer > header {
+  min-height: 56px !important;
+  padding: 10px 14px 0 24px !important;
+  border: 0 !important;
+  background: transparent !important;
+  color: var(--ds-muted) !important;
+}
+
+html body .mai-task-v4-kind,
+html body .mai-v3-drawer-header small,
+html body .mai-task-v4-breadcrumbs,
+html body .mai-context-v3-breadcrumbs {
+  color: var(--ds-muted) !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
+}
+
+html body .mai-v3-drawer-header strong {
+  color: var(--ds-text) !important;
+  font-size: 15px !important;
+  font-weight: 800 !important;
+}
+
+html body .mai-task-v4-close,
+html body .mai-context-v3-close,
+html body .mai-v3-close {
+  width: 36px !important;
+  height: 36px !important;
+  border: 0 !important;
+  border-radius: 10px !important;
+  display: grid !important;
+  place-items: center !important;
+  background: var(--ds-surface-2) !important;
+  color: var(--ds-text-2) !important;
+}
+
+html body .mai-task-v4-close:hover,
+html body .mai-context-v3-close:hover,
+html body .mai-v3-close:hover {
+  background: var(--ds-surface-hover) !important;
+}
+
+html body .mai-task-v4-footer,
+html body .mai-context-v3-footer,
+html body .mai-v3-drawer-footer {
+  min-height: 56px !important;
+  padding: 10px 16px 12px 24px !important;
+  border: 0 !important;
+  border-top: 1px solid var(--ds-line) !important;
+  background: var(--ds-surface) !important;
+}
+
+html body .mai-autosave-status {
+  color: var(--ds-muted) !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+}
+
+html body .mai-task-v4-delete,
+html body .mai-context-v3-delete,
+html body .mai-finance-v4-delete {
+  color: var(--ds-danger) !important;
+  font-weight: 700 !important;
+}
+
+/* --------------------------------------------------------- Título e texto */
+
+html body .mai-task-v4-drawer .mai-v3-title-input,
+html body .mai-v3-create-drawer .mai-v3-title-input,
+html body .mai-context-v3-title,
+html body .mai-context-unified-title {
+  color: var(--ds-text) !important;
+  font-family: var(--ds-font) !important;
+  font-size: 24px !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.02em !important;
+  line-height: 1.25 !important;
+}
+
+html body .mai-task-v4-drawer .mai-v3-description-input,
+html body .mai-v3-create-drawer .mai-v3-description-input,
+html body .mai-context-unified-description {
+  color: var(--ds-text-2) !important;
+  font-family: var(--ds-font) !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  line-height: 1.5 !important;
+}
+
+/* ------------------------------------------- Propriedades em botõezinhos */
+
+html body .mai-task-v4-toolbar,
+html body .mai-context-v3-toolbar {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 8px !important;
+  margin: 14px 0 26px !important;
+}
+
+html body .mai-task-v4-tool,
+html body .mai-context-v3-tool {
+  width: auto !important;
+  height: 34px !important;
+}
+
+html body .mai-task-v4-tool-button,
+html body .mai-context-v3-tool-button {
+  width: auto !important;
+  height: 34px !important;
+  min-height: 34px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 7px !important;
+  padding: 0 12px 0 10px !important;
+  border: 0 !important;
+  border-radius: 10px !important;
+  background: var(--ds-surface-2) !important;
+  color: var(--ds-text) !important;
+  font-family: var(--ds-font) !important;
+}
+
+html body .mai-context-v3-tool-button::after {
+  content: none !important;
+  display: none !important;
+}
+
+html body .mai-context-v3-tool-button > .material-symbols-rounded {
+  font-size: 17px !important;
+  color: var(--ds-accent) !important;
+}
+
+html body .mai-task-v4-tool-button:hover,
+html body .mai-task-v4-tool[data-open="true"] .mai-task-v4-tool-button,
+html body .mai-context-v3-tool-button:hover,
+html body .mai-context-v3-tool[data-open="true"] .mai-context-v3-tool-button {
+  background: var(--ds-surface-hover) !important;
+}
+
+html body .mai-task-v4-tool-label {
+  display: none;
+}
+
+html body .mai-task-v4-tool-value,
+html body .mai-context-v3-tool-value {
+  max-width: 240px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+  color: var(--ds-text) !important;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  line-height: 1 !important;
+}
+
+/* Seletores que abrem a partir de cada propriedade. */
+html body .mai-task-v4-popover,
+html body .mai-context-v3-popover {
+  z-index: 5 !important;
+  border: 1px solid var(--ds-line) !important;
+  border-radius: 14px !important;
+  background: var(--ds-surface) !important;
+  box-shadow: var(--ds-shadow-float, 0 18px 50px rgba(0, 0, 0, 0.3)) !important;
+}
+
+/* ---------------------------------------------------- Subtarefas/arquivos */
+
+html body .mai-task-v4-section > header strong,
+html body .mai-context-v3-section > header strong {
+  color: var(--ds-text) !important;
+  font-size: 15px !important;
+  font-weight: 800 !important;
+}
+
+html body .mai-task-v4-section > header small,
+html body .mai-context-v3-section > header small {
+  color: var(--ds-muted) !important;
+  font-weight: 700 !important;
+}
+
+/* ----------------------------------------------------------------- Celular */
+
+@media (max-width: 900px) {
+  html body .mai-v3-create-layer,
+  html body .mai-context-layer,
+  html body .mai-task-v4-layer,
+  html body .mai-context-v3-layer {
+    align-items: flex-end !important;
+    padding: 0 !important;
+    bottom: 0 !important;
+  }
+
+  html body .mai-v3-create-drawer,
+  html body .mai-context-drawer,
+  html body .mai-task-v4-drawer,
+  html body .mai-context-v3-drawer {
+    width: 100% !important;
+    max-width: 100% !important;
+    max-height: calc(100dvh - 56px) !important;
+    border: 0 !important;
+    border-radius: 24px 24px 0 0 !important;
+    box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.35) !important;
+    padding-bottom: env(safe-area-inset-bottom) !important;
+    animation: mai-sheet-in 240ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  }
+
+  /* Alça da folha. */
+  html body .mai-v3-create-drawer::before,
+  html body .mai-context-drawer::before,
+  html body .mai-task-v4-drawer::before,
+  html body .mai-context-v3-drawer::before {
+    content: '';
+    display: block;
+    flex-shrink: 0;
+    width: 40px;
+    height: 5px;
+    margin: 8px auto 0;
+    border-radius: 3px;
+    background: var(--ds-line-strong);
+  }
+
+  html body .mai-task-v4-top,
+  html body .mai-context-v3-top,
+  html body .mai-v3-drawer-header,
+  html body .mai-context-drawer > header {
+    min-height: 48px !important;
+    padding: 4px 12px 0 20px !important;
+  }
+
+  html body .mai-task-v4-scroll,
+  html body .mai-context-v3-scroll,
+  html body .mai-v3-drawer-body {
+    padding: 6px 20px 22px !important;
+  }
+
+  html body .mai-task-v4-drawer .mai-v3-title-input,
+  html body .mai-v3-create-drawer .mai-v3-title-input,
+  html body .mai-context-v3-title,
+  html body .mai-context-unified-title {
+    font-size: 21px !important;
+  }
+
+  /* Propriedades viram uma lista: rótulo à esquerda, valor à direita. */
+  html body .mai-task-v4-toolbar,
+  html body .mai-context-v3-toolbar {
+    display: flex !important;
+    flex-direction: column !important;
+    flex-wrap: nowrap !important;
+    gap: 0 !important;
+    padding: 0 14px !important;
+    border-radius: 14px !important;
+    background: var(--ds-surface-2) !important;
+  }
+
+  html body .mai-task-v4-tool,
+  html body .mai-context-v3-tool {
+    width: 100% !important;
+    height: 48px !important;
+  }
+
+  html body .mai-task-v4-tool + .mai-task-v4-tool,
+  html body .mai-context-v3-tool + .mai-context-v3-tool {
+    border-top: 1px solid var(--ds-line) !important;
+  }
+
+  html body .mai-task-v4-tool-button,
+  html body .mai-context-v3-tool-button {
+    width: 100% !important;
+    height: 48px !important;
+    min-height: 48px !important;
+    display: grid !important;
+    grid-template-columns: 24px minmax(0, 1fr) auto !important;
+    gap: 12px !important;
+    padding: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+  }
+
+  html body .mai-task-v4-tool-button:hover,
+  html body .mai-task-v4-tool[data-open="true"] .mai-task-v4-tool-button,
+  html body .mai-context-v3-tool-button:hover,
+  html body .mai-context-v3-tool[data-open="true"] .mai-context-v3-tool-button {
+    background: transparent !important;
+  }
+
+  html body .mai-task-v4-tool-label {
+    display: block;
+    min-width: 0;
+    color: var(--ds-muted);
+    font-size: 14px;
+    font-weight: 600;
+    text-align: left;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  html body .mai-task-v4-tool-value,
+  html body .mai-context-v3-tool-value {
+    max-width: 52vw !important;
+    font-size: 14px !important;
+    text-align: right !important;
+  }
+
+  html body .mai-task-v4-popover,
+  html body .mai-context-v3-popover {
+    top: 50px !important;
+    left: auto !important;
+    right: 0 !important;
+    width: min(320px, calc(100vw - 40px)) !important;
+  }
+
+  html body .mai-task-v4-footer,
+  html body .mai-context-v3-footer,
+  html body .mai-v3-drawer-footer {
+    padding: 10px 14px max(12px, env(safe-area-inset-bottom)) 20px !important;
+  }
+}
+
+/* -------------------------------------------------------------- Animações */
+
+@keyframes mai-popup-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes mai-popup-in {
+  from { opacity: 0; transform: translateY(8px) scale(0.98); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes mai-sheet-in {
+  from { transform: translateY(40px); opacity: 0.6; }
+  to { transform: none; opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html body .mai-v3-create-layer,
+  html body .mai-context-layer,
+  html body .mai-task-v4-layer,
+  html body .mai-context-v3-layer,
+  html body .mai-v3-create-drawer,
+  html body .mai-context-drawer,
+  html body .mai-task-v4-drawer,
+  html body .mai-context-v3-drawer {
+    animation: none !important;
+  }
+}

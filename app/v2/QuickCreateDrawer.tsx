@@ -39,7 +39,7 @@ function Tool({ id, icon, label, summary, color, leading, open, setOpen, childre
   const visual = leading ?? <span className="material-symbols-rounded" aria-hidden="true">{icon}</span>
   return <div className="mai-task-v4-tool" data-open={active || undefined} style={{ '--mai-tool-color': color } as CSSProperties}>
     <button type="button" className="mai-task-v4-tool-button" aria-label={`${label}: ${summary}`} title={`${label}: ${summary}`} onClick={() => setOpen(active ? '' : id)}>
-      <span className="mai-task-v4-leading">{visual}</span>
+      <span className="mai-task-v4-leading">{visual}</span><span className="mai-task-v4-tool-label">{label}</span>
       <span className="mai-task-v4-tool-value">{summary || 'Não selecionado'}</span>
     </button>
     {active ? <div className="mai-task-v4-popover" role="dialog" aria-label={label} onMouseDown={event => event.stopPropagation()}>
