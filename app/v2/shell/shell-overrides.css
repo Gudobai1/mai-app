@@ -18,7 +18,10 @@
 /* Telas já migradas para o visual Moderno usam o fundo do design system. */
 html body .mai-v3-shell[data-view="today"],
 html body .mai-v3-shell[data-view="today"] .mai-v3-main,
-html body .mai-v3-shell[data-view="today"] .mai-v3-workspace {
+html body .mai-v3-shell[data-view="today"] .mai-v3-workspace,
+html body .mai-v3-shell[data-view="tasks"],
+html body .mai-v3-shell[data-view="tasks"] .mai-v3-main,
+html body .mai-v3-shell[data-view="tasks"] .mai-v3-workspace {
   background: var(--ds-bg) !important;
   color: var(--ds-text) !important;
 }

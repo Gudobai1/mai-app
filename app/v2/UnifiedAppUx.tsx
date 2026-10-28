@@ -23,7 +23,7 @@ import { SearchOverlay } from './SearchOverlay'
 import { SectionInlineAdd } from './SectionInlineAdd'
 import { ModernBottomNav } from './shell/ModernBottomNav'
 import { ModernSidebar } from './shell/ModernSidebar'
-import { TasksModule } from './TasksModule'
+import { TasksModern } from './tasks/TasksModern'
 import { TodayModern } from './today/TodayModern'
 import { UpcomingV4 } from './UpcomingV4'
 import { useMaiRuntime } from './useMaiRuntime'
@@ -308,27 +308,25 @@ export function UnifiedAppUx() {
 
     <main className={`${styles.main} mai-v3-main`}>
       <div className={`${styles.workspace} mai-v3-workspace`}>
-        {runtime.ready && view !== 'today' ? <AppTopBar state={runtime.state} today={runtime.today} view={view} taskScope={taskScope} commit={runtime.commit} onTaskScopeChange={setTaskScope} onSettings={() => setSettingsOpen(true)} /> : null}
+        {runtime.ready && view !== 'today' && view !== 'tasks' ? <AppTopBar state={runtime.state} today={runtime.today} view={view} taskScope={taskScope} commit={runtime.commit} onTaskScopeChange={setTaskScope} onSettings={() => setSettingsOpen(true)} /> : null}
         {!runtime.ready ? <div className={styles.loadingState}>Carregando seu MAI…</div> : <>
           {view === 'today' ? <TodayModern state={viewState} today={runtime.today} commit={runtime.commit} navigate={navigate} inspect={setSelected} profileName={String(googleProfile?.name || runtime.state.configs.profileName || runtime.state.configs.userName || '')} options={<AppTopBar state={runtime.state} today={runtime.today} view={view} taskScope={taskScope} commit={runtime.commit} onTaskScopeChange={setTaskScope} onSettings={() => setSettingsOpen(true)} />}/> : null}
           {view === 'agenda' ? <AgendaView state={runtime.state} today={runtime.today} connected={runtime.googleConnected} commit={runtime.commit} googleRpc={runtime.googleRpc} refreshEvents={(start, end) => runtime.syncCalendar(runtime.state.configs.calendarios || [], start, end)} openTask={() => navigate('tasks')} openArea={area => navigate(area)} /> : null}
           {view === 'upcoming' ? <UpcomingV4 state={viewState} today={runtime.today} commit={runtime.commit} inspect={setSelected}/> : null}
           {view === 'completed' ? <CompletedV4 state={viewState} today={runtime.today} commit={runtime.commit} inspect={setSelected}/> : null}
-          {view === 'tasks' ? <TasksModule
+          {view === 'tasks' ? <TasksModern
             state={viewState}
             today={runtime.today}
             scope={taskScope}
             commit={runtime.commit}
-            googleRpc={runtime.googleRpc}
             inspect={setSelected}
-            selectedId={selected?.kind === 'task' ? selected.sourceId : ''}
             onScopeChange={setTaskScope}
             navigate={navigate}
-            onSearch={() => setSearchOpen(true)}
-            onSettings={() => setSettingsOpen(true)}
+            onAdd={() => contextualAdd()}
             onNewProject={() => setProjectDialog({})}
             onEditProject={id => setProjectDialog({ projectId: id, tab: 'details' })}
             onManageSections={id => setProjectDialog({ projectId: id, tab: 'sections' })}
+            options={<AppTopBar state={runtime.state} today={runtime.today} view={view} taskScope={taskScope} commit={runtime.commit} onTaskScopeChange={setTaskScope} onSettings={() => setSettingsOpen(true)} />}
           /> : null}
           {view === 'habits' ? <HabitsV4 state={viewState} today={runtime.today} commit={runtime.commit} createRequest={areaCreateRequest} inspect={setSelected}/> : null}
           {view === 'goals' ? <GoalsV4 state={viewState} today={runtime.today} commit={runtime.commit} createRequest={areaCreateRequest} inspect={setSelected}/> : null}
