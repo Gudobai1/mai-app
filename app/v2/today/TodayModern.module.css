@@ -1481,3 +1481,82 @@
     min-height: 0;
   }
 }
+
+/* ------------------------------------------------- Agenda (versão limpa) */
+/* Horário · título · calendário. A cor do calendário vira uma bolinha ao lado
+   do nome, sem faixa pesada. */
+
+.evWhen {
+  width: 46px;
+  gap: 2px;
+  padding-top: 1px;
+}
+
+.evWhen .evTime {
+  font-size: 13px;
+  font-weight: var(--ds-fw-bold);
+  color: var(--ds-text);
+}
+
+.evWhen .evTimeWord {
+  font-size: 11.5px;
+  font-weight: var(--ds-fw-medium);
+  color: var(--ds-muted);
+  white-space: normal;
+  line-height: 1.2;
+}
+
+.evWhen .evEnd {
+  font-size: 11.5px;
+}
+
+.items .evRow.evRow {
+  align-items: flex-start;
+}
+
+.evRow .taskBody {
+  padding: 0;
+}
+
+.evRow .taskTitle {
+  font-size: 14.5px;
+  font-weight: var(--ds-fw-medium);
+}
+
+.evRow .taskSub {
+  gap: 6px;
+}
+
+.evRow .calDot {
+  width: 8px;
+  height: 8px;
+}
+
+.evGoogle {
+  flex-shrink: 0;
+  padding: 0 6px;
+  height: 16px;
+  display: inline-flex;
+  align-items: center;
+  border-radius: 5px;
+  background: var(--ds-surface-2);
+  color: var(--ds-muted);
+  font-size: 10.5px;
+  font-weight: var(--ds-fw-bold);
+}
+
+.items .itemPassed.itemPassed {
+  opacity: 0.55;
+}
+
+.items .evRowNow.evRowNow,
+.items .evRowNow.evRowNow:hover {
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--ds-accent) 9%, transparent);
+  box-shadow: none;
+  border-bottom-color: transparent;
+}
+
+.evPill {
+  align-self: center;
+}

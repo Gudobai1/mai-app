@@ -352,7 +352,7 @@ export function TodayModern({ state, today, commit, navigate, inspect, profileNa
     const time = spanning ? 'Contínuo' : allDay ? 'Dia todo' : item.time
     const google = item.raw.tipo === 'google' || item.raw.tipo === 'gcalendar'
     const calendarName = String(item.raw.calendario_nome || '')
-    const source = google ? (calendarName && calendarName !== 'Google Agenda' ? `Google Agenda · ${calendarName}` : 'Google Agenda') : String(item.raw.categoria || 'MAI')
+    const source = google ? (calendarName || 'Google Agenda') : String(item.raw.categoria || calendarName || 'MAI')
     return (
       <button
         key={item.id}
@@ -365,12 +365,12 @@ export function TodayModern({ state, today, commit, navigate, inspect, profileNa
           <span className={`${styles.evTime} ${allDay || spanning ? styles.evTimeWord : ''}`}>{time}</span>
           {end && !allDay && !spanning ? <span className={styles.evEnd}>{end}</span> : null}
         </span>
-        <span className={styles.calBar} style={{ background: color }} />
         <span className={styles.taskBody}>
           <span className={styles.taskTitle}>{item.title}</span>
           <span className={styles.taskSub}>
-            <Icon name={google ? 'calendar_month' : 'event'} size={13} />
+            <span className={styles.calDot} style={{ background: color }} />
             <span className={styles.evSource}>{source}</span>
+            {google ? <span className={styles.evGoogle}>Google</span> : null}
             {item.recurring ? <Icon name="repeat" size={13} /> : null}
           </span>
         </span>
