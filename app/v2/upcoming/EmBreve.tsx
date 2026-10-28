@@ -403,9 +403,11 @@ export function EmBreve({ state, today, commit, inspect, syncRange }: Props) {
 
   const renderAllDay = (entry: Entry) => (
     <button key={entry.id} type="button" className={styles.allDay} style={{ '--ev': entry.color } as CSSProperties} onClick={() => open(entry)} {...quick.bind(() => menuFor(entry))}>
-      <span className={styles.allDayTag}>{entry.planner.subtitle === 'Em andamento' ? 'Contínuo' : 'Dia todo'}</span>
+      <span className={styles.allDayStack}>
+        <span className={styles.allDayTag}>{entry.planner.subtitle === 'Em andamento' ? 'Contínuo' : 'Dia todo'}</span>
+        <small>{entry.source}</small>
+      </span>
       <strong>{entry.title}</strong>
-      <small>{entry.source}</small>
     </button>
   )
 
@@ -414,10 +416,9 @@ export function EmBreve({ state, today, commit, inspect, syncRange }: Props) {
     return (
       <button key={entry.id} type="button" className={styles.event} data-passed={passed(entry) || undefined} style={{ '--ev': entry.color } as CSSProperties} onClick={() => open(entry)} {...quick.bind(() => menuFor(entry))}>
         <span className={styles.eventDot} aria-hidden="true" />
-        <span className={styles.eventTime}>{range || entry.time}</span>
+        <span className={styles.eventTime}><b>{range || entry.time}</b><small>{entry.source}</small></span>
         <strong>{entry.title}</strong>
         {entry.recurring ? <Icon name="repeat" size={12} /> : null}
-        <small className={styles.src}>{entry.source}</small>
       </button>
     )
   }
