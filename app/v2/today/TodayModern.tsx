@@ -556,17 +556,17 @@ export function TodayModern({ state, today, commit, navigate, inspect, profileNa
       <section className={styles.block} aria-label="Hábitos">
         <SectionHeader title="Hábitos" meta={habits.length ? `${habitsDone} de ${habits.length}` : undefined} />
         {habits.length ? (
-          <div className={styles.habits}>
+          <div className={styles.items}>
             {habits.map(item => {
               const name = String(item.habit.nome || 'Hábito')
               return (
-                <div key={String(item.habit.id)} className={`${styles.habit} ${item.done ? styles.habitDone : ''}`}>
+                <div key={String(item.habit.id)} className={`${styles.item} ${styles.itemWrap} ${styles.habitRow} ${item.done ? styles.habitDone : ''}`}>
                   <button type="button" className={styles.habitMain} disabled={!canLogHabits} onClick={() => logHabit(item)} aria-label={item.quantitative ? `Registrar mais 1 em ${name}` : item.done ? `Desmarcar ${name}` : `Marcar ${name} como feito`}>
-                    <IconTile icon={item.done ? 'check' : resolveMaiIcon(String(item.habit.icone || 'repeat'))} tone={item.done ? 'mint' : item.tone} solid={item.done} size={36} />
+                    <IconTile icon={item.done ? 'check' : resolveMaiIcon(String(item.habit.icone || 'repeat'))} tone={item.done ? 'mint' : item.tone} solid={item.done} size={28} />
                   </button>
-                  <button type="button" className={styles.habitInfo} onClick={() => inspect({ kind: 'habit', sourceId: String(item.habit.id), title: name, date: day, raw: item.habit })}>
-                    <span className={styles.habitName}>{name}</span>
-                    <span className={styles.habitValue}>{habitValueLabel(item)}</span>
+                  <button type="button" className={styles.itemButton} onClick={() => inspect({ kind: 'habit', sourceId: String(item.habit.id), title: name, date: day, raw: item.habit })}>
+                    <span className={styles.itemTitle}>{name}</span>
+                    <span className={styles.itemMeta}>{habitValueLabel(item)}</span>
                   </button>
                 </div>
               )
