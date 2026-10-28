@@ -7,6 +7,8 @@ import { Icon } from '../../ds'
 import type { Row } from '../app-types'
 import { driveAssetUrl } from '../DriveAsset'
 import { DatePicker, Floating, OptionList, TimePicker, type PickerOption } from '../detail/Pickers'
+import { CategoryChooser } from '../detail/CategoryChooser'
+import { eventCategories, withEventCategory, type EventCategory } from '../../../lib/v2/event-categories'
 import styles from './QuickAdd.module.css'
 
 /**
@@ -75,7 +77,7 @@ const plusHour = (time: string) => {
   return `${String(Math.min(23, h + 1)).padStart(2, '0')}:${String(m || 0).padStart(2, '0')}`
 }
 
-type Picker = '' | 'date' | 'priority' | 'project' | 'section' | 'repeat' | 'start' | 'end'
+type Picker = '' | 'date' | 'priority' | 'project' | 'section' | 'repeat' | 'start' | 'end' | 'category'
 
 export function QuickAdd({ kinds, initial, state, today, defaultProjectId, defaultDate, commit, onFinance, onClose }: Props) {
   const [kind, setKind] = useState<QuickAddKind>(initial)
@@ -90,6 +92,7 @@ export function QuickAdd({ kinds, initial, state, today, defaultProjectId, defau
   const [start, setStart] = useState('09:00')
   const [end, setEnd] = useState('10:00')
   const [place, setPlace] = useState('')
+  const [category, setCategory] = useState<EventCategory | null>(null)
   const [picker, setPicker] = useState<Picker>('')
   const anchor = useRef<HTMLElement | null>(null)
   const open = (which: Picker) => (event: ReactMouseEvent<HTMLElement>) => { anchor.current = event.currentTarget; setPicker(which) }
@@ -129,10 +132,13 @@ export function QuickAdd({ kinds, initial, state, today, defaultProjectId, defau
       const eventRow: Row = {
         id: uid('local-event'), tipo: 'local', titulo: name, descricao: description.trim(),
         data_inicio: eventDate, hora_inicio: allDay ? '' : start, hora_fim: allDay ? '' : end,
-        dia_inteiro: allDay, local: place.trim(), categoria: '', categoria_cor: '#6f8168',
-        categoria_icone: 'calendar', repeticao: repeat, lembretes: [], anexos: [], cor: '#6f8168',
+        dia_inteiro: allDay, local: place.trim(), categoria: category?.nome || '', categoria_cor: category?.cor || '#6f8168',
+        categoria_icone: 'calendar', repeticao: repeat, lembretes: [], anexos: [], cor: category?.cor || '#6f8168',
       }
-      commit(current => ({ ...current, events: [...rows(current.events), eventRow] }))
+      commit(current => {
+        const next = { ...current, events: [...rows(current.events), eventRow] }
+        return category ? withEventCategory(next, category) : next
+      })
     }
     onClose()
   }
@@ -188,6 +194,9 @@ export function QuickAdd({ kinds, initial, state, today, defaultProjectId, defau
               </>
             ) : (
               <>
+                <button type="button" className={styles.chip} data-set={category ? true : undefined} style={category ? ({ '--chip-color': category.cor } as CSSProperties) : undefined} onClick={open('category')}>
+                  <Icon name="sell" size={16} filled={Boolean(category)} /><span>{category?.nome || 'Categoria'}</span>
+                </button>
                 <button type="button" className={styles.chip} data-set={allDay || undefined} onClick={() => setAllDay(value => !value)}>
                   <Icon name="wb_sunny" size={16} filled={false} />Dia inteiro
                 </button>
@@ -241,6 +250,16 @@ export function QuickAdd({ kinds, initial, state, today, defaultProjectId, defau
       {picker === 'section' ? (
         <Floating anchor={anchor} title="Seção" width={240} onClose={() => setPicker('')}>
           <OptionList options={[{ value: '', label: 'Sem seção', icon: 'horizontal_rule' }, ...sections.map(name => ({ value: name, label: name, icon: 'view_agenda' }))]} value={section} onSelect={value => done(() => setSection(value))} />
+        </Floating>
+      ) : null}
+      {picker === 'category' ? (
+        <Floating anchor={anchor} title="Categoria" width={270} onClose={() => setPicker('')}>
+          <CategoryChooser
+            categories={eventCategories(state)}
+            value={category?.nome || ''}
+            onSelect={value => done(() => setCategory(value))}
+            onCreate={value => { commit(current => withEventCategory(current, value)); done(() => setCategory(value)) }}
+          />
         </Floating>
       ) : null}
       {picker === 'repeat' ? (

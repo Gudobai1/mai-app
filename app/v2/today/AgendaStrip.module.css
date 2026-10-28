@@ -81,7 +81,7 @@
 .row[data-now] .rowTime { color: var(--ds-text); }
 
 .rowTime {
-  width: 92px;
+  width: 40px;
   flex-shrink: 0;
   white-space: nowrap;
   font-size: 12px;

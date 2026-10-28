@@ -13,6 +13,8 @@ import { financeCardPaymentState } from '../FinanceTransactionCard'
 import { resolveMaiIcon } from '../MaiIcons'
 import { askConfirm, notify } from '../shell/ConfirmDialog'
 import { DatePicker, Floating, OptionList, TimePicker, type PickerOption } from './Pickers'
+import { CategoryChooser } from './CategoryChooser'
+import { eventCategories, withEventCategory, type EventCategory } from '../../../lib/v2/event-categories'
 import styles from './ItemDetail.module.css'
 
 /*
@@ -251,6 +253,27 @@ function SelectProp({ icon, color, label, value, options, onChange, display }: {
       {open ? (
         <Floating anchor={anchor} title={label} onClose={() => setOpen(false)}>
           <OptionList options={options} value={value} onSelect={next => { setOpen(false); if (next !== value) onChange(next) }} />
+        </Floating>
+      ) : null}
+    </>
+  )
+}
+
+function CategoryProp({ categories, value, display, onPick, onCreate }: { categories: EventCategory[]; value: string; display: ReactNode; onPick: (category: EventCategory | null) => void; onCreate: (category: EventCategory) => void }) {
+  const [open, setOpen] = useState(false)
+  const anchor = useRef<HTMLButtonElement | null>(null)
+  const current = categories.find(item => item.nome === value)
+  return (
+    <>
+      <Prop icon="sell" color={current?.cor || 'var(--ds-sky-fg)'} label="Categoria" display={display} onOpen={() => setOpen(true)} buttonRef={anchor} open={open} />
+      {open ? (
+        <Floating anchor={anchor} title="Categoria" width={270} onClose={() => setOpen(false)}>
+          <CategoryChooser
+            categories={categories}
+            value={value}
+            onSelect={category => { setOpen(false); if ((category?.nome || '') !== value) onPick(category) }}
+            onCreate={category => { onCreate(category); setOpen(false); onPick(category) }}
+          />
         </Floating>
       ) : null}
     </>
@@ -562,6 +585,7 @@ function EventDetail({ item, state, today, commit, googleRpc, refreshEvents, reg
     dia_inteiro: source.dia_inteiro === true,
     repeticao: String(source.repeticao || ''),
     anexos: rows(source.anexos),
+    ...(google ? {} : { categoria: String(source.categoria || ''), categoria_cor: String(source.categoria_cor || source.cor || ''), cor: String(source.cor || source.categoria_cor || '') }),
   }, saveLocal, register)
 
   const update = (patch: Row, immediate = false) => { rawUpdate(patch, immediate); if (google) setDirty(true) }
@@ -603,7 +627,7 @@ function EventDetail({ item, state, today, commit, googleRpc, refreshEvents, reg
     void close()
   }
 
-  const calendarName = google ? String(source.calendario_nome || 'Google Agenda') : String(source.categoria || 'MAI')
+  const calendarName = google ? String(source.calendario_nome || 'Google Agenda') : String(draft.categoria || source.categoria || 'MAI')
   const color = String(source.calendarColor || source.cor || 'var(--ds-accent)')
   const timeRange = draft.dia_inteiro ? 'Dia todo' : `${draft.hora_inicio || '--:--'}${draft.hora_fim ? ` – ${draft.hora_fim}` : ''}`
 
@@ -624,7 +648,9 @@ function EventDetail({ item, state, today, commit, googleRpc, refreshEvents, reg
           <SelectProp icon="wb_sunny" color="var(--ds-peach-fg)" label="Dia todo" value={draft.dia_inteiro ? 'sim' : 'nao'} onChange={value => update({ dia_inteiro: value === 'sim' }, true)} options={[{ value: 'nao', label: 'Com horário' }, { value: 'sim', label: 'Dia todo' }]} display={draft.dia_inteiro ? 'Dia todo' : 'Com horário'} />
           {!draft.dia_inteiro ? <PickerProp type="time" icon="schedule" color="var(--ds-lilac-fg)" label="Início" allowEmpty={false} value={draft.hora_inicio} display={draft.hora_inicio || '--:--'} onChange={hora_inicio => update({ hora_inicio }, true)} /> : null}
           {!draft.dia_inteiro ? <PickerProp type="time" icon="schedule" color="var(--ds-lilac-fg)" label="Fim" emptyLabel="Sem horário de fim" value={draft.hora_fim} display={draft.hora_fim || 'Sem fim'} muted={!draft.hora_fim} onChange={hora_fim => update({ hora_fim }, true)} /> : null}
-          <Prop icon={google ? 'calendar_month' : 'event_note'} color="var(--ds-sky-fg)" label="Calendário" display={calendarName} />
+          {google
+            ? <Prop icon="calendar_month" color="var(--ds-sky-fg)" label="Calendário" display={calendarName} />
+            : <CategoryProp categories={eventCategories(state)} value={String(draft.categoria || '')} display={calendarName} onPick={category => update({ categoria: category?.nome || '', categoria_cor: category?.cor || '', cor: category?.cor || '' }, true)} onCreate={category => commit(current => withEventCategory(current, category))} />}
           {!google ? <SelectProp icon="repeat" color="var(--ds-mint-fg)" label="Repetir" value={draft.repeticao} onChange={repeticao => update({ repeticao }, true)} options={REPEATS.some(option => option.value === draft.repeticao) ? REPEATS : [...REPEATS, { value: draft.repeticao, label: 'Personalizado' }]} /> : null}
         </div>
 

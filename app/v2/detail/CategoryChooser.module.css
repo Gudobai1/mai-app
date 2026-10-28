@@ -1,0 +1,58 @@
+.box { display: flex; flex-direction: column; }
+
+.create {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 6px;
+  padding: 10px 6px 4px;
+  border-top: 1px solid var(--ds-line);
+}
+
+.label { font-size: 11.5px; font-weight: var(--ds-fw-bold); color: var(--ds-muted); }
+
+.row { display: flex; gap: 6px; }
+
+.input {
+  flex: 1;
+  min-width: 0;
+  height: 38px;
+  padding: 0 10px;
+  box-sizing: border-box;
+  border: 0;
+  border-radius: 10px;
+  outline: none;
+  background: var(--ds-surface-2);
+  color: var(--ds-text);
+  font: inherit;
+  font-size: 16px;
+  font-weight: var(--ds-fw-medium);
+}
+
+.add {
+  appearance: none;
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 10px;
+  background: var(--ds-accent);
+  color: var(--ds-on-accent);
+  cursor: pointer;
+}
+
+.add:disabled { opacity: 0.4; cursor: default; }
+
+.colors { display: flex; gap: 8px; flex-wrap: wrap; }
+
+.color {
+  appearance: none;
+  width: 22px;
+  height: 22px;
+  border: 0;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.color[data-active] { box-shadow: 0 0 0 2px var(--ds-surface), 0 0 0 4px var(--ds-text); }
