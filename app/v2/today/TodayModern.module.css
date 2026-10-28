@@ -1246,3 +1246,146 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+/* Subtarefas abertas por baixo do cartão */
+
+.expand.expand {
+  appearance: none;
+  flex-shrink: 0;
+  align-self: center;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 0 4px 0 8px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--ds-surface-2);
+  color: var(--ds-text-2);
+  font: inherit;
+  font-size: 11.5px;
+  font-weight: var(--ds-fw-heavy);
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+
+.expand.expand:hover {
+  color: var(--ds-text);
+}
+
+.expand.expand > span:last-child {
+  transition: transform var(--ds-dur) var(--ds-ease);
+}
+
+.expand.expand[data-open] {
+  background: var(--ds-accent-soft);
+  color: var(--ds-accent);
+}
+
+.expand.expand[data-open] > span:last-child {
+  transform: rotate(180deg);
+}
+
+.subList {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: -4px 0 4px 24px;
+  padding: 4px 0 4px 14px;
+  border-left: 2px solid var(--ds-line);
+  animation: subIn 160ms ease-out both;
+}
+
+.subRow {
+  min-height: 36px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 10px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--ds-surface) 70%, transparent);
+}
+
+.subRow:hover {
+  background: var(--ds-surface);
+}
+
+.subCheck.subCheck {
+  appearance: none;
+  flex-shrink: 0;
+  width: 17px;
+  height: 17px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border: 2px solid var(--ds-line-strong);
+  border-radius: 50%;
+  background: transparent;
+  color: var(--ds-on-accent);
+  cursor: pointer;
+}
+
+.subCheck.subCheck[data-late] {
+  border-color: var(--ds-danger);
+}
+
+.subCheck.subCheck[data-done] {
+  border-color: var(--ds-accent);
+  background: var(--ds-accent);
+}
+
+.subTitle.subTitle {
+  appearance: none;
+  flex: 1;
+  min-width: 0;
+  align-self: stretch;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--ds-text);
+  font: inherit;
+  font-size: 13px;
+  font-weight: var(--ds-fw-bold);
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.subRow[data-done] .subTitle {
+  color: var(--ds-muted);
+  text-decoration: line-through;
+}
+
+.subMeta {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 11px;
+  font-weight: var(--ds-fw-bold);
+  color: var(--ds-muted);
+}
+
+.subMeta[data-late] {
+  color: var(--ds-danger);
+}
+
+.subFlag {
+  flex-shrink: 0;
+  display: grid;
+}
+
+@keyframes subIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: none; }
+}
+
+.itemWrap .expand.expand {
+  margin-right: 10px;
+}
+
+.subList {
+  margin: -2px 0 2px 22px;
+}

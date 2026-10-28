@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, type DragEvent, type MouseEvent as ReactMouseEvent } from 'react'
+import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState, type DragEvent, type MouseEvent as ReactMouseEvent } from 'react'
 import { addDays } from '../../../lib/v2/planner'
 import type { LegacyTask, MaiState } from '../../../lib/v2/state'
 import { Icon } from '../../ds'
@@ -408,6 +408,7 @@ export function TasksModern(props: Props) {
   const [projectMenu, setProjectMenu] = useState(false)
   const projectMenuRef = useRef<HTMLButtonElement | null>(null)
 
+  const [openSubs, setOpenSubs] = useState<Set<string>>(new Set())
   const [optionsOpen, setOptionsOpen] = useState(false)
   const optionsRef = useRef<HTMLButtonElement | null>(null)
   const setControl = (patch: Row) => commit(current => {
@@ -420,6 +421,13 @@ export function TasksModern(props: Props) {
   })
 
   /* ------------------------------------------------------------- Cartão */
+
+  const toggleSubs = (id: string) => setOpenSubs(current => {
+    const next = new Set(current)
+    if (next.has(id)) next.delete(id)
+    else next.add(id)
+    return next
+  })
 
   const renderTask = (task: LegacyTask, group: Group) => {
     const id = String(task.id)
@@ -445,9 +453,10 @@ export function TasksModern(props: Props) {
       openTask(task)
     }
 
+    const expanded = openSubs.has(id)
     return (
+      <Fragment key={id}>
       <div
-        key={id}
         role="listitem"
         className={styles.card}
         data-selected={isSelected || undefined}
@@ -489,14 +498,42 @@ export function TasksModern(props: Props) {
                   {projectName(task.projeto_id)}{task.secao ? <em> · {String(task.secao)}</em> : null}
                 </span>
               ) : null}
-              {children.length ? <span><Icon name="account_tree" size={13} />{children.filter(child => child.concluida).length}/{children.length}</span> : null}
               {files ? <span><Icon name="attach_file" size={13} />{files}</span> : null}
               {task.repeticao ? <span><Icon name="repeat" size={13} /></span> : null}
             </span>
           ) : null}
         </button>
         {PRIORITY_COLOR[priority] && !done ? <span className={styles.flag} style={{ color: PRIORITY_COLOR[priority] }} title={`Prioridade ${PRIORITIES[priority - 1]?.label || ''}`}><Icon name="flag" size={16} /></span> : null}
+        {children.length ? (
+          <button type="button" className={styles.expand} data-open={expanded || undefined} onClick={() => toggleSubs(id)} aria-expanded={expanded} aria-label={`${expanded ? 'Esconder' : 'Mostrar'} subtarefas de ${String(task.titulo || 'tarefa')}`}>
+            <span>{children.filter(child => child.concluida).length}/{children.length}</span>
+            <Icon name="expand_more" size={18} filled={false} />
+          </button>
+        ) : null}
       </div>
+      {expanded && children.length ? (
+        <div className={styles.subList} role="list" aria-label={`Subtarefas de ${String(task.titulo || 'tarefa')}`}>
+          {[...children].sort((a, b) => Number(Boolean(a.concluida)) - Number(Boolean(b.concluida)) || Number(a.ordem || 0) - Number(b.ordem || 0)).map(child => {
+            const childId = String(child.id)
+            const childDue = dayOf(child)
+            const childLate = Boolean(childDue) && childDue < today && !child.concluida
+            const childPriority = Number(child.prioridade || 4)
+            const grand = state.tasks.filter(item => String(item.parent_id || '') === childId)
+            return (
+              <div key={childId} role="listitem" className={styles.subRow} data-done={child.concluida || undefined}>
+                <button type="button" className={styles.subCheck} data-done={child.concluida || undefined} data-late={childLate || undefined} onClick={() => toggleTask(childId)} aria-label={child.concluida ? `Reabrir ${String(child.titulo)}` : `Concluir ${String(child.titulo)}`}>
+                  {child.concluida ? <Icon name="check" size={11} /> : null}
+                </button>
+                <button type="button" className={styles.subTitle} onClick={() => openTask(child)}>{String(child.titulo || 'Subtarefa')}</button>
+                {grand.length ? <span className={styles.subMeta}><Icon name="account_tree" size={12} />{grand.filter(item => item.concluida).length}/{grand.length}</span> : null}
+                {childDue ? <span className={styles.subMeta} data-late={childLate || undefined}>{naturalDate(childDue, today)}</span> : null}
+                {PRIORITY_COLOR[childPriority] && !child.concluida ? <span className={styles.subFlag} style={{ color: PRIORITY_COLOR[childPriority] }}><Icon name="flag" size={13} /></span> : null}
+              </div>
+            )
+          })}
+        </div>
+      ) : null}
+      </Fragment>
     )
   }
 
