@@ -1372,7 +1372,6 @@
   gap: 2px;
   margin: -4px 0 4px 24px;
   padding: 4px 0 4px 14px;
-  border-left: 2px solid var(--ds-line);
   animation: subIn 160ms ease-out both;
 }
 

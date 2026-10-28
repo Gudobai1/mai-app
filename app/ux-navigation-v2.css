@@ -84,7 +84,7 @@
 .mai-project-cards{display:grid;gap:6px;}
 .mai-project-card{width:100%;min-height:58px;display:grid;grid-template-columns:28px minmax(0,1fr) auto;align-items:center;gap:9px;padding:8px 9px;border:1px solid var(--line);border-radius:12px;background:var(--bg-card);text-align:left;}
 .mai-project-card:hover{border-color:var(--line-strong);background:var(--bg-primary);}
-.mai-project-card[data-active="true"]{border-color:color-mix(in srgb,var(--accent) 45%,var(--line));box-shadow:inset 3px 0 0 var(--accent);}
+.mai-project-card[data-active="true"]{border-color:color-mix(in srgb,var(--accent) 45%,var(--line));}
 .mai-project-card img{width:28px;height:28px;border-radius:8px;object-fit:cover;}
 .mai-project-dot{width:11px;height:11px;border-radius:50%;background:var(--muted);justify-self:center;}
 .mai-project-card>span strong,.mai-project-card>span small{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
