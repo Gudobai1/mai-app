@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
+import { useCallback, useEffect, useRef, useState, type CSSProperties, type ReactNode, type RefObject } from 'react'
 import { createPortal } from 'react-dom'
 import { addDays } from '../../../lib/v2/planner'
 import type { MaiState } from '../../../lib/v2/state'
@@ -11,6 +11,8 @@ import { FilePreviewOverlay } from '../FilePreviewOverlay'
 import { FinanceContextDrawerV4 } from '../FinanceContextDrawerV4'
 import { financeCardPaymentState } from '../FinanceTransactionCard'
 import { resolveMaiIcon } from '../MaiIcons'
+import { askConfirm, notify } from '../shell/ConfirmDialog'
+import { DatePicker, Floating, OptionList, TimePicker, type PickerOption } from './Pickers'
 import styles from './ItemDetail.module.css'
 
 /*
@@ -40,10 +42,10 @@ const failedEntry = (entry?: Row) => entry?.falhou === true || String(entry?.sta
 const isGoogle = (event: Row) => event.tipo === 'google' || event.tipo === 'gcalendar' || String(event.id || '').includes('::')
 
 const PRIORITIES = [
-  { value: '1', label: 'Alta', color: 'var(--ds-rose-fg)' },
-  { value: '2', label: 'Média', color: 'var(--ds-peach-fg)' },
-  { value: '3', label: 'Baixa', color: 'var(--ds-sky-fg)' },
-  { value: '4', label: 'Sem prioridade', color: 'var(--ds-muted)' },
+  { value: '1', label: 'Alta', icon: 'flag', color: 'var(--ds-rose-fg)' },
+  { value: '2', label: 'Média', icon: 'flag', color: 'var(--ds-peach-fg)' },
+  { value: '3', label: 'Baixa', icon: 'flag', color: 'var(--ds-sky-fg)' },
+  { value: '4', label: 'Sem prioridade', icon: 'outlined_flag', color: 'var(--ds-muted)' },
 ]
 
 const REPEATS = [
@@ -217,47 +219,59 @@ function useAutosave(initial: Row, save: (draft: Row) => void, register: DetailP
   return { draft, update, setDraft }
 }
 
-type Option = { value: string; label: string }
+type Option = PickerOption
 
 /**
  * Propriedade: no computador é um botãozinho; no celular, uma linha com
- * rótulo e valor. O controle nativo fica por cima, invisível, para abrir
- * o seletor do próprio aparelho.
+ * rótulo e valor. Ao tocar, abre o seletor do próprio MAI.
  */
-function Prop({ icon, color, label, display, children, muted }: { icon: ReactNode; color?: string; label: string; display: ReactNode; children?: ReactNode; muted?: boolean }) {
+function Prop({ icon, color, label, display, muted, onOpen, buttonRef, open }: { icon: ReactNode; color?: string; label: string; display: ReactNode; muted?: boolean; onOpen?: () => void; buttonRef?: RefObject<HTMLButtonElement | null>; open?: boolean }) {
+  const content = <>
+    <span className={styles.propIcon}>{typeof icon === 'string' ? <Icon name={icon} size={17} /> : icon}</span>
+    <span className={styles.propLabel}>{label}</span>
+    <span className={styles.propValue}>{display}</span>
+    {onOpen ? <Icon name="expand_more" size={18} filled={false} className={styles.propChevron} /> : null}
+  </>
+  const style = color ? ({ '--prop-color': color } as CSSProperties) : undefined
+  if (!onOpen) return <div className={styles.prop} data-muted={muted || undefined} style={style}>{content}</div>
   return (
-    <div className={styles.prop} data-muted={muted || undefined} style={color ? ({ '--prop-color': color } as CSSProperties) : undefined}>
-      <span className={styles.propIcon}>{typeof icon === 'string' ? <Icon name={icon} size={17} /> : icon}</span>
-      <span className={styles.propLabel}>{label}</span>
-      <span className={styles.propValue}>{display}</span>
-      {children}
-    </div>
+    <button ref={buttonRef} type="button" className={`${styles.prop} ${styles.propButton}`} data-muted={muted || undefined} data-open={open || undefined} style={style} onClick={onOpen} aria-haspopup="dialog" aria-expanded={open}>
+      {content}
+    </button>
   )
 }
 
 function SelectProp({ icon, color, label, value, options, onChange, display }: { icon: ReactNode; color?: string; label: string; value: string; options: Option[]; onChange: (value: string) => void; display?: ReactNode }) {
+  const [open, setOpen] = useState(false)
+  const anchor = useRef<HTMLButtonElement | null>(null)
   const current = options.find(option => option.value === value)
   return (
-    <Prop icon={icon} color={color} label={label} display={display ?? current?.label ?? '—'}>
-      <select className={styles.native} aria-label={label} value={value} onChange={event => onChange(event.target.value)}>
-        {options.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
-      </select>
-    </Prop>
+    <>
+      <Prop icon={icon} color={color} label={label} display={display ?? current?.label ?? '—'} onOpen={() => setOpen(true)} buttonRef={anchor} open={open} />
+      {open ? (
+        <Floating anchor={anchor} title={label} onClose={() => setOpen(false)}>
+          <OptionList options={options} value={value} onSelect={next => { setOpen(false); if (next !== value) onChange(next) }} />
+        </Floating>
+      ) : null}
+    </>
   )
 }
 
-function PickerProp({ type, icon, color, label, value, display, onChange, muted }: { type: 'date' | 'time'; icon: string; color?: string; label: string; value: string; display: ReactNode; onChange: (value: string) => void; muted?: boolean }) {
+function PickerProp({ type, icon, color, label, value, display, onChange, muted, today = '', allowEmpty = true, emptyLabel }: { type: 'date' | 'time'; icon: string; color?: string; label: string; value: string; display: ReactNode; onChange: (value: string) => void; muted?: boolean; today?: string; allowEmpty?: boolean; emptyLabel?: string }) {
+  const [open, setOpen] = useState(false)
+  const anchor = useRef<HTMLButtonElement | null>(null)
+  const pick = (next: string) => { setOpen(false); if (next !== value) onChange(next) }
   return (
-    <Prop icon={icon} color={color} label={label} display={display} muted={muted}>
-      <input
-        className={styles.native}
-        type={type}
-        aria-label={label}
-        value={value}
-        onClick={event => { try { (event.currentTarget as HTMLInputElement & { showPicker?: () => void }).showPicker?.() } catch {} }}
-        onChange={event => onChange(event.target.value)}
-      />
-    </Prop>
+    <>
+      <Prop icon={icon} color={color} label={label} display={display} muted={muted} onOpen={() => setOpen(true)} buttonRef={anchor} open={open} />
+      {open ? (
+        <Floating anchor={anchor} title={label} onClose={() => setOpen(false)} width={type === 'date' ? 300 : 260}>
+          {type === 'date'
+            ? <DatePicker value={value} today={today} onSelect={pick} allowEmpty={allowEmpty} />
+            : <TimePicker value={value} onSelect={pick} allowEmpty={allowEmpty} emptyLabel={emptyLabel} />}
+        </Floating>
+      ) : null}
+    </>
   )
 }
 
@@ -370,6 +384,8 @@ function TaskBody({ task, state, today, commit, register, close, openTask }: { t
   const doneChildren = children.filter(row => row.concluida).length
   const late = Boolean(draft._data) && draft._data < today && !task.concluida
   const [subtask, setSubtask] = useState('')
+  const [composing, setComposing] = useState(false)
+  const sortedChildren = [...children].sort((a, b) => Number(Boolean(a.concluida)) - Number(Boolean(b.concluida)) || Number(a.ordem || 0) - Number(b.ordem || 0))
 
   const crumbs: Row[] = []
   let parentId = String(task.parent_id || '')
@@ -389,8 +405,8 @@ function TaskBody({ task, state, today, commit, register, close, openTask }: { t
     setSubtask('')
   }
 
-  function remove() {
-    if (!confirm(`Excluir "${draft.titulo || 'tarefa'}"?`)) return
+  async function remove() {
+    if (!(await askConfirm({ title: 'Excluir tarefa?', message: `“${draft.titulo || 'Tarefa'}” será excluída${children.length ? ' e as subtarefas sobem um nível' : ''}. Não dá para desfazer.` }))) return
     const parent = String(task.parent_id || '')
     commit(current => ({ ...current, tasks: current.tasks.filter(row => String(row.id) !== id).map(row => String(row.parent_id || '') === id ? { ...row, parent_id: parent } : row) }))
     void close()
@@ -416,9 +432,9 @@ function TaskBody({ task, state, today, commit, register, close, openTask }: { t
         </div>
 
         <div className={styles.props}>
-          <PickerProp type="date" icon="calendar_today" color="var(--ds-accent)" label="Data" value={draft._data} display={<span className={late ? styles.late : undefined}>{friendlyDate(draft._data, today)}</span>} onChange={_data => update({ _data, _hora: _data ? draft._hora : '' }, true)} />
+          <PickerProp today={today} type="date" icon="calendar_today" color="var(--ds-accent)" label="Data" value={draft._data} display={<span className={late ? styles.late : undefined}>{friendlyDate(draft._data, today)}</span>} onChange={_data => update({ _data, _hora: _data ? draft._hora : '' }, true)} />
           {draft._data ? <PickerProp type="time" icon="schedule" color="var(--ds-lilac-fg)" label="Horário" value={draft._hora} display={draft._hora || 'Sem horário'} muted={!draft._hora} onChange={_hora => update({ _hora }, true)} /> : null}
-          <SelectProp icon={projectIcon} label="Projeto" value={draft.projeto_id} onChange={projeto_id => update({ projeto_id, secao: '' }, true)} options={[{ value: 'entrada', label: 'Entrada' }, ...projects.map(row => ({ value: String(row.id), label: String(row.nome || 'Projeto') }))]} />
+          <SelectProp icon={projectIcon} label="Projeto" value={draft.projeto_id} onChange={projeto_id => update({ projeto_id, secao: '' }, true)} options={[{ value: 'entrada', label: 'Entrada', icon: 'inbox' }, ...projects.map(row => ({ value: String(row.id), label: String(row.nome || 'Projeto'), image: row.imagem_url ? driveAssetUrl(row.imagem_url) : undefined, color: String(row.cor || 'var(--ds-line-strong)') }))]} />
           {sections.length ? <SelectProp icon="view_agenda" color="var(--ds-text-2)" label="Seção" value={draft.secao} onChange={secao => update({ secao }, true)} options={[{ value: '', label: 'Sem seção' }, ...sections.map(name => ({ value: name, label: name }))]} /> : null}
           <SelectProp icon="flag" color={priority.color} label="Prioridade" value={String(draft.prioridade)} onChange={value => update({ prioridade: Number(value) }, true)} options={PRIORITIES} />
           <SelectProp icon="repeat" color="var(--ds-mint-fg)" label="Repetir" value={draft.repeticao} onChange={repeticao => update({ repeticao }, true)} options={REPEATS.some(option => option.value === draft.repeticao) ? REPEATS : [...REPEATS, { value: draft.repeticao, label: 'Personalizado' }]} />
@@ -428,24 +444,67 @@ function TaskBody({ task, state, today, commit, register, close, openTask }: { t
           <div className={styles.sectionHead}><h3>Subtarefas</h3>{children.length ? <span>{doneChildren} de {children.length}</span> : null}</div>
           {children.length ? <div className={styles.bar}><span style={{ width: `${(doneChildren / children.length) * 100}%` }} /></div> : null}
           <div className={styles.list}>
-            {children.map(child => (
-              <div key={String(child.id)} className={styles.listRow} data-done={child.concluida || undefined}>
-                <Round checked={Boolean(child.concluida)} onToggle={() => toggle(String(child.id))} label={`Concluir ${String(child.titulo || 'subtarefa')}`} />
-                <button type="button" className={styles.listText} onClick={() => openTask(String(child.id))}>{String(child.titulo || 'Subtarefa')}</button>
-                <Icon name="chevron_right" size={18} className={styles.listChevron} />
+            {sortedChildren.map(child => {
+              const childId = String(child.id)
+              const childDue = dateKey(child.data_vencimento)
+              const childTime = timeKey(child.data_vencimento)
+              const childLate = Boolean(childDue) && childDue < today && !child.concluida
+              const childPriority = PRIORITIES.find(option => Number(option.value) === Number(child.prioridade || 4))
+              const grand = state.tasks.filter(row => String(row.parent_id || '') === childId) as Row[]
+              const files = rows(child.anexos).length
+              const desc = String(child.descricao || '').replace(/<[^>]*>/g, ' ').replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ').trim()
+              const hasMeta = Boolean(childDue) || Number(child.prioridade || 4) < 4 || grand.length > 0 || files > 0 || Boolean(child.repeticao)
+              return (
+                <div key={childId} className={styles.subCard} data-done={child.concluida || undefined}>
+                  <Round checked={Boolean(child.concluida)} late={childLate} onToggle={() => toggle(childId)} label={`${child.concluida ? 'Reabrir' : 'Concluir'} ${String(child.titulo || 'subtarefa')}`} />
+                  <button type="button" className={styles.subMain} onClick={() => openTask(childId)}>
+                    <span className={styles.subTitle}>{String(child.titulo || 'Subtarefa')}</span>
+                    {desc ? <span className={styles.subDesc}>{desc}</span> : null}
+                    {hasMeta ? (
+                      <span className={styles.subMeta}>
+                        {childDue ? <span data-late={childLate || undefined}><Icon name="calendar_today" size={13} />{friendlyDate(childDue, today)}{childTime ? ` · ${childTime}` : ''}</span> : null}
+                        {childPriority && Number(childPriority.value) < 4 ? <span><Icon name="flag" size={13} style={{ color: childPriority.color }} />{childPriority.label}</span> : null}
+                        {child.repeticao ? <span><Icon name="repeat" size={13} /></span> : null}
+                        {grand.length ? <span><Icon name="account_tree" size={13} />{grand.filter(row => row.concluida).length}/{grand.length}</span> : null}
+                        {files ? <span><Icon name="attach_file" size={13} />{files}</span> : null}
+                      </span>
+                    ) : null}
+                  </button>
+                  <Icon name="chevron_right" size={18} className={styles.listChevron} />
+                </div>
+              )
+            })}
+            {composing ? (
+              <div className={styles.composer}>
+                <input
+                  autoFocus
+                  value={subtask}
+                  placeholder="Nome da subtarefa"
+                  enterKeyHint="send"
+                  onChange={event => setSubtask(event.target.value)}
+                  onKeyDown={event => {
+                    if (event.key === 'Enter') { event.preventDefault(); addSubtask() }
+                    if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); setComposing(false); setSubtask('') }
+                  }}
+                />
+                <div className={styles.composerActions}>
+                  <span className={styles.composerHint}>Enter adiciona e continua</span>
+                  <button type="button" className={styles.composerCancel} onClick={() => { setComposing(false); setSubtask('') }}>Cancelar</button>
+                  <button type="button" className={styles.composerAdd} disabled={!subtask.trim()} onClick={addSubtask}>Adicionar</button>
+                </div>
               </div>
-            ))}
-            <div className={styles.addRow}>
-              <Icon name="add" size={18} filled={false} />
-              <input value={subtask} placeholder="Adicionar subtarefa" enterKeyHint="done" onChange={event => setSubtask(event.target.value)} onKeyDown={event => { if (event.key === 'Enter') { event.preventDefault(); addSubtask() } }} />
-              {subtask.trim() ? <button type="button" onClick={addSubtask}>Adicionar</button> : null}
-            </div>
+            ) : (
+              <button type="button" className={styles.addButton} onClick={() => setComposing(true)}>
+                <span className={styles.addIcon}><Icon name="add" size={18} /></span>
+                Adicionar subtarefa
+              </button>
+            )}
           </div>
         </section>
 
         <Attachments files={draft.anexos} onChange={anexos => update({ anexos }, true)} />
       </div>
-      <Footer status={savedStatus} onDelete={remove} />
+      <Footer status={savedStatus} onDelete={() => void remove()} />
     </>
   )
 }
@@ -490,7 +549,7 @@ function EventDetail({ item, state, today, commit, googleRpc, refreshEvents, reg
       await googleRpc('salvarEventoAgenda', [{ ...source, ...draftRef.current, titulo: String(draftRef.current.titulo || '').trim() || 'Compromisso', hora_fim: draftRef.current.dia_inteiro ? '' : draftRef.current.hora_fim }])
       await refreshEvents?.()
     } catch (error: any) {
-      alert(error?.message || 'Não foi possível salvar no Google Agenda.')
+      await notify('Não foi possível salvar no Google Agenda', error?.message || 'Tente de novo em instantes.')
     } finally { setBusy(false) }
   }), [register, google, googleRpc, refreshEvents, source])
 
@@ -503,7 +562,7 @@ function EventDetail({ item, state, today, commit, googleRpc, refreshEvents, reg
   })
 
   async function remove() {
-    if (!confirm(`Excluir "${draft.titulo || 'compromisso'}"?`)) return
+    if (!(await askConfirm({ title: 'Excluir compromisso?', message: `“${draft.titulo || 'Compromisso'}” será excluído${google ? ' também do Google Agenda' : ''}. Não dá para desfazer.` }))) return
     if (google) {
       setBusy(true)
       try { await googleRpc('excluirEventoAgenda', [source.id]); await refreshEvents?.() }
@@ -532,10 +591,10 @@ function EventDetail({ item, state, today, commit, googleRpc, refreshEvents, reg
         </div>
 
         <div className={styles.props}>
-          <PickerProp type="date" icon="calendar_today" color="var(--ds-accent)" label="Data" value={draft.data_inicio} display={friendlyDate(draft.data_inicio, today)} onChange={data_inicio => data_inicio && update({ data_inicio }, true)} />
+          <PickerProp today={today} type="date" icon="calendar_today" color="var(--ds-accent)" label="Data" allowEmpty={false} value={draft.data_inicio} display={friendlyDate(draft.data_inicio, today)} onChange={data_inicio => data_inicio && update({ data_inicio }, true)} />
           <SelectProp icon="wb_sunny" color="var(--ds-peach-fg)" label="Dia todo" value={draft.dia_inteiro ? 'sim' : 'nao'} onChange={value => update({ dia_inteiro: value === 'sim' }, true)} options={[{ value: 'nao', label: 'Com horário' }, { value: 'sim', label: 'Dia todo' }]} display={draft.dia_inteiro ? 'Dia todo' : 'Com horário'} />
-          {!draft.dia_inteiro ? <PickerProp type="time" icon="schedule" color="var(--ds-lilac-fg)" label="Início" value={draft.hora_inicio} display={draft.hora_inicio || '--:--'} onChange={hora_inicio => update({ hora_inicio }, true)} /> : null}
-          {!draft.dia_inteiro ? <PickerProp type="time" icon="schedule" color="var(--ds-lilac-fg)" label="Fim" value={draft.hora_fim} display={draft.hora_fim || 'Sem fim'} muted={!draft.hora_fim} onChange={hora_fim => update({ hora_fim }, true)} /> : null}
+          {!draft.dia_inteiro ? <PickerProp type="time" icon="schedule" color="var(--ds-lilac-fg)" label="Início" allowEmpty={false} value={draft.hora_inicio} display={draft.hora_inicio || '--:--'} onChange={hora_inicio => update({ hora_inicio }, true)} /> : null}
+          {!draft.dia_inteiro ? <PickerProp type="time" icon="schedule" color="var(--ds-lilac-fg)" label="Fim" emptyLabel="Sem horário de fim" value={draft.hora_fim} display={draft.hora_fim || 'Sem fim'} muted={!draft.hora_fim} onChange={hora_fim => update({ hora_fim }, true)} /> : null}
           <Prop icon={google ? 'calendar_month' : 'event_note'} color="var(--ds-sky-fg)" label="Calendário" display={calendarName} />
           {!google ? <SelectProp icon="repeat" color="var(--ds-mint-fg)" label="Repetir" value={draft.repeticao} onChange={repeticao => update({ repeticao }, true)} options={REPEATS.some(option => option.value === draft.repeticao) ? REPEATS : [...REPEATS, { value: draft.repeticao, label: 'Personalizado' }]} /> : null}
         </div>
@@ -596,8 +655,8 @@ function HabitDetail({ item, state, today, commit, register, close }: DetailProp
     return { key, state, letter: new Date(`${key}T12:00:00`).toLocaleDateString('pt-BR', { weekday: 'narrow' }).toUpperCase() }
   })
 
-  function remove() {
-    if (!confirm(`Arquivar o hábito "${draft.nome || 'hábito'}"?`)) return
+  async function remove() {
+    if (!(await askConfirm({ title: 'Arquivar hábito?', message: `“${draft.nome || 'Hábito'}” sai da sua rotina. O histórico fica guardado.`, confirmLabel: 'Arquivar', icon: 'archive' }))) return
     commit(current => ({ ...current, habits: rows(current.habits).map(row => String(row.id) === item.sourceId ? { ...row, ativo: false } : row) }))
     void close()
   }
@@ -638,7 +697,7 @@ function HabitDetail({ item, state, today, commit, register, close }: DetailProp
           <Prop icon="straighten" color="var(--ds-text-2)" label="Unidade" display={<input className={styles.inlineInput} value={draft.unidade} placeholder="vezes" onChange={event => update({ unidade: event.target.value })} aria-label="Unidade" />} />
         </div>
       </div>
-      <Footer status={savedStatus} onDelete={remove} deleteLabel="Arquivar" />
+      <Footer status={savedStatus} onDelete={() => void remove()} deleteLabel="Arquivar" />
     </>
   )
 }
@@ -685,8 +744,8 @@ function FinanceDetail({ item, state, today, commit, register, close }: DetailPr
     }))
   }
 
-  function remove() {
-    if (!confirm('Excluir este lançamento?')) return
+  async function remove() {
+    if (!(await askConfirm({ title: 'Excluir lançamento?', message: `“${String(draft[titleField] || 'Lançamento')}” será excluído. Não dá para desfazer.` }))) return
     commit(current => ({ ...current, finance: { ...current.finance, transactions: rows(current.finance.transactions).filter(row => String(row.id) !== item.sourceId) } }))
     void close()
   }
@@ -725,7 +784,7 @@ function FinanceDetail({ item, state, today, commit, register, close }: DetailPr
         </div>
 
         <div className={styles.props}>
-          <PickerProp type="date" icon="calendar_today" color="var(--ds-accent)" label="Vencimento" value={draft.data} display={<span className={late ? styles.late : undefined}>{friendlyDate(draft.data, today)}</span>} onChange={data => data && update({ data, dia_mes: Number(data.slice(8)) }, true)} />
+          <PickerProp today={today} type="date" icon="calendar_today" color="var(--ds-accent)" label="Vencimento" allowEmpty={false} value={draft.data} display={<span className={late ? styles.late : undefined}>{friendlyDate(draft.data, today)}</span>} onChange={data => data && update({ data, dia_mes: Number(data.slice(8)) }, true)} />
           <SelectProp icon={income ? 'south_west' : 'north_east'} color={income ? 'var(--ds-success)' : 'var(--ds-danger)'} label="Tipo" value={draft.tipo} onChange={tipo => update({ tipo }, true)} options={[{ value: 'despesa', label: 'Despesa' }, { value: 'receita', label: 'Receita' }]} />
           <SelectProp icon="sell" color="var(--ds-peach-fg)" label="Categoria" value={draft.categoria} onChange={categoria => update({ categoria }, true)} options={categoryOptions} />
           <SelectProp icon="account_balance" color="var(--ds-text-2)" label={income ? 'Receber em' : 'Pagar com'} value={draft.conta_id} onChange={conta_id => update({ conta_id }, true)} options={accountOptions} />
@@ -733,7 +792,7 @@ function FinanceDetail({ item, state, today, commit, register, close }: DetailPr
 
         <Attachments files={draft.anexos} onChange={anexos => update({ anexos }, true)} />
       </div>
-      <Footer status={savedStatus} onDelete={remove} />
+      <Footer status={savedStatus} onDelete={() => void remove()} />
     </>
   )
 }
@@ -755,8 +814,8 @@ function GoalDetail({ item, state, today, commit, register, close }: DetailProps
   const pct = Math.max(0, Math.min(100, Math.round((Number(draft.progresso_atual) / Math.max(1, Number(draft.progresso_total))) * 100)))
   const step = (amount: number) => update({ progresso_atual: Math.max(0, Math.min(Number(draft.progresso_total), Number(draft.progresso_atual) + amount)) }, true)
 
-  function remove() {
-    if (!confirm(`Excluir a meta "${draft.titulo || 'meta'}"?`)) return
+  async function remove() {
+    if (!(await askConfirm({ title: 'Excluir meta?', message: `“${draft.titulo || 'Meta'}” será excluída. Não dá para desfazer.` }))) return
     commit(current => ({ ...current, goals: rows(current.goals).filter(row => String(row.id) !== item.sourceId) }))
     void close()
   }
@@ -785,12 +844,12 @@ function GoalDetail({ item, state, today, commit, register, close }: DetailProps
         </div>
 
         <div className={styles.props}>
-          <PickerProp type="date" icon="event" color="var(--ds-accent)" label="Prazo" value={draft.prazo} display={friendlyDate(draft.prazo, today)} onChange={prazo => update({ prazo }, true)} />
+          <PickerProp today={today} type="date" icon="event" color="var(--ds-accent)" label="Prazo" value={draft.prazo} display={friendlyDate(draft.prazo, today)} onChange={prazo => update({ prazo }, true)} />
           <Prop icon="trending_up" color="var(--ds-lilac-fg)" label="Progresso atual" display={<input className={styles.inlineInput} type="number" inputMode="decimal" min={0} value={draft.progresso_atual} onChange={event => update({ progresso_atual: Number(event.target.value || 0) })} aria-label="Progresso atual" />} />
           <Prop icon="flag" color="var(--ds-lilac-fg)" label="Total" display={<input className={styles.inlineInput} type="number" inputMode="decimal" min={1} value={draft.progresso_total} onChange={event => update({ progresso_total: Math.max(1, Number(event.target.value || 1)) })} aria-label="Total" />} />
         </div>
       </div>
-      <Footer status={savedStatus} onDelete={remove} />
+      <Footer status={savedStatus} onDelete={() => void remove()} />
     </>
   )
 }
@@ -806,8 +865,8 @@ function NoteDetail({ item, state, today, commit, register, close }: DetailProps
   const editor = useRef<HTMLDivElement | null>(null)
   useEffect(() => { if (editor.current) editor.current.innerHTML = String(note.conteudo || '') }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  function remove() {
-    if (!confirm(`Excluir a nota "${draft.titulo || 'sem título'}"?`)) return
+  async function remove() {
+    if (!(await askConfirm({ title: 'Excluir nota?', message: `“${draft.titulo || 'Sem título'}” será excluída.` }))) return
     commit(current => ({ ...current, notes: rows(current.notes).map(row => String(row.id) === item.sourceId ? { ...row, ativo: false } : row) }))
     void close()
   }
@@ -828,7 +887,7 @@ function NoteDetail({ item, state, today, commit, register, close }: DetailProps
           onInput={event => update({ conteudo: event.currentTarget.innerHTML })}
         />
       </div>
-      <Footer status={savedStatus} onDelete={remove} />
+      <Footer status={savedStatus} onDelete={() => void remove()} />
     </>
   )
 }
