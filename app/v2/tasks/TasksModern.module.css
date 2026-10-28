@@ -2149,24 +2149,12 @@
   color: var(--ds-bg);
 }
 
-/* Adicionar: discreto. Em seções com tarefas, só aparece ao passar o mouse. */
+/* Adicionar: discreto, mas sempre visível. */
 .addQuiet.addQuiet {
   min-height: 40px;
   padding: 0 6px;
-  color: #6c707c;
+  color: var(--ds-muted);
   font-weight: var(--ds-fw-medium);
-}
-
-@media (hover: hover) {
-  .addQuiet.addQuiet[data-has-tasks] {
-    opacity: 0;
-    transition: opacity var(--ds-dur-fast) var(--ds-ease);
-  }
-
-  .group:hover .addQuiet.addQuiet[data-has-tasks],
-  .addQuiet.addQuiet[data-has-tasks]:focus-visible {
-    opacity: 1;
-  }
 }
 
 .doneToggle.doneToggle {
@@ -2292,4 +2280,81 @@
 
 .folder.folder {
   padding-left: 8px;
+}
+
+/* ------------------------------------------------ Quadro (modelo novo) */
+
+.board {
+  gap: 20px;
+  -webkit-mask-image: none;
+  mask-image: none;
+}
+
+.column {
+  width: 292px;
+  gap: 10px;
+}
+
+.board .groupHead {
+  min-height: 0;
+  padding: 0 4px 8px;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  border-bottom: 1px solid var(--ds-line);
+}
+
+.board .groupHead strong {
+  font-size: 11.5px;
+  font-weight: var(--ds-fw-heavy);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ds-muted);
+}
+
+.board .groupHead small {
+  font-size: 11.5px;
+  font-weight: var(--ds-fw-bold);
+  color: var(--ds-muted);
+}
+
+.board .cards.cards {
+  gap: 8px;
+}
+
+.board .card.card {
+  gap: 10px;
+  padding: 12px;
+  border-radius: 14px;
+  background: var(--ds-surface);
+  box-shadow: none;
+  border: 1px solid var(--ds-line);
+}
+
+.board .card.card:hover {
+  border-color: var(--ds-line-strong);
+  background: var(--ds-surface);
+}
+
+.board .card.card[data-selected] {
+  background: var(--ds-accent-soft);
+  border-color: var(--ds-accent);
+}
+
+.board .card.card[data-drop] {
+  box-shadow: 0 -3px 0 0 var(--ds-accent);
+}
+
+.board .cardTitle {
+  font-size: 14px;
+  font-weight: var(--ds-fw-medium);
+}
+
+.board .addQuiet.addQuiet {
+  padding: 0 4px;
+}
+
+.newColumn.newColumn {
+  height: 28px;
+  margin-top: 0;
 }

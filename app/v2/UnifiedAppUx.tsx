@@ -9,6 +9,7 @@ import type { AppView, TaskModuleScope } from './app-types'
 import { CompletedV4 } from './CompletedV4'
 import { ItemDetail } from './detail/ItemDetail'
 import { ConfirmHost } from './shell/ConfirmDialog'
+import { AddFab, QuickAdd, type QuickAddKind } from './shell/QuickAdd'
 import type { InspectableItem } from './ContextDrawer'
 import { FilesV4 } from './FilesV4'
 import { FinanceV4 } from './FinanceV4'
@@ -185,6 +186,7 @@ export function UnifiedAppUx() {
   const [projectDialog, setProjectDialog] = useState<ProjectDialog>(null)
   const [selected, setSelected] = useState<InspectableItem | null>(null)
   const [creating, setCreating] = useState<CreateState>(null)
+  const [quickAdd, setQuickAdd] = useState<{ kinds: QuickAddKind[]; initial: QuickAddKind; projectId?: string; date?: string } | null>(null)
   const [healthCreating, setHealthCreating] = useState(false)
   const [areaCreateRequest, setAreaCreateRequest] = useState('')
   const [googleProfile, setGoogleProfile] = useState<GoogleProfile>(null)
@@ -243,7 +245,7 @@ export function UnifiedAppUx() {
       if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') { event.preventDefault(); setSearchOpen(true) }
       if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'z' && !editing) { event.preventDefault(); runtime.undo() }
       if (!event.ctrlKey && !event.metaKey && !event.altKey && event.key.toLowerCase() === 'q' && !editing && view !== 'completed') { event.preventDefault(); contextualAdd() }
-      if (event.key === 'Escape') { setSearchOpen(false); setSettingsOpen(false); setProjectDialog(null); setSelected(null); setCreating(null); setHealthCreating(false) }
+      if (event.key === 'Escape') { setSearchOpen(false); setSettingsOpen(false); setProjectDialog(null); setSelected(null); setCreating(null); setQuickAdd(null); setHealthCreating(false) }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
@@ -273,11 +275,13 @@ export function UnifiedAppUx() {
   }
 
   function addByType(type: string) {
-    if (type === 'context') {
-      if (view === 'today' || view === 'upcoming') { setCreating({ kind: 'task', switchable: true }); return }
-      if (view === 'tasks') { setCreating({ kind: 'task' }); return }
+    if (type === 'context' || type === 'task' || type === 'event') {
+      const wantsEvent = type === 'event' || (type === 'context' && (view === 'agenda' || view === 'upcoming'))
+      if (view === 'tasks' && type !== 'event') { setQuickAdd({ kinds: ['task'], initial: 'task', projectId: activeProjectId, date: taskScope === 'today' ? runtime.today : '' }); return }
+      if (view === 'agenda' || view === 'upcoming') { setQuickAdd({ kinds: ['event', 'task'], initial: wantsEvent ? 'event' : 'task', date: runtime.today }); return }
+      setQuickAdd({ kinds: ['task', 'event', 'finance'], initial: wantsEvent ? 'event' : 'task', date: runtime.today })
+      return
     }
-    if (type === 'task' || type === 'event') { setCreating({ kind: type }); return }
     if (type === 'health') { if (view !== 'health') navigate('health'); setHealthCreating(true); return }
     if (secondary.includes(type as SecondaryView)) {
       if (view !== type) navigate(type as SecondaryView)
@@ -287,9 +291,14 @@ export function UnifiedAppUx() {
 
   function contextualAdd(requestedType?: string) {
     if (requestedType) return addByType(requestedType)
-    if (view === 'today' || view === 'upcoming' || view === 'tasks') return addByType('context')
+    if (view === 'today' || view === 'upcoming' || view === 'tasks' || view === 'agenda') return addByType('context')
     if (view === 'completed') return
     return addByType(view)
+  }
+
+  const fabLabel: Record<string, string> = {
+    today: 'Adicionar', tasks: 'Nova tarefa', upcoming: 'Novo compromisso', agenda: 'Novo compromisso', finance: 'Novo lançamento',
+    goals: 'Nova meta', notes: 'Nova nota', health: 'Novo registro', files: 'Novo arquivo',
   }
 
   async function moduleGoogleRpc(method: string, args?: unknown[]) {
@@ -342,6 +351,8 @@ export function UnifiedAppUx() {
     {searchOpen ? <SearchOverlay state={runtime.state} query={search} setQuery={setSearch} onClose={() => setSearchOpen(false)} inspect={setSelected} navigate={navigate} openProject={id => setProjectDialog({ projectId:id, tab:'details' })} /> : null}
     {projectDialog ? <ProjectEditor state={runtime.state} commit={runtime.commit} projectId={projectDialog.projectId} parentId={projectDialog.parentId} initialTab={projectDialog.tab} onClose={() => setProjectDialog(null)} onSaved={id => { const wasCreating = !projectDialog.projectId; setProjectDialog(null); if (wasCreating) setTaskScope(`project:${id}`) }} onRemoved={() => { setProjectDialog(null); setTaskScope('entrada') }} /> : null}
     {settingsOpen ? <AppSettingsDrawer state={runtime.state} commit={runtime.commit} onClose={() => setSettingsOpen(false)} googleConnected={runtime.googleConnected} calendars={runtime.calendars} calendarDraft={runtime.calendarDraft} setCalendarDraft={runtime.setCalendarDraft} calendarBusy={runtime.calendarBusy} saveCalendars={runtime.saveCalendars} disconnectGoogle={runtime.disconnectGoogle} requestNotifications={runtime.requestNotifications} installPrompt={runtime.installPrompt} install={runtime.install} exportData={runtime.exportData} importData={runtime.importData} importRef={runtime.importRef} syncStatus={runtime.syncStatus} flushRemoteSync={runtime.flushRemoteSync} logout={runtime.logout} /> : null}
+    {runtime.ready && fabLabel[String(view)] && !selected && !quickAdd ? <AddFab label={fabLabel[String(view)]} onClick={() => contextualAdd()} /> : null}
+    {quickAdd ? <QuickAdd kinds={quickAdd.kinds} initial={quickAdd.initial} state={runtime.state} today={runtime.today} defaultProjectId={quickAdd.projectId} defaultDate={quickAdd.date} commit={runtime.commit} onFinance={() => addByType('finance')} onClose={() => setQuickAdd(null)} /> : null}
     {creating ? <QuickCreateDrawer kind={creating.kind} allowKindSwitch={creating.switchable} state={runtime.state} today={runtime.today} defaultProjectId={creating.kind === 'task' ? activeProjectId : undefined} defaultDate={view === 'today' || (view === 'tasks' && taskScope === 'today') ? runtime.today : ''} commit={runtime.commit} onClose={() => setCreating(null)} /> : null}
     {healthCreating ? <HealthQuickAddDrawer state={runtime.state} today={runtime.today} commit={runtime.commit} onClose={() => setHealthCreating(false)}/> : null}
     <ConfirmHost />

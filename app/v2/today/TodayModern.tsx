@@ -10,7 +10,6 @@ import type { InspectableItem } from '../ContextDrawer'
 import { financeCardPaymentState } from '../FinanceTransactionCard'
 import { driveAssetUrl } from '../DriveAsset'
 import { resolveMaiIcon } from '../MaiIcons'
-import { DatePicker, Floating, OptionList, type PickerOption } from '../detail/Pickers'
 import { askConfirm } from '../shell/ConfirmDialog'
 import { useQuickMenu, type QuickMenuConfig } from '../shell/QuickMenu'
 import styles from './TodayModern.module.css'
@@ -380,10 +379,6 @@ export function TodayModern({ state, today, commit, navigate, inspect, profileNa
     )
   }
 
-  const nextEvent = isToday && clockIsToday
-    ? events.find(item => item.time && item.raw.dia_inteiro !== true && item.subtitle !== 'Em andamento' && minutesOf(item.time) >= nowMinutes)
-    : undefined
-
   /* ---------------------------------------------------------------- Tarefas */
 
   const tasks = useMemo(() => state.tasks.filter(task => {
@@ -726,96 +721,6 @@ export function TodayModern({ state, today, commit, navigate, inspect, profileNa
     )
   }
 
-  /* --------------------------------------------- Adicionar tarefa (rápido) */
-
-  const [adding, setAdding] = useState(false)
-  const [draftTitle, setDraftTitle] = useState('')
-  const [draftDesc, setDraftDesc] = useState('')
-  const [descOpen, setDescOpen] = useState(false)
-  const [draftDate, setDraftDate] = useState('')
-  const [draftPriority, setDraftPriority] = useState(4)
-  const [draftProject, setDraftProject] = useState('entrada')
-  const [draftPicker, setDraftPicker] = useState<'' | 'date' | 'priority' | 'project'>('')
-  const draftRefs = { date: useRef<HTMLButtonElement | null>(null), priority: useRef<HTMLButtonElement | null>(null), project: useRef<HTMLButtonElement | null>(null) }
-  const priorityOptions: PickerOption[] = [
-    { value: '1', label: 'Alta', icon: 'flag', color: 'var(--ds-rose-fg)' },
-    { value: '2', label: 'Média', icon: 'flag', color: 'var(--ds-peach-fg)' },
-    { value: '3', label: 'Baixa', icon: 'flag', color: 'var(--ds-sky-fg)' },
-    { value: '4', label: 'Sem prioridade', icon: 'outlined_flag', color: 'var(--ds-muted)' },
-  ]
-  const projectOptions: PickerOption[] = [
-    { value: 'entrada', label: 'Entrada', icon: 'inbox' },
-    ...projects.map(item => ({ value: String(item.id), label: String(item.nome || 'Projeto'), image: item.imagem_url ? driveAssetUrl(item.imagem_url) : undefined, color: String(item.cor || 'var(--ds-line-strong)') })),
-  ]
-  const openAdd = () => {
-    setAdding(true); setDraftTitle(''); setDraftDesc(''); setDescOpen(false); setDraftDate(day); setDraftPriority(4); setDraftProject('entrada'); setDraftPicker('')
-  }
-  const closeAdd = () => { setAdding(false); setDraftTitle(''); setDraftDesc(''); setDescOpen(false); setDraftPicker('') }
-  const addTask = () => {
-    const title = draftTitle.trim()
-    if (!title) return
-    const task: Row = {
-      id: uid('t'), titulo: title, descricao: draftDesc.trim(), data_vencimento: draftDate, prioridade: draftPriority, concluida: false,
-      projeto_id: draftProject, parent_id: '', secao: '', criado_em: new Date().toISOString(), ordem: Date.now(),
-      notas: [], anexos: [], subtarefas: [], lembretes: [], etiquetas: [], repeticao: '', ocultar_agenda: false,
-    }
-    commit(current => ({ ...current, tasks: [...current.tasks, task as (typeof current.tasks)[number]] }))
-    setDraftTitle(''); setDraftDesc(''); setDescOpen(false); setDraftDate(day); setDraftPriority(4)
-  }
-  const renderAdd = () => adding ? (
-    <div className={styles.composer}>
-      <input
-        autoFocus
-        value={draftTitle}
-        placeholder="Nome da tarefa"
-        enterKeyHint="send"
-        onChange={event => setDraftTitle(event.target.value)}
-        onKeyDown={event => {
-          if (event.key === 'Enter') { event.preventDefault(); addTask() }
-          if (event.key === 'Escape') { event.preventDefault(); closeAdd() }
-        }}
-      />
-      {descOpen ? <textarea className={styles.composerDesc} value={draftDesc} rows={2} placeholder="Descrição" onChange={event => setDraftDesc(event.target.value)} /> : null}
-      <div className={styles.composerChips}>
-        <button ref={draftRefs.date} type="button" className={styles.composerChip} data-set={draftDate || undefined} data-late={(draftDate && draftDate < today) || undefined} onClick={() => setDraftPicker('date')}>
-          <Icon name="event" size={15} filled={false} />{draftDate ? naturalDate(draftDate, today) : 'Data'}
-        </button>
-        <button ref={draftRefs.priority} type="button" className={styles.composerChip} data-set={draftPriority < 4 || undefined} style={PRIORITY_COLOR[draftPriority] ? ({ '--chip-color': PRIORITY_COLOR[draftPriority] } as CSSProperties) : undefined} onClick={() => setDraftPicker('priority')}>
-          <Icon name="flag" size={15} filled={draftPriority < 4} />{draftPriority < 4 ? priorityOptions[draftPriority - 1].label : 'Prioridade'}
-        </button>
-        <button type="button" className={styles.composerChip} data-set={draftDesc.trim() || undefined} onClick={() => setDescOpen(open => !open)}>
-          <Icon name="notes" size={15} filled={false} />Descrição
-        </button>
-        <button ref={draftRefs.project} type="button" className={styles.composerChip} onClick={() => setDraftPicker('project')}>
-          <Icon name={draftProject === 'entrada' ? 'inbox' : 'folder'} size={15} filled={false} />
-          <span>{draftProject === 'entrada' ? 'Entrada' : projectName(draftProject)}</span>
-        </button>
-      </div>
-      <div className={styles.composerActions}>
-        <span className={styles.composerHint}>Enter adiciona e continua</span>
-        <button type="button" className={styles.composerGhost} onClick={closeAdd}>Cancelar</button>
-        <button type="button" className={styles.composerPrimary} disabled={!draftTitle.trim()} onClick={addTask}>Adicionar</button>
-      </div>
-      {draftPicker === 'date' ? (
-        <Floating anchor={draftRefs.date} title="Data" width={300} onClose={() => setDraftPicker('')}>
-          <DatePicker value={draftDate} today={today} onSelect={value => { setDraftDate(value); setDraftPicker('') }} />
-        </Floating>
-      ) : null}
-      {draftPicker === 'priority' ? (
-        <Floating anchor={draftRefs.priority} title="Prioridade" onClose={() => setDraftPicker('')}>
-          <OptionList options={priorityOptions} value={String(draftPriority)} onSelect={value => { setDraftPriority(Number(value)); setDraftPicker('') }} />
-        </Floating>
-      ) : null}
-      {draftPicker === 'project' ? (
-        <Floating anchor={draftRefs.project} title="Projeto" width={260} onClose={() => setDraftPicker('')}>
-          <OptionList options={projectOptions} value={draftProject} onSelect={value => { setDraftProject(value); setDraftPicker('') }} />
-        </Floating>
-      ) : null}
-    </div>
-  ) : (
-    <button type="button" className={styles.addQuiet} onClick={openAdd}><Icon name="add" size={17} filled={false} />Adicionar tarefa</button>
-  )
-
   const taskGroups = useMemo(() => {
     if (sortMode !== 'project') return []
     const grouped = new Map<string, Row[]>()
@@ -861,7 +766,6 @@ export function TodayModern({ state, today, commit, navigate, inspect, profileNa
             </div>
           ) : <div role="list" className={styles.items}>{tasks.map(task => renderTask(task))}</div>
         ) : <div className={styles.empty}>{isToday ? 'Nada pendente para hoje.' : 'Nenhuma tarefa neste dia.'}</div>}
-        {renderAdd()}
       </section>
     ),
     habits: (
@@ -998,24 +902,6 @@ export function TodayModern({ state, today, commit, navigate, inspect, profileNa
     </div>
   )
 
-  const nextCard = nextEvent ? (
-    <div className={styles.slot} style={{ order: 0 }}>
-      <Card variant="accent" padding="lg">
-        <div className={styles.nextHead}>
-          <span className={styles.nextIcon}><Icon name="event" size={24} /></span>
-          <span className={styles.nextEyebrow}>A seguir · {untilLabel(minutesOf(nextEvent.time) - nowMinutes)}</span>
-        </div>
-        <div className={styles.nextRow}>
-          <div className={styles.nextBody}>
-            <div className={styles.nextTitle}>{nextEvent.title}</div>
-            <div className={styles.nextMeta}>{nextEvent.time}{nextEvent.raw.hora_fim ? ` – ${String(nextEvent.raw.hora_fim).slice(0, 5)}` : ''}</div>
-          </div>
-          <Button variant="onAccent" pill onClick={() => inspectPlanner(nextEvent)}>Detalhes</Button>
-        </div>
-      </Card>
-    </div>
-  ) : null
-
   return (
     <div className={styles.page}>
       <header className={styles.header}>
@@ -1070,7 +956,7 @@ export function TodayModern({ state, today, commit, navigate, inspect, profileNa
       </div>
 
       <div className={styles.board}>
-        {column('main', nextCard)}
+        {column('main')}
         {column('middle')}
         {column('side')}
       </div>
