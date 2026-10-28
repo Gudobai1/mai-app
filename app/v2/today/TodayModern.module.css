@@ -1002,8 +1002,9 @@
 }
 
 .taskSub .projectTag {
-  height: 18px;
-  padding: 0 7px;
+  height: 20px;
+  max-width: 100%;
+  padding: 0 8px 0 3px;
   font-size: 11px;
   flex-shrink: 1;
   min-width: 0;
@@ -1110,4 +1111,30 @@
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+/* Projeto da tarefa: imagem (ou bolinha) + nome · seção */
+
+.projectImg {
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+  background: var(--ds-surface-2);
+}
+
+.projectTag .projectDot {
+  margin-left: 4px;
+}
+
+.projectText {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.projectSection {
+  font-weight: var(--ds-fw-medium);
+  color: var(--ds-muted);
 }
