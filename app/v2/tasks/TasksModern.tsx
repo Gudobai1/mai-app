@@ -306,16 +306,39 @@ export function TasksModern(props: Props) {
 
   const [composer, setComposer] = useState('')
   const [draftTitle, setDraftTitle] = useState('')
+  const [draftDesc, setDraftDesc] = useState('')
+  const [descOpen, setDescOpen] = useState(false)
+  const [draftDate, setDraftDate] = useState('')
+  const [draftPriority, setDraftPriority] = useState(4)
+  const [draftProject, setDraftProject] = useState('')
+  const [draftPicker, setDraftPicker] = useState<'' | 'date' | 'priority' | 'project'>('')
+  const draftRefs = { date: useRef<HTMLButtonElement | null>(null), priority: useRef<HTMLButtonElement | null>(null), project: useRef<HTMLButtonElement | null>(null) }
+  const openComposer = (group: Group) => {
+    setComposer(group.id)
+    setDraftTitle('')
+    setDraftDesc('')
+    setDescOpen(false)
+    setDraftDate(group.addDate || '')
+    setDraftPriority(4)
+    setDraftProject(group.projectId || projectId || 'entrada')
+    setDraftPicker('')
+  }
+  const closeComposer = () => { setComposer(''); setDraftTitle(''); setDraftDesc(''); setDescOpen(false); setDraftPicker('') }
   function addTask(group: Group) {
     const title = draftTitle.trim()
     if (!title) return
+    const targetProject = draftProject || group.projectId || projectId || 'entrada'
     const task: Row = {
-      id: uid('t'), titulo: title, descricao: '', data_vencimento: group.addDate || '', prioridade: 4, concluida: false,
-      projeto_id: group.projectId || projectId || 'entrada', parent_id: '', secao: group.section || '', criado_em: new Date().toISOString(), ordem: Date.now(),
+      id: uid('t'), titulo: title, descricao: draftDesc.trim(), data_vencimento: draftDate, prioridade: draftPriority, concluida: false,
+      projeto_id: targetProject, parent_id: '', secao: targetProject === (group.projectId || projectId || 'entrada') ? (group.section || '') : '', criado_em: new Date().toISOString(), ordem: Date.now(),
       notas: [], anexos: [], subtarefas: [], lembretes: [], etiquetas: [], repeticao: '', ocultar_agenda: false,
     }
     commit(current => ({ ...current, tasks: [...current.tasks, task as LegacyTask] }))
     setDraftTitle('')
+    setDraftDesc('')
+    setDescOpen(false)
+    setDraftDate(group.addDate || '')
+    setDraftPriority(4)
   }
 
   /* --------------------------------------------------------------- Abas */
@@ -543,22 +566,62 @@ export function TasksModern(props: Props) {
         onChange={event => setDraftTitle(event.target.value)}
         onKeyDown={event => {
           if (event.key === 'Enter') { event.preventDefault(); addTask(group) }
-          if (event.key === 'Escape') { event.preventDefault(); setComposer(''); setDraftTitle('') }
+          if (event.key === 'Escape') { event.preventDefault(); closeComposer() }
         }}
       />
+      {descOpen ? (
+        <textarea
+          className={styles.composerDesc}
+          value={draftDesc}
+          rows={2}
+          placeholder="Descrição"
+          onChange={event => setDraftDesc(event.target.value)}
+          onKeyDown={event => { if (event.key === 'Escape') { event.preventDefault(); closeComposer() } }}
+        />
+      ) : null}
+      <div className={styles.composerChips}>
+        <button ref={draftRefs.date} type="button" className={styles.composerChip} data-set={draftDate || undefined} data-late={(draftDate && draftDate < today) || undefined} onClick={() => setDraftPicker('date')}>
+          <Icon name="event" size={15} filled={false} />{draftDate ? naturalDate(draftDate, today) : 'Data'}
+        </button>
+        <button ref={draftRefs.priority} type="button" className={styles.composerChip} data-set={draftPriority < 4 || undefined} style={PRIORITY_COLOR[draftPriority] ? ({ '--chip-color': PRIORITY_COLOR[draftPriority] } as React.CSSProperties) : undefined} onClick={() => setDraftPicker('priority')}>
+          <Icon name="flag" size={15} filled={draftPriority < 4} />{draftPriority < 4 ? PRIORITIES[draftPriority - 1].label : 'Prioridade'}
+        </button>
+        <button type="button" className={styles.composerChip} data-set={draftDesc.trim() || undefined} onClick={() => setDescOpen(open => !open)}>
+          <Icon name="notes" size={15} filled={false} />Descrição
+        </button>
+        <button ref={draftRefs.project} type="button" className={styles.composerChip} onClick={() => setDraftPicker('project')}>
+          <Icon name={draftProject === 'entrada' ? 'inbox' : 'folder'} size={15} filled={false} />
+          <span>{draftProject === 'entrada' ? 'Entrada' : String(projects.find(item => String(item.id) === draftProject)?.nome || 'Projeto')}</span>
+        </button>
+      </div>
       <div className={styles.composerActions}>
-        <span className={styles.composerHint}>{group.section ? `Na seção ${group.section}` : group.addDate ? naturalDate(group.addDate, today) : 'Enter adiciona e continua'}</span>
-        <button type="button" className={styles.ghost} onClick={() => { setComposer(''); setDraftTitle('') }}>Cancelar</button>
+        <span className={styles.composerHint}>{group.section ? `Na seção ${group.section}` : 'Enter adiciona e continua'}</span>
+        <button type="button" className={styles.ghost} onClick={closeComposer}>Cancelar</button>
         <button type="button" className={styles.primarySmall} disabled={!draftTitle.trim()} onClick={() => addTask(group)}>Adicionar</button>
       </div>
+      {draftPicker === 'date' ? (
+        <Floating anchor={draftRefs.date} title="Data" width={300} onClose={() => setDraftPicker('')}>
+          <DatePicker value={draftDate} today={today} onSelect={value => { setDraftDate(value); setDraftPicker('') }} />
+        </Floating>
+      ) : null}
+      {draftPicker === 'priority' ? (
+        <Floating anchor={draftRefs.priority} title="Prioridade" onClose={() => setDraftPicker('')}>
+          <OptionList options={PRIORITIES} value={String(draftPriority)} onSelect={value => { setDraftPriority(Number(value)); setDraftPicker('') }} />
+        </Floating>
+      ) : null}
+      {draftPicker === 'project' ? (
+        <Floating anchor={draftRefs.project} title="Projeto" width={260} onClose={() => setDraftPicker('')}>
+          <OptionList options={moveOptions} value={draftProject} onSelect={value => { setDraftProject(value); setDraftPicker('') }} />
+        </Floating>
+      ) : null}
     </div>
   ) : (always || !group.tasks.length) ? (
-    <button type="button" className={styles.addQuiet} data-has-tasks={group.tasks.length ? 'true' : undefined} onClick={() => { setComposer(group.id); setDraftTitle('') }}>
+    <button type="button" className={styles.addQuiet} data-has-tasks={group.tasks.length ? 'true' : undefined} onClick={() => openComposer(group)}>
       <Icon name="add" size={17} filled={false} />Adicionar tarefa
     </button>
   ) : null
   const addButton = (group: Group) => (
-    <button type="button" className={styles.groupAdd} onClick={() => { setComposer(group.id); setDraftTitle('') }} aria-label={`Adicionar tarefa em ${group.label}`} title="Adicionar tarefa"><Icon name="add" size={18} filled={false} /></button>
+    <button type="button" className={styles.groupAdd} onClick={() => openComposer(group)} aria-label={`Adicionar tarefa em ${group.label}`} title="Adicionar tarefa"><Icon name="add" size={18} filled={false} /></button>
   )
 
   const canAddIn = (group: Group) => isProjectLike || Boolean(group.addDate) || Boolean(group.canAdd)
@@ -679,7 +742,7 @@ export function TasksModern(props: Props) {
             const id = String(item.id)
             return (
               <button key={id} type="button" className={styles.folder} data-active={projectId === id || undefined} onClick={() => props.onScopeChange(`project:${id}`)} onDoubleClick={() => props.onEditProject(id)}>
-                <Icon name={projectId === id ? 'folder_open' : 'folder'} size={18} style={{ color: String(item.cor || 'var(--ds-peach-fg)') }} />
+                {item.imagem_url ? <img className={styles.folderImg} src={driveAssetUrl(item.imagem_url)} alt="" /> : <span className={styles.folderIcon} style={{ background: String(item.cor || 'var(--ds-line-strong)') }}><Icon name={String(item.icone || (projectId === id ? 'folder_open' : 'folder'))} size={14} /></span>}
                 <span>{String(item.nome || 'Subprojeto')}</span>
                 {projectCount(id) ? <small>{projectCount(id)}</small> : null}
               </button>

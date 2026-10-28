@@ -1389,3 +1389,95 @@
 .subList {
   margin: -2px 0 2px 22px;
 }
+
+/* ------------------------------------------- Versão final (minimalista) */
+/* Mesmo visual das Tarefas: itens sem fundo, divisor fino, título pequeno
+   em maiúsculas, prioridade na cor do círculo. */
+
+.block > div:first-child {
+  margin-bottom: 6px;
+  padding: 0 6px 8px;
+  border-bottom: 1px solid var(--ds-line);
+}
+
+.block > div:first-child h2,
+.block > div:first-child h3 {
+  font-size: 11.5px;
+  font-weight: var(--ds-fw-heavy);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ds-muted);
+}
+
+.block > .empty {
+  padding: 8px 6px;
+}
+
+.items {
+  gap: 0;
+}
+
+.items .item.item {
+  min-height: 0;
+  padding: 11px 6px;
+  gap: 12px;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  border-bottom: 1px solid color-mix(in srgb, var(--ds-line) 70%, transparent);
+}
+
+.items .item.item:hover {
+  background: color-mix(in srgb, var(--ds-surface) 55%, transparent);
+}
+
+.items .item.item:last-child {
+  border-bottom-color: transparent;
+}
+
+.items .itemWrap.itemWrap {
+  padding-right: 0;
+}
+
+.itemCheck.itemCheck.itemCheck[data-priority] {
+  border-color: var(--check-color);
+}
+
+.taskTitle {
+  font-weight: var(--ds-fw-medium);
+  font-size: 14.5px;
+}
+
+.taskDesc {
+  color: var(--ds-muted);
+  opacity: 1;
+}
+
+.taskSub {
+  gap: 8px;
+}
+
+.taskSub .projectTag {
+  height: auto;
+  padding: 0;
+  background: transparent;
+  color: var(--ds-muted);
+  font-weight: var(--ds-fw-medium);
+}
+
+.taskSub .projectTag .projectDot {
+  margin-left: 0;
+}
+
+.taskSub .sectionTag {
+  color: var(--ds-muted);
+  font-weight: var(--ds-fw-medium);
+}
+
+@media (max-width: 900px) {
+  .items .item.item,
+  .items .task.task,
+  .items .evRow.evRow {
+    min-height: 0;
+  }
+}
