@@ -14,10 +14,10 @@ import styles from './TodayModern.module.css'
 /*
  * Tela Hoje — visual Moderno.
  *
- * Layout fixo: faixa de semanas, agenda em cartões horizontais e, abaixo,
- * Tarefas | Hábitos + Notas | Saldo + Metas (uma coluna no celular).
- * Mostra o dia escolhido na faixa de semanas (hoje por padrão). Filtros e
- * classificação vêm do botão Opções.
+ * Mostra o dia escolhido na faixa de semanas (hoje por padrão). Mantém as
+ * seções, a ordem e a visibilidade salvas (editadas em Opções), filtros e
+ * classificação, concluir tarefa, marcar lançamento como pago e abrir
+ * qualquer item no painel lateral.
  */
 
 type Commit = (change: (current: MaiState) => MaiState) => void
@@ -33,7 +33,8 @@ type Props = {
   options?: ReactNode
 }
 
-type SectionId = 'appointments' | 'tasks' | 'habits' | 'goals' | 'finance' | 'notes'
+const DEFAULT_ORDER = ['appointments', 'tasks', 'habits', 'goals', 'finance', 'notes'] as const
+type SectionId = typeof DEFAULT_ORDER[number]
 
 type TodayFilters = { project: string; priority: string }
 type SortMode = 'overdue' | 'date' | 'priority' | 'project' | 'title' | 'name'
@@ -126,6 +127,9 @@ export function TodayModern({ state, today, commit, navigate, inspect, profileNa
 
   /* ---------------------------------------------------------- Preferências */
 
+  const savedOrder = Array.isArray(state.configs.todayListOrder) ? state.configs.todayListOrder.map(String).filter((id): id is SectionId => DEFAULT_ORDER.includes(id as SectionId)) : []
+  const order: SectionId[] = [...savedOrder, ...DEFAULT_ORDER.filter(id => !savedOrder.includes(id))]
+  const hidden = new Set(Array.isArray(state.configs.todayListHidden) ? state.configs.todayListHidden.map(String) : [])
   const savedFilters: Partial<TodayFilters> = state.configs.todayFilters && typeof state.configs.todayFilters === 'object' ? (state.configs.todayFilters as Partial<TodayFilters>) : {}
   const filters: TodayFilters = { project: String(savedFilters.project || 'all'), priority: String(savedFilters.priority || 'all') }
   const moduleControls = state.configs.moduleControls && typeof state.configs.moduleControls === 'object' ? (state.configs.moduleControls as Record<string, Row>) : {}
@@ -404,6 +408,10 @@ export function TodayModern({ state, today, commit, navigate, inspect, profileNa
     )
   }
 
+  const nextEvent = isToday && clockIsToday
+    ? events.find(item => item.time && item.raw.dia_inteiro !== true && item.subtitle !== 'Em andamento' && minutesOf(item.time) >= nowMinutes)
+    : undefined
+
   /* ---------------------------------------------------------------- Tarefas */
 
   const tasks = useMemo(() => state.tasks.filter(task => {
@@ -564,10 +572,6 @@ export function TodayModern({ state, today, commit, navigate, inspect, profileNa
           onClickCapture={event => { if (agendaSuppressClick.current) { event.preventDefault(); event.stopPropagation() } }}
         >
           {events.length ? events.map(renderEventCard) : <div className={styles.evEmpty}>Nenhum compromisso {isToday ? 'hoje' : 'neste dia'}.</div>}
-          <button type="button" className={styles.evMore} onClick={() => navigate('upcoming')}>
-            <Icon name="calendar_month" size={20} filled={false} />
-            Ver semana
-          </button>
         </div>
       </section>
     ),
@@ -710,8 +714,35 @@ export function TodayModern({ state, today, commit, navigate, inspect, profileNa
   ]
   const title = isToday ? `${greetingFor(clock.getHours())}${firstName && firstName !== 'Meu' ? `, ${firstName}` : ''}` : naturalDate(day, today) === 'Amanhã' || naturalDate(day, today) === 'Ontem' ? naturalDate(day, today) : capitalize(new Date(`${day}T12:00:00`).toLocaleDateString('pt-BR', { weekday: 'long' }))
 
-  // Layout fixo. Computador: Agenda em faixa + 3 colunas. Celular: uma coluna nesta ordem.
-  const slot = (id: SectionId, mobileOrder: number) => <div key={id} className={styles.slot} style={{ order: mobileOrder }}>{sections[id]}</div>
+  // Colunas do computador. No celular vira uma coluna só, na ordem salva.
+  const COLUMN: Record<SectionId, 'main' | 'middle' | 'side'> = { tasks: 'main', appointments: 'middle', notes: 'middle', habits: 'side', finance: 'side', goals: 'side' }
+  const visible = order.filter(id => !hidden.has(id))
+  const column = (name: 'main' | 'middle' | 'side', extra?: ReactNode) => (
+    <div className={`${styles.column} ${styles[`col_${name}`]}`}>
+      {extra}
+      {visible.filter(id => COLUMN[id] === name).map(id => (
+        <div key={id} className={styles.slot} style={{ order: visible.indexOf(id) + 1 }}>{sections[id]}</div>
+      ))}
+    </div>
+  )
+
+  const nextCard = nextEvent ? (
+    <div className={styles.slot} style={{ order: 0 }}>
+      <Card variant="accent" padding="lg">
+        <div className={styles.nextHead}>
+          <span className={styles.nextIcon}><Icon name="event" size={24} /></span>
+          <span className={styles.nextEyebrow}>A seguir · {untilLabel(minutesOf(nextEvent.time) - nowMinutes)}</span>
+        </div>
+        <div className={styles.nextRow}>
+          <div className={styles.nextBody}>
+            <div className={styles.nextTitle}>{nextEvent.title}</div>
+            <div className={styles.nextMeta}>{nextEvent.time}{nextEvent.raw.hora_fim ? ` – ${String(nextEvent.raw.hora_fim).slice(0, 5)}` : ''}</div>
+          </div>
+          <Button variant="onAccent" pill onClick={() => inspectPlanner(nextEvent)}>Detalhes</Button>
+        </div>
+      </Card>
+    </div>
+  ) : null
 
   return (
     <div className={styles.page}>
@@ -766,12 +797,10 @@ export function TodayModern({ state, today, commit, navigate, inspect, profileNa
         ))}
       </div>
 
-      {sections.appointments}
-
       <div className={styles.board}>
-        <div className={`${styles.column} ${styles.col_main}`}>{slot('tasks', 1)}</div>
-        <div className={`${styles.column} ${styles.col_middle}`}>{slot('habits', 2)}{slot('notes', 5)}</div>
-        <div className={`${styles.column} ${styles.col_side}`}>{slot('finance', 3)}{slot('goals', 4)}</div>
+        {column('main', nextCard)}
+        {column('middle')}
+        {column('side')}
       </div>
     </div>
   )

@@ -205,12 +205,12 @@
 
 .daySelected.daySelected,
 .daySelected.daySelected:hover {
-  background: var(--ds-text);
-  color: var(--ds-bg);
+  background: var(--ds-accent);
+  color: var(--ds-on-accent);
 }
 
 .daySelected.daySelected .dayNumber {
-  color: var(--ds-bg);
+  color: var(--ds-on-accent);
 }
 
 .dayName {
@@ -242,7 +242,7 @@
 }
 
 .daySelected .dayDot[data-on] {
-  background: var(--ds-bg);
+  background: var(--ds-on-accent);
 }
 
 /* ----------------------------------------------------- Grade (3 colunas) */
@@ -764,8 +764,8 @@
   .board {
     grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
     grid-template-areas:
-      'main middle'
-      'side middle';
+      'main side'
+      'middle side';
   }
 
 }
@@ -839,8 +839,23 @@
   }
 
   .habits {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    display: flex;
     gap: 8px;
+    overflow-x: auto;
+    scroll-snap-type: x proximity;
+    scrollbar-width: none;
+    margin: 0 -20px;
+    padding: 0 20px 2px;
+    scroll-padding-left: 20px;
+  }
+
+  .habits::-webkit-scrollbar {
+    display: none;
+  }
+
+  .habits > .habit {
+    flex: 0 0 86px;
+    scroll-snap-align: start;
   }
 
   .habit {
@@ -868,11 +883,7 @@
   }
 }
 
-@media (max-width: 380px) {
-  .habits {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-}
+
 
 /* ------------------------------------------------- Agenda em cartões horizontais */
 
@@ -951,6 +962,7 @@
 
 .evAllDay.evAllDay {
   box-shadow: none;
+  color: var(--ds-text) !important;
 }
 
 .evPast.evPast {
@@ -969,8 +981,13 @@
   font-size: 12px;
   font-weight: var(--ds-fw-heavy);
   font-variant-numeric: tabular-nums;
-  opacity: 0.85;
+  color: var(--ds-muted);
   white-space: nowrap;
+}
+
+.evNow .evTime {
+  color: var(--ds-on-accent);
+  opacity: 0.85;
 }
 
 .evPill {
@@ -983,8 +1000,13 @@
   font-size: 11px;
   font-weight: var(--ds-fw-heavy);
   white-space: nowrap;
-  background: var(--ds-accent-soft);
-  color: var(--ds-accent);
+  background: var(--ds-surface-2);
+  color: var(--ds-text);
+}
+
+.evNow .evMeta {
+  color: var(--ds-on-accent);
+  opacity: 0.85;
 }
 
 .evNow .evPill {
@@ -1012,7 +1034,7 @@
   min-width: 0;
   font-size: 12px;
   font-weight: var(--ds-fw-medium);
-  opacity: 0.75;
+  color: var(--ds-muted);
   white-space: nowrap;
   overflow: hidden;
 }
