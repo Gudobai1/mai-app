@@ -4,7 +4,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode }
 import { financeSummary } from '../../../lib/v2/finance-summary'
 import { eventColor, plannerItems, type PlannerItem } from '../../../lib/v2/planner'
 import type { MaiState } from '../../../lib/v2/state'
-import { Button, Card, Check, Icon, IconTile, ListItem, ProgressBar, SectionHeader, Tag, type Tone } from '../../ds'
+import { Button, Card, Check, Icon, IconTile, SectionHeader, Tag, type Tone } from '../../ds'
 import type { AppView, Row } from '../app-types'
 import type { InspectableItem } from '../ContextDrawer'
 import { financeCardPaymentState } from '../FinanceTransactionCard'
@@ -331,50 +331,9 @@ export function TodayModern({ state, today, commit, navigate, inspect, profileNa
     return minutesOf(item.time) <= nowMinutes && !eventPassed(item)
   }
 
-  // Cartão que recebe o foco ao abrir: o que está acontecendo agora, senão o próximo.
-  const focusEventId = (events.find(eventIsNow) || events.find(item => !eventPassed(item) && item.raw.dia_inteiro !== true && Boolean(item.time)))?.id || ''
   const nextEventId = events.find(item => !eventPassed(item) && !eventIsNow(item) && item.raw.dia_inteiro !== true && Boolean(item.time))?.id || ''
 
-  const agendaRef = useRef<HTMLDivElement | null>(null)
-  const agendaDrag = useRef<{ startX: number; startLeft: number; moved: boolean; pointerId: number } | null>(null)
-  const agendaSuppressClick = useRef(false)
-
-  useLayoutEffect(() => {
-    const element = agendaRef.current
-    if (!element) return
-    const target = focusEventId ? element.querySelector<HTMLElement>(`[data-event="${CSS.escape(focusEventId)}"]`) : null
-    element.scrollLeft = target ? Math.max(0, target.offsetLeft - element.offsetLeft - 4) : 0
-  }, [day, focusEventId])
-
-  const onAgendaPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
-    if (event.pointerType !== 'mouse' || event.button !== 0 || !agendaRef.current) return
-    agendaDrag.current = { startX: event.clientX, startLeft: agendaRef.current.scrollLeft, moved: false, pointerId: event.pointerId }
-  }
-  const onAgendaPointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
-    const drag = agendaDrag.current
-    const element = agendaRef.current
-    if (!drag || !element) return
-    const delta = event.clientX - drag.startX
-    if (!drag.moved && Math.abs(delta) > 6) {
-      drag.moved = true
-      element.setPointerCapture(drag.pointerId)
-      element.style.scrollSnapType = 'none'
-      element.style.cursor = 'grabbing'
-    }
-    if (drag.moved) element.scrollLeft = drag.startLeft - delta
-  }
-  const endAgendaDrag = () => {
-    const drag = agendaDrag.current
-    const element = agendaRef.current
-    agendaDrag.current = null
-    if (!drag || !element || !drag.moved) return
-    agendaSuppressClick.current = true
-    window.setTimeout(() => { agendaSuppressClick.current = false }, 0)
-    element.style.cursor = ''
-    window.setTimeout(() => { element.style.scrollSnapType = '' }, 60)
-  }
-
-  const renderEventCard = (item: PlannerItem) => {
+  const renderEventRow = (item: PlannerItem) => {
     const color = eventColor(item.raw)
     const allDay = item.raw.dia_inteiro === true || !item.time
     const spanning = item.subtitle === 'Em andamento'
@@ -383,27 +342,20 @@ export function TodayModern({ state, today, commit, navigate, inspect, profileNa
     const passed = eventPassed(item)
     const isNext = item.id === nextEventId
     const startMin = minutesOf(item.time)
-    const endMin = minutesOf(end)
-    const progress = now && Number.isFinite(startMin) && Number.isFinite(endMin) && endMin > startMin ? Math.max(0, Math.min(100, ((nowMinutes - startMin) / (endMin - startMin)) * 100)) : 0
-    const time = spanning ? 'Em andamento' : allDay ? 'Dia todo' : `${item.time}${end ? ` – ${end}` : ''}`
-    const source = spanning || allDay ? (item.raw.tipo === 'google' || item.raw.tipo === 'gcalendar' ? 'Google Agenda' : String(item.raw.categoria || 'Compromisso')) : item.subtitle
     const pill = now ? 'Agora' : isNext && isToday && clockIsToday ? untilLabel(startMin - nowMinutes) : ''
+    const time = spanning ? 'Contínuo' : allDay ? 'Dia todo' : item.time
     return (
       <button
         key={item.id}
         type="button"
-        data-event={item.id}
-        className={`${styles.evCard} ${now ? styles.evNow : ''} ${allDay && !now ? styles.evAllDay : ''} ${passed ? styles.evPast : ''}`}
-        style={allDay && !now ? { background: `color-mix(in srgb, ${color} 20%, var(--ds-surface))`, color } : undefined}
+        className={`${styles.item} ${styles.evRow} ${now ? styles.evRowNow : ''} ${passed ? styles.itemPassed : ''}`}
         onClick={() => inspectPlanner(item)}
       >
-        <span className={styles.evTop}>
-          <span className={styles.evTime}>{time}</span>
-          {pill ? <span className={styles.evPill}>{pill}</span> : passed ? <Icon name="check" size={16} className={styles.evDone} /> : null}
-        </span>
-        <span className={styles.evTitle}>{item.title}</span>
-        <span className={styles.evMeta}><span className={styles.calDot} style={{ background: now ? 'currentColor' : color }} />{source}{item.recurring ? <Icon name="repeat" size={13} /> : null}</span>
-        {now && progress ? <span className={styles.evProgress} style={{ width: `${progress}%` }} /> : null}
+        <span className={`${styles.evTime} ${allDay || spanning ? styles.evTimeWord : ''}`}>{time}</span>
+        <span className={styles.calDot} style={{ background: color }} />
+        <span className={styles.itemTitle}>{item.title}</span>
+        {item.recurring ? <Icon name="repeat" size={14} className={styles.itemIcon} /> : null}
+        {pill ? <span className={styles.evPill}>{pill}</span> : end && !allDay ? <span className={styles.itemMeta}>{end}</span> : null}
       </button>
     )
   }
@@ -531,18 +483,18 @@ export function TodayModern({ state, today, commit, navigate, inspect, profileNa
     const late = due < today
     const time = timeKey(task.data_vencimento)
     const priority = Number(task.prioridade || 4)
+    const title = String(task.titulo || 'Tarefa')
+    const when = due === day ? time : `${naturalDate(due, today)}${time ? ` · ${time}` : ''}`
     return (
-      <ListItem
-        key={String(task.id)}
-        leading={<Check checked={Boolean(task.concluida)} late={late} label={`Concluir: ${String(task.titulo || 'tarefa')}`} onCheckedChange={() => toggleTask(String(task.id))} />}
-        title={String(task.titulo || 'Tarefa')}
-        onOpen={() => inspectTask(task)}
-        subtitle={<>
-          <span className={styles.projectTag}><span className={styles.projectDot} style={{ background: projectColor(task.projeto_id) }} />{projectName(task.projeto_id)}</span>
-          <span className={late ? styles.late : undefined}>{naturalDate(due, today)}{time ? ` · ${time}` : ''}</span>
-        </>}
-        trailing={PRIORITY_COLOR[priority] ? <span className={styles.priority} title={`Prioridade ${priority}`} style={{ color: PRIORITY_COLOR[priority] }}><Icon name="flag" size={18} /></span> : undefined}
-      />
+      <div key={String(task.id)} role="listitem" className={`${styles.item} ${styles.itemWrap} ${task.concluida ? styles.itemPassed : ''}`}>
+        <Check className={styles.itemCheck} checked={Boolean(task.concluida)} late={late} label={`Concluir: ${title}`} onCheckedChange={() => toggleTask(String(task.id))} />
+        <button type="button" className={styles.itemButton} onClick={() => inspectTask(task)}>
+          <span className={styles.itemTitle}>{title}</span>
+          <span className={styles.projectDot} style={{ background: projectColor(task.projeto_id) }} title={projectName(task.projeto_id)} />
+          {when ? <span className={`${styles.itemMeta} ${late ? styles.late : ''}`}>{when}</span> : null}
+          {PRIORITY_COLOR[priority] ? <span className={styles.priority} title={`Prioridade ${priority}`} style={{ color: PRIORITY_COLOR[priority] }}><Icon name="flag" size={15} /></span> : null}
+        </button>
+      </div>
     )
   }
 
@@ -560,50 +512,39 @@ export function TodayModern({ state, today, commit, navigate, inspect, profileNa
 
   const sections: Record<SectionId, ReactNode> = {
     appointments: (
-      <section className={styles.agendaSection} aria-label="Agenda">
+      <section className={styles.block} aria-label="Agenda">
         <SectionHeader title="Agenda" meta={events.length ? plural(events.length, 'compromisso', 'compromissos') : undefined} />
-        <div
-          className={styles.agendaStrip}
-          data-single={events.length === 1 || undefined}
-          ref={agendaRef}
-          onPointerDown={onAgendaPointerDown}
-          onPointerMove={onAgendaPointerMove}
-          onPointerUp={endAgendaDrag}
-          onPointerCancel={endAgendaDrag}
-          onClickCapture={event => { if (agendaSuppressClick.current) { event.preventDefault(); event.stopPropagation() } }}
-        >
-          {events.length ? events.map(renderEventCard) : <div className={styles.evEmpty}>Nenhum compromisso {isToday ? 'hoje' : 'neste dia'}.</div>}
-        </div>
+        {events.length ? <div className={styles.items}>{events.map(renderEventRow)}</div> : <div className={styles.empty}>Nenhum compromisso {isToday ? 'hoje' : 'neste dia'}.</div>}
       </section>
     ),
     tasks: (
-      <Card padding="md">
+      <section className={styles.block} aria-label="Tarefas">
         <SectionHeader title="Tarefas" meta={tasks.length ? (lateCount ? `${tasks.length} · ${lateCount} atrasada${lateCount === 1 ? '' : 's'}` : String(tasks.length)) : undefined} />
         {tasks.length ? (
           sortMode === 'project' && taskGroups.length ? (
-            <div role="list">
+            <div role="list" className={styles.items}>
               {taskGroups.map(group => (
-                <div key={group.id}>
+                <div key={group.id} className={styles.items}>
                   <div className={styles.groupLabel}><span>{group.name}</span><span>{group.items.length}</span></div>
                   {group.items.map(renderTask)}
                 </div>
               ))}
             </div>
-          ) : <div role="list">{tasks.map(renderTask)}</div>
+          ) : <div role="list" className={styles.items}>{tasks.map(renderTask)}</div>
         ) : <div className={styles.empty}>{isToday ? 'Nada pendente para hoje.' : 'Nenhuma tarefa neste dia.'}</div>}
-      </Card>
+      </section>
     ),
     habits: (
-      <Card padding="md">
+      <section className={styles.block} aria-label="Hábitos">
         <SectionHeader title="Hábitos" meta={habits.length ? `${habitsDone} de ${habits.length}` : undefined} />
         {habits.length ? (
           <div className={styles.habits}>
             {habits.map(item => {
               const name = String(item.habit.nome || 'Hábito')
               return (
-                <div key={String(item.habit.id)} className={styles.habit}>
+                <div key={String(item.habit.id)} className={`${styles.item} ${styles.habit} ${item.done ? styles.habitDone : ''}`}>
                   <button type="button" className={styles.habitMain} disabled={!canLogHabits} onClick={() => logHabit(item)} aria-label={item.quantitative ? `Registrar mais 1 em ${name}` : item.done ? `Desmarcar ${name}` : `Marcar ${name} como feito`}>
-                    <IconTile icon={item.done ? 'check' : resolveMaiIcon(String(item.habit.icone || 'repeat'))} tone={item.done ? 'mint' : item.tone} solid={item.done} size={40} />
+                    <IconTile icon={item.done ? 'check' : resolveMaiIcon(String(item.habit.icone || 'repeat'))} tone={item.done ? 'mint' : item.tone} solid={item.done} size={28} />
                   </button>
                   <button type="button" className={styles.habitInfo} onClick={() => inspect({ kind: 'habit', sourceId: String(item.habit.id), title: name, date: day, raw: item.habit })}>
                     <span className={styles.habitName}>{name}</span>
@@ -614,32 +555,31 @@ export function TodayModern({ state, today, commit, navigate, inspect, profileNa
             })}
           </div>
         ) : <div className={styles.empty}>Nenhum hábito previsto.</div>}
-      </Card>
+      </section>
     ),
     goals: (
-      <Card padding="md">
+      <section className={styles.block} aria-label="Metas">
         <SectionHeader title="Metas" meta={goals.length ? String(goals.length) : undefined} />
         {goals.length ? (
-          <div className={styles.rows}>
+          <div className={styles.items}>
             {goals.map(goal => {
               const total = Math.max(1, Number(goal.progresso_total || 100))
               const pct = Math.max(0, Math.min(100, Math.round((Number(goal.progresso_atual || 0) / total) * 100)))
               const due = goalDate(goal)
               const title = String(goal.titulo || 'Meta')
               return (
-                <button key={String(goal.id)} type="button" className={styles.row} onClick={() => inspect({ kind: 'goal', sourceId: String(goal.id), title, date: due, raw: goal })}>
-                  <IconTile icon="flag" tone="lilac" />
-                  <span className={styles.rowBody}>
-                    <span className={styles.rowTitle}>{title}</span>
-                    <span className={styles.rowSub}><span className={due < today ? styles.late : undefined}>{naturalDate(due, today)}</span><span>· {pct}%</span></span>
-                    <span className={styles.goalProgress}><ProgressBar value={pct} tone="lilac" label={`Progresso de ${title}`} height={6} /></span>
-                  </span>
+                <button key={String(goal.id)} type="button" className={`${styles.item} ${styles.goal}`} onClick={() => inspect({ kind: 'goal', sourceId: String(goal.id), title, date: due, raw: goal })} aria-label={`${title}, ${pct}%`}>
+                  <Icon name="flag" size={16} className={styles.goalIcon} />
+                  <span className={styles.itemTitle}>{title}</span>
+                  <span className={`${styles.itemMeta} ${due < today ? styles.late : ''}`}>{naturalDate(due, today)}</span>
+                  <span className={styles.goalPct}>{pct}%</span>
+                  <span className={styles.goalBar} style={{ width: `${pct}%` }} />
                 </button>
               )
             })}
           </div>
         ) : <div className={styles.empty}>Nenhuma meta vencendo.</div>}
-      </Card>
+      </section>
     ),
     finance: (
       <div className={styles.stack}>
@@ -653,52 +593,48 @@ export function TodayModern({ state, today, commit, navigate, inspect, profileNa
           </span>
         </button>
         {transactions.length ? (
-          <Card padding="md">
+          <section className={styles.block} aria-label="Contas">
             <SectionHeader title={isToday ? 'Contas de hoje' : 'Contas do dia'} meta={String(transactions.length)} />
-            <div className={styles.rows}>
+            <div className={styles.items}>
               {transactions.map(item => {
                 const due = dateKey(item.data)
                 const income = String(item.tipo || '').toLocaleLowerCase('pt-BR') === 'receita'
                 const payment = financeCardPaymentState(item)
                 const title = txTitle(item)
                 return (
-                  <div key={String(item.id)} className={styles.rowWrap}>
-                    <Check checked={payment.status === 'pago'} late={due < today} label={`${income ? 'Marcar como recebido' : 'Marcar como pago'}: ${title}`} onCheckedChange={() => toggleFinancePaid(item)} />
-                    <button type="button" className={styles.row} onClick={() => inspect({ kind: 'finance', sourceId: String(item.id), title, date: due, raw: item })}>
-                      <span className={styles.rowBody}>
-                        <span className={styles.rowTitle}>{title}</span>
-                        <span className={styles.rowSub}>
-                          <span className={due < today ? styles.late : undefined}>{naturalDate(due, today)}</span>
-                          {payment.status === 'parcial' ? <Tag tone="peach">Parcial</Tag> : null}
-                        </span>
-                      </span>
+                  <div key={String(item.id)} className={`${styles.item} ${styles.itemWrap} ${payment.status === 'pago' ? styles.itemPassed : ''}`}>
+                    <Check className={styles.itemCheck} checked={payment.status === 'pago'} late={due < today} label={`${income ? 'Marcar como recebido' : 'Marcar como pago'}: ${title}`} onCheckedChange={() => toggleFinancePaid(item)} />
+                    <button type="button" className={styles.itemButton} onClick={() => inspect({ kind: 'finance', sourceId: String(item.id), title, date: due, raw: item })}>
+                      <span className={styles.itemTitle}>{title}</span>
+                      {payment.status === 'parcial' ? <Tag tone="peach">Parcial</Tag> : null}
+                      {due !== day ? <span className={`${styles.itemMeta} ${due < today ? styles.late : ''}`}>{naturalDate(due, today)}</span> : null}
                       <span className={`${styles.amount} ${income ? styles.positive : ''}`}>{income ? '+' : ''}{money.format(payment.remaining || payment.total)}</span>
                     </button>
                   </div>
                 )
               })}
             </div>
-          </Card>
+          </section>
         ) : null}
       </div>
     ),
     notes: (
-      <Card padding="md">
+      <section className={styles.block} aria-label="Notas">
         <SectionHeader title="Notas" meta={notes.length ? String(notes.length) : undefined} />
         {notes.length ? (
-          <div className={styles.rows}>
+          <div className={styles.items}>
             {notes.map(note => {
               const title = String(note.titulo || 'Sem título')
               return (
-                <button key={String(note.id)} type="button" className={styles.row} onClick={() => inspect({ kind: 'note', sourceId: String(note.id), title, date: dateKey(note.data || note.updated_at || note.criado_em), raw: note })}>
-                  <IconTile icon="sticky_note_2" tone="peach" />
-                  <span className={styles.rowBody}><span className={styles.rowTitle}>{title}</span></span>
+                <button key={String(note.id)} type="button" className={styles.item} onClick={() => inspect({ kind: 'note', sourceId: String(note.id), title, date: dateKey(note.data || note.updated_at || note.criado_em), raw: note })}>
+                  <Icon name="sticky_note_2" size={16} className={styles.noteIcon} />
+                  <span className={styles.itemTitle}>{title}</span>
                 </button>
               )
             })}
           </div>
         ) : <div className={styles.empty}>Nenhuma nota.</div>}
-      </Card>
+      </section>
     ),
   }
 

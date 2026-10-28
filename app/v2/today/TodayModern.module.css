@@ -384,10 +384,6 @@
   cursor: pointer;
 }
 
-.rows > .row.row + .row.row,
-.rows > .rowWrap + .rowWrap {
-  border-top: 1px solid var(--ds-line);
-}
 
 .row.row:focus-visible,
 .event.event:focus-visible,
@@ -479,197 +475,13 @@
 }
 
 .priority {
+  display: inline-flex;
   flex-shrink: 0;
 }
 
 .goalProgress {
   display: block;
   margin-top: var(--ds-s-2);
-}
-
-/* --------------------------------------------------------------- Agenda */
-
-.agenda {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  margin: 0 -8px;
-}
-
-.pastToggle.pastToggle {
-  appearance: none;
-  align-self: flex-start;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  height: 30px;
-  padding: 0 10px 0 6px;
-  border: 0;
-  border-radius: var(--ds-r-full);
-  background: transparent;
-  color: var(--ds-muted);
-  font: inherit;
-  font-size: 12px;
-  font-weight: var(--ds-fw-bold);
-  cursor: pointer;
-}
-
-.pastToggle.pastToggle:hover {
-  background: var(--ds-surface-2);
-  color: var(--ds-text);
-}
-
-.agendaRow.agendaRow {
-  appearance: none;
-  width: 100%;
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 12px;
-  border: 0;
-  border-radius: 16px;
-  background: transparent;
-  color: var(--ds-text);
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
-  transition: background-color var(--ds-dur-fast) var(--ds-ease);
-}
-
-.agendaRow.agendaRow:hover {
-  background: var(--ds-surface-2);
-}
-
-.agendaRow.agendaRow:focus-visible,
-.pastToggle.pastToggle:focus-visible {
-  outline: 2px solid var(--ds-accent);
-  outline-offset: 2px;
-}
-
-.agendaRowNow.agendaRowNow,
-.agendaRowNow.agendaRowNow:hover {
-  background: var(--ds-surface-hover);
-}
-
-.agendaTime {
-  width: 52px;
-  flex-shrink: 0;
-  display: flex;
-  flex-direction: column;
-  font-variant-numeric: tabular-nums;
-}
-
-.agendaStart {
-  font-size: 16px;
-  font-weight: var(--ds-fw-heavy);
-  line-height: 1.2;
-}
-
-.agendaEnd {
-  font-size: 12px;
-  font-weight: var(--ds-fw-medium);
-  color: var(--ds-muted);
-}
-
-.agendaTitle {
-  font-size: var(--ds-fs-md);
-  font-weight: var(--ds-fw-bold);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.calDot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-
-.nowPill {
-  flex-shrink: 0;
-  height: 24px;
-  padding: 0 10px;
-  border-radius: var(--ds-r-full);
-  display: inline-flex;
-  align-items: center;
-  font-size: 11px;
-  font-weight: var(--ds-fw-heavy);
-}
-
-.startsIn {
-  flex-shrink: 0;
-  font-size: 12px;
-  font-weight: var(--ds-fw-bold);
-  color: var(--ds-muted);
-  white-space: nowrap;
-}
-
-/* -------------------------------------------------------------- Hábitos */
-
-.habits {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
-}
-
-.habit {
-  min-width: 0;
-  border-radius: 18px;
-  background: var(--ds-surface-2);
-  padding: var(--ds-s-3);
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.habitMain.habitMain {
-  appearance: none;
-  flex-shrink: 0;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  cursor: pointer;
-  border-radius: 14px;
-  line-height: 0;
-  transition: transform var(--ds-dur-fast) var(--ds-ease);
-}
-
-.habitMain.habitMain:active {
-  transform: scale(0.92);
-}
-
-.habitInfo.habitInfo {
-  appearance: none;
-  flex: 1;
-  min-width: 0;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: var(--ds-text);
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-}
-
-.habitName {
-  font-size: 14px;
-  font-weight: var(--ds-fw-bold);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.habitValue {
-  font-size: 12px;
-  font-weight: var(--ds-fw-medium);
-  color: var(--ds-muted);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 /* --------------------------------------------------------------- Saldo */
@@ -750,7 +562,7 @@
   color: var(--ds-success-bright);
 }
 
-.rows .positive {
+.items .positive {
   color: var(--ds-success);
 }
 
@@ -838,14 +650,298 @@
     font-size: 22px;
   }
 
+}
+
+/* ------------------------------------------------ Seções: título + itens */
+/* Sem cartão por fora: o título fica direto no fundo e cada item é um
+   cartãozinho fino. */
+
+.block {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.block > div:first-child {
+  margin-bottom: var(--ds-s-2);
+  padding: 0 2px;
+}
+
+.block > .empty {
+  padding: 0 2px;
+}
+
+.items {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+}
+
+.item.item {
+  appearance: none;
+  position: relative;
+  width: 100%;
+  min-width: 0;
+  min-height: 38px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 11px;
+  background: var(--ds-surface);
+  box-shadow: var(--ds-shadow-1);
+  color: var(--ds-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  overflow: hidden;
+  transition: background-color var(--ds-dur-fast) var(--ds-ease);
+}
+
+.item.item:hover {
+  background: var(--ds-surface-hover);
+}
+
+.item.item:focus-visible,
+.itemButton.itemButton:focus-visible {
+  outline: 2px solid var(--ds-accent);
+  outline-offset: 2px;
+}
+
+.itemWrap.itemWrap {
+  cursor: default;
+  padding-right: 0;
+}
+
+.itemButton.itemButton {
+  appearance: none;
+  flex: 1;
+  min-width: 0;
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px 0 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.itemCheck.itemCheck.itemCheck {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+.itemTitle {
+  flex: 1;
+  min-width: 0;
+  font-size: 14px;
+  font-weight: var(--ds-fw-bold);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.itemMeta {
+  flex-shrink: 0;
+  font-size: 12px;
+  font-weight: var(--ds-fw-medium);
+  color: var(--ds-muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.itemIcon {
+  flex-shrink: 0;
+  color: var(--ds-muted);
+}
+
+.itemPassed.itemPassed {
+  opacity: 0.45;
+}
+
+.itemPassed .itemTitle {
+  text-decoration: line-through;
+}
+
+.evRow.evRow.itemPassed .itemTitle {
+  text-decoration: none;
+}
+
+/* Agenda */
+
+.evTime {
+  width: 40px;
+  flex-shrink: 0;
+  font-size: 12px;
+  font-weight: var(--ds-fw-heavy);
+  color: var(--ds-text-2);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.evTimeWord {
+  font-size: 10.5px;
+  font-weight: var(--ds-fw-bold);
+  color: var(--ds-muted);
+}
+
+.calDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.evRowNow.evRowNow,
+.evRowNow.evRowNow:hover {
+  background: color-mix(in srgb, var(--ds-accent) 14%, var(--ds-surface));
+  box-shadow: inset 3px 0 0 var(--ds-accent), var(--ds-shadow-1);
+}
+
+.evPill {
+  flex-shrink: 0;
+  height: 18px;
+  padding: 0 7px;
+  border-radius: var(--ds-r-full);
+  display: inline-flex;
+  align-items: center;
+  font-size: 10.5px;
+  font-weight: var(--ds-fw-heavy);
+  white-space: nowrap;
+  background: var(--ds-surface-2);
+  color: var(--ds-text-2);
+}
+
+.evRowNow .evPill {
+  background: var(--ds-accent);
+  color: var(--ds-on-accent);
+}
+
+/* Metas */
+
+.goal.goal {
+  padding-bottom: 2px;
+}
+
+.goalIcon {
+  flex-shrink: 0;
+  color: var(--ds-lilac-fg);
+}
+
+.goalPct {
+  flex-shrink: 0;
+  min-width: 34px;
+  text-align: right;
+  font-size: 12px;
+  font-weight: var(--ds-fw-heavy);
+  font-variant-numeric: tabular-nums;
+}
+
+.goalBar {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 2px;
+  background: var(--ds-lilac-fg);
+  opacity: 0.8;
+}
+
+.noteIcon {
+  flex-shrink: 0;
+  color: var(--ds-peach-fg);
+}
+
+/* Hábitos */
+
+.habits {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 5px;
+}
+
+.habit.habit {
+  min-height: 44px;
+  gap: 8px;
+  padding: 0 10px 0 8px;
+  cursor: default;
+}
+
+.habitMain.habitMain {
+  appearance: none;
+  flex-shrink: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  border-radius: 9px;
+  line-height: 0;
+  transition: transform var(--ds-dur-fast) var(--ds-ease);
+}
+
+.habitMain.habitMain:active {
+  transform: scale(0.9);
+}
+
+.habitMain.habitMain:disabled {
+  cursor: default;
+}
+
+.habitInfo.habitInfo {
+  appearance: none;
+  flex: 1;
+  min-width: 0;
+  align-self: stretch;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--ds-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0;
+}
+
+.habitName {
+  font-size: 13px;
+  font-weight: var(--ds-fw-bold);
+  line-height: 1.25;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.habitValue {
+  font-size: 11px;
+  font-weight: var(--ds-fw-medium);
+  line-height: 1.25;
+  color: var(--ds-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.habitDone .habitName {
+  color: var(--ds-muted);
+}
+
+@media (max-width: 900px) {
   .habits {
     display: flex;
-    gap: 8px;
     overflow-x: auto;
     scroll-snap-type: x proximity;
     scrollbar-width: none;
-    margin: 0 -20px;
-    padding: 0 20px 2px;
+    margin: -4px -20px;
+    padding: 4px 20px;
     scroll-padding-left: 20px;
   }
 
@@ -853,261 +949,14 @@
     display: none;
   }
 
-  .habits > .habit {
-    flex: 0 0 86px;
+  .habits > .habit.habit {
+    flex: 0 0 auto;
+    width: auto;
+    max-width: 180px;
     scroll-snap-align: start;
   }
 
-  .habit {
-    flex-direction: column;
-    gap: 6px;
-    padding: var(--ds-s-3) 4px;
-    border-radius: var(--ds-r-lg);
-    text-align: center;
-  }
-
-  .habitInfo.habitInfo {
-    align-items: center;
-    text-align: center;
-    width: 100%;
-  }
-
-  .habitName {
-    max-width: 100%;
-    font-size: var(--ds-fs-sm);
-  }
-
-  .habitValue {
-    max-width: 100%;
-    font-size: var(--ds-fs-xs);
-  }
-}
-
-
-
-/* ------------------------------------------------- Agenda em cartões horizontais */
-
-.agendaSection {
-  min-width: 0;
-}
-
-.agendaSection > div:first-child {
-  margin-bottom: var(--ds-s-2);
-}
-
-.agendaStrip {
-  display: flex;
-  gap: 10px;
-  overflow-x: auto;
-  scroll-snap-type: x proximity;
-  scroll-padding-left: 4px;
-  overscroll-behavior-x: contain;
-  scrollbar-width: none;
-  padding: 2px 4px 4px;
-  margin: 0 -4px;
-  cursor: grab;
-  user-select: none;
-  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 8px, #000 calc(100% - 32px), transparent 100%);
-  mask-image: linear-gradient(90deg, transparent 0, #000 8px, #000 calc(100% - 32px), transparent 100%);
-}
-
-.agendaStrip::-webkit-scrollbar {
-  display: none;
-}
-
-.evCard.evCard {
-  appearance: none;
-  position: relative;
-  flex: 0 0 220px;
-  height: 84px;
-  box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 2px;
-  padding: 10px 14px;
-  border: 0;
-  border-radius: 16px;
-  background: var(--ds-surface);
-  box-shadow: var(--ds-shadow-1);
-  color: var(--ds-text);
-  font: inherit;
-  text-align: left;
-  cursor: inherit;
-  overflow: hidden;
-  scroll-snap-align: start;
-  transition: background-color var(--ds-dur-fast) var(--ds-ease), transform var(--ds-dur-fast) var(--ds-ease);
-}
-
-.evCard.evCard:hover {
-  background: var(--ds-surface-hover);
-}
-
-.evCard.evCard:active {
-  transform: scale(0.98);
-}
-
-.evCard.evCard:focus-visible,
-.evMore.evMore:focus-visible {
-  outline: 2px solid var(--ds-accent);
-  outline-offset: 2px;
-}
-
-.evNow.evNow,
-.evNow.evNow:hover {
-  background: var(--ds-accent);
-  color: var(--ds-on-accent);
-  box-shadow: none;
-}
-
-.evAllDay.evAllDay {
-  box-shadow: none;
-  color: var(--ds-text) !important;
-}
-
-.evPast.evPast {
-  opacity: 0.5;
-}
-
-.evTop {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  min-width: 0;
-}
-
-.evTime {
-  font-size: 12px;
-  font-weight: var(--ds-fw-heavy);
-  font-variant-numeric: tabular-nums;
-  color: var(--ds-muted);
-  white-space: nowrap;
-}
-
-.evNow .evTime {
-  color: var(--ds-on-accent);
-  opacity: 0.85;
-}
-
-.evPill {
-  flex-shrink: 0;
-  height: 20px;
-  padding: 0 8px;
-  border-radius: var(--ds-r-full);
-  display: inline-flex;
-  align-items: center;
-  font-size: 11px;
-  font-weight: var(--ds-fw-heavy);
-  white-space: nowrap;
-  background: var(--ds-surface-2);
-  color: var(--ds-text);
-}
-
-.evNow .evMeta {
-  color: var(--ds-on-accent);
-  opacity: 0.85;
-}
-
-.evNow .evPill {
-  background: var(--ds-on-accent-soft);
-  color: var(--ds-on-accent);
-}
-
-.evDone {
-  opacity: 0.7;
-}
-
-.evTitle {
-  font-size: 15px;
-  font-weight: var(--ds-fw-heavy);
-  letter-spacing: -0.01em;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.evMeta {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  min-width: 0;
-  font-size: 12px;
-  font-weight: var(--ds-fw-medium);
-  color: var(--ds-muted);
-  white-space: nowrap;
-  overflow: hidden;
-}
-
-.evProgress {
-  position: absolute;
-  left: 0;
-  bottom: 0;
-  height: 3px;
-  background: var(--ds-on-accent);
-  opacity: 0.85;
-}
-
-.evEmpty {
-  flex: 0 0 auto;
-  height: 84px;
-  display: flex;
-  align-items: center;
-  padding: 0 18px;
-  border-radius: 16px;
-  background: var(--ds-surface);
-  color: var(--ds-muted);
-  font-size: var(--ds-fs-sm);
-  font-weight: var(--ds-fw-medium);
-}
-
-.evMore.evMore {
-  appearance: none;
-  flex: 0 0 120px;
-  height: 84px;
-  box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  border: 1.5px dashed var(--ds-line-strong);
-  border-radius: 16px;
-  background: transparent;
-  color: var(--ds-muted);
-  font: inherit;
-  font-size: var(--ds-fs-sm);
-  font-weight: var(--ds-fw-bold);
-  cursor: pointer;
-  scroll-snap-align: start;
-}
-
-.evMore.evMore:hover {
-  color: var(--ds-text);
-  border-color: var(--ds-muted);
-}
-
-@media (max-width: 900px) {
-  .evCard.evCard {
-    flex-basis: 200px;
-    height: 80px;
-  }
-
-  .evMore.evMore,
-  .evEmpty {
-    height: 80px;
-  }
-
-  /* Só um compromisso: o cartão ocupa a largura toda. */
-  .agendaStrip[data-single] > .evCard.evCard {
-    flex: 1 0 100%;
-  }
-
-  .agendaStrip {
-    margin: 0 -16px;
-    padding: 2px 16px 4px;
-    scroll-padding-left: 16px;
-    -webkit-mask-image: none;
-    mask-image: none;
+  .item.item {
+    min-height: 40px;
   }
 }
