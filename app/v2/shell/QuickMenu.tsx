@@ -43,7 +43,7 @@ export function useQuickMenu() {
   }
 
   /** Props para espalhar no elemento do item. `build` monta as opções na hora. */
-  const bind = (build: () => QuickMenuConfig) => ({
+  const bind = (build: () => QuickMenuConfig, options: { onLongPress?: () => void } = {}) => ({
     onContextMenu: (event: ReactMouseEvent) => {
       event.preventDefault()
       const touchLike = press.current?.fired
@@ -64,7 +64,8 @@ export function useQuickMenu() {
           suppressClick.current = true
           try { window.getSelection()?.removeAllRanges() } catch {}
           try { navigator.vibrate?.(12) } catch {}
-          setMenu({ ...build(), x, y, sheet: true })
+          if (options.onLongPress) options.onLongPress()
+          else setMenu({ ...build(), x, y, sheet: true })
         }, LONG_PRESS_MS),
       }
     },
