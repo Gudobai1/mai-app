@@ -345,7 +345,8 @@ export function TodayModern({ state, today, commit, navigate, inspect, profileNa
     const pill = now ? 'Agora' : isNext && isToday && clockIsToday ? untilLabel(startMin - nowMinutes) : ''
     const time = spanning ? 'Contínuo' : allDay ? 'Dia todo' : item.time
     const google = item.raw.tipo === 'google' || item.raw.tipo === 'gcalendar'
-    const calendar = String(item.raw.calendario_nome || (google ? 'Google Agenda' : item.raw.categoria || 'MAI'))
+    const calendarName = String(item.raw.calendario_nome || '')
+    const source = google ? (calendarName && calendarName !== 'Google Agenda' ? `Google Agenda · ${calendarName}` : 'Google Agenda') : String(item.raw.categoria || 'MAI')
     return (
       <button
         key={item.id}
@@ -353,12 +354,20 @@ export function TodayModern({ state, today, commit, navigate, inspect, profileNa
         className={`${styles.item} ${styles.evRow} ${now ? styles.evRowNow : ''} ${passed ? styles.itemPassed : ''}`}
         onClick={() => inspectPlanner(item)}
       >
-        <span className={`${styles.evTime} ${allDay || spanning ? styles.evTimeWord : ''}`}>{time}</span>
-        <span className={styles.calDot} style={{ background: color }} />
-        <span className={styles.itemTitle}>{item.title}</span>
-        <span className={styles.evCalendar}>{calendar}</span>
-        {item.recurring ? <Icon name="repeat" size={14} className={styles.itemIcon} /> : null}
-        {pill ? <span className={styles.evPill}>{pill}</span> : end && !allDay ? <span className={styles.itemMeta}>{end}</span> : null}
+        <span className={styles.evWhen}>
+          <span className={`${styles.evTime} ${allDay || spanning ? styles.evTimeWord : ''}`}>{time}</span>
+          {end && !allDay && !spanning ? <span className={styles.evEnd}>{end}</span> : null}
+        </span>
+        <span className={styles.calBar} style={{ background: color }} />
+        <span className={styles.taskBody}>
+          <span className={styles.taskTitle}>{item.title}</span>
+          <span className={styles.taskSub}>
+            <Icon name={google ? 'calendar_month' : 'event'} size={13} />
+            <span className={styles.evSource}>{source}</span>
+            {item.recurring ? <Icon name="repeat" size={13} /> : null}
+          </span>
+        </span>
+        {pill ? <span className={styles.evPill}>{pill}</span> : null}
       </button>
     )
   }
