@@ -1028,18 +1028,12 @@
 /* ------------------------------------------------------------ Subtarefas */
 
 .subCard {
-  min-height: 48px;
   display: flex;
   align-items: flex-start;
   gap: 12px;
-  padding: 12px 10px 12px 14px;
+  padding: 11px 6px 11px 14px;
   border-radius: 13px;
   background: var(--ds-surface-2);
-  transition: background-color var(--ds-dur-fast) var(--ds-ease);
-}
-
-.subCard:hover {
-  background: var(--ds-surface-hover);
 }
 
 .subCard .round {
@@ -1048,17 +1042,20 @@
   margin-top: 1px;
 }
 
-.subCard .listChevron {
-  align-self: center;
-}
-
-.subMain {
-  appearance: none;
+.subBody {
   flex: 1;
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 7px;
+}
+
+.subMain {
+  appearance: none;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
   padding: 0;
   border: 0;
   background: transparent;
@@ -1091,21 +1088,77 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 4px 12px;
-  margin-top: 2px;
+  gap: 6px;
+}
+
+.subChip {
+  appearance: none;
+  height: 26px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0 9px 0 7px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--ds-surface);
+  color: var(--ds-text);
+  font: inherit;
+  font-size: 12px;
+  font-weight: var(--ds-fw-bold);
+  cursor: pointer;
+  transition: background-color var(--ds-dur-fast) var(--ds-ease);
+}
+
+.subChip > span:first-child {
+  color: var(--ds-accent);
+}
+
+.subChip:hover {
+  background: var(--ds-surface-hover);
+}
+
+.subChip[data-empty] {
+  color: var(--ds-muted);
+}
+
+.subChip[data-empty] > span:first-child {
+  color: var(--ds-muted) !important;
+}
+
+.subChip[data-late],
+.subChip[data-late] > span:first-child {
+  color: var(--ds-danger);
+}
+
+.subInfo {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 26px;
+  padding: 0 4px;
   font-size: 12px;
   font-weight: var(--ds-fw-bold);
   color: var(--ds-muted);
 }
 
-.subMeta > span {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
+.subOpen {
+  appearance: none;
+  flex-shrink: 0;
+  align-self: center;
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--ds-muted);
+  cursor: pointer;
 }
 
-.subMeta > span[data-late] {
-  color: var(--ds-danger);
+.subOpen:hover {
+  background: var(--ds-surface-hover);
+  color: var(--ds-text);
 }
 
 .subCard[data-done] .subTitle {
@@ -1113,9 +1166,16 @@
   text-decoration: line-through;
 }
 
-.subCard[data-done] .subDesc,
-.subCard[data-done] .subMeta {
+.subCard[data-done] .subDesc {
   opacity: 0.6;
+}
+
+@media (max-width: 900px) {
+  .subChip,
+  .subInfo {
+    height: 30px;
+    font-size: 12.5px;
+  }
 }
 
 .addButton {
