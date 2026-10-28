@@ -1518,3 +1518,39 @@
     display: none;
   }
 }
+
+/* ⋯ dentro do próprio botão do projeto aberto */
+.familyChip.familyChip {
+  padding: 0;
+  gap: 0;
+  overflow: hidden;
+}
+
+.familyMain.familyMain,
+.familyMore.familyMore {
+  appearance: none;
+  height: 100%;
+  display: inline-flex;
+  align-items: center;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.familyMain.familyMain {
+  gap: 7px;
+  padding: 0 12px 0 9px;
+}
+
+.familyMore.familyMore {
+  justify-content: center;
+  width: 30px;
+  margin-left: -6px;
+  border-left: 1px solid color-mix(in srgb, currentColor 25%, transparent);
+}
+
+.familyMore.familyMore:hover {
+  background: color-mix(in srgb, #000 15%, transparent);
+}

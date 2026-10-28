@@ -192,8 +192,6 @@ export function TasksModern(props: Props) {
     groups = days.map(day => ({ id: `d:${day}`, label: naturalDate(day, today), tasks: openHere.filter(task => dayOf(task) === day), addDate: day }))
   }
   const completed = scopeTasks.filter(task => task.concluida).sort((a, b) => String(b.concluida_em || '').localeCompare(String(a.concluida_em || '')))
-  const openCount = groups.reduce((sum, group) => sum + group.tasks.length, 0)
-  const lateCount = groups.reduce((sum, group) => sum + group.tasks.filter(task => dayOf(task) && dayOf(task) < today).length, 0)
 
   /* -------------------------------------------------------------- Ações */
 
@@ -397,7 +395,6 @@ export function TasksModern(props: Props) {
   )
   const root = projectId ? rootOf(project) : undefined
   const family = root ? [root, ...childrenOf(String(root.id))] : []
-  const summary = [plural(openCount, 'aberta', 'abertas'), lateCount ? plural(lateCount, 'atrasada', 'atrasadas') : '', projectId && sections.length ? plural(sections.length, 'seção', 'seções') : ''].filter(Boolean).join(' · ')
 
   const setLayout = (layout: 'normal' | 'kanban') => commit(current => {
     const map = (current.configs.moduleControls && typeof current.configs.moduleControls === 'object' ? current.configs.moduleControls : {}) as Record<string, Row>
@@ -638,14 +635,18 @@ export function TasksModern(props: Props) {
               const id = String(item.id)
               const isRoot = id === String(root?.id)
               return (
-                <button key={id} type="button" role="tab" className={styles.familyChip} data-active={projectId === id || undefined} aria-selected={projectId === id} onClick={() => props.onScopeChange(`project:${id}`)}>
-                  {isRoot ? <Icon name="folder" size={15} /> : projectVisual(item, 'tab')}
-                  <span>{isRoot ? 'Principal' : String(item.nome || 'Subprojeto')}</span>
-                  {projectCount(id) ? <small>{projectCount(id)}</small> : null}
-                </button>
+                <div key={id} className={styles.familyChip} data-active={projectId === id || undefined}>
+                  <button type="button" role="tab" className={styles.familyMain} aria-selected={projectId === id} onClick={() => props.onScopeChange(`project:${id}`)}>
+                    {isRoot ? <Icon name="folder" size={15} /> : projectVisual(item, 'tab')}
+                    <span>{isRoot ? 'Principal' : String(item.nome || 'Subprojeto')}</span>
+                    {projectCount(id) ? <small>{projectCount(id)}</small> : null}
+                  </button>
+                  {projectId === id ? (
+                    <button ref={projectMenuRef} type="button" className={styles.familyMore} onClick={() => setProjectMenu(true)} aria-label={`Opções de ${String(item.nome || 'projeto')}`} title="Editar projeto e seções"><Icon name="more_horiz" size={18} filled={false} /></button>
+                  ) : null}
+                </div>
               )
             })}
-            <button ref={projectMenuRef} type="button" className={styles.iconButton} onClick={() => setProjectMenu(true)} aria-label={`Opções de ${String(project?.nome || 'projeto')}`} title="Editar projeto e seções"><Icon name="more_horiz" size={20} filled={false} /></button>
             {projectMenu ? (
               <Floating anchor={projectMenuRef} title={String(project?.nome || 'Projeto')} onClose={() => setProjectMenu(false)} width={240}>
                 <OptionList value="" options={[{ value: 'edit', label: 'Editar projeto', icon: 'edit' }, { value: 'sections', label: 'Seções', icon: 'view_agenda' }]} onSelect={value => {
@@ -656,14 +657,12 @@ export function TasksModern(props: Props) {
               </Floating>
             ) : null}
             <button type="button" className={styles.familyAdd} onClick={() => props.onNewProject(String(root?.id || projectId))}><Icon name="add" size={15} />Subprojeto</button>
-            <span className={styles.familySummary}>{summary}</span>
           </div>
         ) : (
           <div className={styles.headLeft}>
             {headIcon}
             <div className={styles.headText}>
               <h1>{title}</h1>
-              <span>{summary}</span>
             </div>
           </div>
         )}
