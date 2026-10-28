@@ -397,7 +397,6 @@ export function TasksModern(props: Props) {
   )
   const root = projectId ? rootOf(project) : undefined
   const family = root ? [root, ...childrenOf(String(root.id))] : []
-  const parentProject = project?.parent_id ? projectMap.get(String(project.parent_id)) : undefined
   const summary = [plural(openCount, 'aberta', 'abertas'), lateCount ? plural(lateCount, 'atrasada', 'atrasadas') : '', projectId && sections.length ? plural(sections.length, 'seção', 'seções') : ''].filter(Boolean).join(' · ')
 
   const setLayout = (layout: 'normal' | 'kanban') => commit(current => {
@@ -632,34 +631,42 @@ export function TasksModern(props: Props) {
         </div>
       </div>
 
-      <header className={styles.header}>
-        <div className={styles.headLeft}>
-          {headIcon}
-          <div className={styles.headText}>
-            {parentProject ? (
-              <button type="button" className={styles.crumb} onClick={() => props.onScopeChange(`project:${String(parentProject.id)}`)}>
-                <Icon name="arrow_back" size={14} filled={false} />{String(parentProject.nome || 'Projeto')}
-              </button>
+      <header className={styles.header} data-project={projectId ? 'true' : undefined}>
+        {projectId ? (
+          <div className={styles.family} role="tablist" aria-label="Projeto e subprojetos">
+            {family.map(item => {
+              const id = String(item.id)
+              const isRoot = id === String(root?.id)
+              return (
+                <button key={id} type="button" role="tab" className={styles.familyChip} data-active={projectId === id || undefined} aria-selected={projectId === id} onClick={() => props.onScopeChange(`project:${id}`)}>
+                  {isRoot ? <Icon name="folder" size={15} /> : projectVisual(item, 'tab')}
+                  <span>{isRoot ? 'Principal' : String(item.nome || 'Subprojeto')}</span>
+                  {projectCount(id) ? <small>{projectCount(id)}</small> : null}
+                </button>
+              )
+            })}
+            <button ref={projectMenuRef} type="button" className={styles.iconButton} onClick={() => setProjectMenu(true)} aria-label={`Opções de ${String(project?.nome || 'projeto')}`} title="Editar projeto e seções"><Icon name="more_horiz" size={20} filled={false} /></button>
+            {projectMenu ? (
+              <Floating anchor={projectMenuRef} title={String(project?.nome || 'Projeto')} onClose={() => setProjectMenu(false)} width={240}>
+                <OptionList value="" options={[{ value: 'edit', label: 'Editar projeto', icon: 'edit' }, { value: 'sections', label: 'Seções', icon: 'view_agenda' }]} onSelect={value => {
+                  setProjectMenu(false)
+                  if (value === 'edit') props.onEditProject(projectId)
+                  if (value === 'sections') props.onManageSections(projectId)
+                }} />
+              </Floating>
             ) : null}
-            <h1>{title}</h1>
-            <span>{summary}</span>
+            <button type="button" className={styles.familyAdd} onClick={() => props.onNewProject(String(root?.id || projectId))}><Icon name="add" size={15} />Subprojeto</button>
+            <span className={styles.familySummary}>{summary}</span>
           </div>
-          {projectId ? (
-            <>
-              <button ref={projectMenuRef} type="button" className={styles.iconButton} onClick={() => setProjectMenu(true)} aria-label="Opções do projeto"><Icon name="more_horiz" size={20} filled={false} /></button>
-              {projectMenu ? (
-                <Floating anchor={projectMenuRef} title={String(project?.nome || 'Projeto')} onClose={() => setProjectMenu(false)} width={240}>
-                  <OptionList value="" options={[{ value: 'edit', label: 'Editar projeto', icon: 'edit' }, { value: 'sections', label: 'Seções', icon: 'view_agenda' }, { value: 'sub', label: 'Novo subprojeto', icon: 'subdirectory_arrow_right' }]} onSelect={value => {
-                    setProjectMenu(false)
-                    if (value === 'edit') props.onEditProject(projectId)
-                    if (value === 'sections') props.onManageSections(projectId)
-                    if (value === 'sub') props.onNewProject(projectId)
-                  }} />
-                </Floating>
-              ) : null}
-            </>
-          ) : null}
-        </div>
+        ) : (
+          <div className={styles.headLeft}>
+            {headIcon}
+            <div className={styles.headText}>
+              <h1>{title}</h1>
+              <span>{summary}</span>
+            </div>
+          </div>
+        )}
         <div className={styles.headActions}>
           {projectId ? (
             <div className={styles.segmented} role="group" aria-label="Visualização">
@@ -689,23 +696,6 @@ export function TasksModern(props: Props) {
           <button type="button" className={styles.primary} onClick={props.onAdd}><Icon name="add" size={18} /><span>Tarefa</span></button>
         </div>
       </header>
-
-      {family.length > 1 ? (
-        <div className={styles.family} role="tablist" aria-label="Subprojetos">
-          {family.map(item => {
-            const id = String(item.id)
-            const isRoot = id === String(root?.id)
-            return (
-              <button key={id} type="button" role="tab" className={styles.familyChip} data-active={projectId === id || undefined} onClick={() => props.onScopeChange(`project:${id}`)}>
-                {isRoot ? <Icon name="folder" size={15} /> : projectVisual(item, 'tab')}
-                <span>{isRoot ? 'Principal' : String(item.nome || 'Subprojeto')}</span>
-                {projectCount(id) ? <small>{projectCount(id)}</small> : null}
-              </button>
-            )
-          })}
-          <button type="button" className={styles.familyAdd} onClick={() => props.onNewProject(String(root?.id || ''))}><Icon name="add" size={15} />Subprojeto</button>
-        </div>
-      ) : null}
 
       {kanban ? (
         <div className={styles.board}>
