@@ -1314,3 +1314,42 @@
     display: none;
   }
 }
+
+/* Projetos centralizados na faixa (continua rolando quando não cabem). */
+.tabsTitle {
+  display: none;
+}
+
+.tabs {
+  padding-left: 40px;
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 40px, #000 calc(100% - 40px), transparent);
+  mask-image: linear-gradient(to right, transparent, #000 40px, #000 calc(100% - 40px), transparent);
+}
+
+.tabs > :first-child {
+  margin-left: auto;
+}
+
+.tabs > :last-child {
+  margin-right: auto;
+}
+
+.family {
+  justify-content: center;
+}
+
+@media (max-width: 900px) {
+  .tabs {
+    padding-left: 20px;
+    -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 40px), transparent);
+    mask-image: linear-gradient(to right, #000 calc(100% - 40px), transparent);
+  }
+
+  .family {
+    justify-content: flex-start;
+  }
+
+  .family > :first-child {
+    margin-left: 0;
+  }
+}
