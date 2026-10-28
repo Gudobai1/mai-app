@@ -17,7 +17,7 @@ import { HabitsV4 } from './HabitsV4'
 import { HealthQuickAddDrawer } from './HealthQuickAddDrawer'
 import { MinimalAreas, type SecondaryView } from './MinimalAreas'
 import { NotesV4 } from './NotesV4'
-import { ProjectDrawer } from './ProjectDrawer'
+import { ProjectEditor } from './tasks/ProjectEditor'
 import { QuickCreateDrawer } from './QuickCreateDrawer'
 import { SearchOverlay } from './SearchOverlay'
 import { SectionInlineAdd } from './SectionInlineAdd'
@@ -168,7 +168,7 @@ const validView = (value: unknown): value is AppView => {
 }
 const scopeFromLegacy = (value: unknown): TaskModuleScope => {
   const text = String(value || '')
-  if (text === 'today' || text === 'upcoming' || text === 'entrada') return text as TaskModuleScope
+  if (['today', 'upcoming', 'entrada', 'late', 'nodate', 'all'].includes(text)) return text as TaskModuleScope
   if (text === 'inbox') return 'entrada'
   if (text.startsWith('project:')) return text as TaskModuleScope
   return 'entrada'
@@ -315,7 +315,7 @@ export function UnifiedAppUx() {
           {view === 'upcoming' ? <UpcomingV4 state={viewState} today={runtime.today} commit={runtime.commit} inspect={setSelected}/> : null}
           {view === 'completed' ? <CompletedV4 state={viewState} today={runtime.today} commit={runtime.commit} inspect={setSelected}/> : null}
           {view === 'tasks' ? <TasksModern
-            state={viewState}
+            state={runtime.state}
             today={runtime.today}
             scope={taskScope}
             commit={runtime.commit}
@@ -323,10 +323,9 @@ export function UnifiedAppUx() {
             onScopeChange={setTaskScope}
             navigate={navigate}
             onAdd={() => contextualAdd()}
-            onNewProject={() => setProjectDialog({})}
+            onNewProject={parentId => setProjectDialog(parentId ? { parentId } : {})}
             onEditProject={id => setProjectDialog({ projectId: id, tab: 'details' })}
             onManageSections={id => setProjectDialog({ projectId: id, tab: 'sections' })}
-            options={<AppTopBar state={runtime.state} today={runtime.today} view={view} taskScope={taskScope} commit={runtime.commit} onTaskScopeChange={setTaskScope} onSettings={() => setSettingsOpen(true)} />}
           /> : null}
           {view === 'habits' ? <HabitsV4 state={viewState} today={runtime.today} commit={runtime.commit} createRequest={areaCreateRequest} inspect={setSelected}/> : null}
           {view === 'goals' ? <GoalsV4 state={viewState} today={runtime.today} commit={runtime.commit} createRequest={areaCreateRequest} inspect={setSelected}/> : null}
@@ -341,7 +340,7 @@ export function UnifiedAppUx() {
     <ModernBottomNav view={view} searchOpen={searchOpen} navigate={navigate} onSearch={() => setSearchOpen(true)} onAdd={() => contextualAdd()} onSettings={() => setSettingsOpen(true)} onToggleTheme={toggleTheme} dark={isDark} />
     <SectionInlineAdd view={view} onAdd={contextualAdd}/>
     {searchOpen ? <SearchOverlay state={runtime.state} query={search} setQuery={setSearch} onClose={() => setSearchOpen(false)} inspect={setSelected} navigate={navigate} openProject={id => setProjectDialog({ projectId:id, tab:'details' })} /> : null}
-    {projectDialog ? <ProjectDrawer state={runtime.state} commit={runtime.commit} projectId={projectDialog.projectId} parentId={projectDialog.parentId} initialTab={projectDialog.tab} onClose={() => setProjectDialog(null)} onSaved={id => { const wasCreating = !projectDialog.projectId; setProjectDialog(null); if (wasCreating) setTaskScope(`project:${id}`) }} onRemoved={() => { setProjectDialog(null); setTaskScope('entrada') }} /> : null}
+    {projectDialog ? <ProjectEditor state={runtime.state} commit={runtime.commit} projectId={projectDialog.projectId} parentId={projectDialog.parentId} initialTab={projectDialog.tab} onClose={() => setProjectDialog(null)} onSaved={id => { const wasCreating = !projectDialog.projectId; setProjectDialog(null); if (wasCreating) setTaskScope(`project:${id}`) }} onRemoved={() => { setProjectDialog(null); setTaskScope('entrada') }} /> : null}
     {settingsOpen ? <AppSettingsDrawer state={runtime.state} commit={runtime.commit} onClose={() => setSettingsOpen(false)} googleConnected={runtime.googleConnected} calendars={runtime.calendars} calendarDraft={runtime.calendarDraft} setCalendarDraft={runtime.setCalendarDraft} calendarBusy={runtime.calendarBusy} saveCalendars={runtime.saveCalendars} disconnectGoogle={runtime.disconnectGoogle} requestNotifications={runtime.requestNotifications} installPrompt={runtime.installPrompt} install={runtime.install} exportData={runtime.exportData} importData={runtime.importData} importRef={runtime.importRef} syncStatus={runtime.syncStatus} flushRemoteSync={runtime.flushRemoteSync} logout={runtime.logout} /> : null}
     {creating ? <QuickCreateDrawer kind={creating.kind} allowKindSwitch={creating.switchable} state={runtime.state} today={runtime.today} defaultProjectId={creating.kind === 'task' ? activeProjectId : undefined} defaultDate={view === 'today' || (view === 'tasks' && taskScope === 'today') ? runtime.today : ''} commit={runtime.commit} onClose={() => setCreating(null)} /> : null}
     {healthCreating ? <HealthQuickAddDrawer state={runtime.state} today={runtime.today} commit={runtime.commit} onClose={() => setHealthCreating(false)}/> : null}

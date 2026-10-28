@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, type DragEvent, type MouseEvent as ReactMouseEvent, type ReactNode } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type DragEvent, type MouseEvent as ReactMouseEvent } from 'react'
 import { addDays } from '../../../lib/v2/planner'
 import type { LegacyTask, MaiState } from '../../../lib/v2/state'
 import { Icon } from '../../ds'
@@ -26,14 +26,13 @@ type Props = {
   onScopeChange: (scope: TaskModuleScope) => void
   navigate: (view: AppView) => void
   onAdd: () => void
-  onNewProject: () => void
+  onNewProject: (parentId?: string) => void
   onEditProject: (id: string) => void
   onManageSections: (id: string) => void
-  options?: ReactNode
 }
 
 type SortMode = 'manual' | 'date' | 'priority' | 'project' | 'name'
-type Group = { id: string; label: string; tasks: LegacyTask[]; addDate?: string; section?: string; tone?: 'danger' }
+type Group = { id: string; label: string; tasks: LegacyTask[]; addDate?: string; section?: string; tone?: 'danger'; projectId?: string; canAdd?: boolean }
 
 const rows = (value: unknown): Row[] => (Array.isArray(value) ? (value as Row[]) : [])
 const dayOf = (task: Row) => String(task.data_vencimento || '').slice(0, 10)
@@ -73,6 +72,8 @@ export function TasksModern(props: Props) {
   const rawSort = String(controls.tasks?.sort || 'manual')
   const sortMode: SortMode = (['manual', 'date', 'priority', 'project', 'name'].includes(rawSort) ? rawSort : 'manual') as SortMode
   const kanbanPref = controls.tasks?.layout === 'kanban'
+  const filters = (state.configs.moduleFilters && typeof state.configs.moduleFilters === 'object' ? (state.configs.moduleFilters as Record<string, Row>).tasks : null) || {}
+  const priorityFilter = String(filters.priority || 'all')
 
   const projects = useMemo(() => {
     const active = rows(state.projects).filter(project => project.ativo !== false)
@@ -93,14 +94,25 @@ export function TasksModern(props: Props) {
   const isProjectLike = scope === 'entrada' || Boolean(projectId)
   const kanban = kanbanPref && Boolean(projectId)
 
-  const all = state.tasks.filter(standalone)
+  const all = state.tasks.filter(task => standalone(task) && (priorityFilter === 'all' || String(task.prioridade || 4) === priorityFilter))
   const open = all.filter(task => !task.concluida)
   const counts = {
     entrada: open.filter(task => String(task.projeto_id || 'entrada') === 'entrada').length,
     today: open.filter(task => dayOf(task) && dayOf(task) <= today).length,
     upcoming: open.filter(task => dayOf(task) > today).length,
+    late: open.filter(task => dayOf(task) && dayOf(task) < today).length,
+    nodate: open.filter(task => !dayOf(task)).length,
+    all: open.length,
   }
   const projectCount = (id: string) => open.filter(task => String(task.projeto_id || '') === id).length
+  const childrenOf = (id: string) => projects.filter(item => String(item.parent_id || '') === id)
+  const rootOf = (item: Row | undefined): Row | undefined => {
+    let current = item
+    let guard = 0
+    while (current?.parent_id && projectMap.get(String(current.parent_id)) && guard < 8) { current = projectMap.get(String(current.parent_id)); guard += 1 }
+    return current
+  }
+  const familyCount = (id: string): number => projectCount(id) + childrenOf(id).reduce((sum, child) => sum + familyCount(String(child.id)), 0)
 
   const prefsAll = (state.configs.taskWorkspaces && typeof state.configs.taskWorkspaces === 'object' ? state.configs.taskWorkspaces : {}) as Record<string, Row>
   const scopeKey = projectId ? `project:${projectId}` : scope === 'entrada' ? 'inbox' : String(scope)
@@ -161,6 +173,18 @@ export function TasksModern(props: Props) {
       { id: 'today', label: 'Hoje', tasks: openHere.filter(task => dayOf(task) === today), addDate: today },
     ]
     scopeTasks = scopeTasks.filter(task => !task.concluida || dayOf(task) === today)
+  } else if (scope === 'late') {
+    scopeTasks = all.filter(task => dayOf(task) && dayOf(task) < today && !task.concluida)
+    const openHere = sortTasks(scopeTasks)
+    const days = [...new Set(openHere.map(dayOf))].sort()
+    groups = days.map(day => ({ id: `d:${day}`, label: naturalDate(day, today), tasks: openHere.filter(task => dayOf(task) === day), tone: 'danger' as const }))
+  } else if (scope === 'nodate' || scope === 'all') {
+    scopeTasks = all.filter(task => scope === 'all' || !dayOf(task))
+    const openHere = sortTasks(scopeTasks.filter(task => !task.concluida))
+    const order = ['entrada', ...projects.map(item => String(item.id))]
+    const ids = [...new Set(openHere.map(task => String(task.projeto_id || 'entrada')))].sort((a, b) => order.indexOf(a) - order.indexOf(b))
+    groups = ids.map(id => ({ id: `p:${id}`, label: projectName(id), projectId: id, canAdd: scope === 'nodate', tasks: openHere.filter(task => String(task.projeto_id || 'entrada') === id) }))
+    scopeTasks = scope === 'all' ? scopeTasks : scopeTasks.filter(task => !task.concluida)
   } else {
     scopeTasks = all.filter(task => dayOf(task) > today)
     const openHere = sortTasks(scopeTasks.filter(task => !task.concluida))
@@ -287,7 +311,7 @@ export function TasksModern(props: Props) {
     if (!title) return
     const task: Row = {
       id: uid('t'), titulo: title, descricao: '', data_vencimento: group.addDate || '', prioridade: 4, concluida: false,
-      projeto_id: projectId || 'entrada', parent_id: '', secao: group.section || '', criado_em: new Date().toISOString(), ordem: Date.now(),
+      projeto_id: group.projectId || projectId || 'entrada', parent_id: '', secao: group.section || '', criado_em: new Date().toISOString(), ordem: Date.now(),
       notas: [], anexos: [], subtarefas: [], lembretes: [], etiquetas: [], repeticao: '', ocultar_agenda: false,
     }
     commit(current => ({ ...current, tasks: [...current.tasks, task as LegacyTask] }))
@@ -321,16 +345,31 @@ export function TasksModern(props: Props) {
     { scope: 'entrada', label: 'Entrada', icon: 'inbox', color: 'var(--ds-accent)', count: counts.entrada },
     { scope: 'today', label: 'Hoje', icon: 'today', color: 'var(--ds-mint-fg)', count: counts.today },
     { scope: 'upcoming', label: 'Em breve', icon: 'event_upcoming', color: 'var(--ds-lilac-fg)', count: counts.upcoming },
+    { scope: 'late', label: 'Atrasadas', icon: 'warning', color: 'var(--ds-danger)', count: counts.late },
+    { scope: 'nodate', label: 'Sem data', icon: 'event_busy', color: 'var(--ds-text-2)', count: counts.nodate },
+    { scope: 'all', label: 'Todas', icon: 'select_all', color: 'var(--ds-sky-fg)', count: counts.all },
   ]
+  const SCOPE_META: Record<string, { title: string; icon: string; color: string }> = {
+    entrada: { title: 'Entrada', icon: 'inbox', color: 'var(--ds-accent)' },
+    today: { title: 'Hoje', icon: 'today', color: 'var(--ds-mint-fg)' },
+    upcoming: { title: 'Em breve', icon: 'event_upcoming', color: 'var(--ds-lilac-fg)' },
+    late: { title: 'Atrasadas', icon: 'warning', color: 'var(--ds-danger)' },
+    nodate: { title: 'Sem data', icon: 'event_busy', color: 'var(--ds-line-strong)' },
+    all: { title: 'Todas as tarefas', icon: 'select_all', color: 'var(--ds-sky-fg)' },
+  }
 
   /* ---------------------------------------------------------- Cabeçalho */
 
-  const title = projectId ? String(project?.nome || 'Projeto') : scope === 'entrada' ? 'Entrada' : scope === 'today' ? 'Hoje' : 'Em breve'
+  const meta = SCOPE_META[String(scope)] || SCOPE_META.entrada
+  const title = projectId ? String(project?.nome || 'Projeto') : meta.title
   const headIcon = projectId ? projectVisual(project, 'head') : (
-    <span className={styles.headVisual} style={{ background: scope === 'entrada' ? 'var(--ds-accent)' : scope === 'today' ? 'var(--ds-mint-fg)' : 'var(--ds-lilac-fg)' }}>
-      <Icon name={scope === 'entrada' ? 'inbox' : scope === 'today' ? 'today' : 'event_upcoming'} size={22} />
+    <span className={styles.headVisual} style={{ background: meta.color }}>
+      <Icon name={meta.icon} size={22} />
     </span>
   )
+  const root = projectId ? rootOf(project) : undefined
+  const family = root ? [root, ...childrenOf(String(root.id))] : []
+  const parentProject = project?.parent_id ? projectMap.get(String(project.parent_id)) : undefined
   const summary = [plural(openCount, 'aberta', 'abertas'), lateCount ? plural(lateCount, 'atrasada', 'atrasadas') : '', projectId && sections.length ? plural(sections.length, 'seção', 'seções') : ''].filter(Boolean).join(' · ')
 
   const setLayout = (layout: 'normal' | 'kanban') => commit(current => {
@@ -340,6 +379,17 @@ export function TasksModern(props: Props) {
 
   const [projectMenu, setProjectMenu] = useState(false)
   const projectMenuRef = useRef<HTMLButtonElement | null>(null)
+
+  const [optionsOpen, setOptionsOpen] = useState(false)
+  const optionsRef = useRef<HTMLButtonElement | null>(null)
+  const setControl = (patch: Row) => commit(current => {
+    const map = (current.configs.moduleControls && typeof current.configs.moduleControls === 'object' ? current.configs.moduleControls : {}) as Record<string, Row>
+    return { ...current, configs: { ...current.configs, moduleControls: { ...map, tasks: { ...(map.tasks || {}), ...patch } } } }
+  })
+  const setFilter = (patch: Row) => commit(current => {
+    const map = (current.configs.moduleFilters && typeof current.configs.moduleFilters === 'object' ? current.configs.moduleFilters : {}) as Record<string, Row>
+    return { ...current, configs: { ...current.configs, moduleFilters: { ...map, tasks: { ...(map.tasks || {}), ...patch } } } }
+  })
 
   /* ------------------------------------------------------------- Cartão */
 
@@ -355,7 +405,7 @@ export function TasksModern(props: Props) {
     const files = rows(task.anexos).length
     const isSelected = selected.has(id)
     const showDate = Boolean(due) && !(group.addDate && group.addDate === due)
-    const showProject = !isProjectLike
+    const showProject = !isProjectLike && !group.projectId
     const bind = quick.bind(() => taskMenu(task), { onLongPress: () => toggleSelect(id) })
 
     const onClick = (event: ReactMouseEvent) => {
@@ -447,7 +497,7 @@ export function TasksModern(props: Props) {
     </button>
   )
 
-  const canAddIn = (group: Group) => isProjectLike || Boolean(group.addDate)
+  const canAddIn = (group: Group) => isProjectLike || Boolean(group.addDate) || Boolean(group.canAdd)
 
   const groupDropProps = (group: Group) => ({
     onDragOver: (event: DragEvent<HTMLElement>) => { if (dragId) { event.preventDefault(); event.dataTransfer.dropEffect = 'move' } },
@@ -474,30 +524,32 @@ export function TasksModern(props: Props) {
   /* ---------------------------------------------------------------- Tela */
 
   return (
-    <div className={styles.page} data-selecting={selecting || undefined}>
+    <div className={styles.page} data-selecting={selecting || undefined} data-wide={kanban || undefined}>
       <div className={styles.tabsWrap}>
         <div className={styles.tabs} ref={tabsRef} onWheel={onTabsWheel} role="tablist" aria-label="Listas e projetos">
           {scopeTabs.map(tab => (
-            <button key={tab.scope} type="button" role="tab" className={styles.tab} data-active={scope === tab.scope || undefined} aria-selected={scope === tab.scope} onClick={() => props.onScopeChange(tab.scope)}>
+            <button key={tab.scope} type="button" role="tab" className={styles.tab} data-active={scope === tab.scope || undefined} data-alert={tab.scope === 'late' && tab.count > 0 || undefined} aria-selected={scope === tab.scope} onClick={() => props.onScopeChange(tab.scope)}>
               <Icon name={tab.icon} size={17} style={{ color: tab.color }} />
               <span>{tab.label}</span>
               {tab.count ? <small>{tab.count}</small> : null}
             </button>
           ))}
           <span className={styles.tabDivider} aria-hidden="true" />
-          {projects.map(item => {
+          {projects.filter(item => !Number(item._depth || 0)).map(item => {
             const id = String(item.id)
-            const active = projectId === id
+            const kids = childrenOf(id)
+            const active = Boolean(projectId) && String(root?.id || '') === id
             return (
-              <button key={id} type="button" role="tab" className={styles.tab} data-active={active || undefined} data-child={Number(item._depth || 0) > 0 || undefined} aria-selected={active} onClick={() => props.onScopeChange(`project:${id}`)} onDoubleClick={() => props.onEditProject(id)}>
+              <button key={id} type="button" role="tab" className={styles.tab} data-active={active || undefined} aria-selected={active} onClick={() => props.onScopeChange(`project:${id}`)} onDoubleClick={() => props.onEditProject(id)}>
                 {projectVisual(item, 'tab')}
                 <span>{String(item.nome || 'Projeto')}</span>
                 {item.favorito ? <Icon name="star" size={12} className={styles.star} /> : null}
-                {projectCount(id) ? <small>{projectCount(id)}</small> : null}
+                {kids.length ? <span className={styles.kids} title={`${kids.length} subprojeto${kids.length === 1 ? '' : 's'}`}><Icon name="account_tree" size={12} />{kids.length}</span> : null}
+                {familyCount(id) ? <small>{familyCount(id)}</small> : null}
               </button>
             )
           })}
-          <button type="button" className={styles.tabAdd} onClick={props.onNewProject} aria-label="Novo projeto" title="Novo projeto"><Icon name="add" size={18} filled={false} /></button>
+          <button type="button" className={styles.tabAdd} onClick={() => props.onNewProject()} aria-label="Novo projeto" title="Novo projeto"><Icon name="add" size={18} filled={false} /></button>
         </div>
       </div>
 
@@ -505,6 +557,11 @@ export function TasksModern(props: Props) {
         <div className={styles.headLeft}>
           {headIcon}
           <div className={styles.headText}>
+            {parentProject ? (
+              <button type="button" className={styles.crumb} onClick={() => props.onScopeChange(`project:${String(parentProject.id)}`)}>
+                <Icon name="arrow_back" size={14} filled={false} />{String(parentProject.nome || 'Projeto')}
+              </button>
+            ) : null}
             <h1>{title}</h1>
             <span>{summary}</span>
           </div>
@@ -517,7 +574,7 @@ export function TasksModern(props: Props) {
                     setProjectMenu(false)
                     if (value === 'edit') props.onEditProject(projectId)
                     if (value === 'sections') props.onManageSections(projectId)
-                    if (value === 'sub') props.onNewProject()
+                    if (value === 'sub') props.onNewProject(projectId)
                   }} />
                 </Floating>
               ) : null}
@@ -531,10 +588,45 @@ export function TasksModern(props: Props) {
               <button type="button" data-active={kanban || undefined} onClick={() => setLayout('kanban')}><Icon name="view_kanban" size={16} /><span>Quadro</span></button>
             </div>
           ) : null}
-          {props.options ? <div className={styles.options}>{props.options}</div> : null}
+          <button ref={optionsRef} type="button" className={styles.iconButton} data-filled data-active={priorityFilter !== 'all' || undefined} onClick={() => setOptionsOpen(true)} aria-label="Ordenar e filtrar"><Icon name="tune" size={19} filled={false} /></button>
+          {optionsOpen ? (
+            <Floating anchor={optionsRef} title="Ordenar e filtrar" width={280} onClose={() => setOptionsOpen(false)}>
+              <div className={styles.optionsPanel}>
+                <span className={styles.optionsLabel}>Ordenar por</span>
+                <div className={styles.chips}>
+                  {([['manual', 'Manual', 'drag_indicator'], ['date', 'Data', 'calendar_today'], ['priority', 'Prioridade', 'flag'], ['name', 'Nome', 'sort_by_alpha']] as const).map(([value, label, icon]) => (
+                    <button key={value} type="button" data-active={sortMode === value || undefined} onClick={() => setControl({ sort: value })}><Icon name={icon} size={15} />{label}</button>
+                  ))}
+                </div>
+                <span className={styles.optionsLabel}>Mostrar prioridade</span>
+                <div className={styles.chips}>
+                  {([['all', 'Todas', 'select_all', ''], ['1', 'Alta', 'flag', 'var(--ds-rose-fg)'], ['2', 'Média', 'flag', 'var(--ds-peach-fg)'], ['3', 'Baixa', 'flag', 'var(--ds-sky-fg)'], ['4', 'Sem', 'outlined_flag', '']] as const).map(([value, label, icon, color]) => (
+                    <button key={value} type="button" data-active={priorityFilter === value || undefined} onClick={() => setFilter({ priority: value })}><Icon name={icon} size={15} style={color ? { color } : undefined} />{label}</button>
+                  ))}
+                </div>
+              </div>
+            </Floating>
+          ) : null}
           <button type="button" className={styles.primary} onClick={props.onAdd}><Icon name="add" size={18} /><span>Tarefa</span></button>
         </div>
       </header>
+
+      {family.length > 1 ? (
+        <div className={styles.family} role="tablist" aria-label="Subprojetos">
+          {family.map(item => {
+            const id = String(item.id)
+            const isRoot = id === String(root?.id)
+            return (
+              <button key={id} type="button" role="tab" className={styles.familyChip} data-active={projectId === id || undefined} onClick={() => props.onScopeChange(`project:${id}`)}>
+                {isRoot ? <Icon name="folder" size={15} /> : projectVisual(item, 'tab')}
+                <span>{isRoot ? 'Principal' : String(item.nome || 'Subprojeto')}</span>
+                {projectCount(id) ? <small>{projectCount(id)}</small> : null}
+              </button>
+            )
+          })}
+          <button type="button" className={styles.familyAdd} onClick={() => props.onNewProject(String(root?.id || ''))}><Icon name="add" size={15} />Subprojeto</button>
+        </div>
+      ) : null}
 
       {kanban ? (
         <div className={styles.board}>
@@ -562,6 +654,7 @@ export function TasksModern(props: Props) {
                   <div className={styles.groupHead} data-tone={group.tone}>
                     <button type="button" className={styles.collapse} onClick={() => toggleCollapsed(group.id)} aria-expanded={!isCollapsed}>
                       <Icon name={isCollapsed ? 'chevron_right' : 'expand_more'} size={18} filled={false} />
+                      {group.projectId ? (group.projectId === 'entrada' ? <span className={styles.tabVisual} style={{ background: 'var(--ds-accent)' }}><Icon name="inbox" size={12} /></span> : projectVisual(projectMap.get(group.projectId), 'tab')) : null}
                       <strong>{group.label}</strong>
                     </button>
                     <span className={styles.count}>{group.tasks.length}</span>
