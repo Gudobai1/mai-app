@@ -72,6 +72,7 @@ export function ModernSidebar({ state, today, view, navigate, onSearch, onAdd, o
       <nav className={styles.nav} aria-label="Áreas">
         {NAV_GROUPS.map((group, index) => (
           <div key={index} className={styles.group}>
+            <div className={styles.groupLabel}>{group.label}</div>
             {group.items.map(renderItem)}
           </div>
         ))}
