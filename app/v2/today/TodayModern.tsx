@@ -1,6 +1,6 @@
 'use client'
 
-import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { financeSummary } from '../../../lib/v2/finance-summary'
 import { addDays, eventColor, plannerItems, type PlannerItem } from '../../../lib/v2/planner'
 import type { MaiState } from '../../../lib/v2/state'
@@ -677,7 +677,7 @@ export function TodayModern({ state, today, commit, navigate, inspect, profileNa
     return (
       <Fragment key={taskId}>
       <div role="listitem" className={`${styles.item} ${styles.itemWrap} ${styles.task} ${task.concluida ? styles.itemPassed : ''}`} {...quick.bind(() => taskMenu(task))}>
-        <Check className={styles.itemCheck} checked={Boolean(task.concluida)} late={late} label={`Concluir: ${title}`} onCheckedChange={() => toggleTask(String(task.id))} />
+        <Check className={styles.itemCheck} checked={Boolean(task.concluida)} late={late} data-priority={!task.concluida && PRIORITY_COLOR[priority] ? priority : undefined} style={!task.concluida && PRIORITY_COLOR[priority] ? ({ '--check-color': PRIORITY_COLOR[priority] } as CSSProperties) : undefined} label={`Concluir: ${title}`} onCheckedChange={() => toggleTask(String(task.id))} />
         <button type="button" className={styles.itemButton} onClick={() => inspectTask(task)}>
           <span className={styles.taskBody}>
             <span className={styles.taskTitle}>{title}</span>
@@ -694,7 +694,6 @@ export function TodayModern({ state, today, commit, navigate, inspect, profileNa
               {when ? <span className={late ? styles.late : undefined}>{when}</span> : null}
             </span>
           </span>
-          {PRIORITY_COLOR[priority] ? <span className={styles.priority} title={`Prioridade ${priority}`} style={{ color: PRIORITY_COLOR[priority] }}><Icon name="flag" size={15} /></span> : null}
         </button>
         {children.length ? (
           <button type="button" className={styles.expand} data-open={expanded || undefined} onClick={() => toggleSubs(taskId)} aria-expanded={expanded} aria-label={`${expanded ? 'Esconder' : 'Mostrar'} subtarefas de ${title}`}>
@@ -712,12 +711,11 @@ export function TodayModern({ state, today, commit, navigate, inspect, profileNa
             const childPriority = Number(child.prioridade || 4)
             return (
               <div key={childId} role="listitem" className={styles.subRow} data-done={child.concluida || undefined}>
-                <button type="button" className={styles.subCheck} data-done={child.concluida || undefined} data-late={childLate || undefined} onClick={() => toggleTask(childId)} aria-label={child.concluida ? `Reabrir ${String(child.titulo)}` : `Concluir ${String(child.titulo)}`}>
+                <button type="button" className={styles.subCheck} data-done={child.concluida || undefined} data-late={childLate || undefined} style={!child.concluida && PRIORITY_COLOR[childPriority] ? ({ borderColor: PRIORITY_COLOR[childPriority] } as CSSProperties) : undefined} onClick={() => toggleTask(childId)} aria-label={child.concluida ? `Reabrir ${String(child.titulo)}` : `Concluir ${String(child.titulo)}`}>
                   {child.concluida ? <Icon name="check" size={11} /> : null}
                 </button>
                 <button type="button" className={styles.subTitle} onClick={() => inspectTask(child)}>{String(child.titulo || 'Subtarefa')}</button>
                 {childDue ? <span className={styles.subMeta} data-late={childLate || undefined}>{naturalDate(childDue, today)}</span> : null}
-                {PRIORITY_COLOR[childPriority] && !child.concluida ? <span className={styles.subFlag} style={{ color: PRIORITY_COLOR[childPriority] }}><Icon name="flag" size={13} /></span> : null}
               </div>
             )
           })}
