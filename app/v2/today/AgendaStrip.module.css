@@ -2,7 +2,7 @@
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
 }
 
 /* Faixa "Dia todo" */
@@ -12,7 +12,7 @@
   align-items: center;
   gap: 10px;
   min-width: 0;
-  padding: 9px 12px;
+  padding: 8px 12px;
   border: 0;
   border-radius: 10px;
   background: color-mix(in srgb, var(--ev) 14%, transparent);
@@ -54,18 +54,18 @@
 .list {
   display: flex;
   flex-direction: column;
+  margin-top: 6px;
 }
 
 .row {
   appearance: none;
-  height: 38px;
+  height: 34px;
   display: flex;
   align-items: center;
   gap: 10px;
   min-width: 0;
   padding: 0;
   border: 0;
-  border-top: 1px solid var(--ds-line);
   background: transparent;
   color: var(--ds-text);
   font: inherit;
@@ -76,14 +76,14 @@
   user-select: none;
 }
 
-.row:first-child { border-top: 0; }
 .row[data-passed] { opacity: 0.5; }
 .row[data-now] strong { font-weight: var(--ds-fw-heavy); }
 .row[data-now] .rowTime { color: var(--ds-text); }
 
 .rowTime {
-  width: 40px;
+  width: 92px;
   flex-shrink: 0;
+  white-space: nowrap;
   font-size: 12px;
   font-weight: var(--ds-fw-heavy);
   color: var(--ds-muted);
@@ -101,7 +101,7 @@
 .row strong {
   flex: 1;
   min-width: 0;
-  font-size: 14px;
+  font-size: 13.5px;
   font-weight: var(--ds-fw-medium);
   overflow: hidden;
   text-overflow: ellipsis;

@@ -36,8 +36,9 @@ export function AgendaStrip({ items, nowMinutes, isPassed, onOpen, bind }: Props
       .map(item => {
         const start = minutesOf(item.time)
         const rawEnd = minutesOf(String(item.raw.hora_fim || ''))
-        const end = Number.isFinite(rawEnd) && rawEnd > start ? rawEnd : start + 60
-        return { item, start, end }
+        const hasEnd = Number.isFinite(rawEnd) && rawEnd > start
+        const end = hasEnd ? rawEnd : start + 60
+        return { item, start, end, hasEnd }
       })
       .filter(entry => Number.isFinite(entry.start))
       .sort((a, b) => a.start - b.start || a.end - b.end),
@@ -57,7 +58,7 @@ export function AgendaStrip({ items, nowMinutes, isPassed, onOpen, bind }: Props
 
       {timed.length ? (
         <div className={styles.list} role="list">
-          {timed.map(({ item, start, end }) => (
+          {timed.map(({ item, start, end, hasEnd }) => (
             <button
               key={item.id}
               type="button"
@@ -69,8 +70,8 @@ export function AgendaStrip({ items, nowMinutes, isPassed, onOpen, bind }: Props
               onClick={() => onOpen(item)}
               {...bind(item)}
             >
-              <span className={styles.rowTime}>{hm(start)}</span>
               <span className={styles.rowDot} aria-hidden="true" />
+              <span className={styles.rowTime}>{hasEnd ? `${hm(start)} - ${hm(end)}` : hm(start)}</span>
               <strong>{item.title}</strong>
               {item.recurring ? <Icon name="repeat" size={12} /> : null}
               <small>{sourceOf(item)}</small>
