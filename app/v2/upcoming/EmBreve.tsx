@@ -414,10 +414,10 @@ export function EmBreve({ state, today, commit, inspect, syncRange }: Props) {
     return (
       <button key={entry.id} type="button" className={styles.event} data-passed={passed(entry) || undefined} style={{ '--ev': entry.color } as CSSProperties} onClick={() => open(entry)} {...quick.bind(() => menuFor(entry))}>
         <span className={styles.eventDot} aria-hidden="true" />
-        <span className={styles.eventTime}>{entry.time}</span>
+        <span className={styles.eventTime}>{range || entry.time}</span>
         <strong>{entry.title}</strong>
         {entry.recurring ? <Icon name="repeat" size={12} /> : null}
-        <small>{range ? range : ''}<span className={styles.src}>{range ? ' · ' : ''}{entry.source}</span></small>
+        <small className={styles.src}>{entry.source}</small>
       </button>
     )
   }
