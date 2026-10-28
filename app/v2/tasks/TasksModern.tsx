@@ -589,7 +589,7 @@ export function TasksModern(props: Props) {
   /* ---------------------------------------------------------------- Tela */
 
   return (
-    <div className={styles.page} data-selecting={selecting || undefined} data-wide={kanban || undefined}>
+    <div className={styles.page} data-selecting={selecting || undefined}>
       <nav className={styles.lists} aria-label="Listas">
         {scopeTabs.map(tab => (
           <button key={tab.scope} type="button" className={styles.listCard} data-active={scope === tab.scope || undefined} data-alert={tab.scope === 'late' && tab.count > 0 || undefined} aria-current={scope === tab.scope ? 'page' : undefined} onClick={() => props.onScopeChange(tab.scope)} style={{ '--list-color': tab.color } as React.CSSProperties}>
