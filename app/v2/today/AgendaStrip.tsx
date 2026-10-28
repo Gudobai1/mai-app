@@ -71,10 +71,10 @@ export function AgendaStrip({ items, nowMinutes, isPassed, onOpen, bind }: Props
               {...bind(item)}
             >
               <span className={styles.rowDot} aria-hidden="true" />
-              <span className={styles.rowTime}>{hm(start)}</span>
+              <span className={styles.rowTime}>{hm(start)}{hasEnd ? ` – ${hm(end)}` : ''}</span>
               <strong>{item.title}</strong>
               {item.recurring ? <Icon name="repeat" size={12} /> : null}
-              <small>{hasEnd ? `${hm(start)} – ${hm(end)} · ` : ''}{sourceOf(item)}</small>
+              <small>{sourceOf(item)}</small>
             </button>
           ))}
         </div>

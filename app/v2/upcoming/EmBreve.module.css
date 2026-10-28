@@ -78,7 +78,7 @@
 .event { appearance: none; height: 34px; display: flex; align-items: center; gap: 10px; min-width: 0; padding: 0; border: 0; background: transparent; color: var(--ds-text); font: inherit; text-align: left; cursor: pointer; -webkit-touch-callout: none; user-select: none; }
 .event[data-passed] { opacity: 0.5; }
 .eventDot { width: 8px; height: 8px; flex-shrink: 0; border-radius: 50%; background: var(--ev); }
-.eventTime { width: 40px; flex-shrink: 0; font-size: 12px; font-weight: var(--ds-fw-heavy); color: var(--ds-muted); font-variant-numeric: tabular-nums; }
+.eventTime { width: 96px; flex-shrink: 0; font-size: 12px; font-weight: var(--ds-fw-heavy); color: var(--ds-muted); font-variant-numeric: tabular-nums; }
 .event strong { flex: 1; min-width: 0; font-size: 13.5px; font-weight: var(--ds-fw-medium); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .event small { flex-shrink: 0; font-size: 11.5px; font-weight: var(--ds-fw-medium); color: var(--ds-muted); }
 
@@ -191,6 +191,6 @@
   .month { grid-template-rows: 22px repeat(var(--rows), 46px); gap: 0; min-height: 0; margin-top: 4px; }
   .monthHead { justify-content: center; padding: 0; }
   .stripWrap { top: 0; }
-  .event small .src { display: none; }
+  .event small.src { display: none; }
   .daySlot { scroll-margin-top: 96px; }
 }
