@@ -73,6 +73,8 @@ function IconPopover({ id, icon, label, summary = '', hasValue = false, open, se
   return <div className="mai-context-v3-tool" data-open={active || undefined}>
     <button type="button" className="mai-context-v3-tool-button" data-has-value={hasValue || undefined} aria-label={`${label}${summary ? `: ${summary}` : ''}`} title={`${label}${summary ? ` · ${summary}` : ''}`} onClick={() => setOpen(active ? '' : id)}>
       <span className="material-symbols-rounded" aria-hidden="true">{icon}</span>
+      <span className="mai-task-v4-tool-label">{label}</span>
+      <span className="mai-context-v3-tool-value">{summary || 'Não selecionado'}</span>
     </button>
     {active ? <div className="mai-context-v3-popover" role="dialog" aria-label={label} onMouseDown={event => event.stopPropagation()}>
       <header><span className="material-symbols-rounded">{icon}</span><div><strong>{label}</strong>{summary ? <small>{summary}</small> : null}</div></header>

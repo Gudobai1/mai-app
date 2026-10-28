@@ -2,7 +2,7 @@
 
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { financeSummary } from '../../../lib/v2/finance-summary'
-import { eventColor, plannerItems, type PlannerItem } from '../../../lib/v2/planner'
+import { addDays, eventColor, plannerItems, type PlannerItem } from '../../../lib/v2/planner'
 import type { MaiState } from '../../../lib/v2/state'
 import { Button, Card, Check, Icon, IconTile, SectionHeader, Tag, type Tone } from '../../ds'
 import type { AppView, Row } from '../app-types'
@@ -10,6 +10,7 @@ import type { InspectableItem } from '../ContextDrawer'
 import { financeCardPaymentState } from '../FinanceTransactionCard'
 import { driveAssetUrl } from '../DriveAsset'
 import { resolveMaiIcon } from '../MaiIcons'
+import { useQuickMenu, type QuickMenuConfig } from '../shell/QuickMenu'
 import styles from './TodayModern.module.css'
 
 /*
@@ -48,6 +49,8 @@ const values = (value: unknown): unknown[] => (Array.isArray(value) ? value : []
 const dateKey = (value: unknown) => String(value || '').slice(0, 10)
 const timeKey = (value: unknown) => (String(value || '').includes('T') ? String(value).slice(11, 16) : '')
 const uid = (prefix: string) => `${prefix}-${crypto.randomUUID()}`
+/** Descrição em uma linha, sem marcação HTML. */
+const plainText = (value: unknown) => String(value || '').replace(/<br\s*\/?>|<\/(p|div|li)>/gi, ' ').replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/\s+/g, ' ').trim()
 const money = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' })
 const isPaid = (value: unknown) => ['pago', 'paga', 'quitado', 'quitada', 'concluido', 'concluida'].includes(String(value || '').toLocaleLowerCase('pt-BR'))
 const concluded = (item: Row) => item.concluida === true || String(item.status || '').toLocaleLowerCase('pt-BR').includes('conclu')
@@ -354,6 +357,7 @@ export function TodayModern({ state, today, commit, navigate, inspect, profileNa
         key={item.id}
         type="button"
         className={`${styles.item} ${styles.evRow} ${now ? styles.evRowNow : ''} ${passed ? styles.itemPassed : ''}`}
+        {...quick.bind(() => eventMenu(item))}
         onClick={() => inspectPlanner(item)}
       >
         <span className={styles.evWhen}>
@@ -490,6 +494,128 @@ export function TodayModern({ state, today, commit, navigate, inspect, profileNa
 
   const notes = rows(state.notes).filter(note => note.ativo !== false && note.arquivado !== true && !concluded(note) && dateKey(note.data || note.updated_at || note.criado_em) === day).sort((a, b) => String(b.data || b.updated_at || '').localeCompare(String(a.data || a.updated_at || ''))).slice(0, 8)
 
+  /* ------------------------------------------------------- Edição rápida */
+
+  const quick = useQuickMenu()
+  const tomorrow = addDays(today, 1)
+  const nextMonday = (() => { const date = new Date(`${today}T12:00:00`); const add = ((8 - date.getDay()) % 7) || 7; return addDays(today, add) })()
+  const dateChoices = [
+    { label: 'Hoje', icon: 'today', value: today },
+    { label: 'Amanhã', icon: 'wb_sunny', value: tomorrow },
+    { label: 'Próx. semana', icon: 'date_range', value: nextMonday },
+  ]
+
+  function patchTask(id: string, patch: Row) {
+    commit(current => ({ ...current, tasks: current.tasks.map(task => String(task.id) === id ? { ...task, ...patch } : task) }))
+  }
+
+  function taskMenu(task: Row): QuickMenuConfig {
+    const id = String(task.id)
+    const due = dateKey(task.data_vencimento)
+    const time = timeKey(task.data_vencimento)
+    const priority = Number(task.prioridade || 4)
+    const title = String(task.titulo || 'Tarefa')
+    return {
+      title,
+      subtitle: `${projectName(task.projeto_id)}${task.secao ? ` · ${String(task.secao)}` : ''}`,
+      groups: [
+        { label: 'Data', inline: true, options: [
+          ...dateChoices.map(choice => ({ label: choice.label, icon: choice.icon, active: due === choice.value, onSelect: () => patchTask(id, { data_vencimento: `${choice.value}${time ? `T${time}` : ''}` }) })),
+          { label: 'Sem data', icon: 'event_busy', active: !due, onSelect: () => patchTask(id, { data_vencimento: '' }) },
+        ] },
+        { label: 'Prioridade', inline: true, options: [1, 2, 3, 4].map(level => ({
+          label: ['Alta', 'Média', 'Baixa', 'Nenhuma'][level - 1],
+          icon: 'flag',
+          color: PRIORITY_COLOR[level] || 'var(--ds-muted)',
+          active: priority === level,
+          onSelect: () => patchTask(id, { prioridade: level }),
+        })) },
+        { options: [
+          { label: task.concluida ? 'Reabrir tarefa' : 'Concluir', icon: task.concluida ? 'undo' : 'check_circle', onSelect: () => toggleTask(id) },
+          { label: 'Abrir detalhes', icon: 'open_in_full', onSelect: () => inspectTask(task) },
+          { label: 'Excluir', icon: 'delete', tone: 'danger', onSelect: () => {
+            if (!confirm(`Excluir "${title}"?`)) return
+            commit(current => ({ ...current, tasks: current.tasks.filter(item => String(item.id) !== id && String(item.parent_id || '') !== id) }))
+          } },
+        ] },
+      ],
+    }
+  }
+
+  function toggleEventDone(item: PlannerItem) {
+    const key = `${item.sourceId}|${item.date}|${item.time || ''}`
+    commit(current => {
+      const completions = rows(current.eventCompletions)
+      const exists = completions.some(entry => entry.chave === key || (String(entry.evento_id) === item.sourceId && dateKey(entry.data) === item.date && entry.concluida !== false))
+      return {
+        ...current,
+        eventCompletions: exists
+          ? completions.filter(entry => !(entry.chave === key || (String(entry.evento_id) === item.sourceId && dateKey(entry.data) === item.date)))
+          : [...completions, { chave: key, evento_id: item.sourceId, data: item.date, hora: item.time, concluida: true, atualizado_em: new Date().toISOString() }],
+      }
+    })
+  }
+
+  function patchEvent(id: string, patch: (event: Row) => Row) {
+    commit(current => ({ ...current, events: rows(current.events).map(event => String(event.id) === id ? patch(event) : event) }))
+  }
+
+  function eventMenu(item: PlannerItem): QuickMenuConfig {
+    const google = item.raw.tipo === 'google' || item.raw.tipo === 'gcalendar'
+    const id = item.sourceId
+    const start = dateKey(item.raw.data_inicio)
+    const end = dateKey(item.raw.data_fim)
+    const moveTo = (target: string) => patchEvent(id, event => {
+      const shift = Math.round((new Date(`${target}T12:00:00`).getTime() - new Date(`${start}T12:00:00`).getTime()) / 86400000)
+      return { ...event, data_inicio: target, ...(end ? { data_fim: addDays(end, shift) } : {}) }
+    })
+    const done = Boolean(item.completed)
+    return {
+      title: item.title,
+      subtitle: `${item.time ? `${item.time} · ` : ''}${google ? String(item.raw.calendario_nome || 'Google Agenda') : String(item.raw.categoria || 'MAI')}`,
+      groups: [
+        google || !start ? { options: [] } : { label: 'Mover para', inline: true, options: dateChoices.map(choice => ({ label: choice.label, icon: choice.icon, active: start === choice.value, onSelect: () => moveTo(choice.value) })) },
+        { options: [
+          { label: done ? 'Desmarcar concluído' : 'Marcar como concluído', icon: done ? 'undo' : 'check_circle', onSelect: () => toggleEventDone(item) },
+          { label: 'Abrir detalhes', icon: 'open_in_full', onSelect: () => inspectPlanner(item) },
+          ...(google && item.raw.url ? [{ label: 'Abrir no Google Agenda', icon: 'open_in_new', onSelect: () => { window.open(String(item.raw.url), '_blank', 'noopener') } }] : []),
+          ...(!google ? [{ label: 'Excluir', icon: 'delete', tone: 'danger' as const, onSelect: () => {
+            if (!confirm(`Excluir "${item.title}"?`)) return
+            commit(current => ({ ...current, events: rows(current.events).filter(event => String(event.id) !== id), eventCompletions: rows(current.eventCompletions).filter(entry => String(entry.evento_id) !== id) }))
+          } }] : []),
+        ] },
+      ],
+    }
+  }
+
+  function patchTransaction(id: string, patch: Row) {
+    commit(current => ({ ...current, finance: { ...current.finance, transactions: rows(current.finance.transactions).map(row => String(row.id) === id ? { ...row, ...patch } : row) } }))
+  }
+
+  function financeMenu(item: Row): QuickMenuConfig {
+    const id = String(item.id)
+    const due = dateKey(item.data)
+    const income = String(item.tipo || '').toLocaleLowerCase('pt-BR') === 'receita'
+    const payment = financeCardPaymentState(item)
+    const paid = payment.status === 'pago'
+    const title = txTitle(item)
+    return {
+      title,
+      subtitle: `${income ? '+' : '-'}${money.format(payment.remaining || payment.total)} · ${naturalDate(due, today)}`,
+      groups: [
+        { label: 'Vencimento', inline: true, options: dateChoices.map(choice => ({ label: choice.label, icon: choice.icon, active: due === choice.value, onSelect: () => patchTransaction(id, { data: choice.value, dia_mes: Number(choice.value.slice(8)) }) })) },
+        { options: [
+          { label: paid ? 'Marcar como pendente' : income ? 'Marcar como recebido' : 'Marcar como pago', icon: paid ? 'undo' : 'check_circle', onSelect: () => toggleFinancePaid(item) },
+          { label: 'Abrir detalhes', icon: 'open_in_full', onSelect: () => inspect({ kind: 'finance', sourceId: id, title, date: due, raw: item }) },
+          { label: 'Excluir', icon: 'delete', tone: 'danger', onSelect: () => {
+            if (!confirm(`Excluir "${title}"?`)) return
+            commit(current => ({ ...current, finance: { ...current.finance, transactions: rows(current.finance.transactions).filter(row => String(row.id) !== id) } }))
+          } },
+        ] },
+      ],
+    }
+  }
+
   /* ---------------------------------------------------------------- Seções */
 
   const financeMode = ['summary', 'bills'].includes(String(state.configs.todayFinanceMode)) ? String(state.configs.todayFinanceMode) : 'both'
@@ -500,13 +626,15 @@ export function TodayModern({ state, today, commit, navigate, inspect, profileNa
     const time = timeKey(task.data_vencimento)
     const priority = Number(task.prioridade || 4)
     const title = String(task.titulo || 'Tarefa')
+    const description = plainText(task.descricao)
     const when = `${naturalDate(due, today)}${time ? ` · ${time}` : ''}`
     return (
-      <div key={String(task.id)} role="listitem" className={`${styles.item} ${styles.itemWrap} ${styles.task} ${task.concluida ? styles.itemPassed : ''}`}>
+      <div key={String(task.id)} role="listitem" className={`${styles.item} ${styles.itemWrap} ${styles.task} ${task.concluida ? styles.itemPassed : ''}`} {...quick.bind(() => taskMenu(task))}>
         <Check className={styles.itemCheck} checked={Boolean(task.concluida)} late={late} label={`Concluir: ${title}`} onCheckedChange={() => toggleTask(String(task.id))} />
         <button type="button" className={styles.itemButton} onClick={() => inspectTask(task)}>
           <span className={styles.taskBody}>
             <span className={styles.taskTitle}>{title}</span>
+            {description ? <span className={styles.taskDesc}>{description}</span> : null}
             <span className={styles.taskSub}>
               <span className={styles.projectTag}>
                 {projectImage(task.projeto_id) ? <img className={styles.projectImg} src={projectImage(task.projeto_id)} alt="" loading="lazy" /> : <span className={styles.projectDot} style={{ background: projectColor(task.projeto_id) }} />}
@@ -629,7 +757,7 @@ export function TodayModern({ state, today, commit, navigate, inspect, profileNa
                   const payment = financeCardPaymentState(item)
                   const title = txTitle(item)
                   return (
-                    <div key={String(item.id)} className={`${styles.item} ${styles.itemWrap} ${payment.status === 'pago' ? styles.itemPassed : ''}`}>
+                    <div key={String(item.id)} className={`${styles.item} ${styles.itemWrap} ${payment.status === 'pago' ? styles.itemPassed : ''}`} {...quick.bind(() => financeMenu(item))}>
                       <Check className={styles.itemCheck} checked={payment.status === 'pago'} late={due < today} label={`${income ? 'Marcar como recebido' : 'Marcar como pago'}: ${title}`} onCheckedChange={() => toggleFinancePaid(item)} />
                       <button type="button" className={styles.itemButton} onClick={() => inspect({ kind: 'finance', sourceId: String(item.id), title, date: due, raw: item })}>
                         <span className={styles.itemTitle}>{title}</span>
@@ -767,6 +895,7 @@ export function TodayModern({ state, today, commit, navigate, inspect, profileNa
         {column('middle')}
         {column('side')}
       </div>
+      {quick.element}
     </div>
   )
 }
