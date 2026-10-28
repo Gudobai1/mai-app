@@ -303,9 +303,6 @@
 
 /* --------------------------------------------------------------- Lista */
 
-.page[data-wide] {
-  max-width: none;
-}
 
 .list {
   display: flex;
@@ -1463,4 +1460,17 @@
 @keyframes subIn {
   from { opacity: 0; transform: translateY(-4px); }
   to { opacity: 1; transform: none; }
+}
+
+/* Quadro dentro da coluna central: rola para o lado quando não cabe. */
+.board {
+  max-width: 100%;
+  scroll-snap-type: x proximity;
+  -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 24px), transparent);
+  mask-image: linear-gradient(to right, #000 calc(100% - 24px), transparent);
+}
+
+.column {
+  width: 280px;
+  scroll-snap-align: start;
 }
