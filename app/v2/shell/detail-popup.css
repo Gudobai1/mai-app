@@ -17,9 +17,9 @@ html body .mai-context-v3-layer {
   height: auto !important;
   z-index: 1400 !important;
   display: flex !important;
-  align-items: flex-start !important;
+  align-items: center !important;
   justify-content: center !important;
-  padding: max(6vh, 24px) 24px 24px !important;
+  padding: 24px !important;
   box-sizing: border-box !important;
   background: rgba(5, 6, 9, 0.55) !important;
   backdrop-filter: blur(3px) !important;
@@ -40,8 +40,8 @@ html body .mai-context-v3-drawer {
   max-width: 100% !important;
   height: auto !important;
   min-height: 0 !important;
-  max-height: calc(100dvh - max(6vh, 24px) - 24px) !important;
-  margin: 0 auto !important;
+  max-height: min(820px, calc(100dvh - 48px)) !important;
+  margin: auto !important;
   display: flex !important;
   flex-direction: column !important;
   overflow: hidden !important;
@@ -279,6 +279,7 @@ html body .mai-context-v3-section > header small {
     width: 100% !important;
     max-width: 100% !important;
     max-height: calc(100dvh - 56px) !important;
+    margin: auto 0 0 !important;
     border: 0 !important;
     border-radius: 24px 24px 0 0 !important;
     box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.35) !important;

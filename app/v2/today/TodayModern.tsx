@@ -10,6 +10,7 @@ import type { InspectableItem } from '../ContextDrawer'
 import { financeCardPaymentState } from '../FinanceTransactionCard'
 import { driveAssetUrl } from '../DriveAsset'
 import { resolveMaiIcon } from '../MaiIcons'
+import { askConfirm } from '../shell/ConfirmDialog'
 import { useQuickMenu, type QuickMenuConfig } from '../shell/QuickMenu'
 import styles from './TodayModern.module.css'
 
@@ -533,8 +534,8 @@ export function TodayModern({ state, today, commit, navigate, inspect, profileNa
         { options: [
           { label: task.concluida ? 'Reabrir tarefa' : 'Concluir', icon: task.concluida ? 'undo' : 'check_circle', onSelect: () => toggleTask(id) },
           { label: 'Abrir detalhes', icon: 'open_in_full', onSelect: () => inspectTask(task) },
-          { label: 'Excluir', icon: 'delete', tone: 'danger', onSelect: () => {
-            if (!confirm(`Excluir "${title}"?`)) return
+          { label: 'Excluir', icon: 'delete', tone: 'danger', onSelect: async () => {
+            if (!(await askConfirm({ title: 'Excluir tarefa?', message: `“${title}” será excluída. Não dá para desfazer.` }))) return
             commit(current => ({ ...current, tasks: current.tasks.filter(item => String(item.id) !== id && String(item.parent_id || '') !== id) }))
           } },
         ] },
@@ -579,8 +580,8 @@ export function TodayModern({ state, today, commit, navigate, inspect, profileNa
           { label: done ? 'Desmarcar concluído' : 'Marcar como concluído', icon: done ? 'undo' : 'check_circle', onSelect: () => toggleEventDone(item) },
           { label: 'Abrir detalhes', icon: 'open_in_full', onSelect: () => inspectPlanner(item) },
           ...(google && item.raw.url ? [{ label: 'Abrir no Google Agenda', icon: 'open_in_new', onSelect: () => { window.open(String(item.raw.url), '_blank', 'noopener') } }] : []),
-          ...(!google ? [{ label: 'Excluir', icon: 'delete', tone: 'danger' as const, onSelect: () => {
-            if (!confirm(`Excluir "${item.title}"?`)) return
+          ...(!google ? [{ label: 'Excluir', icon: 'delete', tone: 'danger' as const, onSelect: async () => {
+            if (!(await askConfirm({ title: 'Excluir compromisso?', message: `“${item.title}” será excluído. Não dá para desfazer.` }))) return
             commit(current => ({ ...current, events: rows(current.events).filter(event => String(event.id) !== id), eventCompletions: rows(current.eventCompletions).filter(entry => String(entry.evento_id) !== id) }))
           } }] : []),
         ] },
@@ -641,8 +642,8 @@ export function TodayModern({ state, today, commit, navigate, inspect, profileNa
         { options: [
           { label: paid ? 'Marcar como pendente' : income ? 'Marcar como recebido' : 'Marcar como pago', icon: paid ? 'undo' : 'check_circle', onSelect: () => toggleFinancePaid(item) },
           { label: 'Abrir detalhes', icon: 'open_in_full', onSelect: () => inspect({ kind: 'finance', sourceId: id, title, date: due, raw: item }) },
-          { label: 'Excluir', icon: 'delete', tone: 'danger', onSelect: () => {
-            if (!confirm(`Excluir "${title}"?`)) return
+          { label: 'Excluir', icon: 'delete', tone: 'danger', onSelect: async () => {
+            if (!(await askConfirm({ title: 'Excluir lançamento?', message: `“${title}” será excluído. Não dá para desfazer.` }))) return
             commit(current => ({ ...current, finance: { ...current.finance, transactions: rows(current.finance.transactions).filter(row => String(row.id) !== id) } }))
           } },
         ] },
@@ -654,7 +655,7 @@ export function TodayModern({ state, today, commit, navigate, inspect, profileNa
 
   const financeMode = ['summary', 'bills'].includes(String(state.configs.todayFinanceMode)) ? String(state.configs.todayFinanceMode) : 'both'
 
-  const renderTask = (task: Row) => {
+  const renderTask = (task: Row, grouped = false) => {
     const due = dateKey(task.data_vencimento)
     const late = due < today
     const time = timeKey(task.data_vencimento)
@@ -670,10 +671,14 @@ export function TodayModern({ state, today, commit, navigate, inspect, profileNa
             <span className={styles.taskTitle}>{title}</span>
             {description ? <span className={styles.taskDesc}>{description}</span> : null}
             <span className={styles.taskSub}>
-              <span className={styles.projectTag}>
-                {projectImage(task.projeto_id) ? <img className={styles.projectImg} src={projectImage(task.projeto_id)} alt="" loading="lazy" /> : <span className={styles.projectDot} style={{ background: projectColor(task.projeto_id) }} />}
-                <span className={styles.projectText}>{projectName(task.projeto_id)}{task.secao ? <span className={styles.projectSection}> · {String(task.secao)}</span> : null}</span>
-              </span>
+              {grouped ? (
+                task.secao ? <span className={styles.sectionTag}><Icon name="view_agenda" size={12} />{String(task.secao)}</span> : null
+              ) : (
+                <span className={styles.projectTag}>
+                  {projectImage(task.projeto_id) ? <img className={styles.projectImg} src={projectImage(task.projeto_id)} alt="" loading="lazy" /> : <span className={styles.projectDot} style={{ background: projectColor(task.projeto_id) }} />}
+                  <span className={styles.projectText}>{projectName(task.projeto_id)}{task.secao ? <span className={styles.projectSection}> · {String(task.secao)}</span> : null}</span>
+                </span>
+              )}
               {when ? <span className={late ? styles.late : undefined}>{when}</span> : null}
             </span>
           </span>
@@ -691,7 +696,14 @@ export function TodayModern({ state, today, commit, navigate, inspect, profileNa
       if (!grouped.has(id)) grouped.set(id, [])
       grouped.get(id)!.push(task)
     })
-    return [...grouped.entries()].map(([id, items]) => ({ id, name: projectName(id), items }))
+    const projectOrder = (id: string) => id === 'entrada' ? -1 : projects.findIndex(project => String(project.id) === id)
+    return [...grouped.entries()]
+      .sort(([a], [b]) => projectOrder(a) - projectOrder(b))
+      .map(([id, items]) => {
+        const sections = rows(projectMap.get(id)?.secoes).map(String)
+        const sectionIndex = (task: Row) => { const index = sections.indexOf(String(task.secao || '')); return index < 0 ? (task.secao ? sections.length : -1) : index }
+        return { id, name: id === 'entrada' ? 'Entrada' : projectName(id), items: [...items].sort((a, b) => sectionIndex(a) - sectionIndex(b)) }
+      })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tasks, sortMode, projectMap])
 
@@ -707,12 +719,16 @@ export function TodayModern({ state, today, commit, navigate, inspect, profileNa
         <SectionHeader title="Tarefas" meta={tasks.length ? (lateCount ? `${tasks.length} · ${lateCount} atrasada${lateCount === 1 ? '' : 's'}` : String(tasks.length)) : undefined} />
         {tasks.length ? (
           sortMode === 'project' && taskGroups.length ? (
-            <div role="list" className={styles.items}>
+            <div className={styles.projectGroups}>
               {taskGroups.map(group => (
-                <div key={group.id} className={styles.items}>
-                  <div className={styles.groupLabel}><span>{group.name}</span><span>{group.items.length}</span></div>
-                  {group.items.map(renderTask)}
-                </div>
+                <section key={group.id} className={styles.projectGroup} aria-label={group.name}>
+                  <header className={styles.projectHead}>
+                    {projectImage(group.id) ? <img className={styles.projectHeadImg} src={projectImage(group.id)} alt="" loading="lazy" /> : <span className={styles.projectHeadDot} style={{ background: group.id === 'entrada' ? 'var(--ds-accent)' : projectColor(group.id) }}>{group.id === 'entrada' ? <Icon name="inbox" size={14} /> : null}</span>}
+                    <strong>{group.name}</strong>
+                    <span className={styles.projectCount}>{group.items.length}</span>
+                  </header>
+                  <div role="list" className={styles.items}>{group.items.map(task => renderTask(task, true))}</div>
+                </section>
               ))}
             </div>
           ) : <div role="list" className={styles.items}>{tasks.map(renderTask)}</div>

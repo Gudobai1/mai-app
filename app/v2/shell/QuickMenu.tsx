@@ -17,7 +17,7 @@ export type QuickOption = {
   color?: string
   active?: boolean
   tone?: 'danger'
-  onSelect: () => void
+  onSelect: () => void | Promise<void>
 }
 
 /** Grupo em linha (datas, prioridade) ou lista de ações. */

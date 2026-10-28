@@ -5,9 +5,9 @@
   inset: 0;
   z-index: 1400;
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: center;
-  padding: max(6vh, 24px) 24px 24px;
+  padding: 24px;
   box-sizing: border-box;
   background: rgba(5, 6, 9, 0.55);
   backdrop-filter: blur(3px);
@@ -20,7 +20,8 @@
 .panel {
   position: relative;
   width: min(640px, 100%);
-  max-height: calc(100dvh - max(6vh, 24px) - 24px);
+  max-height: min(820px, calc(100dvh - 48px));
+  margin: auto;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -282,6 +283,31 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.propButton {
+  appearance: none;
+  border: 0;
+  color: var(--ds-text);
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.propButton:focus-visible {
+  outline: 2px solid var(--ds-accent);
+  outline-offset: 2px;
+}
+
+.propButton[data-open] {
+  background: var(--ds-surface-hover);
+  box-shadow: inset 0 0 0 1.5px var(--ds-accent);
+}
+
+.propChevron {
+  display: none;
+  flex-shrink: 0;
+  color: var(--ds-muted);
 }
 
 .prop[data-muted] .propValue {
@@ -859,6 +885,7 @@
 
   .panel {
     width: 100%;
+    margin: auto 0 0;
     max-height: calc(100dvh - 48px);
     border: 0;
     border-radius: 24px 24px 0 0;
@@ -941,6 +968,16 @@
     text-align: right;
   }
 
+  .propChevron {
+    display: block;
+    transform: rotate(-90deg);
+  }
+
+  .propButton[data-open] {
+    background: transparent;
+    box-shadow: none;
+  }
+
   .prop .inlineInput {
     width: 90px;
     font-size: 16px;
@@ -985,5 +1022,220 @@
   .layer,
   .panel {
     animation: none;
+  }
+}
+
+/* ------------------------------------------------------------ Subtarefas */
+
+.subCard {
+  min-height: 48px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 10px 12px 14px;
+  border-radius: 13px;
+  background: var(--ds-surface-2);
+  transition: background-color var(--ds-dur-fast) var(--ds-ease);
+}
+
+.subCard:hover {
+  background: var(--ds-surface-hover);
+}
+
+.subCard .round {
+  width: 20px;
+  height: 20px;
+  margin-top: 1px;
+}
+
+.subCard .listChevron {
+  align-self: center;
+}
+
+.subMain {
+  appearance: none;
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--ds-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.subTitle {
+  font-size: 14.5px;
+  font-weight: var(--ds-fw-bold);
+  line-height: 1.3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.subDesc {
+  font-size: 12.5px;
+  font-weight: var(--ds-fw-medium);
+  color: var(--ds-text-2);
+  opacity: 0.85;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.subMeta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+  margin-top: 2px;
+  font-size: 12px;
+  font-weight: var(--ds-fw-bold);
+  color: var(--ds-muted);
+}
+
+.subMeta > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.subMeta > span[data-late] {
+  color: var(--ds-danger);
+}
+
+.subCard[data-done] .subTitle {
+  color: var(--ds-muted);
+  text-decoration: line-through;
+}
+
+.subCard[data-done] .subDesc,
+.subCard[data-done] .subMeta {
+  opacity: 0.6;
+}
+
+.addButton {
+  appearance: none;
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 13px;
+  background: transparent;
+  color: var(--ds-accent);
+  font: inherit;
+  font-size: 14.5px;
+  font-weight: var(--ds-fw-bold);
+  text-align: left;
+  cursor: pointer;
+  transition: background-color var(--ds-dur-fast) var(--ds-ease);
+}
+
+.addButton:hover {
+  background: var(--ds-accent-soft);
+}
+
+.addIcon {
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--ds-accent);
+  color: var(--ds-on-accent);
+}
+
+.composer {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 12px 10px 14px;
+  border-radius: 13px;
+  background: var(--ds-surface-2);
+  box-shadow: inset 0 0 0 1.5px var(--ds-accent);
+}
+
+.composer input {
+  width: 100%;
+  padding: 0;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: var(--ds-text);
+  font: inherit;
+  font-size: 16px;
+  font-weight: var(--ds-fw-bold);
+}
+
+.composer input::placeholder {
+  color: var(--ds-muted);
+  font-weight: var(--ds-fw-medium);
+}
+
+.composerActions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.composerHint {
+  flex: 1;
+  font-size: 11.5px;
+  font-weight: var(--ds-fw-medium);
+  color: var(--ds-muted);
+}
+
+.composerCancel,
+.composerAdd {
+  appearance: none;
+  height: 32px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 9px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: var(--ds-fw-bold);
+  cursor: pointer;
+}
+
+.composerCancel {
+  background: transparent;
+  color: var(--ds-text-2);
+}
+
+.composerCancel:hover {
+  background: var(--ds-surface-hover);
+}
+
+.composerAdd {
+  background: var(--ds-accent);
+  color: var(--ds-on-accent);
+}
+
+.composerAdd:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+@media (max-width: 900px) {
+  .composerHint {
+    display: none;
+  }
+
+  .composerActions {
+    justify-content: flex-end;
+  }
+
+  .composerCancel,
+  .composerAdd {
+    height: 38px;
+    padding: 0 16px;
+    font-size: 14px;
   }
 }
