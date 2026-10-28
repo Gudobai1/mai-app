@@ -155,6 +155,12 @@
   gap: 2px;
 }
 
+.group + .group {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--ds-line);
+}
+
 .groupLabel {
   padding: 0 var(--ds-s-3) 6px;
   font-size: var(--ds-fs-xs);

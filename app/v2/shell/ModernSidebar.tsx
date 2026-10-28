@@ -3,7 +3,7 @@
 import type { MaiState } from '../../../lib/v2/state'
 import { Icon } from '../../ds'
 import type { AppView } from '../app-types'
-import { NAV_GROUPS, todayCounts, type NavItem } from './nav'
+import { NAV_ALIAS, NAV_GROUPS, todayCounts, type NavItem } from './nav'
 import styles from './ModernShell.module.css'
 
 type GoogleProfile = { name: string; picture?: string; email?: string } | null
@@ -27,7 +27,7 @@ export function ModernSidebar({ state, today, view, navigate, onSearch, onAdd, o
   const counts = todayCounts(state, today)
 
   const renderItem = (item: NavItem) => {
-    const active = view === item.id
+    const active = (NAV_ALIAS[view] ?? view) === item.id
     const badge = item.id === 'today' && counts.due > 0 ? counts.due : 0
     return (
       <button
@@ -70,9 +70,8 @@ export function ModernSidebar({ state, today, view, navigate, onSearch, onAdd, o
       </div>
 
       <nav className={styles.nav} aria-label="Áreas">
-        {NAV_GROUPS.map(group => (
-          <div key={group.label} className={styles.group}>
-            <div className={styles.groupLabel}>{group.label}</div>
+        {NAV_GROUPS.map((group, index) => (
+          <div key={index} className={styles.group}>
             {group.items.map(renderItem)}
           </div>
         ))}
