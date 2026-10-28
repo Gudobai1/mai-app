@@ -177,7 +177,7 @@ async function calendar(method:string, args:unknown[], g:Awaited<ReturnType<type
       return (data.items || []).map((event:any) => {
         const start = event.start?.dateTime || event.start?.date || ''
         const end = event.end?.dateTime || event.end?.date || ''
-        return { id:`${calendarId}::${event.id}`, google_event_id:event.id, calendario_id:calendarId, calendario_nome:calendarLabel, titulo:event.summary||'Compromisso', descricao:event.description||'', data_inicio:dateOnly(start), hora_inicio:start.includes('T')?start.slice(11,16):'', hora_fim:end.includes('T')?end.slice(11,16):'', dia_inteiro:!start.includes('T'), repeticao:event.recurrence?.[0]||'', cor:event.colorId||'', tipo:'google', url:event.htmlLink }
+        return { id:`${calendarId}::${event.id}`, google_event_id:event.id, calendario_id:calendarId, calendario_nome:calendarLabel, titulo:event.summary||'Compromisso', descricao:event.description||'', data_inicio:dateOnly(start), hora_inicio:start.includes('T')?start.slice(11,16):'', hora_fim:end.includes('T')?end.slice(11,16):'', dia_inteiro:!start.includes('T'), repeticao:event.recurrence?.[0]||'', cor:event.colorId||'', tipo:'google', url:event.htmlLink, local:event.location||'' }
       })
     }))
     return {ok:true,eventos:results.flat()}

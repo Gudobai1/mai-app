@@ -1,0 +1,246 @@
+.strip {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Faixa "Dia todo" */
+.allDay {
+  appearance: none;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 9px 12px;
+  border: 0;
+  border-left: 3px solid var(--ev);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--ev) 14%, transparent);
+  color: var(--ds-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.allDayTag {
+  flex-shrink: 0;
+  font-size: 11px;
+  font-weight: var(--ds-fw-heavy);
+  text-transform: uppercase;
+  color: var(--ev);
+}
+
+.allDayBody {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.allDayBody strong {
+  font-size: 13.5px;
+  font-weight: var(--ds-fw-bold);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.allDayBody small {
+  font-size: 11px;
+  font-weight: var(--ds-fw-medium);
+  color: var(--ds-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Linha do tempo horizontal */
+.scroller {
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 14px, #000 calc(100% - 28px), transparent);
+  mask-image: linear-gradient(to right, transparent, #000 14px, #000 calc(100% - 28px), transparent);
+}
+
+.scroller::-webkit-scrollbar { display: none; }
+
+.track {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.tick {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-left: 1px solid var(--ds-line);
+}
+
+.tick i {
+  position: absolute;
+  top: 0;
+  left: 6px;
+  font-style: normal;
+  font-size: 10.5px;
+  font-weight: var(--ds-fw-bold);
+  color: var(--ds-muted);
+}
+
+.block {
+  appearance: none;
+  position: absolute;
+  height: 48px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px 9px;
+  border: 0;
+  border-top: 3px solid var(--ev);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--ev) 18%, transparent);
+  color: var(--ds-text);
+  font: inherit;
+  text-align: left;
+  overflow: hidden;
+  cursor: pointer;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.block strong {
+  font-size: 12px;
+  font-weight: var(--ds-fw-heavy);
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.block small {
+  font-size: 10.5px;
+  font-weight: var(--ds-fw-bold);
+  color: var(--ev);
+}
+
+.block[data-passed] { opacity: 0.45; }
+
+.now {
+  position: absolute;
+  top: 14px;
+  bottom: 0;
+  width: 2px;
+  margin-left: -1px;
+  background: var(--ds-danger);
+  pointer-events: none;
+}
+
+.now::before {
+  content: '';
+  position: absolute;
+  top: -4px;
+  left: -4px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--ds-danger);
+}
+
+/* Lista simples */
+.list {
+  display: flex;
+  flex-direction: column;
+}
+
+.row {
+  appearance: none;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  min-width: 0;
+  padding: 10px 0;
+  border: 0;
+  border-top: 1px solid var(--ds-line);
+  background: transparent;
+  color: var(--ds-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.row:first-child { border-top: 0; }
+
+.row[data-passed] { opacity: 0.5; }
+
+.rowTime {
+  width: 44px;
+  flex-shrink: 0;
+  padding-top: 1px;
+  font-size: 12px;
+  font-weight: var(--ds-fw-heavy);
+  color: var(--ds-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.rowBar {
+  width: 3px;
+  align-self: stretch;
+  flex-shrink: 0;
+  border-radius: 2px;
+  background: var(--ev);
+}
+
+.rowBody {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.rowBody strong {
+  font-size: 14px;
+  font-weight: var(--ds-fw-medium);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rowBody small {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  font-weight: var(--ds-fw-medium);
+  color: var(--ds-muted);
+  white-space: nowrap;
+}
+
+.rowBody small span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.g {
+  display: inline-grid;
+  place-items: center;
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  border-radius: 4px;
+  background: #4285f4;
+  color: #fff;
+  font-size: 9px;
+  font-weight: var(--ds-fw-heavy);
+}
