@@ -25,6 +25,13 @@ const minutesOf = (time: string) => {
 }
 const hm = (minutes: number) => `${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`
 
+const duration = (minutes: number) => {
+  const h = Math.floor(minutes / 60)
+  const m = minutes % 60
+  if (!h) return `${m} min`
+  return m ? `${h}h${String(m).padStart(2, '0')}` : `${h}h`
+}
+
 const isGoogle = (item: PlannerItem) => item.raw.tipo === 'google' || item.raw.tipo === 'gcalendar'
 const sourceOf = (item: PlannerItem) => String(item.raw.calendario_nome || (isGoogle(item) ? 'Google Agenda' : item.raw.categoria || 'MAI'))
 
@@ -71,10 +78,10 @@ export function AgendaStrip({ items, nowMinutes, isPassed, onOpen, bind }: Props
               {...bind(item)}
             >
               <span className={styles.rowDot} aria-hidden="true" />
-              <span className={styles.rowTime}>{hasEnd ? `${hm(start)} - ${hm(end)}` : hm(start)}</span>
+              <span className={styles.rowTime}>{hm(start)}</span>
               <strong>{item.title}</strong>
               {item.recurring ? <Icon name="repeat" size={12} /> : null}
-              <small>{sourceOf(item)}</small>
+              <small>{hasEnd ? `${duration(end - start)} · ` : ''}{sourceOf(item)}</small>
             </button>
           ))}
         </div>
