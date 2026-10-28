@@ -334,6 +334,34 @@ export function TasksModern(props: Props) {
     if (!box || Math.abs(event.deltaY) <= Math.abs(event.deltaX)) return
     box.scrollLeft += event.deltaY
   }
+  // Arrastar a faixa de projetos com o mouse.
+  const tabsDrag = useRef<{ x: number; left: number; moved: boolean; id: number } | null>(null)
+  const tabsSuppress = useRef(false)
+  const onTabsPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (event.pointerType !== 'mouse' || event.button !== 0 || !tabsRef.current) return
+    tabsDrag.current = { x: event.clientX, left: tabsRef.current.scrollLeft, moved: false, id: event.pointerId }
+  }
+  const onTabsPointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
+    const drag = tabsDrag.current
+    const box = tabsRef.current
+    if (!drag || !box) return
+    const delta = event.clientX - drag.x
+    if (!drag.moved && Math.abs(delta) > 6) {
+      drag.moved = true
+      box.setPointerCapture(drag.id)
+      box.dataset.dragging = 'true'
+    }
+    if (drag.moved) box.scrollLeft = drag.left - delta
+  }
+  const endTabsDrag = () => {
+    const drag = tabsDrag.current
+    tabsDrag.current = null
+    if (tabsRef.current) delete tabsRef.current.dataset.dragging
+    if (drag?.moved) {
+      tabsSuppress.current = true
+      window.setTimeout(() => { tabsSuppress.current = false }, 0)
+    }
+  }
 
   const projectVisual = (item: Row | undefined, size: 'tab' | 'head') => {
     const className = size === 'tab' ? styles.tabVisual : styles.headVisual
@@ -525,16 +553,30 @@ export function TasksModern(props: Props) {
 
   return (
     <div className={styles.page} data-selecting={selecting || undefined} data-wide={kanban || undefined}>
+      <nav className={styles.lists} aria-label="Listas">
+        {scopeTabs.map(tab => (
+          <button key={tab.scope} type="button" className={styles.listCard} data-active={scope === tab.scope || undefined} data-alert={tab.scope === 'late' && tab.count > 0 || undefined} aria-current={scope === tab.scope ? 'page' : undefined} onClick={() => props.onScopeChange(tab.scope)} style={{ '--list-color': tab.color } as React.CSSProperties}>
+            <span className={styles.listIcon}><Icon name={tab.icon} size={18} /></span>
+            <span className={styles.listCount}>{tab.count}</span>
+            <span className={styles.listLabel}>{tab.label}</span>
+          </button>
+        ))}
+      </nav>
+
       <div className={styles.tabsWrap}>
-        <div className={styles.tabs} ref={tabsRef} onWheel={onTabsWheel} role="tablist" aria-label="Listas e projetos">
-          {scopeTabs.map(tab => (
-            <button key={tab.scope} type="button" role="tab" className={styles.tab} data-active={scope === tab.scope || undefined} data-alert={tab.scope === 'late' && tab.count > 0 || undefined} aria-selected={scope === tab.scope} onClick={() => props.onScopeChange(tab.scope)}>
-              <Icon name={tab.icon} size={17} style={{ color: tab.color }} />
-              <span>{tab.label}</span>
-              {tab.count ? <small>{tab.count}</small> : null}
-            </button>
-          ))}
-          <span className={styles.tabDivider} aria-hidden="true" />
+        <span className={styles.tabsTitle}>Projetos</span>
+        <div
+          className={styles.tabs}
+          ref={tabsRef}
+          onWheel={onTabsWheel}
+          onPointerDown={onTabsPointerDown}
+          onPointerMove={onTabsPointerMove}
+          onPointerUp={endTabsDrag}
+          onPointerCancel={endTabsDrag}
+          onClickCapture={event => { if (tabsSuppress.current) { event.preventDefault(); event.stopPropagation() } }}
+          role="tablist"
+          aria-label="Projetos"
+        >
           {projects.filter(item => !Number(item._depth || 0)).map(item => {
             const id = String(item.id)
             const kids = childrenOf(id)
