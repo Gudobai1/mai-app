@@ -2,7 +2,7 @@
 
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { financeSummary } from '../../../lib/v2/finance-summary'
-import { plannerItems, type PlannerItem } from '../../../lib/v2/planner'
+import { eventColor, plannerItems, type PlannerItem } from '../../../lib/v2/planner'
 import type { MaiState } from '../../../lib/v2/state'
 import { Button, Card, Check, Icon, IconTile, ListItem, ProgressBar, SectionHeader, Tag, type Tone } from '../../ds'
 import type { AppView, Row } from '../app-types'
@@ -299,7 +299,7 @@ export function TodayModern({ state, today, commit, navigate, inspect, profileNa
       time: String(event.hora_inicio || ''),
       title: String(event.titulo || 'Compromisso'),
       subtitle: 'Em andamento',
-      color: String(event.categoria_cor || event.calendarColor || event.cor || ''),
+      color: eventColor(event),
       completed: false,
       recurring: Boolean(event.repeticao),
       raw: event,
@@ -335,7 +335,7 @@ export function TodayModern({ state, today, commit, navigate, inspect, profileNa
   }
 
   const renderEvent = (item: PlannerItem, passed: boolean) => {
-    const color = String(item.raw.categoria_cor || item.color || '') || 'var(--ds-accent)'
+    const color = eventColor(item.raw)
     const allDay = item.raw.dia_inteiro === true || !item.time
     const spanning = item.subtitle === 'Em andamento'
     const end = String(item.raw.hora_fim || '').slice(0, 5)

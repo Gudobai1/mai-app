@@ -102,6 +102,16 @@ function fixedForDay(state: MaiState, day: string): Record<string, any>[] {
   })
 }
 
+/** Cores-padrão antigas (verde-sálvia) que não foram escolhidas pelo usuário. */
+const LEGACY_DEFAULT_COLORS = new Set(['#6f8168', '#718269', '#60765a', '#687d62'])
+
+/** Cor de um compromisso: a do calendário/categoria, ou a cor principal do app. */
+export function eventColor(event: Record<string, any>) {
+  const color = String(event.categoria_cor || event.calendarColor || event.cor || '').trim()
+  if (!color || LEGACY_DEFAULT_COLORS.has(color.toLowerCase())) return 'var(--ds-accent)'
+  return color
+}
+
 export function plannerItems(state: MaiState, start: string, end: string): PlannerItem[] {
   const days = daysBetween(start, end)
   const projects = new Map(rows(state.projects).map(project => [String(project.id), project]))
@@ -144,7 +154,7 @@ export function plannerItems(state: MaiState, start: string, end: string): Plann
         time: spanning && day > eventStart ? '' : String(event.hora_inicio || ''),
         title: String(event.titulo || 'Compromisso'),
         subtitle: spanning && day > eventStart && day <= eventEnd ? 'Em andamento' : event.tipo === 'google' || event.tipo === 'gcalendar' ? 'Google Agenda' : String(event.categoria || 'Compromisso'),
-        color: String(event.categoria_cor || event.calendarColor || event.cor || '#6f8168'),
+        color: eventColor(event),
         completed: eventCompleted(state, event, day),
         recurring: Boolean(event.repeticao),
         raw: event,
