@@ -94,15 +94,14 @@
 .block {
   appearance: none;
   position: absolute;
-  height: 48px;
+  height: 26px;
   box-sizing: border-box;
   display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: 6px 9px;
+  align-items: center;
+  padding: 0 7px;
   border: 0;
-  border-top: 3px solid var(--ev);
-  border-radius: 12px;
+  border-left: 3px solid var(--ev);
+  border-radius: 7px;
   background: color-mix(in srgb, var(--ev) 18%, transparent);
   color: var(--ds-text);
   font: inherit;
@@ -115,7 +114,7 @@
 }
 
 .block strong {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: var(--ds-fw-heavy);
   line-height: 1.2;
   white-space: nowrap;
@@ -123,17 +122,11 @@
   text-overflow: ellipsis;
 }
 
-.block small {
-  font-size: 10.5px;
-  font-weight: var(--ds-fw-bold);
-  color: var(--ev);
-}
-
 .block[data-passed] { opacity: 0.45; }
 
 .now {
   position: absolute;
-  top: 14px;
+  top: 12px;
   bottom: 0;
   width: 2px;
   margin-left: -1px;
@@ -243,4 +236,110 @@
   color: #fff;
   font-size: 9px;
   font-weight: var(--ds-fw-heavy);
+}
+
+/* Linha do tempo vertical (computador) */
+.vertical {
+  max-height: 460px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+.vTrack {
+  --gutter: 52px;
+  position: relative;
+}
+
+.vHour {
+  position: absolute;
+  left: 44px;
+  right: 0;
+  border-top: 1px solid var(--ds-line);
+}
+
+.vHour i {
+  position: absolute;
+  top: -7px;
+  left: -44px;
+  width: 36px;
+  font-style: normal;
+  font-size: 11px;
+  font-weight: var(--ds-fw-bold);
+  color: var(--ds-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.vHour:first-child { border-top-color: transparent; }
+
+.vBlock {
+  appearance: none;
+  position: absolute;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  padding: 5px 10px;
+  border: 0;
+  border-left: 3px solid var(--ev);
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--ev) 15%, var(--ds-surface, transparent));
+  color: var(--ds-text);
+  font: inherit;
+  text-align: left;
+  overflow: hidden;
+  cursor: pointer;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.vBlock:hover { background: color-mix(in srgb, var(--ev) 22%, var(--ds-surface, transparent)); }
+.vBlock[data-passed] { opacity: 0.5; }
+
+.vBlock strong {
+  font-size: 13px;
+  font-weight: var(--ds-fw-bold);
+  line-height: 1.25;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.vBlock small {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  font-weight: var(--ds-fw-medium);
+  color: var(--ds-muted);
+  white-space: nowrap;
+}
+
+.vBlock small span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.vNow {
+  position: absolute;
+  left: 44px;
+  right: 0;
+  height: 2px;
+  margin-top: -1px;
+  background: var(--ds-danger);
+  pointer-events: none;
+}
+
+.vNow::before {
+  content: '';
+  position: absolute;
+  left: -4px;
+  top: -4px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--ds-danger);
 }
