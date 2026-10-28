@@ -1474,3 +1474,47 @@
   width: 280px;
   scroll-snap-align: start;
 }
+
+/* Projeto aberto: uma fileira só (Principal, subprojetos, ⋯, + Subprojeto). */
+.header[data-project] .family {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  justify-content: flex-start;
+  align-items: center;
+}
+
+.header[data-project] .familyChip.familyChip:not([data-active]) {
+  background: var(--ds-surface);
+}
+
+.familySummary {
+  margin-left: 6px;
+  font-size: 12.5px;
+  font-weight: var(--ds-fw-medium);
+  color: var(--ds-muted);
+  white-space: nowrap;
+}
+
+@media (max-width: 900px) {
+  .header[data-project] {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .header[data-project] .family {
+    margin: 0 -20px;
+    padding: 0 20px;
+  }
+
+  .header[data-project] .headActions {
+    justify-content: flex-end;
+  }
+
+  .familySummary {
+    display: none;
+  }
+}
