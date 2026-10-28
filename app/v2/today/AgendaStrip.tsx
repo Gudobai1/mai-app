@@ -24,9 +24,8 @@ const minutesOf = (time: string) => {
   return Number.isFinite(hour) ? hour * 60 + (Number.isFinite(minute) ? minute : 0) : NaN
 }
 const hm = (minutes: number) => `${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`
-const HOUR_WIDTH = 44 // celular: faixa fina horizontal, 24h
 const HOUR_HEIGHT = 56 // computador: linha do tempo vertical, 24h
-const LANE = 30
+const pct = (minutes: number) => `${(minutes / 1440) * 100}%`
 const isGoogle = (item: PlannerItem) => item.raw.tipo === 'google' || item.raw.tipo === 'gcalendar'
 const sourceOf = (item: PlannerItem) => String(item.raw.calendario_nome || (isGoogle(item) ? 'Google Agenda' : item.raw.categoria || 'MAI'))
 const contextOf = (item: PlannerItem) => [sourceOf(item), String(item.raw.local || '').trim()].filter(Boolean).join(' · ')
@@ -81,11 +80,10 @@ export function AgendaStrip({ items, nowMinutes, isPassed, onOpen, bind }: Props
   const scroller = useRef<HTMLDivElement | null>(null)
   useLayoutEffect(() => {
     const box = scroller.current
-    if (!box) return
+    if (!box || mobile) return
     const focus = nowMinutes ?? timed[0]?.start
     if (focus === undefined) return
-    if (mobile) box.scrollLeft = Math.max(0, (focus / 60) * HOUR_WIDTH - box.clientWidth * 0.4)
-    else box.scrollTop = Math.max(0, (focus / 60) * HOUR_HEIGHT - HOUR_HEIGHT * 1.5)
+    box.scrollTop = Math.max(0, (focus / 60) * HOUR_HEIGHT - HOUR_HEIGHT * 1.5)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [timed.length, mobile])
 
@@ -105,42 +103,32 @@ export function AgendaStrip({ items, nowMinutes, isPassed, onOpen, bind }: Props
 
       {placed.length && mobile ? (
         <>
-          <div ref={scroller} className={styles.scroller} aria-label="Linha do tempo do dia">
-            <div className={styles.track} style={{ width: 24 * HOUR_WIDTH, height: 18 + laneCount * LANE }}>
-              {hours.map(hour => (
-                <span key={hour} className={styles.tick} style={{ left: hour * HOUR_WIDTH }}><i>{String(hour).padStart(2, '0')}</i></span>
-              ))}
-              {placed.map(({ item, start, end, lane }) => (
-                <button
-                  key={item.id}
-                  type="button"
-                  className={styles.block}
-                  data-passed={isPassed(item) || undefined}
-                  style={{ '--ev': eventColor(item.raw), left: (start / 60) * HOUR_WIDTH + 1, width: Math.max(8, ((end - start) / 60) * HOUR_WIDTH - 2), top: 18 + lane * LANE } as CSSProperties}
-                  onClick={() => onOpen(item)}
-                  aria-label={`${item.title}, ${hm(start)} às ${hm(end)}`}
-                  {...bind(item)}
-                >
-                  <strong>{item.title}</strong>
-                </button>
-              ))}
-              {nowMinutes !== null ? <span className={styles.now} style={{ left: (nowMinutes / 60) * HOUR_WIDTH }} aria-hidden="true" /> : null}
-            </div>
+          <div className={styles.thin} style={{ height: 12 + laneCount * 14 }} aria-label="Dia inteiro, 24 horas">
+            {placed.map(({ item, start, end, lane }) => (
+              <button
+                key={item.id}
+                type="button"
+                className={styles.thinBlock}
+                data-passed={isPassed(item) || undefined}
+                style={{ '--ev': eventColor(item.raw), left: pct(start), width: `max(6px, ${((end - start) / 1440) * 100}%)`, top: 6 + lane * 14, height: laneCount > 1 ? 12 : 14 } as CSSProperties}
+                onClick={() => onOpen(item)}
+                aria-label={`${item.title}, ${hm(start)} às ${hm(end)}`}
+                {...bind(item)}
+              />
+            ))}
+            {nowMinutes !== null ? (
+              <span className={styles.thinNow} style={{ left: pct(nowMinutes) }} aria-hidden="true"><i>{hm(Math.floor(nowMinutes))}</i></span>
+            ) : null}
           </div>
 
           <div className={styles.list} role="list">
             {placed.map(({ item, start }) => (
               <button key={item.id} type="button" role="listitem" className={styles.row} data-passed={isPassed(item) || undefined} style={{ '--ev': eventColor(item.raw) } as CSSProperties} onClick={() => onOpen(item)} {...bind(item)}>
                 <span className={styles.rowTime}>{hm(start)}</span>
-                <span className={styles.rowBar} aria-hidden="true" />
-                <span className={styles.rowBody}>
-                  <strong>{item.title}</strong>
-                  <small>
-                    {isGoogle(item) ? <b className={styles.g} aria-label="Google Agenda">G</b> : null}
-                    <span>{contextOf(item)}</span>
-                    {item.recurring ? <Icon name="repeat" size={12} /> : null}
-                  </small>
-                </span>
+                <span className={styles.rowDot} aria-hidden="true" />
+                <strong>{item.title}</strong>
+                {item.recurring ? <Icon name="repeat" size={12} /> : null}
+                <small>{sourceOf(item)}</small>
               </button>
             ))}
           </div>
