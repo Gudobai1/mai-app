@@ -23,6 +23,7 @@ import { QuickCreateDrawer } from './QuickCreateDrawer'
 import { SearchOverlay } from './SearchOverlay'
 import { SectionInlineAdd } from './SectionInlineAdd'
 import { ModernBottomNav } from './shell/ModernBottomNav'
+import { ModuleTabs } from './shell/ModuleTabs'
 import { ModernSidebar } from './shell/ModernSidebar'
 import { TasksModern } from './tasks/TasksModern'
 import { TodayModern } from './today/TodayModern'
@@ -336,6 +337,7 @@ export function UnifiedAppUx() {
             onEditProject={id => setProjectDialog({ projectId: id, tab: 'details' })}
             onManageSections={id => setProjectDialog({ projectId: id, tab: 'sections' })}
           /> : null}
+          {view === 'habits' || view === 'health' ? <ModuleTabs tabs={[{ id: 'habits', label: 'Hábitos', icon: 'autorenew' }, { id: 'health', label: 'Bem-estar', icon: 'favorite' }]} view={view} navigate={navigate} /> : null}
           {view === 'habits' ? <HabitsV4 state={viewState} today={runtime.today} commit={runtime.commit} createRequest={areaCreateRequest} inspect={setSelected}/> : null}
           {view === 'goals' ? <GoalsV4 state={viewState} today={runtime.today} commit={runtime.commit} createRequest={areaCreateRequest} inspect={setSelected}/> : null}
           {view === 'notes' ? <NotesV4 state={viewState} today={runtime.today} commit={runtime.commit} createRequest={areaCreateRequest} inspect={setSelected}/> : null}

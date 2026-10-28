@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { Icon, IconButton, IconTile, type Tone } from '../../ds'
 import type { AppView } from '../app-types'
-import { NAV_GROUPS } from './nav'
+import { NAV_ALIAS, NAV_GROUPS } from './nav'
 import styles from './ModernShell.module.css'
 
 type Props = {
@@ -81,13 +81,13 @@ export function ModernBottomNav({ view, searchOpen, navigate, onSearch, onAdd, o
               </div>
             </header>
 
-            {sheetGroups.map(group => (
-              <div key={group.label}>
-                <h3 className={styles.sheetGroupLabel}>{group.label}</h3>
+            {sheetGroups.map((group, index) => (
+              <div key={index}>
+                {group.label ? <h3 className={styles.sheetGroupLabel}>{group.label}</h3> : null}
                 <div className={styles.sheetGrid}>
                   {group.items.map(item => (
-                    <button key={String(item.id)} type="button" className={styles.sheetItem} aria-current={view === item.id ? 'page' : undefined} onClick={() => go(item.id)}>
-                      <IconTile icon={item.icon} tone={sheetTones[String(item.id)] || 'accent'} solid={view === item.id} size={44} />
+                    <button key={String(item.id)} type="button" className={styles.sheetItem} aria-current={(NAV_ALIAS[view] ?? view) === item.id ? 'page' : undefined} onClick={() => go(item.id)}>
+                      <IconTile icon={item.icon} tone={sheetTones[String(item.id)] || 'accent'} solid={(NAV_ALIAS[view] ?? view) === item.id} size={44} />
                       <span>{item.label}</span>
                     </button>
                   ))}
