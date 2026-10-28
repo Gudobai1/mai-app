@@ -588,6 +588,40 @@ export function TodayModern({ state, today, commit, navigate, inspect, profileNa
     }
   }
 
+  function setHabitEntry(habitId: unknown, next: { valor: number; falhou: boolean } | null) {
+    commit(current => {
+      const all = rows(current.habitEntries)
+      const existing = all.find(entry => String(entry.habito_id) === String(habitId) && dateKey(entry.data) === day)
+      const others = all.filter(entry => !(String(entry.habito_id) === String(habitId) && dateKey(entry.data) === day))
+      if (!next) return { ...current, habitEntries: others }
+      return { ...current, habitEntries: [...others, { id: existing?.id || uid('hr'), habito_id: habitId, data: day, valor: next.valor, falhou: next.falhou, status: next.falhou ? 'falha' : '', criado_em: existing?.criado_em || new Date().toISOString() }] }
+    })
+  }
+
+  function habitMenu(item: (typeof habits)[number]): QuickMenuConfig {
+    const name = String(item.habit.nome || 'Hábito')
+    const id = item.habit.id
+    const disabled = !canLogHabits
+    return {
+      title: name,
+      subtitle: disabled ? 'Dia futuro: só dá para abrir os detalhes' : habitValueLabel(item),
+      groups: [
+        disabled ? { options: [] } : { label: item.quantitative ? `Progresso · ${item.value} de ${item.target}` : undefined, inline: true, options: [
+          ...(item.quantitative ? [
+            { label: '−1', icon: 'remove', onSelect: () => setHabitEntry(id, item.value > 1 ? { valor: item.value - 1, falhou: false } : null) },
+            { label: '+1', icon: 'add', onSelect: () => setHabitEntry(id, { valor: item.value + 1, falhou: false }) },
+          ] : []),
+          { label: item.done ? 'Feito' : 'Concluir', icon: 'check', color: 'var(--ds-success)', active: item.done, onSelect: () => setHabitEntry(id, item.done ? null : { valor: item.target, falhou: false }) },
+          { label: 'Falhou', icon: 'close', color: 'var(--ds-danger)', active: item.failed, onSelect: () => setHabitEntry(id, item.failed ? null : { valor: 0, falhou: true }) },
+        ] },
+        { options: [
+          ...(!disabled && (item.entry) ? [{ label: 'Limpar registro do dia', icon: 'backspace', onSelect: () => setHabitEntry(id, null) }] : []),
+          { label: 'Abrir detalhes', icon: 'open_in_full', onSelect: () => inspect({ kind: 'habit', sourceId: String(id), title: name, date: day, raw: item.habit }) },
+        ] },
+      ],
+    }
+  }
+
   function patchTransaction(id: string, patch: Row) {
     commit(current => ({ ...current, finance: { ...current.finance, transactions: rows(current.finance.transactions).map(row => String(row.id) === id ? { ...row, ...patch } : row) } }))
   }
@@ -693,7 +727,7 @@ export function TodayModern({ state, today, commit, navigate, inspect, profileNa
             {habits.map(item => {
               const name = String(item.habit.nome || 'Hábito')
               return (
-                <div key={String(item.habit.id)} className={`${styles.habit} ${item.done ? styles.habitDone : ''}`}>
+                <div key={String(item.habit.id)} className={`${styles.habit} ${item.done ? styles.habitDone : ''}`} {...quick.bind(() => habitMenu(item))}>
                   <button type="button" className={styles.habitMain} disabled={!canLogHabits} onClick={() => logHabit(item)} aria-label={item.quantitative ? `Registrar mais 1 em ${name}` : item.done ? `Desmarcar ${name}` : `Marcar ${name} como feito`}>
                     <IconTile icon={item.done ? 'check' : resolveMaiIcon(String(item.habit.icone || 'repeat'))} tone={item.done ? 'mint' : item.tone} solid={item.done} size={36} />
                   </button>

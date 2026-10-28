@@ -62,6 +62,7 @@ export function useQuickMenu() {
           if (!press.current) return
           press.current.fired = true
           suppressClick.current = true
+          try { window.getSelection()?.removeAllRanges() } catch {}
           try { navigator.vibrate?.(12) } catch {}
           setMenu({ ...build(), x, y, sheet: true })
         }, LONG_PRESS_MS),
@@ -91,6 +92,7 @@ export function useQuickMenu() {
 
 function QuickMenuView({ menu, onClose }: { menu: OpenMenu; onClose: () => void }) {
   const panelRef = useRef<HTMLDivElement | null>(null)
+  const openedAt = useRef(Date.now())
   const [position, setPosition] = useState<{ left: number; top: number } | null>(null)
 
   useLayoutEffect(() => {
@@ -125,7 +127,19 @@ function QuickMenuView({ menu, onClose }: { menu: OpenMenu; onClose: () => void 
   }
 
   const body = (
-    <div className={styles.layer} data-sheet={menu.sheet || undefined} onPointerDown={event => { if (event.target === event.currentTarget) onClose() }} onContextMenu={event => { event.preventDefault(); onClose() }}>
+    <div
+      className={styles.layer}
+      data-sheet={menu.sheet || undefined}
+      // Fecha no clique (e não ao encostar), para o toque fora não chegar ao item de baixo.
+      onClick={event => {
+        event.stopPropagation()
+        if (event.target !== event.currentTarget) return
+        if (Date.now() - openedAt.current < 350) return
+        onClose()
+      }}
+      onPointerDown={event => event.stopPropagation()}
+      onContextMenu={event => { event.preventDefault(); onClose() }}
+    >
       <div
         ref={panelRef}
         role="menu"
