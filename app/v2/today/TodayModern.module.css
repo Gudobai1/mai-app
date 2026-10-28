@@ -764,8 +764,8 @@
   .board {
     grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
     grid-template-areas:
-      'main side'
-      'middle side';
+      'main middle'
+      'side middle';
   }
 
 }
@@ -871,5 +871,216 @@
 @media (max-width: 380px) {
   .habits {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+/* ------------------------------------------------- Agenda em cartões horizontais */
+
+.agendaSection {
+  min-width: 0;
+}
+
+.agendaSection > div:first-child {
+  margin-bottom: var(--ds-s-2);
+}
+
+.agendaStrip {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  scroll-padding-left: 4px;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+  padding: 2px 4px 4px;
+  margin: 0 -4px;
+  cursor: grab;
+  user-select: none;
+  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 8px, #000 calc(100% - 32px), transparent 100%);
+  mask-image: linear-gradient(90deg, transparent 0, #000 8px, #000 calc(100% - 32px), transparent 100%);
+}
+
+.agendaStrip::-webkit-scrollbar {
+  display: none;
+}
+
+.evCard.evCard {
+  appearance: none;
+  position: relative;
+  flex: 0 0 220px;
+  height: 84px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  padding: 10px 14px;
+  border: 0;
+  border-radius: 16px;
+  background: var(--ds-surface);
+  box-shadow: var(--ds-shadow-1);
+  color: var(--ds-text);
+  font: inherit;
+  text-align: left;
+  cursor: inherit;
+  overflow: hidden;
+  scroll-snap-align: start;
+  transition: background-color var(--ds-dur-fast) var(--ds-ease), transform var(--ds-dur-fast) var(--ds-ease);
+}
+
+.evCard.evCard:hover {
+  background: var(--ds-surface-hover);
+}
+
+.evCard.evCard:active {
+  transform: scale(0.98);
+}
+
+.evCard.evCard:focus-visible,
+.evMore.evMore:focus-visible {
+  outline: 2px solid var(--ds-accent);
+  outline-offset: 2px;
+}
+
+.evNow.evNow,
+.evNow.evNow:hover {
+  background: var(--ds-accent);
+  color: var(--ds-on-accent);
+  box-shadow: none;
+}
+
+.evAllDay.evAllDay {
+  box-shadow: none;
+}
+
+.evPast.evPast {
+  opacity: 0.5;
+}
+
+.evTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+}
+
+.evTime {
+  font-size: 12px;
+  font-weight: var(--ds-fw-heavy);
+  font-variant-numeric: tabular-nums;
+  opacity: 0.85;
+  white-space: nowrap;
+}
+
+.evPill {
+  flex-shrink: 0;
+  height: 20px;
+  padding: 0 8px;
+  border-radius: var(--ds-r-full);
+  display: inline-flex;
+  align-items: center;
+  font-size: 11px;
+  font-weight: var(--ds-fw-heavy);
+  white-space: nowrap;
+  background: var(--ds-accent-soft);
+  color: var(--ds-accent);
+}
+
+.evNow .evPill {
+  background: var(--ds-on-accent-soft);
+  color: var(--ds-on-accent);
+}
+
+.evDone {
+  opacity: 0.7;
+}
+
+.evTitle {
+  font-size: 15px;
+  font-weight: var(--ds-fw-heavy);
+  letter-spacing: -0.01em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.evMeta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  font-size: 12px;
+  font-weight: var(--ds-fw-medium);
+  opacity: 0.75;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.evProgress {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 3px;
+  background: var(--ds-on-accent);
+  opacity: 0.85;
+}
+
+.evEmpty {
+  flex: 0 0 auto;
+  height: 84px;
+  display: flex;
+  align-items: center;
+  padding: 0 18px;
+  border-radius: 16px;
+  background: var(--ds-surface);
+  color: var(--ds-muted);
+  font-size: var(--ds-fs-sm);
+  font-weight: var(--ds-fw-medium);
+}
+
+.evMore.evMore {
+  appearance: none;
+  flex: 0 0 120px;
+  height: 84px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  border: 1.5px dashed var(--ds-line-strong);
+  border-radius: 16px;
+  background: transparent;
+  color: var(--ds-muted);
+  font: inherit;
+  font-size: var(--ds-fs-sm);
+  font-weight: var(--ds-fw-bold);
+  cursor: pointer;
+  scroll-snap-align: start;
+}
+
+.evMore.evMore:hover {
+  color: var(--ds-text);
+  border-color: var(--ds-muted);
+}
+
+@media (max-width: 900px) {
+  .evCard.evCard {
+    flex-basis: 200px;
+    height: 80px;
+  }
+
+  .evMore.evMore,
+  .evEmpty {
+    height: 80px;
+  }
+
+  .agendaStrip {
+    margin: 0 -16px;
+    padding: 2px 16px 4px;
+    scroll-padding-left: 16px;
+    -webkit-mask-image: none;
+    mask-image: none;
   }
 }
