@@ -1554,3 +1554,286 @@
 .familyMore.familyMore:hover {
   background: color-mix(in srgb, #000 15%, transparent);
 }
+
+/* ========================================================= Versão limpa */
+
+.nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-bottom: 1px solid var(--ds-line);
+}
+
+.navScroll {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  cursor: grab;
+  -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 32px), transparent);
+  mask-image: linear-gradient(to right, #000 calc(100% - 32px), transparent);
+  padding-right: 32px;
+}
+
+.navScroll::-webkit-scrollbar { display: none; }
+.navScroll[data-dragging] { cursor: grabbing; user-select: none; }
+.navScroll[data-dragging] .navTab { pointer-events: none; }
+
+.navTab.navTab {
+  appearance: none;
+  position: relative;
+  flex-shrink: 0;
+  height: 44px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 10px;
+  border: 0;
+  background: transparent;
+  color: var(--ds-muted);
+  font: inherit;
+  font-size: 14px;
+  font-weight: var(--ds-fw-medium);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color var(--ds-dur-fast) var(--ds-ease);
+}
+
+.navTab.navTab:hover { color: var(--ds-text); }
+
+.navTab.navTab[data-active] {
+  color: var(--ds-text);
+  font-weight: var(--ds-fw-bold);
+}
+
+.navTab.navTab[data-active]::after {
+  content: '';
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  bottom: -1px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--ds-text);
+}
+
+.navTab small {
+  font-size: 11.5px;
+  font-weight: var(--ds-fw-medium);
+  color: var(--ds-muted);
+  opacity: 0.8;
+}
+
+.navTab small[data-alert] {
+  color: var(--ds-danger);
+  opacity: 1;
+}
+
+.navTab .tabVisual {
+  width: 18px;
+  height: 18px;
+  border-radius: 5px;
+}
+
+.navDivider {
+  flex-shrink: 0;
+  width: 1px;
+  height: 16px;
+  margin: 0 8px;
+  background: var(--ds-line-strong);
+}
+
+.navMore.navMore {
+  appearance: none;
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--ds-muted);
+  cursor: pointer;
+}
+
+.navMore.navMore:hover { background: var(--ds-surface-2); color: var(--ds-text); }
+.navMore.navMore[data-active] { color: var(--ds-accent); }
+
+.subnav {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: -12px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.subnavTab.subnavTab {
+  appearance: none;
+  flex-shrink: 0;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--ds-muted);
+  font: inherit;
+  font-size: 13px;
+  font-weight: var(--ds-fw-medium);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.subnavTab.subnavTab:hover { color: var(--ds-text); }
+
+.subnavTab.subnavTab[data-active] {
+  background: var(--ds-surface-2);
+  color: var(--ds-text);
+  font-weight: var(--ds-fw-bold);
+}
+
+.subnavTab .tabVisual { width: 16px; height: 16px; border-radius: 5px; }
+
+.menuList {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 6px;
+  padding-top: 8px;
+  border-top: 1px solid var(--ds-line);
+}
+
+.menuList button {
+  appearance: none;
+  min-height: 38px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--ds-text);
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: var(--ds-fw-bold);
+  text-align: left;
+  cursor: pointer;
+}
+
+.menuList button > span:first-child { color: var(--ds-muted); }
+.menuList button > span:nth-child(2) { flex: 1; }
+.menuList button small { font-size: 12px; color: var(--ds-muted); }
+.menuList button:hover { background: var(--ds-surface-2); }
+
+/* Seções: só o nome, discreto; "+" aparece ao passar o mouse. */
+.groupHead {
+  min-height: 28px;
+  margin-bottom: 0;
+}
+
+.groupHead strong {
+  font-size: 12.5px;
+  font-weight: var(--ds-fw-bold);
+  color: var(--ds-muted);
+  letter-spacing: 0.01em;
+}
+
+.groupHead[data-tone='danger'] strong { color: var(--ds-danger); }
+
+.collapse.collapse small {
+  margin-left: 6px;
+  font-size: 11.5px;
+  color: var(--ds-muted);
+}
+
+.groupAdd.groupAdd {
+  appearance: none;
+  margin-left: auto;
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--ds-muted);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity var(--ds-dur-fast) var(--ds-ease);
+}
+
+.group:hover .groupAdd,
+.column:hover .groupAdd,
+.groupAdd:focus-visible { opacity: 1; }
+
+.groupAdd.groupAdd:hover { background: var(--ds-surface-2); color: var(--ds-text); }
+
+.addQuiet.addQuiet {
+  appearance: none;
+  height: 38px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--ds-muted);
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: var(--ds-fw-medium);
+  cursor: pointer;
+  align-self: flex-start;
+}
+
+.addQuiet.addQuiet:hover { background: var(--ds-surface-2); color: var(--ds-text); }
+
+.doneToggle.doneToggle {
+  appearance: none;
+  align-self: flex-start;
+  padding: 4px 2px;
+  border: 0;
+  background: transparent;
+  color: var(--ds-muted);
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: var(--ds-fw-bold);
+  cursor: pointer;
+}
+
+.doneToggle.doneToggle:hover { color: var(--ds-text); }
+
+.column {
+  background: transparent;
+  padding: 0;
+  gap: 8px;
+}
+
+.newColumn.newColumn {
+  width: 120px;
+  height: 36px;
+  border: 0;
+  justify-content: flex-start;
+  padding: 0 10px;
+  font-weight: var(--ds-fw-medium);
+}
+
+.newColumn.newColumn:hover { background: var(--ds-surface-2); }
+
+@media (hover: none) {
+  .groupAdd.groupAdd { opacity: 1; }
+}
+
+@media (max-width: 900px) {
+  .nav { margin: 0 -20px; padding: 0 0 0 10px; }
+  .navMore.navMore { margin-right: 10px; }
+  .subnav { margin: -10px -20px 0; padding: 0 20px; }
+}

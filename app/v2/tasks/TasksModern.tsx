@@ -533,7 +533,7 @@ export function TasksModern(props: Props) {
     )
   }
 
-  const renderComposer = (group: Group) => composer === group.id ? (
+  const renderComposer = (group: Group, always = false) => composer === group.id ? (
     <div className={styles.composer}>
       <input
         autoFocus
@@ -552,10 +552,13 @@ export function TasksModern(props: Props) {
         <button type="button" className={styles.primarySmall} disabled={!draftTitle.trim()} onClick={() => addTask(group)}>Adicionar</button>
       </div>
     </div>
-  ) : (
-    <button type="button" className={styles.addLine} onClick={() => { setComposer(group.id); setDraftTitle('') }}>
-      <span className={styles.addDot}><Icon name="add" size={15} /></span>Adicionar tarefa
+  ) : (always || !group.tasks.length) ? (
+    <button type="button" className={styles.addQuiet} onClick={() => { setComposer(group.id); setDraftTitle('') }}>
+      <Icon name="add" size={17} filled={false} />Adicionar tarefa
     </button>
+  ) : null
+  const addButton = (group: Group) => (
+    <button type="button" className={styles.groupAdd} onClick={() => { setComposer(group.id); setDraftTitle('') }} aria-label={`Adicionar tarefa em ${group.label}`} title="Adicionar tarefa"><Icon name="add" size={18} filled={false} /></button>
   )
 
   const canAddIn = (group: Group) => isProjectLike || Boolean(group.addDate) || Boolean(group.canAdd)
@@ -586,20 +589,9 @@ export function TasksModern(props: Props) {
 
   return (
     <div className={styles.page} data-selecting={selecting || undefined}>
-      <nav className={styles.lists} aria-label="Listas">
-        {scopeTabs.map(tab => (
-          <button key={tab.scope} type="button" className={styles.listCard} data-active={scope === tab.scope || undefined} data-alert={tab.scope === 'late' && tab.count > 0 || undefined} aria-current={scope === tab.scope ? 'page' : undefined} onClick={() => props.onScopeChange(tab.scope)} style={{ '--list-color': tab.color } as React.CSSProperties}>
-            <span className={styles.listIcon}><Icon name={tab.icon} size={18} /></span>
-            <span className={styles.listCount}>{tab.count}</span>
-            <span className={styles.listLabel}>{tab.label}</span>
-          </button>
-        ))}
-      </nav>
-
-      <div className={styles.tabsWrap}>
-        <span className={styles.tabsTitle}>Projetos</span>
+      <nav className={styles.nav} aria-label="Listas e projetos">
         <div
-          className={styles.tabs}
+          className={styles.navScroll}
           ref={tabsRef}
           onWheel={onTabsWheel}
           onPointerDown={onTabsPointerDown}
@@ -608,93 +600,84 @@ export function TasksModern(props: Props) {
           onPointerCancel={endTabsDrag}
           onClickCapture={event => { if (tabsSuppress.current) { event.preventDefault(); event.stopPropagation() } }}
           role="tablist"
-          aria-label="Projetos"
         >
+          {scopeTabs.filter(tab => ['entrada', 'today', 'upcoming', 'nodate'].includes(tab.scope) || scope === tab.scope).map(tab => (
+            <button key={tab.scope} type="button" role="tab" className={styles.navTab} data-active={scope === tab.scope || undefined} aria-selected={scope === tab.scope} onClick={() => props.onScopeChange(tab.scope)}>
+              <span>{tab.label}</span>
+              {tab.scope === 'today' && counts.late ? <small data-alert>{tab.count}</small> : tab.count ? <small>{tab.count}</small> : null}
+            </button>
+          ))}
+          <span className={styles.navDivider} aria-hidden="true" />
           {projects.filter(item => !Number(item._depth || 0)).map(item => {
             const id = String(item.id)
-            const kids = childrenOf(id)
             const active = Boolean(projectId) && String(root?.id || '') === id
             return (
-              <button key={id} type="button" role="tab" className={styles.tab} data-active={active || undefined} aria-selected={active} onClick={() => props.onScopeChange(`project:${id}`)} onDoubleClick={() => props.onEditProject(id)}>
+              <button key={id} type="button" role="tab" className={styles.navTab} data-active={active || undefined} aria-selected={active} onClick={() => props.onScopeChange(`project:${id}`)} onDoubleClick={() => props.onEditProject(id)}>
                 {projectVisual(item, 'tab')}
                 <span>{String(item.nome || 'Projeto')}</span>
-                {item.favorito ? <Icon name="star" size={12} className={styles.star} /> : null}
-                {kids.length ? <span className={styles.kids} title={`${kids.length} subprojeto${kids.length === 1 ? '' : 's'}`}><Icon name="account_tree" size={12} />{kids.length}</span> : null}
                 {familyCount(id) ? <small>{familyCount(id)}</small> : null}
               </button>
             )
           })}
-          <button type="button" className={styles.tabAdd} onClick={() => props.onNewProject()} aria-label="Novo projeto" title="Novo projeto"><Icon name="add" size={18} filled={false} /></button>
         </div>
-      </div>
-
-      <header className={styles.header} data-project={projectId ? 'true' : undefined}>
-        {projectId ? (
-          <div className={styles.family} role="tablist" aria-label="Projeto e subprojetos">
-            {family.map(item => {
-              const id = String(item.id)
-              const isRoot = id === String(root?.id)
-              return (
-                <div key={id} className={styles.familyChip} data-active={projectId === id || undefined}>
-                  <button type="button" role="tab" className={styles.familyMain} aria-selected={projectId === id} onClick={() => props.onScopeChange(`project:${id}`)}>
-                    {isRoot ? <Icon name="folder" size={15} /> : projectVisual(item, 'tab')}
-                    <span>{isRoot ? 'Principal' : String(item.nome || 'Subprojeto')}</span>
-                    {projectCount(id) ? <small>{projectCount(id)}</small> : null}
-                  </button>
-                  {projectId === id ? (
-                    <button ref={projectMenuRef} type="button" className={styles.familyMore} onClick={() => setProjectMenu(true)} aria-label={`Opções de ${String(item.nome || 'projeto')}`} title="Editar projeto e seções"><Icon name="more_horiz" size={18} filled={false} /></button>
-                  ) : null}
-                </div>
-              )
-            })}
-            {projectMenu ? (
-              <Floating anchor={projectMenuRef} title={String(project?.nome || 'Projeto')} onClose={() => setProjectMenu(false)} width={240}>
-                <OptionList value="" options={[{ value: 'edit', label: 'Editar projeto', icon: 'edit' }, { value: 'sections', label: 'Seções', icon: 'view_agenda' }]} onSelect={value => {
-                  setProjectMenu(false)
-                  if (value === 'edit') props.onEditProject(projectId)
-                  if (value === 'sections') props.onManageSections(projectId)
-                }} />
-              </Floating>
-            ) : null}
-            <button type="button" className={styles.familyAdd} onClick={() => props.onNewProject(String(root?.id || projectId))}><Icon name="add" size={15} />Subprojeto</button>
-          </div>
-        ) : (
-          <div className={styles.headLeft}>
-            {headIcon}
-            <div className={styles.headText}>
-              <h1>{title}</h1>
-            </div>
-          </div>
-        )}
-        <div className={styles.headActions}>
-          {projectId ? (
-            <div className={styles.segmented} role="group" aria-label="Visualização">
-              <button type="button" data-active={!kanban || undefined} onClick={() => setLayout('normal')}><Icon name="view_agenda" size={16} /><span>Lista</span></button>
-              <button type="button" data-active={kanban || undefined} onClick={() => setLayout('kanban')}><Icon name="view_kanban" size={16} /><span>Quadro</span></button>
-            </div>
-          ) : null}
-          <button ref={optionsRef} type="button" className={styles.iconButton} data-filled data-active={priorityFilter !== 'all' || undefined} onClick={() => setOptionsOpen(true)} aria-label="Ordenar e filtrar"><Icon name="tune" size={19} filled={false} /></button>
-          {optionsOpen ? (
-            <Floating anchor={optionsRef} title="Ordenar e filtrar" width={280} onClose={() => setOptionsOpen(false)}>
-              <div className={styles.optionsPanel}>
-                <span className={styles.optionsLabel}>Ordenar por</span>
-                <div className={styles.chips}>
-                  {([['manual', 'Manual', 'drag_indicator'], ['date', 'Data', 'calendar_today'], ['priority', 'Prioridade', 'flag'], ['name', 'Nome', 'sort_by_alpha']] as const).map(([value, label, icon]) => (
-                    <button key={value} type="button" data-active={sortMode === value || undefined} onClick={() => setControl({ sort: value })}><Icon name={icon} size={15} />{label}</button>
-                  ))}
-                </div>
-                <span className={styles.optionsLabel}>Mostrar prioridade</span>
-                <div className={styles.chips}>
-                  {([['all', 'Todas', 'select_all', ''], ['1', 'Alta', 'flag', 'var(--ds-rose-fg)'], ['2', 'Média', 'flag', 'var(--ds-peach-fg)'], ['3', 'Baixa', 'flag', 'var(--ds-sky-fg)'], ['4', 'Sem', 'outlined_flag', '']] as const).map(([value, label, icon, color]) => (
-                    <button key={value} type="button" data-active={priorityFilter === value || undefined} onClick={() => setFilter({ priority: value })}><Icon name={icon} size={15} style={color ? { color } : undefined} />{label}</button>
-                  ))}
-                </div>
+        <button ref={optionsRef} type="button" className={styles.navMore} data-active={priorityFilter !== 'all' || undefined} onClick={() => setOptionsOpen(true)} aria-label="Mais opções"><Icon name="more_horiz" size={20} filled={false} /></button>
+        {optionsOpen ? (
+          <Floating anchor={optionsRef} title="Opções" width={300} onClose={() => setOptionsOpen(false)}>
+            <div className={styles.optionsPanel}>
+              {projectId ? (
+                <>
+                  <span className={styles.optionsLabel}>Ver como</span>
+                  <div className={styles.chips}>
+                    <button type="button" data-active={!kanban || undefined} onClick={() => setLayout('normal')}><Icon name="view_agenda" size={15} />Lista</button>
+                    <button type="button" data-active={kanban || undefined} onClick={() => setLayout('kanban')}><Icon name="view_kanban" size={15} />Quadro</button>
+                  </div>
+                </>
+              ) : null}
+              <span className={styles.optionsLabel}>Ordenar por</span>
+              <div className={styles.chips}>
+                {([['manual', 'Manual', 'drag_indicator'], ['date', 'Data', 'calendar_today'], ['priority', 'Prioridade', 'flag'], ['name', 'Nome', 'sort_by_alpha']] as const).map(([value, label, icon]) => (
+                  <button key={value} type="button" data-active={sortMode === value || undefined} onClick={() => setControl({ sort: value })}><Icon name={icon} size={15} />{label}</button>
+                ))}
               </div>
-            </Floating>
-          ) : null}
-          <button type="button" className={styles.primary} onClick={props.onAdd}><Icon name="add" size={18} /><span>Tarefa</span></button>
+              <span className={styles.optionsLabel}>Prioridade</span>
+              <div className={styles.chips}>
+                {([['all', 'Todas', 'select_all', ''], ['1', 'Alta', 'flag', 'var(--ds-rose-fg)'], ['2', 'Média', 'flag', 'var(--ds-peach-fg)'], ['3', 'Baixa', 'flag', 'var(--ds-sky-fg)'], ['4', 'Sem', 'outlined_flag', '']] as const).map(([value, label, icon, color]) => (
+                  <button key={value} type="button" data-active={priorityFilter === value || undefined} onClick={() => setFilter({ priority: value })}><Icon name={icon} size={15} style={color ? { color } : undefined} />{label}</button>
+                ))}
+              </div>
+              <div className={styles.menuList}>
+                <button type="button" onClick={() => { setOptionsOpen(false); props.onScopeChange('late') }}><Icon name="warning" size={18} style={{ color: 'var(--ds-danger)' }} /><span>Atrasadas</span>{counts.late ? <small>{counts.late}</small> : null}</button>
+                <button type="button" onClick={() => { setOptionsOpen(false); props.onScopeChange('all') }}><Icon name="select_all" size={18} /><span>Todas as tarefas</span><small>{counts.all}</small></button>
+              </div>
+              <div className={styles.menuList}>
+                {projectId ? (
+                  <>
+                    <button type="button" onClick={() => { setOptionsOpen(false); props.onEditProject(projectId) }}><Icon name="edit" size={18} /><span>Editar projeto</span></button>
+                    <button type="button" onClick={() => { setOptionsOpen(false); props.onManageSections(projectId) }}><Icon name="view_agenda" size={18} /><span>Seções</span></button>
+                    <button type="button" onClick={() => { setOptionsOpen(false); props.onNewProject(String(root?.id || projectId)) }}><Icon name="subdirectory_arrow_right" size={18} /><span>Novo subprojeto</span></button>
+                  </>
+                ) : null}
+                <button type="button" onClick={() => { setOptionsOpen(false); props.onNewProject() }}><Icon name="create_new_folder" size={18} /><span>Novo projeto</span></button>
+              </div>
+            </div>
+          </Floating>
+        ) : null}
+      </nav>
+
+      {family.length > 1 ? (
+        <div className={styles.subnav} role="tablist" aria-label="Subprojetos">
+          {family.map(item => {
+            const id = String(item.id)
+            const isRoot = id === String(root?.id)
+            return (
+              <button key={id} type="button" role="tab" className={styles.subnavTab} data-active={projectId === id || undefined} aria-selected={projectId === id} onClick={() => props.onScopeChange(`project:${id}`)}>
+                {isRoot ? null : projectVisual(item, 'tab')}
+                {isRoot ? 'Principal' : String(item.nome || 'Subprojeto')}
+              </button>
+            )
+          })}
         </div>
-      </header>
+      ) : null}
 
       {kanban ? (
         <div className={styles.board}>
@@ -702,14 +685,13 @@ export function TasksModern(props: Props) {
             <section key={group.id} className={styles.column} {...groupDropProps(group)} data-drop-zone={dragId ? 'true' : undefined}>
               <div className={styles.groupHead}>
                 <strong>{group.label}</strong>
-                <span className={styles.count}>{group.tasks.length}</span>
-                <button type="button" className={styles.groupMore} onClick={() => props.onManageSections(projectId)} aria-label="Gerenciar seções"><Icon name="more_horiz" size={18} filled={false} /></button>
+                {addButton(group)}
               </div>
               <div className={styles.cards} role="list">{group.tasks.map(task => renderTask(task, group))}</div>
               {renderComposer(group)}
             </section>
           ))}
-          <button type="button" className={styles.newColumn} onClick={() => props.onManageSections(projectId)}><Icon name="add" size={18} />Nova seção</button>
+          <button type="button" className={styles.newColumn} onClick={() => props.onManageSections(projectId)}><Icon name="add" size={17} filled={false} />Seção</button>
         </div>
       ) : (
         <div className={styles.list}>
@@ -721,19 +703,18 @@ export function TasksModern(props: Props) {
                 {showHead ? (
                   <div className={styles.groupHead} data-tone={group.tone}>
                     <button type="button" className={styles.collapse} onClick={() => toggleCollapsed(group.id)} aria-expanded={!isCollapsed}>
-                      <Icon name={isCollapsed ? 'chevron_right' : 'expand_more'} size={18} filled={false} />
                       {group.projectId ? (group.projectId === 'entrada' ? <span className={styles.tabVisual} style={{ background: 'var(--ds-accent)' }}><Icon name="inbox" size={12} /></span> : projectVisual(projectMap.get(group.projectId), 'tab')) : null}
                       <strong>{group.label}</strong>
+                      {isCollapsed ? <small>{group.tasks.length}</small> : null}
                     </button>
-                    <span className={styles.count}>{group.tasks.length}</span>
-                    {projectId ? <button type="button" className={styles.groupMore} onClick={() => props.onManageSections(projectId)} aria-label="Gerenciar seções"><Icon name="more_horiz" size={18} filled={false} /></button> : null}
+                    {canAddIn(group) ? addButton(group) : null}
                   </div>
                 ) : null}
                 {!isCollapsed ? (
                   <>
                     <div className={styles.cards} role="list">{group.tasks.map(task => renderTask(task, group))}</div>
                     {!group.tasks.length && !canAddIn(group) ? <p className={styles.empty}>Nada por aqui.</p> : null}
-                    {canAddIn(group) ? renderComposer(group) : null}
+                    {canAddIn(group) ? renderComposer(group, !showHead) : null}
                   </>
                 ) : null}
               </section>
@@ -749,13 +730,9 @@ export function TasksModern(props: Props) {
 
           {completed.length ? (
             <section className={styles.group}>
-              <div className={styles.groupHead}>
-                <button type="button" className={styles.collapse} onClick={() => toggleCollapsed('done')} aria-expanded={collapsed.has('done')}>
-                  <Icon name={!collapsed.has('done') ? 'chevron_right' : 'expand_more'} size={18} filled={false} />
-                  <strong>Concluídas</strong>
-                </button>
-                <span className={styles.count}>{completed.length}</span>
-              </div>
+              <button type="button" className={styles.doneToggle} onClick={() => toggleCollapsed('done')} aria-expanded={collapsed.has('done')}>
+                {collapsed.has('done') ? 'Esconder concluídas' : `Concluídas (${completed.length})`}
+              </button>
               {collapsed.has('done') ? <div className={styles.cards} role="list">{completed.slice(0, 60).map(task => renderTask(task, { id: 'done', label: '', tasks: [] }))}</div> : null}
             </section>
           ) : null}
