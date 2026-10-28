@@ -10,7 +10,7 @@
 .mai-v3-task-menu hr{width:100%;border:0;border-top:1px solid #edf0eb;margin:4px 0}
 .mai-v3-project-sections{display:grid;gap:58px}
 .mai-v3-project-sections>section>h2{margin:0 0 12px;font-size:15px;font-weight:720;color:#303630}
-.mai-v3-task-row[data-selected="true"]{background:#f4f7f2;border-left:2px solid #6f8168;padding-left:2px}
+.mai-v3-task-row[data-selected="true"]{background:#f4f7f2;}
 .mai-v3-task-row-menu{position:absolute;right:5px;top:48px;z-index:160;width:165px;padding:6px;background:#fff;border:1px solid #e8ebe6;border-radius:12px;box-shadow:0 14px 38px rgba(37,44,35,.12);display:grid}
 .mai-v3-task-row-menu>span{padding:7px 8px 3px;font-size:8.5px;text-transform:uppercase;letter-spacing:.06em;color:#a0a79d;font-weight:750}
 .mai-v3-task-row-menu button{min-height:32px;border:0;border-radius:7px;background:transparent;text-align:left;padding:0 8px;color:#616a5e;font-size:10px}

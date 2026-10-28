@@ -60,13 +60,6 @@ const minutes = (time: string) => {
   const [h, m] = String(time || '').split(':').map(Number)
   return Number.isFinite(h) ? h * 60 + (Number.isFinite(m) ? m : 0) : NaN
 }
-const duration = (start: string, end: string) => {
-  const total = minutes(end) - minutes(start)
-  if (!Number.isFinite(total) || total <= 0) return ''
-  const h = Math.floor(total / 60)
-  const m = total % 60
-  return !h ? `${m} min` : m ? `${h}h${String(m).padStart(2, '0')}` : `${h}h`
-}
 const dayDate = (key: string) => new Date(`${key}T12:00:00`)
 const monthStart = (key: string) => `${key.slice(0, 7)}-01`
 const monthLength = (key: string) => new Date(Number(key.slice(0, 4)), Number(key.slice(5, 7)), 0).getDate()
@@ -417,14 +410,14 @@ export function EmBreve({ state, today, commit, inspect, syncRange }: Props) {
   )
 
   const renderEvent = (entry: Entry) => {
-    const length = duration(entry.time, entry.end)
+    const range = entry.end ? `${entry.time} – ${entry.end}` : ''
     return (
       <button key={entry.id} type="button" className={styles.event} data-passed={passed(entry) || undefined} style={{ '--ev': entry.color } as CSSProperties} onClick={() => open(entry)} {...quick.bind(() => menuFor(entry))}>
         <span className={styles.eventDot} aria-hidden="true" />
         <span className={styles.eventTime}>{entry.time}</span>
         <strong>{entry.title}</strong>
         {entry.recurring ? <Icon name="repeat" size={12} /> : null}
-        <small>{length ? `${length} · ` : ''}{entry.source}</small>
+        <small>{range ? range : ''}<span className={styles.src}>{range ? ' · ' : ''}{entry.source}</span></small>
       </button>
     )
   }
@@ -514,7 +507,7 @@ export function EmBreve({ state, today, commit, inspect, syncRange }: Props) {
   }, [byDay, today, selected, range.end])
 
   const goList = (day: string) => {
-    lockUntil.current = Date.now() + 900
+    lockUntil.current = Date.now() + 1500
     setSelected(day)
     const distance = diff(today, day)
     if (distance >= horizon - 1) setHorizon(Math.min(MAX_HORIZON, distance + 14))
@@ -586,6 +579,12 @@ export function EmBreve({ state, today, commit, inspect, syncRange }: Props) {
   )
 
   /* ------------------------------------------------------- Mini mês */
+  const goMonth = (first: string) => {
+    setMiniMonth(first)
+    goList(first <= monthStart(today) ? today : first)
+  }
+  useEffect(() => { setMiniMonth(monthStart(selected)) }, [selected])
+
   const renderMini = () => {
     const first = miniMonth
     const offset = dayDate(first).getDay()
@@ -596,8 +595,8 @@ export function EmBreve({ state, today, commit, inspect, syncRange }: Props) {
         <div className={styles.miniHead}>
           <strong>{monthTitle(first)}</strong>
           <span>
-            <button type="button" aria-label="Mês anterior" onClick={() => setMiniMonth(shiftMonth(first, -1))}><Icon name="chevron_left" size={18} filled={false} /></button>
-            <button type="button" aria-label="Próximo mês" onClick={() => setMiniMonth(shiftMonth(first, 1))}><Icon name="chevron_right" size={18} filled={false} /></button>
+            <button type="button" aria-label="Mês anterior" disabled={first <= monthStart(today)} onClick={() => goMonth(shiftMonth(first, -1))}><Icon name="chevron_left" size={18} filled={false} /></button>
+            <button type="button" aria-label="Próximo mês" onClick={() => goMonth(shiftMonth(first, 1))}><Icon name="chevron_right" size={18} filled={false} /></button>
           </span>
         </div>
         <div className={styles.miniGrid}>
@@ -827,7 +826,7 @@ export function EmBreve({ state, today, commit, inspect, syncRange }: Props) {
         </Floating>
       ) : null}
 
-      {mode === 'list' ? strip : null}
+      {mode === 'list' && mobile ? strip : null}
       {overduePanel}
 
       {mode === 'list' ? (

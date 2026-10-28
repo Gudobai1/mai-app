@@ -822,7 +822,7 @@
 .evRowNow.evRowNow,
 .evRowNow.evRowNow:hover {
   background: color-mix(in srgb, var(--ds-accent) 14%, var(--ds-surface));
-  box-shadow: inset 3px 0 0 var(--ds-accent), var(--ds-shadow-1);
+  box-shadow: var(--ds-shadow-1);
 }
 
 .evPill {
@@ -1292,7 +1292,6 @@
   gap: 2px;
   margin: -4px 0 4px 24px;
   padding: 4px 0 4px 14px;
-  border-left: 2px solid var(--ds-line);
   animation: subIn 160ms ease-out both;
 }
 

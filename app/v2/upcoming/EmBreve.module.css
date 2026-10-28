@@ -121,7 +121,7 @@
 .hours span { position: absolute; right: 8px; transform: translateY(-50%); font-size: 10.5px; font-weight: var(--ds-fw-medium); color: var(--ds-muted); font-variant-numeric: tabular-nums; }
 .dayCol { position: relative; border-left: 1px solid var(--ds-line); background-image: repeating-linear-gradient(to bottom, transparent 0, transparent 51px, var(--ds-line) 51px, var(--ds-line) 52px); }
 .dayCol[data-today] { background-color: color-mix(in srgb, var(--ds-accent) 5%, transparent); }
-.block { appearance: none; position: absolute; border: 0; border-radius: 8px; padding: 4px 7px; text-align: left; font: inherit; color: var(--ds-text); background: color-mix(in srgb, var(--ev) 18%, var(--ds-surface)); box-shadow: inset 3px 0 0 var(--ev); cursor: pointer; overflow: hidden; display: flex; flex-direction: column; gap: 1px; }
+.block { appearance: none; position: absolute; border: 0; border-radius: 8px; padding: 4px 7px; text-align: left; font: inherit; color: var(--ds-text); background: color-mix(in srgb, var(--ev) 18%, var(--ds-surface)); cursor: pointer; overflow: hidden; display: flex; flex-direction: column; gap: 1px; }
 .block:hover { background: color-mix(in srgb, var(--ev) 26%, var(--ds-surface)); z-index: 2; }
 .block[data-passed] { opacity: 0.55; }
 .block strong { font-size: 12px; font-weight: var(--ds-fw-bold); line-height: 1.25; overflow: hidden; text-overflow: ellipsis; }
@@ -155,7 +155,7 @@
 .cell > b { font-size: 13px; font-weight: var(--ds-fw-bold); width: 26px; height: 26px; display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; color: var(--ds-text); }
 .cell[data-today] > b { background: var(--ds-accent); color: #fff; font-weight: var(--ds-fw-heavy); }
 .cellItems { display: flex; flex-direction: column; gap: 3px; min-width: 0; flex: 1; }
-.cellEvent { display: flex; align-items: center; gap: 5px; padding: 2px 6px; border-radius: 6px; font-size: 11.5px; font-weight: var(--ds-fw-bold); color: var(--ds-text); background: color-mix(in srgb, var(--ev) 16%, transparent); box-shadow: inset 2px 0 0 var(--ev); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cellEvent { display: flex; align-items: center; gap: 5px; padding: 2px 6px; border-radius: 6px; font-size: 11.5px; font-weight: var(--ds-fw-bold); color: var(--ds-text); background: color-mix(in srgb, var(--ev) 16%, transparent); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .cellEvent em { font-style: normal; font-size: 10.5px; font-weight: var(--ds-fw-heavy); color: var(--ev); font-variant-numeric: tabular-nums; flex-shrink: 0; }
 .cellEvent[data-passed] { opacity: 0.55; }
 .cellTask { display: flex; align-items: center; gap: 6px; padding: 0 2px; font-size: 11.5px; font-weight: var(--ds-fw-medium); color: var(--ds-text-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -191,6 +191,6 @@
   .month { grid-template-rows: 22px repeat(var(--rows), 46px); gap: 0; min-height: 0; margin-top: 4px; }
   .monthHead { justify-content: center; padding: 0; }
   .stripWrap { top: 0; }
-  .event small { display: none; }
+  .event small .src { display: none; }
   .daySlot { scroll-margin-top: 96px; }
 }
