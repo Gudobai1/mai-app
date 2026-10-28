@@ -1045,12 +1045,13 @@
     overflow-x: auto;
     scroll-snap-type: x proximity;
     scrollbar-width: none;
-    margin: -4px -20px;
-    padding: 4px 48px 4px 20px;
+    /* Começa no canto esquerdo da tela, mas termina na mesma margem dos
+       outros itens; ali os quadradinhos somem por completo. */
+    margin: -4px 0 -4px -20px;
+    padding: 4px 40px 4px 20px;
     scroll-padding-left: 20px;
-    /* Some suavemente na borda direita em vez de encostar no canto da tela. */
-    -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 56px), transparent calc(100% - 8px));
-    mask-image: linear-gradient(to right, #000 calc(100% - 56px), transparent calc(100% - 8px));
+    -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 44px), transparent 100%);
+    mask-image: linear-gradient(to right, #000 calc(100% - 44px), transparent 100%);
   }
 
   .habits::-webkit-scrollbar {
