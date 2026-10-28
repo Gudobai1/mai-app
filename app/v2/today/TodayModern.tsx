@@ -564,6 +564,7 @@ export function TodayModern({ state, today, commit, navigate, inspect, profileNa
         <SectionHeader title="Agenda" meta={events.length ? plural(events.length, 'compromisso', 'compromissos') : undefined} />
         <div
           className={styles.agendaStrip}
+          data-single={events.length === 1 || undefined}
           ref={agendaRef}
           onPointerDown={onAgendaPointerDown}
           onPointerMove={onAgendaPointerMove}
@@ -646,8 +647,8 @@ export function TodayModern({ state, today, commit, navigate, inspect, profileNa
           <span className={styles.balanceHead}><span>Saldo atual</span><Icon name="chevron_right" size={22} /></span>
           <span className={`${styles.balanceValue} ${summary.balance < 0 ? styles.negative : ''}`}>{money.format(summary.balance)}</span>
           <span className={styles.balanceStats}>
-            <span className={styles.balanceStat}><span>Previsto</span><strong className={summary.projected < 0 ? styles.negative : undefined}>{money.format(summary.projected)}</strong></span>
-            <span className={styles.balanceStat}><span>A pagar</span><strong>{money.format(summary.toPay)}</strong></span>
+            <span className={styles.balanceStat}><span>Previsto</span><strong className={summary.projected < 0 ? styles.negative : styles.positive}>{money.format(summary.projected)}</strong></span>
+            <span className={styles.balanceStat}><span>A pagar</span><strong className={summary.toPay > 0 ? styles.negative : undefined}>{money.format(summary.toPay)}</strong></span>
             <span className={styles.balanceStat}><span>A receber</span><strong className={styles.positive}>{money.format(summary.toReceive)}</strong></span>
           </span>
         </button>

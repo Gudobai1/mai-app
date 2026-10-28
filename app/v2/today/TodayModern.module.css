@@ -1098,6 +1098,11 @@
     height: 80px;
   }
 
+  /* Só um compromisso: o cartão ocupa a largura toda. */
+  .agendaStrip[data-single] > .evCard.evCard {
+    flex: 1 0 100%;
+  }
+
   .agendaStrip {
     margin: 0 -16px;
     padding: 2px 16px 4px;
