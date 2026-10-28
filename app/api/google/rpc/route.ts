@@ -171,10 +171,13 @@ async function calendar(method:string, args:unknown[], g:Awaited<ReturnType<type
       const response = await g.fetch(`https://www.googleapis.com/calendar/v3/calendars/${q(calendarId)}/events?singleEvents=true&orderBy=startTime&timeMin=${q(timeMin)}&timeMax=${q(timeMax)}&maxResults=2500`)
       const data = await response.json()
       if (!response.ok) throw new Error(data.error?.message || 'Erro ao consultar agenda')
+      // Nome do calendário (o principal costuma vir como e-mail).
+      const calendarName = String(data.summary || '')
+      const calendarLabel = !calendarName || calendarName.includes('@') ? 'Google Agenda' : calendarName
       return (data.items || []).map((event:any) => {
         const start = event.start?.dateTime || event.start?.date || ''
         const end = event.end?.dateTime || event.end?.date || ''
-        return { id:`${calendarId}::${event.id}`, google_event_id:event.id, calendario_id:calendarId, titulo:event.summary||'Compromisso', descricao:event.description||'', data_inicio:dateOnly(start), hora_inicio:start.includes('T')?start.slice(11,16):'', hora_fim:end.includes('T')?end.slice(11,16):'', dia_inteiro:!start.includes('T'), repeticao:event.recurrence?.[0]||'', cor:event.colorId||'', tipo:'google', url:event.htmlLink }
+        return { id:`${calendarId}::${event.id}`, google_event_id:event.id, calendario_id:calendarId, calendario_nome:calendarLabel, titulo:event.summary||'Compromisso', descricao:event.description||'', data_inicio:dateOnly(start), hora_inicio:start.includes('T')?start.slice(11,16):'', hora_fim:end.includes('T')?end.slice(11,16):'', dia_inteiro:!start.includes('T'), repeticao:event.recurrence?.[0]||'', cor:event.colorId||'', tipo:'google', url:event.htmlLink }
       })
     }))
     return {ok:true,eventos:results.flat()}

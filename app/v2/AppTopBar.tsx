@@ -152,6 +152,7 @@ export function AppTopBar({ state, today, view, taskScope, commit, onTaskScopeCh
           </div>)}
         </div>
       </PanelSection>
+      <PanelSection title="Finanças"><Choices value={['summary','bills'].includes(String(configs.todayFinanceMode)) ? String(configs.todayFinanceMode) : 'both'} onChange={value => patchConfig('todayFinanceMode', value)} items={[{value:'both',label:'Resumo e contas'},{value:'summary',label:'Só o resumo'},{value:'bills',label:'Só as contas'}]}/></PanelSection>
     </> : null}
 
     {view === 'upcoming' ? <>

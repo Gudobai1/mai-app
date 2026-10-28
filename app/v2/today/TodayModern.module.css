@@ -567,7 +567,11 @@
 }
 
 .negative {
-  color: #FF9AAA;
+  color: #FF4D5E;
+}
+
+.items .negative {
+  color: var(--ds-danger);
 }
 
 /* ------------------------------------------------------- Telas médias */
@@ -858,19 +862,32 @@
   color: var(--ds-peach-fg);
 }
 
-/* Hábitos */
+/* Hábitos — quadradinhos */
 
 .habits {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 5px;
+  grid-template-columns: repeat(auto-fill, minmax(92px, 1fr));
+  gap: 6px;
 }
 
-.habit.habit {
-  min-height: 44px;
-  gap: 8px;
-  padding: 0 10px 0 8px;
-  cursor: default;
+.habit {
+  position: relative;
+  min-width: 0;
+  aspect-ratio: 1 / 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 6px;
+  border-radius: 14px;
+  background: var(--ds-surface);
+  box-shadow: var(--ds-shadow-1);
+  text-align: center;
+}
+
+.habitDone {
+  background: color-mix(in srgb, var(--ds-success) 10%, var(--ds-surface));
 }
 
 .habitMain.habitMain {
@@ -880,7 +897,7 @@
   border: 0;
   background: transparent;
   cursor: pointer;
-  border-radius: 9px;
+  border-radius: 12px;
   line-height: 0;
   transition: transform var(--ds-dur-fast) var(--ds-ease);
 }
@@ -895,24 +912,37 @@
 
 .habitInfo.habitInfo {
   appearance: none;
-  flex: 1;
+  width: 100%;
   min-width: 0;
-  align-self: stretch;
   padding: 0;
   border: 0;
   background: transparent;
   color: var(--ds-text);
   font: inherit;
-  text-align: left;
+  text-align: center;
   cursor: pointer;
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  gap: 0;
+  align-items: center;
+  gap: 1px;
+}
+
+/* O cartão todo abre o detalhe; o ícone continua marcando o hábito. */
+.habitInfo.habitInfo::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+}
+
+.habitMain.habitMain {
+  position: relative;
+  z-index: 1;
 }
 
 .habitName {
-  font-size: 13px;
+  max-width: 100%;
+  font-size: 12.5px;
   font-weight: var(--ds-fw-bold);
   line-height: 1.25;
   overflow: hidden;
@@ -921,6 +951,7 @@
 }
 
 .habitValue {
+  max-width: 100%;
   font-size: 11px;
   font-weight: var(--ds-fw-medium);
   line-height: 1.25;
@@ -932,6 +963,79 @@
 
 .habitDone .habitName {
   color: var(--ds-muted);
+}
+
+/* Tarefas em duas linhas */
+
+.task.task {
+  min-height: 50px;
+}
+
+.taskBody {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 6px 0;
+}
+
+.taskTitle {
+  font-size: 14px;
+  font-weight: var(--ds-fw-bold);
+  line-height: 1.25;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.taskSub {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  font-size: 11.5px;
+  font-weight: var(--ds-fw-medium);
+  color: var(--ds-muted);
+  white-space: nowrap;
+}
+
+.taskSub .projectTag {
+  height: 18px;
+  padding: 0 7px;
+  font-size: 11px;
+  flex-shrink: 1;
+  min-width: 0;
+}
+
+/* Agenda: calendário de origem */
+
+.evCalendar {
+  flex-shrink: 1;
+  min-width: 0;
+  max-width: 34%;
+  font-size: 11px;
+  font-weight: var(--ds-fw-medium);
+  color: var(--ds-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.evRowNow .evCalendar {
+  color: var(--ds-text-2);
+}
+
+/* Finanças */
+
+.financeStack {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.financeStack .groupLabel {
+  margin: 6px 2px 0;
 }
 
 @media (max-width: 900px) {
@@ -949,14 +1053,16 @@
     display: none;
   }
 
-  .habits > .habit.habit {
-    flex: 0 0 auto;
-    width: auto;
-    max-width: 180px;
+  .habits > .habit {
+    flex: 0 0 92px;
     scroll-snap-align: start;
   }
 
   .item.item {
     min-height: 40px;
+  }
+
+  .task.task {
+    min-height: 52px;
   }
 }

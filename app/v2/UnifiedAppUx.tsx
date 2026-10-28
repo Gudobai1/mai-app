@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { MaiState } from '../../lib/v2/state'
+import { AgendaView } from './AgendaView'
 import { AppSettingsDrawer } from './AppSettingsDrawer'
 import { AppTopBar } from './AppTopBar'
 import type { AppView, TaskModuleScope } from './app-types'
@@ -162,7 +163,7 @@ function filteredStateForView(state: MaiState, view: AppView, today: string): Ma
 
 const validView = (value: unknown): value is AppView => {
   const text = String(value || '')
-  return ['home', 'tasks', 'today', 'inbox', 'upcoming', 'completed', ...secondary].includes(text as any) || text.startsWith('project:')
+  return ['home', 'tasks', 'today', 'inbox', 'upcoming', 'completed', 'agenda', ...secondary].includes(text as any) || text.startsWith('project:')
 }
 const scopeFromLegacy = (value: unknown): TaskModuleScope => {
   const text = String(value || '')
@@ -309,6 +310,7 @@ export function UnifiedAppUx() {
         {runtime.ready && view !== 'today' ? <AppTopBar state={runtime.state} today={runtime.today} view={view} taskScope={taskScope} commit={runtime.commit} onTaskScopeChange={setTaskScope} onSettings={() => setSettingsOpen(true)} /> : null}
         {!runtime.ready ? <div className={styles.loadingState}>Carregando seu MAI…</div> : <>
           {view === 'today' ? <TodayModern state={viewState} today={runtime.today} commit={runtime.commit} navigate={navigate} inspect={setSelected} profileName={String(googleProfile?.name || runtime.state.configs.profileName || runtime.state.configs.userName || '')} options={<AppTopBar state={runtime.state} today={runtime.today} view={view} taskScope={taskScope} commit={runtime.commit} onTaskScopeChange={setTaskScope} onSettings={() => setSettingsOpen(true)} />}/> : null}
+          {view === 'agenda' ? <AgendaView state={runtime.state} today={runtime.today} connected={runtime.googleConnected} commit={runtime.commit} googleRpc={runtime.googleRpc} refreshEvents={(start, end) => runtime.syncCalendar(runtime.state.configs.calendarios || [], start, end)} openTask={() => navigate('tasks')} openArea={area => navigate(area)} /> : null}
           {view === 'upcoming' ? <UpcomingV4 state={viewState} today={runtime.today} commit={runtime.commit} inspect={setSelected}/> : null}
           {view === 'completed' ? <CompletedV4 state={viewState} today={runtime.today} commit={runtime.commit} inspect={setSelected}/> : null}
           {view === 'tasks' ? <TasksModule

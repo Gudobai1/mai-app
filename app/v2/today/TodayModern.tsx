@@ -344,6 +344,8 @@ export function TodayModern({ state, today, commit, navigate, inspect, profileNa
     const startMin = minutesOf(item.time)
     const pill = now ? 'Agora' : isNext && isToday && clockIsToday ? untilLabel(startMin - nowMinutes) : ''
     const time = spanning ? 'Contínuo' : allDay ? 'Dia todo' : item.time
+    const google = item.raw.tipo === 'google' || item.raw.tipo === 'gcalendar'
+    const calendar = String(item.raw.calendario_nome || (google ? 'Google Agenda' : item.raw.categoria || 'MAI'))
     return (
       <button
         key={item.id}
@@ -354,6 +356,7 @@ export function TodayModern({ state, today, commit, navigate, inspect, profileNa
         <span className={`${styles.evTime} ${allDay || spanning ? styles.evTimeWord : ''}`}>{time}</span>
         <span className={styles.calDot} style={{ background: color }} />
         <span className={styles.itemTitle}>{item.title}</span>
+        <span className={styles.evCalendar}>{calendar}</span>
         {item.recurring ? <Icon name="repeat" size={14} className={styles.itemIcon} /> : null}
         {pill ? <span className={styles.evPill}>{pill}</span> : end && !allDay ? <span className={styles.itemMeta}>{end}</span> : null}
       </button>
@@ -478,20 +481,26 @@ export function TodayModern({ state, today, commit, navigate, inspect, profileNa
 
   /* ---------------------------------------------------------------- Seções */
 
+  const financeMode = ['summary', 'bills'].includes(String(state.configs.todayFinanceMode)) ? String(state.configs.todayFinanceMode) : 'both'
+
   const renderTask = (task: Row) => {
     const due = dateKey(task.data_vencimento)
     const late = due < today
     const time = timeKey(task.data_vencimento)
     const priority = Number(task.prioridade || 4)
     const title = String(task.titulo || 'Tarefa')
-    const when = due === day ? time : `${naturalDate(due, today)}${time ? ` · ${time}` : ''}`
+    const when = `${naturalDate(due, today)}${time ? ` · ${time}` : ''}`
     return (
-      <div key={String(task.id)} role="listitem" className={`${styles.item} ${styles.itemWrap} ${task.concluida ? styles.itemPassed : ''}`}>
+      <div key={String(task.id)} role="listitem" className={`${styles.item} ${styles.itemWrap} ${styles.task} ${task.concluida ? styles.itemPassed : ''}`}>
         <Check className={styles.itemCheck} checked={Boolean(task.concluida)} late={late} label={`Concluir: ${title}`} onCheckedChange={() => toggleTask(String(task.id))} />
         <button type="button" className={styles.itemButton} onClick={() => inspectTask(task)}>
-          <span className={styles.itemTitle}>{title}</span>
-          <span className={styles.projectDot} style={{ background: projectColor(task.projeto_id) }} title={projectName(task.projeto_id)} />
-          {when ? <span className={`${styles.itemMeta} ${late ? styles.late : ''}`}>{when}</span> : null}
+          <span className={styles.taskBody}>
+            <span className={styles.taskTitle}>{title}</span>
+            <span className={styles.taskSub}>
+              <span className={styles.projectTag}><span className={styles.projectDot} style={{ background: projectColor(task.projeto_id) }} />{projectName(task.projeto_id)}</span>
+              {when ? <span className={late ? styles.late : undefined}>{when}</span> : null}
+            </span>
+          </span>
           {PRIORITY_COLOR[priority] ? <span className={styles.priority} title={`Prioridade ${priority}`} style={{ color: PRIORITY_COLOR[priority] }}><Icon name="flag" size={15} /></span> : null}
         </button>
       </div>
@@ -542,9 +551,9 @@ export function TodayModern({ state, today, commit, navigate, inspect, profileNa
             {habits.map(item => {
               const name = String(item.habit.nome || 'Hábito')
               return (
-                <div key={String(item.habit.id)} className={`${styles.item} ${styles.habit} ${item.done ? styles.habitDone : ''}`}>
+                <div key={String(item.habit.id)} className={`${styles.habit} ${item.done ? styles.habitDone : ''}`}>
                   <button type="button" className={styles.habitMain} disabled={!canLogHabits} onClick={() => logHabit(item)} aria-label={item.quantitative ? `Registrar mais 1 em ${name}` : item.done ? `Desmarcar ${name}` : `Marcar ${name} como feito`}>
-                    <IconTile icon={item.done ? 'check' : resolveMaiIcon(String(item.habit.icone || 'repeat'))} tone={item.done ? 'mint' : item.tone} solid={item.done} size={28} />
+                    <IconTile icon={item.done ? 'check' : resolveMaiIcon(String(item.habit.icone || 'repeat'))} tone={item.done ? 'mint' : item.tone} solid={item.done} size={36} />
                   </button>
                   <button type="button" className={styles.habitInfo} onClick={() => inspect({ kind: 'habit', sourceId: String(item.habit.id), title: name, date: day, raw: item.habit })}>
                     <span className={styles.habitName}>{name}</span>
@@ -582,41 +591,46 @@ export function TodayModern({ state, today, commit, navigate, inspect, profileNa
       </section>
     ),
     finance: (
-      <div className={styles.stack}>
-        <button type="button" className={styles.balanceCard} onClick={() => navigate('finance')} aria-label="Abrir Finanças">
-          <span className={styles.balanceHead}><span>Saldo atual</span><Icon name="chevron_right" size={22} /></span>
-          <span className={`${styles.balanceValue} ${summary.balance < 0 ? styles.negative : ''}`}>{money.format(summary.balance)}</span>
-          <span className={styles.balanceStats}>
-            <span className={styles.balanceStat}><span>Previsto</span><strong className={summary.projected < 0 ? styles.negative : styles.positive}>{money.format(summary.projected)}</strong></span>
-            <span className={styles.balanceStat}><span>A pagar</span><strong className={summary.toPay > 0 ? styles.negative : undefined}>{money.format(summary.toPay)}</strong></span>
-            <span className={styles.balanceStat}><span>A receber</span><strong className={styles.positive}>{money.format(summary.toReceive)}</strong></span>
-          </span>
-        </button>
-        {transactions.length ? (
-          <section className={styles.block} aria-label="Contas">
-            <SectionHeader title={isToday ? 'Contas de hoje' : 'Contas do dia'} meta={String(transactions.length)} />
-            <div className={styles.items}>
-              {transactions.map(item => {
-                const due = dateKey(item.data)
-                const income = String(item.tipo || '').toLocaleLowerCase('pt-BR') === 'receita'
-                const payment = financeCardPaymentState(item)
-                const title = txTitle(item)
-                return (
-                  <div key={String(item.id)} className={`${styles.item} ${styles.itemWrap} ${payment.status === 'pago' ? styles.itemPassed : ''}`}>
-                    <Check className={styles.itemCheck} checked={payment.status === 'pago'} late={due < today} label={`${income ? 'Marcar como recebido' : 'Marcar como pago'}: ${title}`} onCheckedChange={() => toggleFinancePaid(item)} />
-                    <button type="button" className={styles.itemButton} onClick={() => inspect({ kind: 'finance', sourceId: String(item.id), title, date: due, raw: item })}>
-                      <span className={styles.itemTitle}>{title}</span>
-                      {payment.status === 'parcial' ? <Tag tone="peach">Parcial</Tag> : null}
-                      {due !== day ? <span className={`${styles.itemMeta} ${due < today ? styles.late : ''}`}>{naturalDate(due, today)}</span> : null}
-                      <span className={`${styles.amount} ${income ? styles.positive : ''}`}>{income ? '+' : ''}{money.format(payment.remaining || payment.total)}</span>
-                    </button>
-                  </div>
-                )
-              })}
-            </div>
-          </section>
-        ) : null}
-      </div>
+      <section className={styles.block} aria-label="Finanças">
+        <SectionHeader title="Finanças" meta={financeMode !== 'summary' && transactions.length ? plural(transactions.length, 'conta hoje', 'contas hoje') : undefined} />
+        <div className={styles.financeStack}>
+          {financeMode !== 'bills' ? (
+            <button type="button" className={styles.balanceCard} onClick={() => navigate('finance')} aria-label="Abrir Finanças">
+              <span className={styles.balanceHead}><span>Saldo atual</span><Icon name="chevron_right" size={22} /></span>
+              <span className={`${styles.balanceValue} ${summary.balance < 0 ? styles.negative : ''}`}>{money.format(summary.balance)}</span>
+              <span className={styles.balanceStats}>
+                <span className={styles.balanceStat}><span>Previsto</span><strong className={summary.projected < 0 ? styles.negative : styles.positive}>{money.format(summary.projected)}</strong></span>
+                <span className={styles.balanceStat}><span>A pagar</span><strong className={summary.toPay > 0 ? styles.negative : undefined}>{summary.toPay > 0 ? '-' : ''}{money.format(summary.toPay)}</strong></span>
+                <span className={styles.balanceStat}><span>A receber</span><strong className={styles.positive}>{money.format(summary.toReceive)}</strong></span>
+              </span>
+            </button>
+          ) : null}
+          {financeMode !== 'summary' ? (
+            transactions.length ? (
+              <div className={styles.items}>
+                {financeMode !== 'bills' ? <div className={styles.groupLabel}><span>{isToday ? 'Contas de hoje' : 'Contas do dia'}</span><span>{transactions.length}</span></div> : null}
+                {transactions.map(item => {
+                  const due = dateKey(item.data)
+                  const income = String(item.tipo || '').toLocaleLowerCase('pt-BR') === 'receita'
+                  const payment = financeCardPaymentState(item)
+                  const title = txTitle(item)
+                  return (
+                    <div key={String(item.id)} className={`${styles.item} ${styles.itemWrap} ${payment.status === 'pago' ? styles.itemPassed : ''}`}>
+                      <Check className={styles.itemCheck} checked={payment.status === 'pago'} late={due < today} label={`${income ? 'Marcar como recebido' : 'Marcar como pago'}: ${title}`} onCheckedChange={() => toggleFinancePaid(item)} />
+                      <button type="button" className={styles.itemButton} onClick={() => inspect({ kind: 'finance', sourceId: String(item.id), title, date: due, raw: item })}>
+                        <span className={styles.itemTitle}>{title}</span>
+                        {payment.status === 'parcial' ? <Tag tone="peach">Parcial</Tag> : null}
+                        {due !== day ? <span className={`${styles.itemMeta} ${due < today ? styles.late : ''}`}>{naturalDate(due, today)}</span> : null}
+                        <span className={`${styles.amount} ${income ? styles.positive : styles.negative}`}>{income ? '+' : '-'}{money.format(payment.remaining || payment.total)}</span>
+                      </button>
+                    </div>
+                  )
+                })}
+              </div>
+            ) : financeMode === 'bills' ? <div className={styles.empty}>Nenhuma conta {isToday ? 'hoje' : 'neste dia'}.</div> : null
+          ) : null}
+        </div>
+      </section>
     ),
     notes: (
       <section className={styles.block} aria-label="Notas">

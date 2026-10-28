@@ -19,6 +19,7 @@ type Props = {
 
 const sheetTones: Partial<Record<string, Tone>> = {
   tasks: 'accent',
+  agenda: 'sky',
   completed: 'mint',
   habits: 'mint',
   goals: 'lilac',

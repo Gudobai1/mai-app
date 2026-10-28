@@ -101,6 +101,14 @@ export function useMaiRuntime() {
     document.documentElement.dataset.maiTheme = String(state.configs.theme || 'light')
     delete document.documentElement.dataset.maiAccent
     document.documentElement.dataset.maiColor = String(state.configs.accentColor || 'blue')
+    // Barra do navegador/PWA acompanha o tema escolhido no app.
+    let meta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]')
+    if (!meta) {
+      meta = document.createElement('meta')
+      meta.name = 'theme-color'
+      document.head.appendChild(meta)
+    }
+    meta.content = state.configs.theme === 'dark' ? '#0D0E12' : '#F4F5F9'
   }, [state.configs.theme, state.configs.accentColor])
 
   // Regra global de persistência do MAI:

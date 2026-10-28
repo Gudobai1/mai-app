@@ -12,6 +12,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { id: 'today', label: 'Hoje', icon: 'today' },
       { id: 'upcoming', label: 'Em breve', icon: 'event_upcoming' },
       { id: 'tasks', label: 'Tarefas', icon: 'checklist' },
+      { id: 'agenda', label: 'Agenda', icon: 'calendar_month' },
       { id: 'completed', label: 'Concluídos', icon: 'task_alt' },
     ],
   },
