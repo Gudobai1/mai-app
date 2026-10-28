@@ -1166,3 +1166,151 @@
     font-size: 14px;
   }
 }
+
+/* --------------------------------------- Listas (separadas dos projetos) */
+
+.lists {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.listCard.listCard {
+  appearance: none;
+  position: relative;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-rows: auto auto;
+  align-items: center;
+  column-gap: 10px;
+  row-gap: 2px;
+  padding: 12px 14px;
+  border: 0;
+  border-radius: 14px;
+  background: var(--ds-surface);
+  box-shadow: var(--ds-shadow-1);
+  color: var(--ds-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color var(--ds-dur-fast) var(--ds-ease), box-shadow var(--ds-dur-fast) var(--ds-ease);
+}
+
+.listCard.listCard:hover {
+  background: var(--ds-surface-hover);
+}
+
+.listCard.listCard[data-active] {
+  box-shadow: inset 0 0 0 2px var(--list-color);
+  background: color-mix(in srgb, var(--list-color) 10%, var(--ds-surface));
+}
+
+.listIcon {
+  grid-row: 1 / 3;
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--list-color) 18%, transparent);
+  color: var(--list-color);
+}
+
+.listCount {
+  font-size: 19px;
+  font-weight: var(--ds-fw-heavy);
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+
+.listCard[data-alert] .listCount {
+  color: var(--ds-danger);
+}
+
+.listLabel {
+  min-width: 0;
+  font-size: 12px;
+  font-weight: var(--ds-fw-bold);
+  color: var(--ds-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Faixa de projetos com título e arrastar com o mouse. */
+.tabsWrap {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: -6px;
+}
+
+.tabsTitle {
+  flex-shrink: 0;
+  padding: 0 8px 0 10px;
+  font-size: 11.5px;
+  font-weight: var(--ds-fw-bold);
+  color: var(--ds-muted);
+}
+
+.tabs {
+  flex: 1;
+  min-width: 0;
+  cursor: grab;
+}
+
+.tabs[data-dragging] {
+  cursor: grabbing;
+  user-select: none;
+}
+
+.tabs[data-dragging] .tab {
+  pointer-events: none;
+}
+
+@media (max-width: 1100px) {
+  .lists {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 900px) {
+  .lists {
+    display: flex;
+    overflow-x: auto;
+    scrollbar-width: none;
+    margin: 0 -20px;
+    padding: 2px 48px 2px 20px;
+    gap: 8px;
+    -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 40px), transparent);
+    mask-image: linear-gradient(to right, #000 calc(100% - 40px), transparent);
+  }
+
+  .lists::-webkit-scrollbar {
+    display: none;
+  }
+
+  .listCard.listCard {
+    flex: 0 0 auto;
+    min-width: 116px;
+    padding: 10px 12px;
+  }
+
+  .listIcon {
+    width: 30px;
+    height: 30px;
+  }
+
+  .listCount {
+    font-size: 17px;
+  }
+
+  .tabsWrap {
+    margin-top: -4px;
+  }
+
+  .tabsTitle {
+    display: none;
+  }
+}
