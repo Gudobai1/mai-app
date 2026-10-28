@@ -731,7 +731,7 @@ export function TodayModern({ state, today, commit, navigate, inspect, profileNa
                 </section>
               ))}
             </div>
-          ) : <div role="list" className={styles.items}>{tasks.map(renderTask)}</div>
+          ) : <div role="list" className={styles.items}>{tasks.map(task => renderTask(task))}</div>
         ) : <div className={styles.empty}>{isToday ? 'Nada pendente para hoje.' : 'Nenhuma tarefa neste dia.'}</div>}
       </section>
     ),
