@@ -862,32 +862,10 @@
   color: var(--ds-peach-fg);
 }
 
-/* Hábitos — quadradinhos */
+/* Hábitos — linhas finas */
 
-.habits {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
-  gap: 10px;
-}
-
-.habit {
-  position: relative;
-  min-width: 0;
-  aspect-ratio: 1 / 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  padding: 8px 6px;
-  border-radius: 14px;
-  background: var(--ds-surface);
-  box-shadow: var(--ds-shadow-1);
-  text-align: center;
-}
-
-.habitDone {
-  background: color-mix(in srgb, var(--ds-success) 10%, var(--ds-surface));
+.habitRow.habitRow {
+  padding-left: 9px;
 }
 
 .habitMain.habitMain {
@@ -897,7 +875,7 @@
   border: 0;
   background: transparent;
   cursor: pointer;
-  border-radius: 12px;
+  border-radius: 9px;
   line-height: 0;
   transition: transform var(--ds-dur-fast) var(--ds-ease);
 }
@@ -910,58 +888,7 @@
   cursor: default;
 }
 
-.habitInfo.habitInfo {
-  appearance: none;
-  width: 100%;
-  min-width: 0;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: var(--ds-text);
-  font: inherit;
-  text-align: center;
-  cursor: pointer;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1px;
-}
-
-/* O cartão todo abre o detalhe; o ícone continua marcando o hábito. */
-.habitInfo.habitInfo::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-}
-
-.habitMain.habitMain {
-  position: relative;
-  z-index: 1;
-}
-
-.habitName {
-  max-width: 100%;
-  font-size: 12.5px;
-  font-weight: var(--ds-fw-bold);
-  line-height: 1.25;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.habitValue {
-  max-width: 100%;
-  font-size: 11px;
-  font-weight: var(--ds-fw-medium);
-  line-height: 1.25;
-  color: var(--ds-muted);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.habitDone .habitName {
+.habitDone .itemTitle {
   color: var(--ds-muted);
 }
 
@@ -1040,25 +967,6 @@
 }
 
 @media (max-width: 900px) {
-  .habits {
-    display: flex;
-    overflow-x: auto;
-    scroll-snap-type: x proximity;
-    scrollbar-width: none;
-    margin: -4px -20px;
-    padding: 4px 20px;
-    scroll-padding-left: 20px;
-  }
-
-  .habits::-webkit-scrollbar {
-    display: none;
-  }
-
-  .habits > .habit {
-    flex: 0 0 92px;
-    scroll-snap-align: start;
-  }
-
   .item.item {
     min-height: 46px;
   }
@@ -1068,9 +976,6 @@
     min-height: 56px;
   }
 
-  .habits {
-    gap: 10px;
-  }
 }
 
 /* Agenda em duas linhas: horário · faixa da cor · título + calendário */
