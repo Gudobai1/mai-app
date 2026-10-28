@@ -8,6 +8,7 @@ import { Button, Card, Check, Icon, IconTile, SectionHeader, Tag, type Tone } fr
 import type { AppView, Row } from '../app-types'
 import type { InspectableItem } from '../ContextDrawer'
 import { financeCardPaymentState } from '../FinanceTransactionCard'
+import { driveAssetUrl } from '../DriveAsset'
 import { resolveMaiIcon } from '../MaiIcons'
 import styles from './TodayModern.module.css'
 
@@ -145,6 +146,7 @@ export function TodayModern({ state, today, commit, navigate, inspect, profileNa
     if (id === 'entrada') return 'Entrada'
     return String(projectMap.get(id)?.nome || 'Sem projeto')
   }
+  const projectImage = (projectId: unknown) => driveAssetUrl(projectMap.get(String(projectId || ''))?.imagem_url)
   const projectColor = (projectId: unknown) => String(projectMap.get(String(projectId || ''))?.cor || 'var(--ds-line-strong)')
 
   /* ------------------------------------------------------------------ Tempo */
@@ -506,7 +508,10 @@ export function TodayModern({ state, today, commit, navigate, inspect, profileNa
           <span className={styles.taskBody}>
             <span className={styles.taskTitle}>{title}</span>
             <span className={styles.taskSub}>
-              <span className={styles.projectTag}><span className={styles.projectDot} style={{ background: projectColor(task.projeto_id) }} />{projectName(task.projeto_id)}</span>
+              <span className={styles.projectTag}>
+                {projectImage(task.projeto_id) ? <img className={styles.projectImg} src={projectImage(task.projeto_id)} alt="" loading="lazy" /> : <span className={styles.projectDot} style={{ background: projectColor(task.projeto_id) }} />}
+                <span className={styles.projectText}>{projectName(task.projeto_id)}{task.secao ? <span className={styles.projectSection}> · {String(task.secao)}</span> : null}</span>
+              </span>
               {when ? <span className={late ? styles.late : undefined}>{when}</span> : null}
             </span>
           </span>
