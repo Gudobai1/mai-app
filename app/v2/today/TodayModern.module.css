@@ -2071,3 +2071,8 @@
 .inlineCircle { width: 18px; height: 18px; flex-shrink: 0; box-sizing: border-box; border: 1.5px solid var(--ds-line-strong); border-radius: 50%; }
 .inlineInput { flex: 1; min-width: 0; padding: 4px 0; border: 0; outline: 0; background: transparent; color: var(--ds-text); font: inherit; font-size: 15px; }
 .inlineInput::placeholder { color: var(--ds-muted); }
+
+/* Projeto/categoria: no canto direito, centralizado na altura do cartão */
+.page .items .item.task { position: relative; }
+.page .items .item.task .projLabel { position: absolute; right: 0; top: 50%; transform: translateY(-50%); margin: 0; align-self: auto; }
+.page .items .item.task .taskTitleBtn { max-width: calc(100% - 150px); }
