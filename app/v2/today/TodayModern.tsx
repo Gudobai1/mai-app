@@ -731,6 +731,11 @@ export function TodayModern({ state, today, commit, navigate, inspect, options, 
     if (value >= Math.max(1, Number(habit.meta || 1))) return 'full'
     return value > 0 ? 'part' : ''
   }
+  const pctOn = (habit: Row, key: string) => {
+    const entry = entryByKey.get(`${habit.id}|${key}`)
+    if (!entry || failedEntry(entry)) return 0
+    return Math.max(0, Math.min(100, Math.round((Number(entry.valor || 0) / Math.max(1, Number(habit.meta || 1))) * 100)))
+  }
   const weekStart = addDays(day, -((new Date(`${day}T12:00:00`).getDay()) % 7))
   const weekKeys = Array.from({ length: 7 }, (_, index) => addDays(weekStart, index))
   const streakOf = (habit: Row) => {
@@ -838,7 +843,7 @@ export function TodayModern({ state, today, commit, navigate, inspect, options, 
                       })()}
                     </button>
                     <span className={styles.habitDots} aria-hidden="true">
-                      {weekKeys.map(key => <i key={key} data-on={levelOn(item.habit, key) === 'full' || undefined} data-part={levelOn(item.habit, key) === 'part' || undefined} data-today={key === day || undefined} />)}
+                      {weekKeys.map(key => <i key={key} style={{ ['--p' as string]: pctOn(item.habit, key) }} data-on={levelOn(item.habit, key) === 'full' || undefined} data-part={levelOn(item.habit, key) === 'part' || undefined} data-today={key === day || undefined} />)}
                     </span>
                     <span className={styles.streak} data-on={streak > 0 || undefined} title={`Sequência de ${streak} ${streak === 1 ? 'dia' : 'dias'}`}><Icon name="local_fire_department" size={15} />{streak}</span>
                   </div>

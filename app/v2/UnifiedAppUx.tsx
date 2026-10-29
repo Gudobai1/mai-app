@@ -9,7 +9,7 @@ import type { AppView, TaskModuleScope } from './app-types'
 import { CompletedV4 } from './CompletedV4'
 import { ItemDetail } from './detail/ItemDetail'
 import { ConfirmHost } from './shell/ConfirmDialog'
-import { AddFab, QuickAdd, type QuickAddKind } from './shell/QuickAdd'
+import { QuickAdd, type QuickAddKind } from './shell/QuickAdd'
 import type { InspectableItem } from './ContextDrawer'
 import { FilesV4 } from './FilesV4'
 import { FinanceV4 } from './FinanceV4'
@@ -297,11 +297,6 @@ export function UnifiedAppUx() {
     return addByType(view)
   }
 
-  const fabLabel: Record<string, string> = {
-    today: 'Adicionar', tasks: 'Nova tarefa', upcoming: 'Novo compromisso', agenda: 'Novo compromisso', finance: 'Novo lançamento',
-    goals: 'Nova meta', notes: 'Nova nota', health: 'Novo registro', files: 'Novo arquivo',
-  }
-
   async function moduleGoogleRpc(method: string, args?: unknown[]) {
     const response = await runtime.googleRpc(method, args)
     if (view !== 'files' || method !== 'getDriveContent' || fileKind === 'all' || !response || typeof response !== 'object') return response
@@ -353,7 +348,6 @@ export function UnifiedAppUx() {
     {searchOpen ? <SearchOverlay state={runtime.state} query={search} setQuery={setSearch} onClose={() => setSearchOpen(false)} inspect={setSelected} navigate={navigate} openProject={id => setProjectDialog({ projectId:id, tab:'details' })} /> : null}
     {projectDialog ? <ProjectEditor state={runtime.state} commit={runtime.commit} projectId={projectDialog.projectId} parentId={projectDialog.parentId} initialTab={projectDialog.tab} onClose={() => setProjectDialog(null)} onSaved={id => { const wasCreating = !projectDialog.projectId; setProjectDialog(null); if (wasCreating) setTaskScope(`project:${id}`) }} onRemoved={() => { setProjectDialog(null); setTaskScope('entrada') }} /> : null}
     {settingsOpen ? <AppSettingsDrawer state={runtime.state} commit={runtime.commit} onClose={() => setSettingsOpen(false)} googleConnected={runtime.googleConnected} calendars={runtime.calendars} calendarDraft={runtime.calendarDraft} setCalendarDraft={runtime.setCalendarDraft} calendarBusy={runtime.calendarBusy} saveCalendars={runtime.saveCalendars} disconnectGoogle={runtime.disconnectGoogle} requestNotifications={runtime.requestNotifications} installPrompt={runtime.installPrompt} install={runtime.install} exportData={runtime.exportData} importData={runtime.importData} importRef={runtime.importRef} syncStatus={runtime.syncStatus} flushRemoteSync={runtime.flushRemoteSync} logout={runtime.logout} /> : null}
-    {runtime.ready && fabLabel[String(view)] && !selected && !quickAdd ? <AddFab label={fabLabel[String(view)]} onClick={() => contextualAdd()} /> : null}
     {quickAdd ? <QuickAdd kinds={quickAdd.kinds} initial={quickAdd.initial} state={runtime.state} today={runtime.today} defaultProjectId={quickAdd.projectId} defaultDate={quickAdd.date} commit={runtime.commit} onFinance={() => addByType('finance')} onClose={() => setQuickAdd(null)} /> : null}
     {creating ? <QuickCreateDrawer kind={creating.kind} allowKindSwitch={creating.switchable} state={runtime.state} today={runtime.today} defaultProjectId={creating.kind === 'task' ? activeProjectId : undefined} defaultDate={view === 'today' || (view === 'tasks' && taskScope === 'today') ? runtime.today : ''} commit={runtime.commit} onClose={() => setCreating(null)} /> : null}
     {healthCreating ? <HealthQuickAddDrawer state={runtime.state} today={runtime.today} commit={runtime.commit} onClose={() => setHealthCreating(false)}/> : null}
