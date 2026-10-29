@@ -1,5 +1,4 @@
 import type { Metadata } from 'next'
-import { Plus_Jakarta_Sans } from 'next/font/google'
 import { PwaRegister } from './PwaRegister'
 import './ux-polish.css'
 import './ux-shell.css'
@@ -54,13 +53,6 @@ import './ds/tokens.css'
 import './v2/shell/shell-overrides.css'
 import './v2/shell/detail-popup.css'
 
-const jakarta = Plus_Jakarta_Sans({
-  subsets: ['latin'],
-  weight: ['400', '500', '600', '700', '800'],
-  variable: '--font-jakarta',
-  display: 'swap',
-})
-
 export const metadata: Metadata = {
   title: 'MAI — Meu Sistema',
   description: 'Organize tarefas, compromissos, hábitos, finanças, notas e bem-estar.',
@@ -70,7 +62,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="pt-BR" className={jakarta.variable}>
+    <html lang="pt-BR">
       <head>
         {/* O app tem tema claro e escuro próprios: impede o celular de escurecer a página sozinho. */}
         <meta name="color-scheme" content="light dark" />
