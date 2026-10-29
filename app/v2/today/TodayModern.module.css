@@ -1977,3 +1977,16 @@
 .habitRing.habitRing { border-width: 3px; }
 .habitDots i { border-width: 3px; }
 .balanceValue { font-size: 18px; line-height: 1.2; font-weight: var(--ds-fw-bold); letter-spacing: -0.01em; }
+
+/* Padrão do app: "Adicionar …" em cinza fraco e a última linha da lista sem divisor */
+.page .addRow.addRow { color: var(--ds-faint, var(--ds-muted)); opacity: .75; font-weight: var(--ds-fw-regular); }
+.page .addRow.addRow:hover { color: var(--ds-muted); opacity: 1; }
+.page .items > :last-child,
+.page .items > :last-child > .item,
+.page .items .item.item:last-child { border-bottom: 0; }
+
+/* Finanças: saldo alinhado com os demais títulos; previsto sem cor */
+.balance.balance { padding: 12px 0; }
+.balanceForecastValue.balanceForecastValue,
+.balanceForecastValue.positive,
+.balanceForecastValue.negative { color: var(--ds-text); }

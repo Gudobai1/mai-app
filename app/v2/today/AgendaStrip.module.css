@@ -109,3 +109,5 @@
     display: none;
   }
 }
+
+.list > :last-child, .row:last-child { border-bottom: 0; }
