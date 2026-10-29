@@ -926,7 +926,7 @@ export function TodayModern({ state, today, commit, navigate, inspect, options, 
 
   // Colunas do computador. No celular vira uma coluna só, na ordem salva.
   const COLUMN: Record<SectionId, 'main' | 'side'> = { tasks: 'main', appointments: 'side', notes: 'side', habits: 'side', finance: 'side', goals: 'side' }
-  const visible = order.filter(id => !hidden.has(id))
+  const visible = order.filter(id => !hidden.has(id) && !(id === 'goals' && !goals.length) && !(id === 'notes' && !notes.length))
   const column = (name: 'main' | 'side', extra?: ReactNode) => (
     <div className={`${styles.column} ${styles[`col_${name}`]}`}>
       {extra}
@@ -953,38 +953,6 @@ export function TodayModern({ state, today, commit, navigate, inspect, options, 
           {options ? <div className={styles.options}>{options}</div> : null}
         </div>
       </header>
-
-      <div
-        className={styles.weeks}
-        ref={weeksRef}
-        onPointerDown={onWeeksPointerDown}
-        onPointerMove={onWeeksPointerMove}
-        onPointerUp={endDrag}
-        onPointerCancel={endDrag}
-        onClickCapture={event => { if (suppressClick.current) { event.preventDefault(); event.stopPropagation() } }}
-        aria-label="Dias (role para os lados para ver outras semanas)"
-      >
-        {weeks.map(week => (
-          <div key={week[0].key} className={styles.week}>
-            {week.map(item => (
-              <button
-                key={item.key}
-                type="button"
-                data-day={item.key}
-                className={`${styles.day} ${item.key === day ? styles.daySelected : ''} ${item.isToday ? styles.dayIsToday : ''} ${item.isPast ? styles.dayPast : ''}`}
-                aria-pressed={item.key === day}
-                aria-label={capitalize(new Date(`${item.key}T12:00:00`).toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' }))}
-                onClick={() => setSelected(item.key)}
-                onKeyDown={event => onDayKeyDown(event, item.key)}
-              >
-                <span className={styles.dayName}>{item.number === 1 ? item.month : item.name}</span>
-                <span className={styles.dayNumber}>{item.number}</span>
-                <span className={styles.dayDot} data-on={item.load > 0 || undefined} aria-hidden="true" />
-              </button>
-            ))}
-          </div>
-        ))}
-      </div>
 
       <div className={styles.board}>
         {column('main')}
