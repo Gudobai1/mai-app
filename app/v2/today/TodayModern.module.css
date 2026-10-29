@@ -2034,3 +2034,11 @@
 .balanceValue, .balanceForecastValue, .balanceStatValue { line-height: 1.15; }
 .balanceGap { margin-top: 0; }
 .balanceValue.balanceValue { margin: 0; padding: 0; }
+
+/* Hábitos: só a pizza (sem anel ao redor), título nunca passa por baixo dos círculos */
+.habitBody.habitBody { overflow: hidden; }
+.habitTitle { max-width: 100%; }
+.habitDots { gap: 6px; }
+.habitDots i, .habitDots i[data-today] { outline: 0; }
+.habitDots i[data-part] { border: 0; background: conic-gradient(var(--hc) calc(var(--p) * 1%), var(--ds-line-strong) 0); }
+.habitDots i[data-on] { border: 0; background: var(--hc); }
