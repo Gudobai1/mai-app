@@ -31,7 +31,7 @@ export default function GoogleCompletePage() {
     })()
   }, [])
 
-  return <main style={{minHeight:'100vh',display:'grid',placeItems:'center',fontFamily:'Inter,system-ui,sans-serif',background:'#f7f8f6',color:'#202420'}}>
-    <div style={{textAlign:'center'}}><strong style={{display:'block',fontSize:20,marginBottom:8}}>MAI</strong><span style={{fontSize:13,color:'#737b71'}}>{message}</span></div>
+  return <main style={{minHeight:'100vh',display:'grid',placeItems:'center',fontFamily:'var(--ds-font)',background:'var(--ds-surface-2)',color:'var(--ds-text)'}}>
+    <div style={{textAlign:'center'}}><strong style={{display:'block',fontSize:20,marginBottom:8}}>MAI</strong><span style={{fontSize:13,color:'var(--ds-muted)'}}>{message}</span></div>
   </main>
 }

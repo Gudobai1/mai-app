@@ -82,3 +82,51 @@ html body .mai-v3-shell[data-view="today"] .mai-v3-main,
 html body .mai-v3-shell[data-view="today"] .mai-v3-workspace {
   background: var(--ds-surface) !important;
 }
+
+/* ---------------------------------------------------------------------
+   Ponte do legado: as variáveis antigas (--v3-*, --bg-*, --line...) passam
+   a apontar para os tokens do design system (--ds-*). Assim as telas que
+   ainda não foram migradas já usam a paleta e a fonte do padrão visual.
+   O seletor com :not(#_) vence as definições antigas e as de tema escuro.
+   --------------------------------------------------------------------- */
+html:not(#_) body .mai-v3-shell {
+  --v3-bg: var(--ds-bg);
+  --v3-card: var(--ds-surface);
+  --v3-soft: var(--ds-surface-2);
+  --v3-surface: var(--ds-surface);
+  --v3-sidebar: var(--ds-surface-2);
+  --v3-hover: var(--ds-surface-hover);
+  --v3-text: var(--ds-text);
+  --v3-muted: var(--ds-muted);
+  --v3-faint: var(--ds-muted);
+  --v3-line: var(--ds-line);
+  --v3-line-strong: var(--ds-line-strong);
+  --v3-accent: var(--ds-accent);
+  --v3-accent-strong: var(--ds-accent-strong);
+  --v3-accent-soft: var(--ds-accent-soft);
+  --v3-sage: var(--ds-accent);
+  --v3-sage-dark: var(--ds-accent-strong);
+  --v3-sage-soft: var(--ds-accent-soft);
+  --v3-white: var(--ds-surface);
+
+  --text: var(--ds-text);
+  --muted: var(--ds-muted);
+  --faint: var(--ds-muted);
+  --line: var(--ds-line);
+  --line-strong: var(--ds-line-strong);
+  --bg-primary: var(--ds-bg);
+  --bg-card: var(--ds-surface);
+  --bg-soft: var(--ds-surface-2);
+  --bg-hover: var(--ds-surface-hover);
+  --sidebar: var(--ds-surface-2);
+  --accent: var(--ds-accent);
+  --accent-strong: var(--ds-accent-strong);
+  --accent-soft: var(--ds-accent-soft);
+
+  font-family: var(--ds-font);
+}
+html:not(#_) body .mai-v3-shell,
+html:not(#_) body .mai-v3-main {
+  background: var(--ds-bg) !important;
+  color: var(--ds-text) !important;
+}

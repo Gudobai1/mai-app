@@ -16,7 +16,7 @@ export function MaiV2ParityShell() {
     setAuthorized(true)
   }, [])
 
-  if (!authorized) return <div style={{minHeight:'100vh',display:'grid',placeItems:'center',fontFamily:'Inter,system-ui,sans-serif',color:'#7b8379'}}>Carregando MAI…</div>
+  if (!authorized) return <div style={{minHeight:'100vh',display:'grid',placeItems:'center',fontFamily:'var(--ds-font)',color:'var(--ds-muted)'}}>Carregando MAI…</div>
 
   return <>
     <UnifiedAppUx />
