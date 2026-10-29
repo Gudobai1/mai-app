@@ -731,7 +731,7 @@ export function TodayModern({ state, today, commit, navigate, inspect, options, 
     if (value >= Math.max(1, Number(habit.meta || 1))) return 'full'
     return value > 0 ? 'part' : ''
   }
-  const weekStart = addDays(day, -((new Date(`${day}T12:00:00`).getDay() + 6) % 7))
+  const weekStart = addDays(day, -((new Date(`${day}T12:00:00`).getDay()) % 7))
   const weekKeys = Array.from({ length: 7 }, (_, index) => addDays(weekStart, index))
   const streakOf = (habit: Row) => {
     let count = 0
