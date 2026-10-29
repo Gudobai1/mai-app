@@ -2007,3 +2007,15 @@
 .balanceStatValue { font-size: 18px; line-height: 1.2; font-weight: var(--ds-fw-bold); letter-spacing: -0.01em; font-variant-numeric: tabular-nums; }
 .balanceStatValue.positive { color: var(--ds-success); }
 .balanceStatValue.negative { color: var(--ds-danger); }
+
+/* Hábitos: dia atual em cinza bold; com progresso, na cor do hábito */
+.habitDots i[data-today]:not([data-on]):not([data-part]) { border-color: var(--ds-muted); border-width: 3px; background: transparent; }
+.habitDots i[data-today][data-on], .habitDots i[data-today][data-part] { border-color: var(--hc); }
+
+/* Adicionar tarefa mais perto do último cartão */
+.page .items + .addRow.addRow { margin-top: -6px; padding-top: 0; }
+
+/* Finanças: itens mais próximos */
+.page .balance.balance { gap: 6px; padding: 10px 0; }
+.balanceCell { gap: 0; }
+.balanceLabel { line-height: 1.3; }
