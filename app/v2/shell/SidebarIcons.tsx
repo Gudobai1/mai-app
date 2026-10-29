@@ -124,7 +124,7 @@ export function SidebarIcon({ name, size = 22, style }: { name: string; size?: n
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden="true"
-      style={{ color: spec.color, flexShrink: 0, ...style }}
+      style={{ color: 'var(--sidebar-icon-color, ' + spec.color + ')', flexShrink: 0, ...style }}
     >
       {spec.node(day)}
     </svg>
