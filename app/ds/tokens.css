@@ -81,6 +81,7 @@
   --ds-sky-fg: #246FE0;
   --ds-peach-bg: #FFE8D9;
   --ds-peach-fg: #EB8909;
+  --ds-warn: #C28A00;
   --ds-lilac-bg: #EEE6FF;
   --ds-lilac-fg: #6A3FCC;
   --ds-rose-bg: #FFE1E6;
@@ -133,6 +134,7 @@ html[data-mai-theme="dark"],
   --ds-sky-fg: #5297FF;
   --ds-peach-bg: #3A2418;
   --ds-peach-fg: #FF9A14;
+  --ds-warn: #F5C451;
   --ds-lilac-bg: #2A2140;
   --ds-lilac-fg: #B69CFF;
   --ds-rose-bg: #3B1C24;

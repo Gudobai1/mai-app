@@ -1,6 +1,6 @@
 'use client'
 
-import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState, type DragEvent, type MouseEvent as ReactMouseEvent } from 'react'
+import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState, type DragEvent, type MouseEvent as ReactMouseEvent, type ReactNode } from 'react'
 import { addDays } from '../../../lib/v2/planner'
 import type { LegacyTask, MaiState } from '../../../lib/v2/state'
 import { Icon } from '../../ds'
@@ -9,6 +9,7 @@ import type { InspectableItem } from '../ContextDrawer'
 import { DatePicker, Floating, OptionList, type PickerOption } from '../detail/Pickers'
 import { driveAssetUrl } from '../DriveAsset'
 import { askConfirm } from '../shell/ConfirmDialog'
+import { QuickAdd } from '../shell/QuickAdd'
 import { useQuickMenu, type QuickMenuConfig } from '../shell/QuickMenu'
 import styles from './TasksModern.module.css'
 
@@ -40,6 +41,11 @@ const timeOf = (task: Row) => (String(task.data_vencimento || '').includes('T') 
 const standalone = (task: LegacyTask) => !task.parent_id || Boolean(dayOf(task))
 const uid = (prefix: string) => `${prefix}-${crypto.randomUUID()}`
 const plainText = (value: unknown) => String(value || '').replace(/<br\s*\/?>|<\/(p|div|li)>/gi, ' ').replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/\s+/g, ' ').trim()
+function renderDescription(text: string): ReactNode[] {
+  return text.split(/(https?:\/\/[^\s]+)/g).map((part, index) => /^https?:\/\//.test(part)
+    ? <a key={index} className={styles.descLink} href={part} target="_blank" rel="noopener noreferrer" onClick={event => event.stopPropagation()}>{part}</a>
+    : part)
+}
 const plural = (count: number, one: string, many: string) => `${count} ${count === 1 ? one : many}`
 
 const PRIORITIES: PickerOption[] = [
@@ -522,10 +528,10 @@ export function TasksModern(props: Props) {
         )}
         <div tabIndex={0} className={styles.cardMain} onClick={onClick} onKeyDown={event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onClick(event as unknown as ReactMouseEvent) } }}>
           <span className={styles.cardTitle}>{String(task.titulo || 'Tarefa')}</span>
-          {desc ? <span className={styles.cardDesc}>{desc}</span> : null}
+          {desc ? <span className={styles.cardDesc}>{renderDescription(desc)}</span> : null}
           {(showDate || time || showProject || children.length || files || task.repeticao) ? (
             <span className={styles.cardMeta}>
-              {showDate ? <span data-late={late || undefined} data-today={due === today || undefined}><Icon name="calendar_today" size={12} />{naturalDate(due, today)}{time ? ` · ${time}` : ''}</span> : time ? <span><Icon name="schedule" size={12} />{time}</span> : null}
+              {showDate ? <span data-late={late || undefined} data-today={due === today || undefined} data-future={due > today || undefined}><Icon name="calendar_today" size={12} />{naturalDate(due, today)}{time ? ` · ${time}` : ''}</span> : time ? <span><Icon name="schedule" size={12} />{time}</span> : null}
               {showProject ? (
                 <span className={styles.metaProject}>
                   {projectMap.get(String(task.projeto_id || ''))?.imagem_url ? <img src={driveAssetUrl(projectMap.get(String(task.projeto_id))?.imagem_url)} alt="" /> : <i style={{ background: String(projectMap.get(String(task.projeto_id || ''))?.cor || 'var(--ds-accent)') }} />}
@@ -570,64 +576,19 @@ export function TasksModern(props: Props) {
   }
 
   const renderComposer = (group: Group, always = false) => composer === group.id ? (
-    <div className={styles.composer}>
-      <input
-        autoFocus
-        value={draftTitle}
-        placeholder="Nome da tarefa"
-        enterKeyHint="send"
-        onChange={event => setDraftTitle(event.target.value)}
-        onKeyDown={event => {
-          if (event.key === 'Enter') { event.preventDefault(); addTask(group) }
-          if (event.key === 'Escape') { event.preventDefault(); closeComposer() }
-        }}
-      />
-      {descOpen ? (
-        <textarea
-          className={styles.composerDesc}
-          value={draftDesc}
-          rows={2}
-          placeholder="Descrição"
-          onChange={event => setDraftDesc(event.target.value)}
-          onKeyDown={event => { if (event.key === 'Escape') { event.preventDefault(); closeComposer() } }}
-        />
-      ) : null}
-      <div className={styles.composerChips}>
-        <button ref={draftRefs.date} type="button" className={styles.composerChip} data-set={draftDate || undefined} data-late={(draftDate && draftDate < today) || undefined} onClick={() => setDraftPicker('date')}>
-          <Icon name="event" size={15} filled={false} />{draftDate ? naturalDate(draftDate, today) : 'Data'}
-        </button>
-        <button ref={draftRefs.priority} type="button" className={styles.composerChip} data-set={draftPriority < 4 || undefined} style={PRIORITY_COLOR[draftPriority] ? ({ '--chip-color': PRIORITY_COLOR[draftPriority] } as React.CSSProperties) : undefined} onClick={() => setDraftPicker('priority')}>
-          <Icon name="flag" size={15} filled={draftPriority < 4} />{draftPriority < 4 ? PRIORITIES[draftPriority - 1].label : 'Prioridade'}
-        </button>
-        <button type="button" className={styles.composerChip} data-set={draftDesc.trim() || undefined} onClick={() => setDescOpen(open => !open)}>
-          <Icon name="notes" size={15} filled={false} />Descrição
-        </button>
-        <button ref={draftRefs.project} type="button" className={styles.composerChip} onClick={() => setDraftPicker('project')}>
-          <Icon name={draftProject === 'entrada' ? 'inbox' : 'folder'} size={15} filled={false} />
-          <span>{draftProject === 'entrada' ? 'Entrada' : String(projects.find(item => String(item.id) === draftProject)?.nome || 'Projeto')}</span>
-        </button>
-      </div>
-      <div className={styles.composerActions}>
-        <span className={styles.composerHint}>{group.section ? `Na seção ${group.section}` : 'Enter adiciona e continua'}</span>
-        <button type="button" className={styles.ghost} onClick={closeComposer}>Cancelar</button>
-        <button type="button" className={styles.primarySmall} disabled={!draftTitle.trim()} onClick={() => addTask(group)}>Adicionar</button>
-      </div>
-      {draftPicker === 'date' ? (
-        <Floating anchor={draftRefs.date} title="Data" width={300} onClose={() => setDraftPicker('')}>
-          <DatePicker value={draftDate} today={today} onSelect={value => { setDraftDate(value); setDraftPicker('') }} />
-        </Floating>
-      ) : null}
-      {draftPicker === 'priority' ? (
-        <Floating anchor={draftRefs.priority} title="Prioridade" onClose={() => setDraftPicker('')}>
-          <OptionList options={PRIORITIES} value={String(draftPriority)} onSelect={value => { setDraftPriority(Number(value)); setDraftPicker('') }} />
-        </Floating>
-      ) : null}
-      {draftPicker === 'project' ? (
-        <Floating anchor={draftRefs.project} title="Projeto" width={260} onClose={() => setDraftPicker('')}>
-          <OptionList options={moveOptions} value={draftProject} onSelect={value => { setDraftProject(value); setDraftPicker('') }} />
-        </Floating>
-      ) : null}
-    </div>
+    <QuickAdd
+      inline
+      kinds={['task']}
+      initial="task"
+      state={state}
+      today={today}
+      defaultProjectId={group.projectId || projectId || 'entrada'}
+      defaultSection={group.section || ''}
+      defaultDate={group.addDate || ''}
+      commit={commit}
+      onFinance={() => undefined}
+      onClose={closeComposer}
+    />
   ) : (always || !group.tasks.length) ? (
     <button type="button" className={styles.addQuiet} data-has-tasks={group.tasks.length ? 'true' : undefined} onClick={() => openComposer(group)}>
       <Icon name="add" size={17} filled={false} />Adicionar tarefa
@@ -779,6 +740,13 @@ export function TasksModern(props: Props) {
         </div>
       ) : (
         <div className={styles.list}>
+          {isProjectLike ? (
+            <header className={styles.projHead}>
+              {projectId ? projectVisual(project, 'tab') : <span className={styles.tabVisual} style={{ background: 'var(--ds-accent)' }}><Icon name="inbox" size={12} /></span>}
+              <strong>{title}</strong>
+              <span className={styles.projCount}>{ctxTasks.filter(task => !task.concluida).length}</span>
+            </header>
+          ) : null}
           {groups.map(group => {
             const isCollapsed = collapsed.has(group.id)
             const showHead = groups.length > 1 || Boolean(projectId && sections.length) || !isProjectLike

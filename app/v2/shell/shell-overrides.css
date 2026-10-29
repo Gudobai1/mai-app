@@ -62,15 +62,15 @@ html body .mai-v3-shell {
  */
 html body .mai-v3-shell:not([data-view="today"]):not([data-view="tasks"]) .mai-v3-workspace > :not([class*="layer"]):not([class*="Layer"]) {
   width: 100% !important;
-  max-width: 1040px !important;
-  margin-left: auto !important;
-  margin-right: auto !important;
+  max-width: none !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
   box-sizing: border-box !important;
 }
 
 /* Telas com grade larga (calendário, finanças, arquivos) ganham um pouco mais de espaço. */
 html body .mai-v3-shell:is([data-view="agenda"], [data-view="finance"], [data-view="files"], [data-view="upcoming"]) .mai-v3-workspace > :not([class*="layer"]):not([class*="Layer"]) {
-  max-width: 1240px !important;
+  max-width: none !important;
 }
 
 /* Menu lateral do padrão visual (280px). */

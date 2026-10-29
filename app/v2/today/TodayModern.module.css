@@ -1565,7 +1565,7 @@
    linhas finas entre itens e sob os títulos, duas colunas.
    ===================================================================== */
 
-.page { max-width: 1320px; }
+.page { max-width: none; margin: 0; }
 
 .greeting { font-size: 28px; font-weight: var(--ds-fw-heavy); letter-spacing: -0.02em; margin: 0; }
 .subline { font-size: 14px; margin-top: 4px; }
@@ -1699,8 +1699,9 @@
   font-weight: var(--ds-fw-medium);
   color: var(--ds-muted);
 }
+.dateTag { color: var(--ds-success); }
 .dateLate { color: var(--ds-danger); }
-.dateToday { color: var(--ds-success); }
+.dateToday { color: var(--ds-warn); }
 
 .projLabel {
   flex-shrink: 0;
@@ -2076,3 +2077,5 @@
 .page .items .item.task { position: relative; }
 .page .items .item.task .projLabel { position: absolute; right: 0; top: 50%; transform: translateY(-50%); margin: 0; align-self: auto; }
 .page .items .item.task .taskTitleBtn { max-width: calc(100% - 150px); }
+
+.page { max-width: none; margin: 0; }

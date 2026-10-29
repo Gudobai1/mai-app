@@ -1,5 +1,5 @@
-.page { width: 100%; max-width: 1040px; margin: 0 auto; padding: 8px 0 96px; display: flex; flex-direction: column; gap: 16px; min-width: 0; }
-.page[data-mode='week'], .page[data-mode='month'] { max-width: 1240px; }
+.page { width: 100%; max-width: none; margin: 0; padding: 8px 0 96px; display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.page[data-mode='week'], .page[data-mode='month'] { max-width: none; }
 
 /* Cabeçalho */
 .header { display: flex; align-items: center; gap: 14px; }

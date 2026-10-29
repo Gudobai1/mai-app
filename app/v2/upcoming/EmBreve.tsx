@@ -362,7 +362,7 @@ export function EmBreve({ state, today, commit, inspect, syncRange }: Props) {
       <button type="button" className={tasksStyles.cardMain} onClick={() => open(entry)}>
         <span className={tasksStyles.cardTitle}>{entry.title}</span>
         <span className={tasksStyles.cardMeta}>
-          {withDate ? <span data-late={entry.late || undefined}><Icon name="calendar_today" size={12} />{naturalDate(entry.day, today)}{entry.time ? ` · ${entry.time}` : ''}</span> : entry.time ? <span><Icon name="schedule" size={12} />{entry.time}</span> : null}
+          {withDate ? <span data-late={entry.late || undefined} data-today={entry.day === today || undefined} data-future={entry.day > today || undefined}><Icon name="calendar_today" size={12} />{naturalDate(entry.day, today)}{entry.time ? ` · ${entry.time}` : ''}</span> : entry.time ? <span data-today={entry.day === today || undefined} data-future={entry.day > today || undefined}><Icon name="schedule" size={12} />{entry.time}</span> : null}
           {projectTag(entry)}
           {entry.recurring ? <span><Icon name="repeat" size={12} />Repete</span> : null}
         </span>
