@@ -29,6 +29,8 @@ type Props = {
   commit: (change: (current: MaiState) => MaiState) => void
   onFinance: () => void
   onClose: () => void
+  /** Abre o formulário no próprio lugar (dentro da lista), sem janela. */
+  inline?: boolean
 }
 
 const rows = (value: unknown): Row[] => (Array.isArray(value) ? (value as Row[]) : [])
@@ -79,7 +81,7 @@ const plusHour = (time: string) => {
 
 type Picker = '' | 'date' | 'priority' | 'project' | 'section' | 'repeat' | 'start' | 'end' | 'category'
 
-export function QuickAdd({ kinds, initial, state, today, defaultProjectId, defaultDate, commit, onFinance, onClose }: Props) {
+export function QuickAdd({ kinds, initial, state, today, defaultProjectId, defaultDate, commit, onFinance, onClose, inline }: Props) {
   const [kind, setKind] = useState<QuickAddKind>(initial)
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
@@ -147,9 +149,9 @@ export function QuickAdd({ kinds, initial, state, today, defaultProjectId, defau
   const repeatLabel = REPEATS.find(item => item.value === repeat)?.label || 'Repetir'
 
   const body = (
-    <div className={styles.layer} onClick={event => { if (event.target === event.currentTarget) onClose() }}>
-      <div className={styles.panel} role="dialog" aria-modal="true" aria-label="Adicionar">
-        <div className={styles.handle} aria-hidden="true" />
+    <div className={inline ? styles.inlineWrap : styles.layer} onClick={inline ? undefined : event => { if (event.target === event.currentTarget) onClose() }}>
+      <div className={inline ? styles.inlinePanel : styles.panel} role={inline ? 'group' : 'dialog'} aria-modal={inline ? undefined : 'true'} aria-label="Adicionar">
+        {inline ? null : <div className={styles.handle} aria-hidden="true" />}
         {kinds.length > 1 ? (
           <div className={styles.kinds} role="tablist">
             {kinds.map(item => (
@@ -280,6 +282,7 @@ export function QuickAdd({ kinds, initial, state, today, defaultProjectId, defau
     </div>
   )
 
+  if (inline) return body
   return typeof document === 'undefined' ? null : createPortal(body, document.body)
 }
 
