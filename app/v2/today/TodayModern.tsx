@@ -882,15 +882,25 @@ export function TodayModern({ state, today, commit, navigate, inspect, options, 
           <div className={styles.financeStack}>
             {financeMode !== 'bills' ? (
               <button type="button" className={styles.balance} onClick={() => navigate('finance')} aria-label="Abrir Finanças">
-                <span className={styles.balanceMain}>
-                  <span className={styles.balanceLabel}>Saldo atual</span>
-                  <strong className={styles.balanceValue}>{money.format(summary.balance)}</strong>
-                  <span className={`${styles.balanceLabel} ${styles.balanceGap}`}>Previsto em {monthEndLabel}</span>
-                  <strong className={`${styles.balanceForecastValue} ${summary.projected < 0 ? styles.negative : styles.positive}`}>{money.format(summary.projected)}</strong>
+                <span className={styles.balanceRow}>
+                  <span className={styles.balanceCell}>
+                    <span className={styles.balanceLabel}>Saldo atual</span>
+                    <strong className={styles.balanceValue}>{money.format(summary.balance)}</strong>
+                  </span>
+                  <span className={`${styles.balanceCell} ${styles.balanceEnd}`}>
+                    <span className={styles.balanceLabel}>A receber no mês</span>
+                    <b className={`${styles.balanceStatValue} ${styles.positive}`}>{money.format(summary.toReceive)}</b>
+                  </span>
                 </span>
-                <span className={styles.balanceSide}>
-                  <span><small>A receber no mês</small><b className={styles.positive}>{money.format(summary.toReceive)}</b></span>
-                  <span><small>A pagar no mês</small><b className={styles.negative}>{money.format(summary.toPay)}</b></span>
+                <span className={styles.balanceRow}>
+                  <span className={styles.balanceCell}>
+                    <span className={styles.balanceLabel}>Previsto em {monthEndLabel}</span>
+                    <strong className={styles.balanceForecastValue}>{money.format(summary.projected)}</strong>
+                  </span>
+                  <span className={`${styles.balanceCell} ${styles.balanceEnd}`}>
+                    <span className={styles.balanceLabel}>A pagar no mês</span>
+                    <b className={`${styles.balanceStatValue} ${styles.negative}`}>{money.format(summary.toPay)}</b>
+                  </span>
                 </span>
               </button>
             ) : null}

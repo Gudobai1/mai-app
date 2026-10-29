@@ -1990,3 +1990,20 @@
 .balanceForecastValue.balanceForecastValue,
 .balanceForecastValue.positive,
 .balanceForecastValue.negative { color: var(--ds-text); }
+
+/* Espaços e linhas do Hoje */
+.page .block > .projectGroups.projectGroups { margin: 0; padding: 0; border: 0; }
+.page .addRow.addRow { padding: 2px 0 10px; }
+.page .habitList > .habitRow:last-child { border-bottom: 0; }
+.page .items > :last-child,
+.page .items > :last-child .item.item,
+.page .items > .item.item:last-child { border-bottom: 0; }
+
+/* Finanças: saldo/previsto alinhados com a receber/a pagar */
+.page .balance.balance { display: flex; flex-direction: column; align-items: stretch; gap: 14px; padding: 14px 0; }
+.balanceRow { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+.balanceCell { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.balanceEnd { text-align: right; align-items: flex-end; }
+.balanceStatValue { font-size: 18px; line-height: 1.2; font-weight: var(--ds-fw-bold); letter-spacing: -0.01em; font-variant-numeric: tabular-nums; }
+.balanceStatValue.positive { color: var(--ds-success); }
+.balanceStatValue.negative { color: var(--ds-danger); }
