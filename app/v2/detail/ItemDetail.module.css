@@ -1299,3 +1299,15 @@
     font-size: 14px;
   }
 }
+
+/* ===== Padrão de pop-up (conceito Todoist 6): janela central, sem fundos, só linhas ===== */
+.layer.layer { background: rgba(0, 0, 0, 0.4); backdrop-filter: none; -webkit-backdrop-filter: none; }
+.panel.panel { border-radius: 14px; background: var(--ds-bg); box-shadow: 0 12px 40px rgba(0, 0, 0, 0.2); }
+.iconButton.iconButton { background: transparent; color: var(--ds-muted); border-radius: 8px; }
+.iconButton.iconButton:hover { background: transparent; color: var(--ds-text); }
+.prop.prop, .actionRow.actionRow, .pill.pill, .stepper.stepper, .attach.attach {
+  background: transparent; border: 1px solid var(--ds-line); border-radius: 8px; font-weight: var(--ds-fw-medium); box-shadow: none;
+}
+.prop.prop:hover, .actionRow.actionRow:hover, .pill.pill:hover, .attach.attach:hover { background: transparent; border-color: var(--ds-line-strong); }
+.actionRow.actionRow[data-on] { background: transparent; border-color: var(--ds-accent); color: var(--ds-accent); }
+.listRow.listRow, .files.files { background: transparent; border-radius: 0; border: 0; border-bottom: 1px solid var(--ds-line); }

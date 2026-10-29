@@ -429,3 +429,59 @@ html body .mai-context-v3-section > header small {
     animation: none !important;
   }
 }
+
+/* ===== Padrão de pop-up (conceito Todoist 6): janela central, sem fundos, só linhas ===== */
+html body .mai-v3-create-layer,
+html body .mai-context-layer,
+html body .mai-task-v4-layer,
+html body .mai-context-v3-layer { background: rgba(0, 0, 0, 0.4) !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
+
+html body .mai-v3-create-drawer,
+html body .mai-context-drawer,
+html body .mai-task-v4-drawer,
+html body .mai-context-v3-drawer { border-radius: 14px !important; background: var(--ds-bg) !important; box-shadow: 0 12px 40px rgba(0, 0, 0, 0.2) !important; }
+
+html body .mai-task-v4-close,
+html body .mai-context-v3-close,
+html body .mai-v3-close,
+html body .mai-task-v4-close:hover,
+html body .mai-context-v3-close:hover,
+html body .mai-v3-close:hover { background: transparent !important; color: var(--ds-muted) !important; }
+
+html body .mai-task-v4-footer,
+html body .mai-context-v3-footer,
+html body .mai-v3-drawer-footer { background: var(--ds-bg) !important; }
+
+html body .mai-task-v4-tool-button,
+html body .mai-context-v3-tool-button,
+html body .mai-task-v4-tool-button:hover,
+html body .mai-task-v4-tool[data-open="true"] .mai-task-v4-tool-button,
+html body .mai-context-v3-tool-button:hover,
+html body .mai-context-v3-tool[data-open="true"] .mai-context-v3-tool-button {
+  background: transparent !important;
+  border: 1px solid var(--ds-line) !important;
+  border-radius: 8px !important;
+}
+html body .mai-context-v3-tool-button > .material-symbols-rounded { color: var(--ds-muted) !important; }
+html body .mai-task-v4-tool-value,
+html body .mai-context-v3-tool-value { font-weight: 500 !important; }
+
+html body .mai-task-v4-drawer .mai-v3-title-input,
+html body .mai-v3-create-drawer .mai-v3-title-input,
+html body .mai-context-v3-title,
+html body .mai-context-unified-title { font-weight: 700 !important; font-size: 22px !important; }
+html body .mai-task-v4-section > header strong,
+html body .mai-context-v3-section > header strong { font-weight: 700 !important; }
+
+@media (max-width: 900px) {
+  html body .mai-task-v4-toolbar,
+  html body .mai-context-v3-toolbar { background: transparent !important; padding: 0 !important; }
+  html body .mai-task-v4-tool-button,
+  html body .mai-context-v3-tool-button { border: 0 !important; border-radius: 0 !important; }
+  html body .mai-v3-create-drawer,
+  html body .mai-context-drawer,
+  html body .mai-task-v4-drawer,
+  html body .mai-context-v3-drawer { border-radius: 18px 18px 0 0 !important; }
+}
+
+html body .mai-global-search-panel { border-radius: 14px !important; background: var(--ds-bg) !important; box-shadow: 0 12px 40px rgba(0, 0, 0, 0.2) !important; }

@@ -250,3 +250,16 @@
 @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
 @keyframes pop { from { opacity: 0; transform: translateY(8px) scale(0.98); } to { opacity: 1; transform: none; } }
 @keyframes sheet { from { transform: translateY(40px); opacity: 0.6; } to { transform: none; opacity: 1; } }
+
+/* ===== Padrão de pop-up ===== */
+.layer.layer { background: rgba(0, 0, 0, 0.4); backdrop-filter: none; -webkit-backdrop-filter: none; }
+.panel.panel { border-radius: 14px; background: var(--ds-bg); box-shadow: 0 12px 40px rgba(0, 0, 0, 0.2); }
+.kinds.kinds { background: transparent; padding: 0; gap: 16px; border-bottom: 1px solid var(--ds-line); border-radius: 0; }
+.kinds.kinds button { background: transparent; border-radius: 0; height: 34px; flex: 0 0 auto; box-shadow: none; }
+.kinds.kinds button[data-active] { background: transparent; box-shadow: inset 0 -2px 0 var(--ds-accent); color: var(--ds-accent); }
+.chip.chip { background: transparent; border: 1px solid var(--ds-line); border-radius: 8px; font-weight: var(--ds-fw-medium); }
+.chip.chip[data-set] { background: transparent; border-color: var(--chip-color, var(--ds-accent)); }
+.chip.chip[data-late] { background: transparent; border-color: var(--ds-danger); }
+.ghost.ghost, .primary.primary { height: 36px; border-radius: 8px; }
+.ghost.ghost { border: 1px solid var(--ds-line); color: var(--ds-text); }
+.ghost.ghost:hover { background: transparent; border-color: var(--ds-line-strong); }
