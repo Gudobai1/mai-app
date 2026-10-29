@@ -6,7 +6,7 @@ import type { CSSProperties, ReactNode } from 'react'
  * preenchimento bem suave da mesma cor.
  */
 
-const TINT = 'color-mix(in srgb, currentColor 10%, transparent)'
+const TINT = 'none'
 
 type Spec = { color: string; node: (day: number) => ReactNode }
 
@@ -36,17 +36,17 @@ const SPECS: Record<string, Spec> = {
     node: () => (<><circle cx="11" cy="11" r="6.5" /><path d="M16 16l4.5 4.5" /></>),
   },
   today: {
-    color: 'var(--ds-success)',
+    color: 'var(--ds-muted)',
     node: day => (
       <>
         <rect x="3.5" y="4" width="17" height="16.5" rx="3.5" fill={TINT} />
         <path d="M7 8.6h10" />
-        <text x="12" y="17.2" textAnchor="middle" fontSize="8.6" fontWeight="600" fill="currentColor" stroke="none" style={{ fontFamily: 'inherit' }}>{day}</text>
+        <text x="12" y="17.2" textAnchor="middle" fontSize="8.6" fontWeight="400" fill="currentColor" stroke="none" style={{ fontFamily: 'inherit' }}>{day}</text>
       </>
     ),
   },
   upcoming: {
-    color: 'var(--ds-lilac-fg)',
+    color: 'var(--ds-muted)',
     node: () => (
       <>
         <rect x="3.5" y="4" width="17" height="16.5" rx="3.5" fill={TINT} />
@@ -59,11 +59,11 @@ const SPECS: Record<string, Spec> = {
     ),
   },
   completed: {
-    color: 'var(--ds-teal-fg)',
+    color: 'var(--ds-muted)',
     node: () => (<><circle cx="12" cy="12" r="8.5" fill={TINT} /><path d="M8.2 12.3l2.7 2.7 5-5.6" /></>),
   },
   finance: {
-    color: 'var(--ds-sky-fg)',
+    color: 'var(--ds-muted)',
     node: () => (
       <>
         <rect x="3.5" y="6.5" width="17" height="12.5" rx="3.2" fill={TINT} />
@@ -73,7 +73,7 @@ const SPECS: Record<string, Spec> = {
     ),
   },
   habits: {
-    color: 'var(--ds-peach-fg)',
+    color: 'var(--ds-muted)',
     node: () => (
       <>
         <circle cx="12" cy="12" r="3.8" fill={TINT} />
@@ -82,7 +82,7 @@ const SPECS: Record<string, Spec> = {
     ),
   },
   goals: {
-    color: 'var(--ds-danger)',
+    color: 'var(--ds-muted)',
     node: () => (
       <>
         <path d="M6 20.5V4.6" />
@@ -95,7 +95,7 @@ const SPECS: Record<string, Spec> = {
     node: () => (<><rect x="4" y="4" width="16" height="16" rx="3.2" /><path d="M8 9.2h8M8 12.4h8M8 15.6h5" /></>),
   },
   files: {
-    color: 'var(--ds-teal-fg)',
+    color: 'var(--ds-muted)',
     node: () => (
       <>
         <rect x="3.5" y="8.5" width="12" height="12" rx="2.6" fill={TINT} />
@@ -120,7 +120,7 @@ export function SidebarIcon({ name, size = 22, style }: { name: string; size?: n
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
-      strokeWidth="1.7"
+      strokeWidth="1.35"
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden="true"

@@ -295,9 +295,19 @@
 }
 
 .settingsButton.settingsButton:hover {
-  background: var(--ds-surface-hover);
+  background: transparent;
   color: var(--ds-text);
 }
+.settingsButton.settingsButton,
+.settingsButton.settingsButton:focus,
+.settingsButton.settingsButton:focus-visible,
+.settingsButton.settingsButton:active {
+  background: transparent;
+  border: 0;
+  outline: 0;
+  box-shadow: none;
+}
+.settingsButton svg { stroke-width: 1.35; }
 
 .avatar {
   width: 32px;
