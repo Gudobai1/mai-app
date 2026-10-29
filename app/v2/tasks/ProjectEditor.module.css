@@ -431,3 +431,17 @@
 @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
 @keyframes pop { from { opacity: 0; transform: translateY(8px) scale(0.98); } to { opacity: 1; transform: none; } }
 @keyframes sheet { from { transform: translateY(40px); opacity: 0.6; } to { transform: none; opacity: 1; } }
+
+/* ===== Padrão de pop-up ===== */
+.layer.layer { background: rgba(0, 0, 0, 0.4); backdrop-filter: none; -webkit-backdrop-filter: none; }
+.panel.panel { border-radius: 14px; background: var(--ds-bg); box-shadow: 0 12px 40px rgba(0, 0, 0, 0.2); }
+.iconButton.iconButton { background: transparent; color: var(--ds-muted); }
+.iconButton.iconButton:hover { background: transparent; color: var(--ds-text); }
+.favorite.favorite, .select.select, .iconChoice.iconChoice, .button.button { background: transparent; border: 1px solid var(--ds-line); border-radius: 8px; box-shadow: none; }
+.buttonGhost.buttonGhost { background: transparent; border: 1px solid var(--ds-line); border-radius: 8px; }
+.buttonGhost.buttonGhost:hover { background: transparent; border-color: var(--ds-line-strong); }
+.done.done { background: var(--ds-accent); border-radius: 8px; font-weight: var(--ds-fw-bold); }
+.tabs.tabs { background: transparent; padding: 0; border-bottom: 1px solid var(--ds-line); border-radius: 0; }
+.tabs.tabs button { background: transparent; box-shadow: none; border-radius: 0; }
+.tabs.tabs button[data-active] { background: transparent; box-shadow: inset 0 -2px 0 var(--ds-accent); color: var(--ds-accent); }
+.sectionRow.sectionRow { background: transparent; border-radius: 0; border-bottom: 1px solid var(--ds-line); }

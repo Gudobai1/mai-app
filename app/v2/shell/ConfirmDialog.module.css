@@ -159,3 +159,12 @@
   from { transform: translateY(40px); opacity: 0.6; }
   to { transform: none; opacity: 1; }
 }
+
+/* ===== Padrão de pop-up ===== */
+.layer.layer { background: rgba(0, 0, 0, 0.4); }
+.card.card { border-radius: 14px; background: var(--ds-bg); box-shadow: 0 12px 40px rgba(0, 0, 0, 0.2); }
+.icon.icon, .icon.icon[data-danger] { background: transparent; width: 36px; height: 36px; }
+.title.title { font-size: 16px; font-weight: var(--ds-fw-bold); }
+.cancel.cancel, .confirm.confirm { height: 38px; border-radius: 8px; font-size: 14px; }
+.cancel.cancel { background: transparent; border: 1px solid var(--ds-line); color: var(--ds-text); }
+.cancel.cancel:hover { background: transparent; border-color: var(--ds-line-strong); }

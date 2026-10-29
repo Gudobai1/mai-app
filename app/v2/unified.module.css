@@ -746,3 +746,12 @@
   .searchLayer > section { width: 100vw; max-height: 100dvh; height: 100dvh; border: 0; border-radius: 0; }
   .searchLayer > section > div { max-height: calc(100dvh - 56px); }
 }
+
+/* ===== Padrão de pop-up ===== */
+.modalLayer.modalLayer { background: rgba(0, 0, 0, 0.4); backdrop-filter: none; }
+.modalCard.modalCard { border-radius: 14px; background: var(--ds-bg, var(--bg-card)); box-shadow: 0 12px 40px rgba(0, 0, 0, 0.2); }
+.modalHeader > button:hover { background: transparent; color: var(--ds-text, var(--text)); }
+.secondaryButton.secondaryButton, .iconTextButton.iconTextButton, .dangerButton.dangerButton { background: transparent; border-radius: 8px; }
+.dangerButton.dangerButton { border-color: var(--ds-line, var(--line)); }
+.primaryButton.primaryButton { border-radius: 8px; }
+.settingsRow > button, .settingsButtons button, .settingsButtons label { background: transparent; border-radius: 8px; }
