@@ -1809,3 +1809,36 @@
 .subLabel span { color: var(--ds-muted); font-weight: var(--ds-fw-medium); }
 .amount { flex-shrink: 0; margin-left: auto; font-size: 14px; font-weight: var(--ds-fw-bold); font-variant-numeric: tabular-nums; }
 .partial { margin-left: 6px; font-size: 11px; color: var(--ds-muted); font-weight: var(--ds-fw-medium); }
+
+/* Ajuste fino ao conceito */
+.page { max-width: none; margin: 0; gap: 0; }
+.header { margin-bottom: 8px; }
+.greeting { font-size: 26px; font-weight: var(--ds-fw-bold); letter-spacing: 0; }
+.subline { font-size: 13px; margin-top: 8px; }
+.board { margin-top: 0; gap: 0 44px; }
+.column { gap: 0; }
+.page .block > .secHead.secHead {
+  margin: 0;
+  padding: 22px 0 6px;
+  border-bottom: 1px solid var(--ds-line);
+}
+.page .block .secHead h2 {
+  font-size: 14px;
+  font-weight: var(--ds-fw-bold);
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--ds-text);
+}
+.page .secMeta { margin-left: 6px; }
+.projectGroups { gap: 0; }
+.projectHead { padding: 22px 0 8px; }
+.projectHead strong { font-size: 14.5px; }
+.projectHeadImg, .projectHeadDot { width: 26px; height: 26px; }
+.projLabel { align-self: flex-end; }
+.page .block > .empty { padding: 10px 0; }
+@media (max-width: 900px) {
+  .board { gap: 0; }
+  .header { margin-bottom: 4px; }
+}
+.balanceSide small { white-space: nowrap; }
+.balanceMain { flex: 1; }
