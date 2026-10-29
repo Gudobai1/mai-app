@@ -2042,3 +2042,7 @@
 .habitDots i, .habitDots i[data-today] { outline: 0; }
 .habitDots i[data-part] { border: 0; background: conic-gradient(var(--hc) calc(var(--p) * 1%), var(--ds-line-strong) 0); }
 .habitDots i[data-on] { border: 0; background: var(--hc); }
+
+/* Hoje também é pizza: sem anel nem contorno nos parciais */
+.habitDots i[data-today][data-part]:not([data-on]) { outline: 0; border: 0; opacity: 1; background: conic-gradient(var(--hc) calc(var(--p) * 1%), var(--ds-line-strong) 0); }
+.habitDots i[data-today][data-on] { outline: 0; border: 0; background: var(--hc); }
