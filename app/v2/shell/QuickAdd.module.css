@@ -270,3 +270,12 @@
 .inlinePanel .title { font-size: 16px; }
 .inlinePanel .description { min-height: 36px; font-size: 13px; }
 .inlinePanel .footer { justify-content: flex-start; border-top: 0; padding-top: 6px; }
+.inlinePanel .primary { order: -1; }
+.inlinePanel .ghost.ghost, .inlinePanel .primary.primary { background: transparent; border: 0; box-shadow: none; }
+.inlinePanel .ghost.ghost { color: var(--ds-muted); }
+.inlinePanel .primary.primary { color: var(--ds-accent); }
+.inlinePanel .ghost.ghost:hover { background: var(--ds-surface-hover); color: var(--ds-text); }
+.inlinePanel .primary.primary:hover:not(:disabled) { background: var(--ds-accent-soft); }
+.inlinePanel .ghost.ghost:active { background: var(--ds-line); }
+.inlinePanel .primary.primary:active:not(:disabled) { background: color-mix(in srgb, var(--ds-accent) 22%, transparent); }
+.inlinePanel .primary.primary:disabled { opacity: 0.4; }
