@@ -189,15 +189,15 @@
 }
 
 .projectPhoto {
-  width: 22px;
-  height: 22px;
+  width: 20px;
+  height: 20px;
   flex-shrink: 0;
-  border-radius: 6px;
+  border-radius: 50%;
   object-fit: cover;
   display: grid;
   place-items: center;
   color: #fff;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: var(--ds-fw-heavy);
 }
 
