@@ -117,6 +117,7 @@
   font-weight: var(--ds-fw-bold);
 }
 
+.item.item[aria-current='page'] { --sidebar-icon-color: var(--ds-accent); }
 .item.item[aria-current='page'] > :first-child {
   color: var(--ds-accent);
 }
