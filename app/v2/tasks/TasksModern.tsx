@@ -678,6 +678,7 @@ export function TasksModern(props: Props) {
           role="tablist"
         >
           {([
+            { id: 'all', label: 'Tudo', icon: 'select_all', color: 'var(--ds-muted)', count: ctxTasks.filter(task => !task.concluida).length },
             { id: 'late', label: 'Atrasadas', icon: 'warning', color: 'var(--ds-muted)', count: ctxTasks.filter(task => !task.concluida && dayOf(task) && dayOf(task) < today).length },
             { id: 'nodate', label: 'Sem data', icon: 'event_busy', color: 'var(--ds-muted)', count: ctxTasks.filter(task => !task.concluida && !dayOf(task)).length },
             { id: 'today', label: 'Hoje', icon: 'today', color: 'var(--ds-muted)', count: ctxTasks.filter(task => !task.concluida && dayOf(task) && dayOf(task) <= today).length },
@@ -686,7 +687,7 @@ export function TasksModern(props: Props) {
           ] as { id: CtxFilter; label: string; icon: string; color: string; count: number }[]).map(tab => (
             <button key={tab.id} type="button" role="tab" className={styles.pill} data-active={ctxFilter === tab.id || undefined} aria-selected={ctxFilter === tab.id} onClick={() => {
               if (!isProjectLike) props.onScopeChange('entrada')
-              setCtxFilter(current => current === tab.id ? 'all' : tab.id)
+              setCtxFilter(tab.id)
             }}>
               <Icon name={tab.icon} size={17} filled={false} />
               <span>{tab.label}</span>
