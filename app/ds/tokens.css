@@ -13,7 +13,7 @@
 :root,
 .ds-theme-light {
   /* Tipografia */
-  --ds-font: var(--font-jakarta), 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  --ds-font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   --ds-icon-font: 'Material Symbols Rounded';
   --ds-fs-xs: 11px;
   --ds-fs-sm: 13px;
@@ -22,8 +22,8 @@
   --ds-fs-xl: 22px;
   --ds-fs-2xl: 28px;
   --ds-fs-3xl: 34px;
-  --ds-fw-regular: 500;
-  --ds-fw-medium: 600;
+  --ds-fw-regular: 400;
+  --ds-fw-medium: 500;
   --ds-fw-bold: 700;
   --ds-fw-heavy: 800;
   --ds-tracking-tight: -0.02em;
@@ -46,20 +46,20 @@
   --ds-r-full: 999px;
 
   /* Superfícies e texto */
-  --ds-bg: #F4F5F9;
+  --ds-bg: #FFFFFF;
   --ds-surface: #FFFFFF;
-  --ds-surface-2: #F4F5F9;
-  --ds-surface-hover: #EEEFF4;
-  --ds-text: #0F1115;
-  --ds-text-2: #3A3D46;
-  --ds-muted: #6B6F7B;
-  --ds-line: #ECEDF2;
-  --ds-line-strong: #C9CCD6;
+  --ds-surface-2: #F7F8FA;
+  --ds-surface-hover: #EEF0F3;
+  --ds-text: #202020;
+  --ds-text-2: #404040;
+  --ds-muted: #808080;
+  --ds-line: #EDEDED;
+  --ds-line-strong: #DDDDDD;
 
   /* Destaque */
-  --ds-accent: #2563EB;
-  --ds-accent-strong: #1D4ED8;
-  --ds-accent-soft: #E0EAFF;
+  --ds-accent: #1E6FD9;
+  --ds-accent-strong: #1859B0;
+  --ds-accent-soft: #E3EEFC;
   --ds-on-accent: #FFFFFF;
   --ds-on-accent-soft: rgba(255, 255, 255, 0.2);
 
@@ -70,21 +70,21 @@
   --ds-inverse-line: #2A2D36;
 
   /* Estados */
-  --ds-danger: #BE2944;
-  --ds-success: #0F7A4B;
+  --ds-danger: #D1453B;
+  --ds-success: #058527;
   --ds-success-bright: #4ADE9B;
 
   /* Tons por categoria: fundo suave + cor forte (texto e ícone) */
   --ds-mint-bg: #DDF7EA;
-  --ds-mint-fg: #0F7A4B;
+  --ds-mint-fg: #058527;
   --ds-sky-bg: #DCEEFF;
-  --ds-sky-fg: #1D63BE;
+  --ds-sky-fg: #246FE0;
   --ds-peach-bg: #FFE8D9;
-  --ds-peach-fg: #B24A16;
+  --ds-peach-fg: #EB8909;
   --ds-lilac-bg: #EEE6FF;
   --ds-lilac-fg: #6A3FCC;
   --ds-rose-bg: #FFE1E6;
-  --ds-rose-fg: #BE2944;
+  --ds-rose-fg: #D1453B;
 
   /* Sombras */
   --ds-shadow-1: 0 1px 2px rgba(15, 17, 21, 0.04);
@@ -101,19 +101,19 @@
 
 html[data-mai-theme="dark"],
 .ds-theme-dark {
-  --ds-bg: #0D0E12;
-  --ds-surface: #17191F;
-  --ds-surface-2: #1E2128;
-  --ds-surface-hover: #23262E;
-  --ds-text: #F3F4F7;
-  --ds-text-2: #D2D4DB;
-  --ds-muted: #9CA0AC;
-  --ds-line: #23262E;
-  --ds-line-strong: #3A3E48;
+  --ds-bg: #1E1E1E;
+  --ds-surface: #1E1E1E;
+  --ds-surface-2: #282828;
+  --ds-surface-hover: #303030;
+  --ds-text: #EDEDED;
+  --ds-text-2: #CFCFCF;
+  --ds-muted: #8A8A8A;
+  --ds-line: #333333;
+  --ds-line-strong: #3F3F3F;
 
-  --ds-accent: #3B82F6;
-  --ds-accent-strong: #60A5FA;
-  --ds-accent-soft: #172238;
+  --ds-accent: #5AA6F2;
+  --ds-accent-strong: #8CC2F7;
+  --ds-accent-soft: #1D3250;
   --ds-on-accent: #FFFFFF;
   --ds-on-accent-soft: rgba(255, 255, 255, 0.2);
 
@@ -122,23 +122,23 @@ html[data-mai-theme="dark"],
   --ds-inverse-muted: #B4B7C2;
   --ds-inverse-line: #3A3E48;
 
-  --ds-danger: #FF7A90;
-  --ds-success: #4ADE9B;
+  --ds-danger: #FF7066;
+  --ds-success: #6CC47C;
   --ds-success-bright: #4ADE9B;
 
   --ds-mint-bg: #12302A;
-  --ds-mint-fg: #4ADE9B;
+  --ds-mint-fg: #6CC47C;
   --ds-sky-bg: #13263D;
-  --ds-sky-fg: #6AB0FF;
+  --ds-sky-fg: #5297FF;
   --ds-peach-bg: #3A2418;
-  --ds-peach-fg: #FF9A5C;
+  --ds-peach-fg: #FF9A14;
   --ds-lilac-bg: #2A2140;
   --ds-lilac-fg: #B69CFF;
   --ds-rose-bg: #3B1C24;
-  --ds-rose-fg: #FF7A90;
+  --ds-rose-fg: #FF7066;
 
-  --ds-shadow-1: 0 0 0 1px #23262E;
-  --ds-shadow-float: 0 0 0 1px #23262E, 0 10px 30px rgba(0, 0, 0, 0.4);
+  --ds-shadow-1: 0 0 0 1px #333333;
+  --ds-shadow-float: 0 0 0 1px #333333, 0 10px 30px rgba(0, 0, 0, 0.4);
   --ds-shadow-modal: 0 0 0 1px #2C2F38, 0 24px 60px rgba(0, 0, 0, 0.6);
 
   color-scheme: dark;
