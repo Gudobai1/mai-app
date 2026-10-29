@@ -111,3 +111,8 @@
 }
 
 .list > :last-child, .row:last-child { border-bottom: 0; }
+
+/* Origem/categoria: canto direito, centralizada na altura do cartão */
+.row { position: relative; }
+.source { position: absolute; right: 0; top: 50%; transform: translateY(-50%); align-self: auto; }
+.body { max-width: calc(100% - 150px); }
