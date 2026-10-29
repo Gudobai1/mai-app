@@ -745,9 +745,12 @@ export function TasksModern(props: Props) {
               {projectId ? projectVisual(project, 'tab') : <span className={styles.tabVisual} style={{ background: 'var(--ds-accent)' }}><Icon name="inbox" size={12} /></span>}
               <strong>{title}</strong>
               <span className={styles.projCount}>{ctxTasks.filter(task => !task.concluida).length}</span>
+              <button type="button" className={styles.projChevron} onClick={() => toggleCollapsed('proj')} aria-expanded={!collapsed.has('proj')} aria-label={`${collapsed.has('proj') ? 'Mostrar' : 'Esconder'} ${title}`}>
+                <Icon name={collapsed.has('proj') ? 'chevron_right' : 'expand_more'} size={20} filled={false} />
+              </button>
             </header>
           ) : null}
-          {groups.map(group => {
+          {(isProjectLike && collapsed.has('proj') ? [] : groups).map(group => {
             const isCollapsed = collapsed.has(group.id)
             const showHead = groups.length > 1 || Boolean(projectId && sections.length) || !isProjectLike
             return (

@@ -2408,3 +2408,5 @@
 .descLink { color: var(--ds-accent); text-decoration: underline; text-underline-offset: 2px; }
 .cardDesc { white-space: normal; overflow-wrap: anywhere; }
 .list { gap: 0; }
+.projChevron { appearance: none; margin-left: auto; width: 28px; height: 28px; display: grid; place-items: center; padding: 0; border: 0; border-radius: 8px; background: transparent; color: var(--ds-muted); cursor: pointer; }
+.projChevron:hover { color: var(--ds-text); }
