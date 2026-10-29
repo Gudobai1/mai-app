@@ -2019,3 +2019,18 @@
 .page .balance.balance { gap: 6px; padding: 10px 0; }
 .balanceCell { gap: 0; }
 .balanceLabel { line-height: 1.3; }
+
+/* Hábitos: círculos dos dias maiores, preenchidos como pizza pelo percentual */
+.habitDots { gap: 10px; }
+.habitDots i { width: 20px; height: 20px; }
+.habitDots i[data-part] { border-color: var(--hc); background: conic-gradient(var(--hc) calc(var(--p) * 1%), transparent 0); }
+.habitDots i[data-on] { border-color: var(--hc); background: var(--hc); }
+@media (max-width: 420px) { .habitDots { gap: 6px; } .habitDots i { width: 15px; height: 15px; } }
+
+/* Finanças: ainda mais compacto */
+.page .balance.balance { gap: 0; padding: 8px 0; }
+.balanceRow + .balanceRow { margin-top: 2px; }
+.balanceLabel { line-height: 1.2; }
+.balanceValue, .balanceForecastValue, .balanceStatValue { line-height: 1.15; }
+.balanceGap { margin-top: 0; }
+.balanceValue.balanceValue { margin: 0; padding: 0; }
