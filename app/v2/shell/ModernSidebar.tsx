@@ -5,6 +5,7 @@ import type { MaiState } from '../../../lib/v2/state'
 import { Icon } from '../../ds'
 import type { AppView } from '../app-types'
 import { driveAssetUrl } from '../DriveAsset'
+import { SidebarIcon } from './SidebarIcons'
 import { NAV_ALIAS, todayCounts, type NavItem } from './nav'
 import styles from './ModernShell.module.css'
 
@@ -77,7 +78,7 @@ export function ModernSidebar({ state, today, view, navigate, onSearch, onSettin
         aria-current={active ? 'page' : undefined}
         onClick={() => navigate(item.id)}
       >
-        <Icon name={item.icon} size={21} filled={active} />
+        <SidebarIcon name={String(item.id)} />
         <span className={styles.itemLabel}>{item.label}</span>
         {badge ? (
           <span className={styles.badge} title={counts.overdue ? `${counts.overdue} atrasada(s)` : undefined}>{badge}</span>
@@ -141,7 +142,7 @@ export function ModernSidebar({ state, today, view, navigate, onSearch, onSettin
   return (
     <aside className={styles.sidebar} aria-label="Menu principal">
       <button type="button" className={styles.search} onClick={onSearch}>
-        <Icon name="search" size={20} filled={false} />
+        <SidebarIcon name="search" size={20} />
         <span>Buscar</span>
         <span className={styles.kbd}>Ctrl K</span>
       </button>
@@ -175,7 +176,7 @@ export function ModernSidebar({ state, today, view, navigate, onSearch, onSettin
           </span>
           <span className={styles.profileName} title={profile?.email || profileName}>{profileName}</span>
           <button type="button" className={styles.settingsButton} onClick={onSettings} aria-label="Configurações" title="Configurações">
-            <Icon name="settings" size={22} filled={false} />
+            <SidebarIcon name="settings" />
           </button>
         </div>
       </div>

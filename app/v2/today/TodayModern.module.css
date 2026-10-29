@@ -1936,3 +1936,15 @@
 .subChip.subChip > span:last-child { transition: transform var(--ds-dur) var(--ds-ease); }
 .subChip.subChip[data-open] > span:first-child { transform: none; }
 .subChip.subChip[data-open] > span:last-child { transform: rotate(180deg); }
+
+/* Subtarefas: seta à direita quando fechado, para baixo quando aberto (sem girar) */
+.subChip.subChip[data-open] > span:last-child { transform: none; }
+
+/* Foto do projeto: círculo pequeno */
+.projectHeadImg, .projectHeadDot { width: 20px; height: 20px; border-radius: 50%; font-size: 10px; }
+.projectHead { gap: 8px; }
+.projectHead strong { font-size: 14px; }
+
+/* Finanças: só o previsto, valor colorido pelo sinal */
+.balanceValue.positive { color: var(--ds-success); }
+.balanceValue.negative { color: var(--ds-danger); }

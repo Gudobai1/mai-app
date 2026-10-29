@@ -672,7 +672,7 @@ export function TodayModern({ state, today, commit, navigate, inspect, options, 
             {children.length ? (
               <button type="button" className={styles.subChip} data-open={expanded || undefined} onClick={event => { event.stopPropagation(); toggleSubs(taskId) }} aria-expanded={expanded} title={`${children.filter(child => child.concluida).length}/${children.length} subtarefas`} aria-label={`${expanded ? 'Esconder' : 'Mostrar'} subtarefas de ${title} (${children.filter(child => child.concluida).length} de ${children.length} concluídas)`}>
                 <span>{children.filter(child => child.concluida).length}/{children.length}</span>
-                <Icon name="expand_more" size={20} filled={false} />
+                <Icon name={expanded ? 'expand_more' : 'chevron_right'} size={20} filled={false} />
               </button>
             ) : null}
             <span className={styles.projLabel}>{projectLabel}<b style={{ color: projectColor(task.projeto_id) }}>#</b></span>
@@ -827,7 +827,7 @@ export function TodayModern({ state, today, commit, navigate, inspect, options, 
                       {item.done ? <Icon name="check" size={12} weight={600} /> : item.failed ? <span aria-hidden="true">×</span> : null}
                     </button>
                     <button type="button" className={styles.habitBody} onClick={() => inspect({ kind: 'habit', sourceId: String(item.habit.id), title: name, date: day, raw: item.habit })}>
-                      <span className={styles.habitTitle}>{name}</span>
+                      <span className={styles.habitTitle} style={{ color: color }}>{name}</span>
                       <span className={styles.habitDots} aria-hidden="true">
                         {weekKeys.map(key => <i key={key} data-on={doneOn(item.habit, key) || undefined} data-today={key === day || undefined} />)}
                       </span>
@@ -876,9 +876,8 @@ export function TodayModern({ state, today, commit, navigate, inspect, options, 
             {financeMode !== 'bills' ? (
               <button type="button" className={styles.balance} onClick={() => navigate('finance')} aria-label="Abrir Finanças">
                 <span className={styles.balanceMain}>
-                  <span className={styles.balanceLabel}>Saldo atual</span>
-                  <strong className={styles.balanceValue}>{money.format(summary.balance)}</strong>
-                  <span className={`${styles.balanceForecast} ${summary.projected < 0 ? styles.negative : styles.positive}`}>Previsto em {monthEndLabel} · {money.format(summary.projected)}</span>
+                  <span className={styles.balanceLabel}>Previsto em {monthEndLabel}</span>
+                  <strong className={`${styles.balanceValue} ${summary.projected < 0 ? styles.negative : styles.positive}`}>{money.format(summary.projected)}</strong>
                 </span>
                 <span className={styles.balanceSide}>
                   <span><small>A receber no mês</small><b className={styles.positive}>{money.format(summary.toReceive)}</b></span>
