@@ -1,0 +1,175 @@
+/* MAI — drawer contextual V3: ícones horizontais, popovers próprios e campos sem borda */
+
+.mai-v3-shell input,
+.mai-v3-shell textarea,
+.mai-v3-shell [contenteditable="true"]{
+  border:0!important;
+  outline:0!important;
+  box-shadow:none!important;
+}
+.mai-v3-shell input:focus,
+.mai-v3-shell input:focus-visible,
+.mai-v3-shell textarea:focus,
+.mai-v3-shell textarea:focus-visible,
+.mai-v3-shell [contenteditable="true"]:focus,
+.mai-v3-shell [contenteditable="true"]:focus-visible{
+  border:0!important;
+  outline:0!important;
+  box-shadow:none!important;
+}
+
+.mai-context-v3-layer{align-items:stretch!important}
+.mai-context-v3-drawer{
+  width:min(470px,100vw)!important;
+  max-width:100vw!important;
+  height:100dvh!important;
+  display:flex!important;
+  flex-direction:column!important;
+  overflow:hidden!important;
+  background:var(--v3-card)!important;
+}
+.mai-context-v3-top{
+  min-height:52px!important;
+  flex:0 0 auto!important;
+  display:flex!important;
+  align-items:center!important;
+  gap:10px!important;
+  padding:0 10px 0 18px!important;
+  border:0!important;
+  border-bottom:1px solid var(--v3-line)!important;
+  background:var(--v3-card)!important;
+}
+.mai-context-v3-path-wrap{min-width:0!important;flex:1!important;overflow:hidden!important}
+.mai-context-v3-kind{color:var(--v3-muted)!important;font-size:11px!important;font-weight:620!important}
+.mai-context-v3-close{
+  width:34px!important;height:34px!important;min-width:34px!important;display:grid!important;place-items:center!important;padding:0!important;border:0!important;border-radius:9px!important;background:transparent!important;color:var(--v3-muted)!important;box-shadow:none!important
+}
+.mai-context-v3-close:hover{background:var(--v3-hover)!important;color:var(--v3-text)!important}
+
+.mai-context-v3-breadcrumbs{
+  width:100%!important;
+  display:flex!important;
+  align-items:center!important;
+  gap:6px!important;
+  overflow-x:auto!important;
+  overflow-y:hidden!important;
+  white-space:nowrap!important;
+  padding:5px 0!important;
+  scrollbar-width:thin!important;
+  scroll-behavior:smooth!important;
+}
+.mai-context-v3-breadcrumbs span{flex:0 0 auto!important;display:inline-flex!important;align-items:center!important;gap:6px!important;min-width:max-content!important}
+.mai-context-v3-breadcrumbs i{color:var(--v3-faint)!important;font-style:normal!important}
+.mai-context-v3-breadcrumbs button{
+  width:auto!important;max-width:none!important;overflow:visible!important;text-overflow:clip!important;white-space:nowrap!important;padding:0!important;border:0!important;background:transparent!important;color:var(--v3-muted)!important;font-size:11px!important;font-weight:560!important
+}
+.mai-context-v3-breadcrumbs button[data-current="true"]{color:var(--v3-text)!important;font-weight:680!important}
+
+.mai-context-v3-form{min-height:0!important;flex:1!important;display:flex!important;flex-direction:column!important;overflow:hidden!important}
+.mai-context-v3-scroll{min-height:0!important;flex:1!important;overflow:auto!important;padding:22px 20px 28px!important}
+.mai-context-v3-title{
+  width:100%!important;min-height:48px!important;padding:0!important;margin:0 0 14px!important;border:0!important;outline:0!important;background:transparent!important;color:var(--v3-text)!important;font-size:29px!important;line-height:1.16!important;font-weight:720!important;letter-spacing:-.035em!important;box-shadow:none!important
+}
+.mai-context-v3-title::placeholder{color:var(--v3-faint)!important}
+
+.mai-context-v3-toolbar{
+  position:relative!important;display:flex!important;align-items:center!important;gap:5px!important;width:100%!important;overflow:visible!important;margin:0 0 18px!important;padding:2px 0!important;border:0!important;background:transparent!important
+}
+.mai-context-v3-tool{position:relative!important;flex:0 0 auto!important}
+.mai-context-v3-tool-button{
+  position:relative!important;width:38px!important;height:38px!important;min-width:38px!important;display:grid!important;place-items:center!important;padding:0!important;border:0!important;border-radius:10px!important;background:transparent!important;color:var(--v3-muted)!important;box-shadow:none!important
+}
+.mai-context-v3-tool-button:hover,.mai-context-v3-tool[data-open="true"] .mai-context-v3-tool-button{background:var(--v3-hover)!important;color:var(--v3-text)!important}
+.mai-context-v3-tool-button[data-has-value="true"]{color:var(--v3-accent-strong)!important}
+.mai-context-v3-tool-button[data-has-value="true"]::after{content:""!important;position:absolute!important;right:5px!important;bottom:5px!important;width:4px!important;height:4px!important;border-radius:50%!important;background:var(--v3-accent)!important}
+.mai-context-v3-tool-button>.material-symbols-rounded{font-size:20px!important}
+
+.mai-context-v3-popover{
+  position:absolute!important;z-index:50!important;top:44px!important;left:0!important;width:min(300px,calc(100vw - 36px))!important;max-height:380px!important;overflow:auto!important;border:1px solid var(--v3-line-strong)!important;border-radius:14px!important;background:var(--v3-card)!important;box-shadow:0 16px 38px rgba(0,0,0,.16)!important
+}
+.mai-context-v3-tool:nth-last-child(-n+2) .mai-context-v3-popover{left:auto!important;right:0!important}
+.mai-context-v3-popover>header{min-height:54px!important;display:flex!important;align-items:center!important;gap:10px!important;padding:9px 12px!important;border:0!important;border-bottom:1px solid var(--v3-line)!important;background:transparent!important}
+.mai-context-v3-popover>header>.material-symbols-rounded{font-size:19px!important;color:var(--v3-muted)!important}
+.mai-context-v3-popover>header>div{min-width:0!important;display:grid!important;gap:2px!important}
+.mai-context-v3-popover>header strong{font-size:12px!important;color:var(--v3-text)!important;font-weight:680!important}
+.mai-context-v3-popover>header small{font-size:9.5px!important;color:var(--v3-muted)!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}
+.mai-context-v3-popover-body{padding:8px!important}
+
+.mai-context-v3-option-list{display:grid!important;gap:2px!important}
+.mai-context-v3-option-list button{min-height:38px!important;display:grid!important;grid-template-columns:auto minmax(0,1fr) auto!important;align-items:center!important;gap:9px!important;padding:0 10px!important;border:0!important;border-radius:9px!important;background:transparent!important;color:var(--v3-text)!important;text-align:left!important;box-shadow:none!important;font-size:11px!important}
+.mai-context-v3-option-list button:hover,.mai-context-v3-option-list button[data-selected="true"]{background:var(--v3-hover)!important}
+.mai-context-v3-option-list .material-symbols-rounded{font-size:17px!important;color:var(--v3-muted)!important}
+.mai-context-v3-option-list button[data-selected="true"] .material-symbols-rounded:last-child{color:var(--v3-accent-strong)!important}
+
+.mai-context-v3-calendar-nav{display:grid!important;grid-template-columns:34px 1fr 34px!important;align-items:center!important;gap:6px!important;margin-bottom:7px!important}
+.mai-context-v3-calendar-nav strong{text-align:center!important;text-transform:capitalize!important;font-size:11px!important;color:var(--v3-text)!important}
+.mai-context-v3-calendar-nav button{width:34px!important;height:34px!important;padding:0!important;border:0!important;border-radius:8px!important;background:transparent!important;color:var(--v3-text)!important;font-size:20px!important}
+.mai-context-v3-calendar-nav button:hover{background:var(--v3-hover)!important}
+.mai-context-v3-calendar-week,.mai-context-v3-calendar-grid{display:grid!important;grid-template-columns:repeat(7,1fr)!important;gap:2px!important}
+.mai-context-v3-calendar-week{margin-bottom:3px!important}
+.mai-context-v3-calendar-week span{text-align:center!important;color:var(--v3-faint)!important;font-size:8.5px!important}
+.mai-context-v3-calendar-grid button{aspect-ratio:1!important;min-width:0!important;padding:0!important;border:0!important;border-radius:8px!important;background:transparent!important;color:var(--v3-text)!important;box-shadow:none!important;font-size:10.5px!important}
+.mai-context-v3-calendar-grid button:hover{background:var(--v3-hover)!important}
+.mai-context-v3-calendar-grid button[data-outside="true"]{color:var(--v3-faint)!important}
+.mai-context-v3-calendar-grid button[data-today="true"]{outline:1px solid var(--v3-accent)!important;outline-offset:-2px!important}
+.mai-context-v3-calendar-grid button[data-selected="true"]{background:var(--v3-accent)!important;color:#fff!important}
+.mai-context-v3-quick-row{display:flex!important;gap:5px!important;margin-top:8px!important;padding-top:8px!important;border-top:1px solid var(--v3-line)!important}
+.mai-context-v3-quick-row button,.mai-context-v3-clear{min-height:32px!important;padding:0 9px!important;border:0!important;border-radius:8px!important;background:var(--v3-hover)!important;color:var(--v3-text)!important;box-shadow:none!important;font-size:9.5px!important}
+
+.mai-context-v3-time-grid{display:grid!important;grid-template-columns:repeat(4,1fr)!important;gap:4px!important;max-height:210px!important;overflow:auto!important}
+.mai-context-v3-time-grid button{min-height:32px!important;padding:0!important;border:0!important;border-radius:8px!important;background:transparent!important;color:var(--v3-text)!important;box-shadow:none!important;font-size:10px!important}
+.mai-context-v3-time-grid button:hover{background:var(--v3-hover)!important}
+.mai-context-v3-time-grid button[data-selected="true"]{background:var(--v3-accent-soft)!important;color:var(--v3-accent-strong)!important;font-weight:680!important}
+.mai-context-v3-custom-time,.mai-context-v3-inline-editor{min-height:44px!important;display:flex!important;align-items:center!important;gap:10px!important;margin-top:8px!important;padding:0 10px!important;border-radius:9px!important;background:var(--v3-hover)!important}
+.mai-context-v3-custom-time span,.mai-context-v3-inline-editor span{color:var(--v3-muted)!important;font-size:9.5px!important}
+.mai-context-v3-custom-time input,.mai-context-v3-inline-editor input{min-width:0!important;flex:1!important;min-height:38px!important;padding:0!important;border:0!important;outline:0!important;background:transparent!important;color:var(--v3-text)!important;box-shadow:none!important;text-align:right!important;font-size:12px!important}
+.mai-context-v3-time-picker>.mai-context-v3-clear{width:100%!important;margin-top:6px!important;background:transparent!important;color:var(--v3-muted)!important}
+
+.mai-context-v3-section{margin:0!important;padding:18px 0!important;border:0!important;border-top:1px solid var(--v3-line)!important;background:transparent!important}
+.mai-context-v3-section>header{min-height:24px!important;display:flex!important;align-items:center!important;gap:8px!important;margin:0 0 9px!important;padding:0 4px!important;border:0!important;background:transparent!important}
+.mai-context-v3-section>header>.material-symbols-rounded{color:var(--v3-muted)!important;font-size:17px!important}
+.mai-context-v3-section>header>strong{color:var(--v3-text)!important;font-size:11.5px!important;font-weight:650!important}
+.mai-context-v3-section>header>small{margin-left:auto!important;color:var(--v3-faint)!important;font-size:9px!important}
+.mai-context-v3-description-editor,.mai-context-v3-description-surface{width:100%!important;border:0!important;outline:0!important;background:transparent!important;box-shadow:none!important}
+.mai-context-v3-description-surface{min-height:96px!important;padding:5px 4px!important;color:var(--v3-text)!important;font-size:12px!important;line-height:1.55!important;white-space:pre-wrap!important}
+.mai-context-v3-description-surface:empty::before{content:attr(data-placeholder)!important;color:var(--v3-faint)!important;pointer-events:none!important}
+
+.mai-context-v3-subtask-list{display:grid!important;gap:1px!important}
+.mai-context-v3-subtask{min-height:46px!important;display:grid!important;grid-template-columns:20px minmax(0,1fr) 16px!important;align-items:center!important;gap:9px!important;padding:3px 5px!important;border-radius:8px!important}
+.mai-context-v3-subtask:hover{background:var(--v3-hover)!important}
+.mai-context-v3-subtask-check{width:17px!important;height:17px!important;padding:0!important;border:1.5px solid var(--v3-line-strong)!important;border-radius:50%!important;background:transparent!important;color:#fff!important;font-size:9px!important;box-shadow:none!important}
+.mai-context-v3-subtask-check[data-done="true"]{background:var(--v3-accent)!important;border-color:var(--v3-accent)!important}
+.mai-context-v3-subtask-main{min-width:0!important;display:block!important;padding:5px 0!important;border:0!important;background:transparent!important;text-align:left!important}
+.mai-context-v3-subtask-main strong,.mai-context-v3-subtask-main small{display:block!important;overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important}
+.mai-context-v3-subtask-main strong{font-size:11.5px!important;font-weight:590!important;color:var(--v3-text)!important}
+.mai-context-v3-subtask-main small{margin-top:2px!important;color:var(--v3-muted)!important;font-size:9px!important}
+.mai-context-v3-subtask>svg{color:var(--v3-faint)!important;transform:rotate(-90deg)!important}
+.mai-context-v3-subtask-add{min-height:40px!important;display:grid!important;grid-template-columns:20px minmax(0,1fr) auto!important;align-items:center!important;gap:8px!important;margin-top:5px!important;padding:0 5px!important}
+.mai-context-v3-subtask-add>.material-symbols-rounded{font-size:17px!important;color:var(--v3-muted)!important}
+.mai-context-v3-subtask-add input{min-width:0!important;height:36px!important;padding:0!important;border:0!important;outline:0!important;background:transparent!important;box-shadow:none!important;font-size:11.5px!important}
+.mai-context-v3-subtask-add button{min-height:30px!important;padding:0 8px!important;border:0!important;border-radius:7px!important;background:transparent!important;color:var(--v3-accent-strong)!important;font-size:9.5px!important}
+.mai-context-v3-subtask-add button:hover{background:var(--v3-accent-soft)!important}
+
+.mai-context-v3-files>small{display:block!important;padding:4px!important;color:var(--v3-faint)!important;font-size:9.5px!important}
+.mai-context-v3-file{min-height:40px!important;display:grid!important;grid-template-columns:20px minmax(0,1fr)!important;align-items:center!important;gap:8px!important;padding:0 5px!important;border-radius:8px!important;color:var(--v3-text)!important;font-size:11px!important}
+.mai-context-v3-file:hover{background:var(--v3-hover)!important}
+.mai-context-v3-file>.material-symbols-rounded{font-size:17px!important;color:var(--v3-muted)!important}
+
+.mai-context-v3-footer{min-height:62px!important;flex:0 0 auto!important;display:flex!important;align-items:center!important;justify-content:space-between!important;gap:10px!important;padding:10px 14px!important;margin:0!important;border:0!important;border-top:1px solid var(--v3-line)!important;background:var(--v3-card)!important;box-shadow:none!important}
+.mai-context-v3-footer>div{display:flex!important;align-items:center!important;gap:7px!important}
+.mai-context-v3-footer button{min-height:36px!important;display:inline-flex!important;align-items:center!important;justify-content:center!important;gap:6px!important;padding:0 12px!important;border:0!important;border-radius:9px!important;box-shadow:none!important;font-size:10.5px!important}
+.mai-context-v3-delete{background:transparent!important;color:var(--mai-danger,#c85b52)!important}
+.mai-context-v3-delete:hover{background:color-mix(in srgb,var(--mai-danger,#c85b52) 9%,transparent)!important}
+.mai-context-v3-footer>div>button:first-child{background:transparent!important;color:var(--v3-muted)!important}
+.mai-context-v3-footer>div>button:first-child:hover{background:var(--v3-hover)!important;color:var(--v3-text)!important}
+.mai-context-v3-save{background:var(--v3-accent)!important;color:#fff!important;font-weight:650!important}
+
+@media(max-width:720px){
+  .mai-context-v3-drawer{width:100vw!important}
+  .mai-context-v3-scroll{padding:19px 15px 24px!important}
+  .mai-context-v3-title{font-size:26px!important}
+  .mai-context-v3-toolbar{overflow-x:auto!important;overflow-y:visible!important;padding-bottom:5px!important;scrollbar-width:none!important}
+  .mai-context-v3-toolbar::-webkit-scrollbar{display:none!important}
+  .mai-context-v3-popover{position:fixed!important;left:14px!important;right:14px!important;top:auto!important;bottom:78px!important;width:auto!important;max-height:55dvh!important}
+  .mai-context-v3-footer{padding:9px 10px!important}
+}
