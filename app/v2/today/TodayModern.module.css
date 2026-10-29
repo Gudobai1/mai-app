@@ -1971,3 +1971,9 @@
 .balanceForecastValue.positive { color: var(--ds-success); }
 .balanceForecastValue.negative { color: var(--ds-danger); }
 .balanceValue.positive, .balanceValue.negative { color: var(--ds-text); }
+
+/* Hábitos mais firmes; saldo atual do mesmo tamanho do previsto */
+.habitTitle { font-weight: 600; }
+.habitRing.habitRing { border-width: 3px; }
+.habitDots i { border-width: 3px; }
+.balanceValue { font-size: 18px; line-height: 1.2; font-weight: var(--ds-fw-bold); letter-spacing: -0.01em; }
