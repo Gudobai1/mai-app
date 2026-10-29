@@ -98,6 +98,13 @@ function habitEligible(habit: Row, day: string) {
 }
 
 
+/* Links dentro da descrição ficam clicáveis (azul e sublinhado). */
+function renderDescription(text: string): ReactNode[] {
+  return text.split(/(https?:\/\/[^\s]+)/g).map((part, index) => /^https?:\/\//.test(part)
+    ? <a key={index} className={styles.descLink} href={part} target="_blank" rel="noopener noreferrer" onClick={event => event.stopPropagation()}>{part}</a>
+    : part)
+}
+
 function untilLabel(minutes: number) {
   if (minutes <= 0) return 'agora'
   if (minutes < 60) return `em ${minutes} min`
@@ -657,24 +664,21 @@ export function TodayModern({ state, today, commit, navigate, inspect, options, 
       <Fragment key={taskId}>
       <div role="listitem" className={`${styles.item} ${styles.itemWrap} ${styles.task} ${task.concluida ? styles.itemPassed : ''}`} {...quick.bind(() => taskMenu(task))}>
         <Check className={styles.itemCheck} checked={Boolean(task.concluida)} late={late} data-priority={!task.concluida && PRIORITY_COLOR[priority] ? priority : undefined} style={!task.concluida && PRIORITY_COLOR[priority] ? ({ '--check-color': PRIORITY_COLOR[priority] } as CSSProperties) : undefined} label={`Concluir: ${title}`} onCheckedChange={() => toggleTask(String(task.id))} />
-        <button type="button" className={styles.itemButton} onClick={() => inspectTask(task)}>
-          <span className={styles.taskBody}>
-            <span className={styles.taskTitle}>{title}</span>
-            {description ? <span className={styles.taskDesc}>{description}</span> : null}
-            {when ? (
-              <span className={styles.taskSub}>
-                <span className={`${styles.dateTag} ${late ? styles.dateLate : due === today ? styles.dateToday : ''}`}><Icon name="calendar_today" size={13} filled={false} />{when}</span>
-              </span>
+        <div className={styles.taskMain} onClick={() => inspectTask(task)}>
+          <button type="button" className={styles.taskTitleBtn}>{title}</button>
+          {description ? <div className={styles.taskDesc}>{renderDescription(description)}</div> : null}
+          <div className={styles.taskMeta}>
+            {when ? <span className={`${styles.dateTag} ${late ? styles.dateLate : due === today ? styles.dateToday : ''}`}><Icon name="calendar_today" size={14} filled={false} />{when}</span> : null}
+            {children.length ? (
+              <button type="button" className={styles.subChip} data-open={expanded || undefined} onClick={event => { event.stopPropagation(); toggleSubs(taskId) }} aria-expanded={expanded} aria-label={`${expanded ? 'Esconder' : 'Mostrar'} subtarefas de ${title}`}>
+                <Icon name="account_tree" size={16} filled={false} />
+                <span>{children.filter(child => child.concluida).length}/{children.length}</span>
+                <Icon name="expand_more" size={18} filled={false} />
+              </button>
             ) : null}
-          </span>
-          <span className={styles.projLabel}>{projectLabel}<b style={{ color: projectColor(task.projeto_id) }}>#</b></span>
-        </button>
-        {children.length ? (
-          <button type="button" className={styles.expand} data-open={expanded || undefined} onClick={() => toggleSubs(taskId)} aria-expanded={expanded} aria-label={`${expanded ? 'Esconder' : 'Mostrar'} subtarefas de ${title}`}>
-            <span>{children.filter(child => child.concluida).length}/{children.length}</span>
-            <Icon name="expand_more" size={18} filled={false} />
-          </button>
-        ) : null}
+            <span className={styles.projLabel}>{projectLabel}<b style={{ color: projectColor(task.projeto_id) }}>#</b></span>
+          </div>
+        </div>
       </div>
       {expanded && children.length ? (
         <div className={styles.subList} role="list" aria-label={`Subtarefas de ${title}`}>

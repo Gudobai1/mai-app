@@ -1842,3 +1842,70 @@
 }
 .balanceSide small { white-space: nowrap; }
 .balanceMain { flex: 1; }
+
+/* Linha de tarefa — padrão: título, descrição com link, data + subtarefas + projeto na mesma linha */
+.taskMain {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  cursor: pointer;
+}
+.taskTitleBtn.taskTitleBtn {
+  appearance: none;
+  align-self: flex-start;
+  max-width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 15px;
+  line-height: 1.3;
+  font-weight: var(--ds-fw-regular);
+  text-align: left;
+  cursor: pointer;
+}
+.page .items .itemPassed .taskTitleBtn { color: var(--ds-muted); text-decoration: line-through; }
+.taskDesc { white-space: normal; overflow-wrap: anywhere; }
+.descLink {
+  color: var(--ds-accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.taskMeta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 28px;
+  min-width: 0;
+}
+.taskMeta .projLabel { align-self: center; }
+.subChip.subChip {
+  appearance: none;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 6px 0 8px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--ds-surface-hover);
+  color: var(--ds-text);
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: var(--ds-fw-bold);
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+.subChip.subChip[data-open] { color: var(--ds-accent); }
+.subChip.subChip > span:last-child { transition: transform var(--ds-dur) var(--ds-ease); }
+.subChip.subChip[data-open] > span:last-child { transform: rotate(180deg); }
+
+/* Subtarefas: recuadas, com o mesmo círculo da tarefa */
+.page .subList { margin: 0 0 4px 36px; padding: 0; gap: 0; }
+.page .subRow { min-height: 0; padding: 8px 0; gap: 10px; border-bottom: 1px solid var(--ds-line); }
+.page .subCheck.subCheck { width: 18px; height: 18px; border-width: 2px; border-color: var(--ds-muted); }
+.page .subTitle.subTitle { font-size: 14px; font-weight: var(--ds-fw-regular); }
+.page .subRow, .page .subRow:hover { background: transparent; border-radius: 0; padding-left: 0; padding-right: 0; }
