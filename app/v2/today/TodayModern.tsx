@@ -723,19 +723,23 @@ export function TodayModern({ state, today, commit, navigate, inspect, options, 
 
   /* Hábitos: semana (seg–dom) do dia mostrado e sequência atual. */
   const entryByKey = new Map(rows(state.habitEntries).map(entry => [`${entry.habito_id}|${dateKey(entry.data)}`, entry]))
-  const doneOn = (habit: Row, key: string) => {
+  // 'full' = meta cumprida; 'part' = algum progresso (conta para a sequência mesmo sem completar).
+  const levelOn = (habit: Row, key: string): '' | 'full' | 'part' => {
     const entry = entryByKey.get(`${habit.id}|${key}`)
-    return Boolean(entry) && !failedEntry(entry) && Number(entry?.valor || 0) >= Math.max(1, Number(habit.meta || 1))
+    if (!entry || failedEntry(entry)) return ''
+    const value = Number(entry.valor || 0)
+    if (value >= Math.max(1, Number(habit.meta || 1))) return 'full'
+    return value > 0 ? 'part' : ''
   }
   const weekStart = addDays(day, -((new Date(`${day}T12:00:00`).getDay() + 6) % 7))
   const weekKeys = Array.from({ length: 7 }, (_, index) => addDays(weekStart, index))
   const streakOf = (habit: Row) => {
     let count = 0
     let cursor = day
-    if (!doneOn(habit, cursor)) cursor = addDays(cursor, -1)
+    if (!levelOn(habit, cursor)) cursor = addDays(cursor, -1)
     for (let step = 0; step < 400; step += 1) {
       if (!habitEligible(habit, cursor)) { cursor = addDays(cursor, -1); continue }
-      if (!doneOn(habit, cursor)) break
+      if (!levelOn(habit, cursor)) break
       count += 1
       cursor = addDays(cursor, -1)
     }
@@ -828,12 +832,13 @@ export function TodayModern({ state, today, commit, navigate, inspect, options, 
                     </button>
                     <button type="button" className={styles.habitBody} onClick={() => inspect({ kind: 'habit', sourceId: String(item.habit.id), title: name, date: day, raw: item.habit })}>
                       <span className={styles.habitTitle} style={{ color: color }}>{name}</span>
-                      <span className={styles.habitDots} aria-hidden="true">
-                        {weekKeys.map(key => <i key={key} data-on={doneOn(item.habit, key) || undefined} data-today={key === day || undefined} />)}
-                      </span>
+                      {plainText(item.habit.descricao) ? <span className={styles.habitDesc}>{plainText(item.habit.descricao)}</span> : null}
                     </button>
+                    <span className={styles.habitDots} aria-hidden="true">
+                      {weekKeys.map(key => <i key={key} data-on={levelOn(item.habit, key) === 'full' || undefined} data-part={levelOn(item.habit, key) === 'part' || undefined} data-today={key === day || undefined} />)}
+                    </span>
                     {item.quantitative || item.failed ? <span className={styles.habitValue}>{habitValueLabel(item)}</span> : null}
-                    <span className={styles.streak} title={`Sequência de ${streak} ${streak === 1 ? 'dia' : 'dias'}`}><Icon name="local_fire_department" size={15} />{streak}</span>
+                    <span className={styles.streak} data-on={streak > 0 || undefined} title={`Sequência de ${streak} ${streak === 1 ? 'dia' : 'dias'}`}><Icon name="local_fire_department" size={15} />{streak}</span>
                   </div>
                 )
               })}
