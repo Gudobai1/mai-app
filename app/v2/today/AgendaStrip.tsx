@@ -6,8 +6,9 @@ import { Icon } from '../../ds'
 import styles from './AgendaStrip.module.css'
 
 /**
- * Agenda do dia, igual no celular e no computador: itens de "Dia todo" em
- * cartão e, embaixo, uma linha por compromisso com horário.
+ * Agenda do dia — mesmo cartão das tarefas: círculo na cor do calendário,
+ * título, horário com ícone e, à direita, o calendário de origem com "#".
+ * "Dia todo" e compromissos em andamento vêm primeiro.
  */
 
 type Props = {
@@ -16,6 +17,8 @@ type Props = {
   nowMinutes: number | null
   isPassed: (item: PlannerItem) => boolean
   onOpen: (item: PlannerItem) => void
+  /** Marca o compromisso como concluído (círculo à esquerda). */
+  onToggle?: (item: PlannerItem) => void
   bind: (item: PlannerItem) => HTMLAttributes<HTMLElement>
 }
 
@@ -28,7 +31,7 @@ const hm = (minutes: number) => `${String(Math.floor(minutes / 60)).padStart(2, 
 const isGoogle = (item: PlannerItem) => item.raw.tipo === 'google' || item.raw.tipo === 'gcalendar'
 const sourceOf = (item: PlannerItem) => String(item.raw.calendario_nome || (isGoogle(item) ? 'Google Agenda' : item.raw.categoria || 'MAI'))
 
-export function AgendaStrip({ items, nowMinutes, isPassed, onOpen, bind }: Props) {
+export function AgendaStrip({ items, nowMinutes, onOpen, onToggle, bind }: Props) {
   const allDay = items.filter(item => item.raw.dia_inteiro === true || !item.time || item.subtitle === 'Em andamento')
   const timed = useMemo(
     () => items
@@ -46,40 +49,36 @@ export function AgendaStrip({ items, nowMinutes, isPassed, onOpen, bind }: Props
     [items],
   )
 
-  return (
-    <div className={styles.strip}>
-      {allDay.map(item => (
-        <button key={item.id} type="button" className={styles.allDay} style={{ '--ev': eventColor(item.raw) } as CSSProperties} onClick={() => onOpen(item)} {...bind(item)}>
-          <span className={styles.allDayStack}>
-            <span className={styles.allDayTag}>{item.subtitle === 'Em andamento' ? 'Contínuo' : 'Dia todo'}</span>
-            <small>{sourceOf(item)}</small>
-          </span>
-          <strong>{item.title}</strong>
-        </button>
-      ))}
+  const row = (item: PlannerItem, when: string, icon: string, now: boolean) => (
+    <div
+      key={item.id}
+      role="listitem"
+      className={styles.row}
+      data-now={now || undefined}
+      style={{ '--ev': eventColor(item.raw) } as CSSProperties}
+      {...bind(item)}
+    >
+      <button type="button" className={styles.ring} aria-label={`Concluir: ${item.title}`} onClick={() => onToggle?.(item)} />
+      <button type="button" className={styles.body} onClick={() => onOpen(item)}>
+        <span className={styles.title}>
+          {item.title}
+          {item.recurring ? <Icon name="repeat" size={12} /> : null}
+        </span>
+        <span className={styles.when}><Icon name={icon} size={13} filled={false} />{when}</span>
+      </button>
+      <span className={styles.source}>{sourceOf(item)}<b>#</b></span>
+    </div>
+  )
 
-      {timed.length ? (
-        <div className={styles.list} role="list">
-          {timed.map(({ item, start, end, hasEnd }) => (
-            <button
-              key={item.id}
-              type="button"
-              role="listitem"
-              className={styles.row}
-              data-passed={isPassed(item) || undefined}
-              data-now={(nowMinutes !== null && nowMinutes >= start && nowMinutes < end) || undefined}
-              style={{ '--ev': eventColor(item.raw) } as CSSProperties}
-              onClick={() => onOpen(item)}
-              {...bind(item)}
-            >
-              <span className={styles.rowDot} aria-hidden="true" />
-              <span className={styles.rowTime}><b>{hm(start)}{hasEnd ? ` – ${hm(end)}` : ''}</b><small>{sourceOf(item)}</small></span>
-              <strong>{item.title}</strong>
-              {item.recurring ? <Icon name="repeat" size={12} /> : null}
-            </button>
-          ))}
-        </div>
-      ) : null}
+  return (
+    <div className={styles.list} role="list">
+      {allDay.map(item => row(item, item.subtitle === 'Em andamento' ? 'Em andamento' : 'Dia todo', item.subtitle === 'Em andamento' ? 'schedule' : 'calendar_today', false))}
+      {timed.map(({ item, start, end, hasEnd }) => row(
+        item,
+        `${hm(start)}${hasEnd ? ` – ${hm(end)}` : ''}`,
+        'schedule',
+        nowMinutes !== null && nowMinutes >= start && nowMinutes < end,
+      ))}
     </div>
   )
 }

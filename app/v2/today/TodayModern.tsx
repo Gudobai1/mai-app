@@ -4,7 +4,7 @@ import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState, type C
 import { financeSummary } from '../../../lib/v2/finance-summary'
 import { addDays, eventColor, plannerItems, type PlannerItem } from '../../../lib/v2/planner'
 import type { MaiState } from '../../../lib/v2/state'
-import { Button, Card, Check, Icon, IconTile, SectionHeader, Tag, type Tone } from '../../ds'
+import { Button, Check, Icon } from '../../ds'
 import type { AppView, Row } from '../app-types'
 import type { InspectableItem } from '../ContextDrawer'
 import { financeCardPaymentState } from '../FinanceTransactionCard'
@@ -32,9 +32,12 @@ type Props = {
   commit: Commit
   navigate: (view: AppView) => void
   inspect: (item: InspectableItem) => void
-  profileName?: string
   /** Botão "Opções" (filtros, classificação e seções). */
   options?: ReactNode
+  /** "Adicionar tarefa" no fim de cada projeto. */
+  onAddTask?: (projectId?: string) => void
+  /** "Adicionar compromisso" no fim da agenda. */
+  onAddEvent?: () => void
 }
 
 const DEFAULT_ORDER = ['appointments', 'tasks', 'habits', 'goals', 'finance', 'notes'] as const
@@ -63,7 +66,6 @@ const failedEntry = (entry?: Row) => entry?.falhou === true || String(entry?.sta
 const plural = (count: number, one: string, many: string) => `${count} ${count === 1 ? one : many}`
 const capitalize = (text: string) => text.charAt(0).toLocaleUpperCase('pt-BR') + text.slice(1)
 
-const HABIT_TONES: Tone[] = ['lilac', 'sky', 'peach', 'mint', 'rose', 'accent']
 const PRIORITY_COLOR: Record<number, string> = { 1: 'var(--ds-rose-fg)', 2: 'var(--ds-peach-fg)', 3: 'var(--ds-sky-fg)' }
 
 function toKey(date: Date) {
@@ -95,12 +97,6 @@ function habitEligible(habit: Row, day: string) {
   return !days.length || days.includes(new Date(`${day}T12:00:00`).getDay())
 }
 
-function greetingFor(hour: number) {
-  if (hour < 5) return 'Boa noite'
-  if (hour < 12) return 'Bom dia'
-  if (hour < 18) return 'Boa tarde'
-  return 'Boa noite'
-}
 
 function untilLabel(minutes: number) {
   if (minutes <= 0) return 'agora'
@@ -115,10 +111,17 @@ function minutesOf(time: string) {
   return Number.isFinite(hour) ? hour * 60 + (Number.isFinite(minute) ? minute : 0) : NaN
 }
 
-export function TodayModern({ state, today, commit, navigate, inspect, profileName, options }: Props) {
+export function TodayModern({ state, today, commit, navigate, inspect, options, onAddTask, onAddEvent }: Props) {
   const [clock, setClock] = useState(() => new Date())
   const [selected, setSelected] = useState(today)
   const weeksRef = useRef<HTMLDivElement | null>(null)
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set())
+  const toggleCollapsed = (id: string) => setCollapsed(current => {
+    const next = new Set(current)
+    if (next.has(id)) next.delete(id)
+    else next.add(id)
+    return next
+  })
 
   useEffect(() => {
     const timer = window.setInterval(() => setClock(new Date()), 60_000)
@@ -364,7 +367,6 @@ export function TodayModern({ state, today, commit, navigate, inspect, profileNa
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }), [state.tasks, today, day, isToday, filters.project, filters.priority, sortMode, projectMap])
 
-  const lateCount = tasks.filter(task => dateKey(task.data_vencimento) < today).length
 
   function toggleTask(id: string) {
     commit(current => ({ ...current, tasks: current.tasks.map(task => (task.id === id ? { ...task, concluida: !task.concluida, concluida_em: !task.concluida ? new Date().toISOString() : '' } : task)) }))
@@ -384,7 +386,7 @@ export function TodayModern({ state, today, commit, navigate, inspect, profileNa
     const failed = failedEntry(entry)
     const done = !failed && value >= target
     const quantitative = target > 1 || Boolean(habit.unidade)
-    return { habit, entry, target, value, failed, done, quantitative, tone: HABIT_TONES[index % HABIT_TONES.length] }
+    return { habit, entry, target, value, failed, done, quantitative }
   }).sort((a, b) => Number(a.done) - Number(b.done))
   const habitsDone = habits.filter(item => item.done).length
 
@@ -618,17 +620,39 @@ export function TodayModern({ state, today, commit, navigate, inspect, profileNa
     return next
   })
 
-  const renderTask = (task: Row, grouped = false) => {
+  const chevronFor = (id: string, label: string) => (
+    <button type="button" className={styles.chevron} aria-expanded={!collapsed.has(id)} aria-label={`${collapsed.has(id) ? 'Expandir' : 'Recolher'} ${label}`} onClick={() => toggleCollapsed(id)}>
+      <Icon name={collapsed.has(id) ? 'chevron_right' : 'expand_more'} size={20} filled={false} />
+    </button>
+  )
+
+  const head = (id: string, title: string, meta?: string) => (
+    <div className={styles.secHead}>
+      <h2>{title}</h2>
+      {meta ? <span className={styles.secMeta}>{meta}</span> : null}
+      {chevronFor(id, title)}
+    </div>
+  )
+
+  const addRow = (label: string, onClick?: () => void) => onClick ? (
+    <button type="button" className={styles.addRow} onClick={onClick}>
+      <Icon name="add" size={20} filled={false} />
+      <span>{label}</span>
+    </button>
+  ) : null
+
+  const renderTask = (task: Row) => {
     const due = dateKey(task.data_vencimento)
     const late = due < today
     const time = timeKey(task.data_vencimento)
     const priority = Number(task.prioridade || 4)
     const title = String(task.titulo || 'Tarefa')
     const description = plainText(task.descricao)
-    const when = `${naturalDate(due, today)}${time ? ` · ${time}` : ''}`
+    const when = due ? `${naturalDate(due, today)}${time ? ` · ${time}` : ''}` : ''
     const taskId = String(task.id)
     const children = state.tasks.filter(item => String(item.parent_id || '') === taskId)
     const expanded = openSubs.has(taskId)
+    const projectLabel = `${projectName(task.projeto_id)}${task.secao ? ` / ${String(task.secao)}` : ''}`
     return (
       <Fragment key={taskId}>
       <div role="listitem" className={`${styles.item} ${styles.itemWrap} ${styles.task} ${task.concluida ? styles.itemPassed : ''}`} {...quick.bind(() => taskMenu(task))}>
@@ -637,18 +661,13 @@ export function TodayModern({ state, today, commit, navigate, inspect, profileNa
           <span className={styles.taskBody}>
             <span className={styles.taskTitle}>{title}</span>
             {description ? <span className={styles.taskDesc}>{description}</span> : null}
-            <span className={styles.taskSub}>
-              {grouped ? (
-                task.secao ? <span className={styles.sectionTag}><Icon name="view_agenda" size={12} />{String(task.secao)}</span> : null
-              ) : (
-                <span className={styles.projectTag}>
-                  {projectImage(task.projeto_id) ? <img className={styles.projectImg} src={projectImage(task.projeto_id)} alt="" loading="lazy" /> : <span className={styles.projectDot} style={{ background: projectColor(task.projeto_id) }} />}
-                  <span className={styles.projectText}>{projectName(task.projeto_id)}{task.secao ? <span className={styles.projectSection}> · {String(task.secao)}</span> : null}</span>
-                </span>
-              )}
-              {when ? <span className={late ? styles.late : undefined}>{when}</span> : null}
-            </span>
+            {when ? (
+              <span className={styles.taskSub}>
+                <span className={`${styles.dateTag} ${late ? styles.dateLate : due === today ? styles.dateToday : ''}`}><Icon name="calendar_today" size={13} filled={false} />{when}</span>
+              </span>
+            ) : null}
           </span>
+          <span className={styles.projLabel}>{projectLabel}<b style={{ color: projectColor(task.projeto_id) }}>#</b></span>
         </button>
         {children.length ? (
           <button type="button" className={styles.expand} data-open={expanded || undefined} onClick={() => toggleSubs(taskId)} aria-expanded={expanded} aria-label={`${expanded ? 'Esconder' : 'Mostrar'} subtarefas de ${title}`}>
@@ -666,7 +685,7 @@ export function TodayModern({ state, today, commit, navigate, inspect, profileNa
             const childPriority = Number(child.prioridade || 4)
             return (
               <div key={childId} role="listitem" className={styles.subRow} data-done={child.concluida || undefined}>
-                <button type="button" className={styles.subCheck} data-done={child.concluida || undefined} data-late={childLate || undefined} style={!child.concluida && PRIORITY_COLOR[childPriority] ? ({ borderColor: PRIORITY_COLOR[childPriority] } as CSSProperties) : undefined} onClick={() => toggleTask(childId)} aria-label={child.concluida ? `Reabrir ${String(child.titulo)}` : `Concluir ${String(child.titulo)}`}>
+                <button type="button" className={styles.subCheck} data-done={child.concluida || undefined} data-late={childLate || undefined} style={!child.concluida && PRIORITY_COLOR[childPriority] ? ({ borderColor: PRIORITY_COLOR[childPriority] } as CSSProperties) : undefined} aria-label={child.concluida ? `Reabrir subtarefa ${String(child.titulo || '')}` : `Concluir subtarefa ${String(child.titulo || '')}`} onClick={() => toggleTask(childId)}>
                   {child.concluida ? <Icon name="check" size={11} /> : null}
                 </button>
                 <button type="button" className={styles.subTitle} onClick={() => inspectTask(child)}>{String(child.titulo || 'Subtarefa')}</button>
@@ -680,8 +699,8 @@ export function TodayModern({ state, today, commit, navigate, inspect, profileNa
     )
   }
 
+  // Sempre agrupadas por projeto; as atrasadas ficam dentro do projeto delas.
   const taskGroups = useMemo(() => {
-    if (sortMode !== 'project') return []
     const grouped = new Map<string, Row[]>()
     tasks.forEach(task => {
       const id = String(task.projeto_id || 'entrada')
@@ -697,166 +716,222 @@ export function TodayModern({ state, today, commit, navigate, inspect, profileNa
         return { id, name: id === 'entrada' ? 'Entrada' : projectName(id), items: [...items].sort((a, b) => sectionIndex(a) - sectionIndex(b)) }
       })
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tasks, sortMode, projectMap])
+  }, [tasks, projectMap])
+
+  /* Hábitos: semana (seg–dom) do dia mostrado e sequência atual. */
+  const entryByKey = new Map(rows(state.habitEntries).map(entry => [`${entry.habito_id}|${dateKey(entry.data)}`, entry]))
+  const doneOn = (habit: Row, key: string) => {
+    const entry = entryByKey.get(`${habit.id}|${key}`)
+    return Boolean(entry) && !failedEntry(entry) && Number(entry?.valor || 0) >= Math.max(1, Number(habit.meta || 1))
+  }
+  const weekStart = addDays(day, -((new Date(`${day}T12:00:00`).getDay() + 6) % 7))
+  const weekKeys = Array.from({ length: 7 }, (_, index) => addDays(weekStart, index))
+  const streakOf = (habit: Row) => {
+    let count = 0
+    let cursor = day
+    if (!doneOn(habit, cursor)) cursor = addDays(cursor, -1)
+    for (let step = 0; step < 400; step += 1) {
+      if (!habitEligible(habit, cursor)) { cursor = addDays(cursor, -1); continue }
+      if (!doneOn(habit, cursor)) break
+      count += 1
+      cursor = addDays(cursor, -1)
+    }
+    return count
+  }
+
+  /* Finanças: atrasados e do dia, com o mesmo cartão das tarefas. */
+  const monthEnd = (() => { const base = new Date(`${today}T12:00:00`); return new Date(base.getFullYear(), base.getMonth() + 1, 0) })()
+  const monthEndLabel = monthEnd.toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' }).replace(/\./g, '')
+  const lateTransactions = isToday ? transactions.filter(item => dateKey(item.data) < today) : []
+  const dayTransactions = isToday ? transactions.filter(item => dateKey(item.data) >= today) : transactions
+
+  const renderTransaction = (item: Row) => {
+    const due = dateKey(item.data)
+    const income = String(item.tipo || '').toLocaleLowerCase('pt-BR') === 'receita'
+    const payment = financeCardPaymentState(item)
+    const title = txTitle(item)
+    const late = due < today
+    return (
+      <div key={String(item.id)} role="listitem" className={`${styles.item} ${styles.itemWrap} ${payment.status === 'pago' ? styles.itemPassed : ''}`} {...quick.bind(() => financeMenu(item))}>
+        <Check className={styles.itemCheck} checked={payment.status === 'pago'} late={late} label={`${income ? 'Marcar como recebido' : 'Marcar como pago'}: ${title}`} onCheckedChange={() => toggleFinancePaid(item)} />
+        <button type="button" className={styles.itemButton} onClick={() => inspect({ kind: 'finance', sourceId: String(item.id), title, date: due, raw: item })}>
+          <span className={styles.taskBody}>
+            <span className={styles.taskTitle}>{title}{payment.status === 'parcial' ? <span className={styles.partial}>Parcial</span> : null}</span>
+            <span className={styles.taskSub}>
+              <span className={`${styles.dateTag} ${late ? styles.dateLate : due === today ? styles.dateToday : ''}`}><Icon name="calendar_today" size={13} filled={false} />{naturalDate(due, today)}</span>
+            </span>
+          </span>
+          <span className={`${styles.amount} ${income ? styles.positive : styles.negative}`}>{income ? '+' : '−'} {money.format(payment.remaining || payment.total)}</span>
+        </button>
+      </div>
+    )
+  }
 
   const sections: Record<SectionId, ReactNode> = {
     appointments: (
       <section className={styles.block} aria-label="Agenda">
-        <SectionHeader title="Agenda" meta={events.length ? plural(events.length, 'compromisso', 'compromissos') : undefined} />
-        {events.length ? <AgendaStrip items={events} nowMinutes={isToday && clockIsToday ? nowMinutes : null} isPassed={eventPassed} onOpen={inspectPlanner} bind={item => quick.bind(() => eventMenu(item))} /> : <div className={styles.empty}>Nenhum compromisso {isToday ? 'hoje' : 'neste dia'}.</div>}
+        {head('appointments', 'Agenda', events.length ? plural(events.length, 'compromisso', 'compromissos') : undefined)}
+        {!collapsed.has('appointments') ? (
+          <>
+            {events.length ? <AgendaStrip items={events} nowMinutes={isToday && clockIsToday ? nowMinutes : null} isPassed={eventPassed} onOpen={inspectPlanner} onToggle={toggleEventDone} bind={item => quick.bind(() => eventMenu(item))} /> : <div className={styles.empty}>{isToday ? 'Nada na agenda hoje.' : 'Nada na agenda neste dia.'}</div>}
+            {addRow('Adicionar compromisso', onAddEvent)}
+          </>
+        ) : null}
       </section>
     ),
     tasks: (
       <section className={styles.block} aria-label="Tarefas">
-        <SectionHeader title="Tarefas" meta={tasks.length ? (lateCount ? `${tasks.length} · ${lateCount} atrasada${lateCount === 1 ? '' : 's'}` : String(tasks.length)) : undefined} />
         {tasks.length ? (
-          sortMode === 'project' && taskGroups.length ? (
-            <div className={styles.projectGroups}>
-              {taskGroups.map(group => (
-                <section key={group.id} className={styles.projectGroup} aria-label={group.name}>
-                  <header className={styles.projectHead}>
-                    {projectImage(group.id) ? <img className={styles.projectHeadImg} src={projectImage(group.id)} alt="" loading="lazy" /> : <span className={styles.projectHeadDot} style={{ background: group.id === 'entrada' ? 'var(--ds-accent)' : projectColor(group.id) }}>{group.id === 'entrada' ? <Icon name="inbox" size={14} /> : null}</span>}
-                    <strong>{group.name}</strong>
-                    <span className={styles.projectCount}>{group.items.length}</span>
-                  </header>
-                  <div role="list" className={styles.items}>{group.items.map(task => renderTask(task, true))}</div>
-                </section>
-              ))}
-            </div>
-          ) : <div role="list" className={styles.items}>{tasks.map(task => renderTask(task))}</div>
-        ) : <div className={styles.empty}>{isToday ? 'Nada pendente para hoje.' : 'Nenhuma tarefa neste dia.'}</div>}
+          <div className={styles.projectGroups}>
+            {taskGroups.map(group => (
+              <section key={group.id} className={styles.projectGroup} aria-label={group.name}>
+                <header className={styles.projectHead}>
+                  {projectImage(group.id) ? <img className={styles.projectHeadImg} src={projectImage(group.id)} alt="" loading="lazy" /> : <span className={styles.projectHeadDot} style={{ background: group.id === 'entrada' ? 'var(--ds-accent)' : projectColor(group.id) }} aria-hidden="true">{group.name.trim().slice(0, 1).toLocaleUpperCase('pt-BR')}</span>}
+                  <strong>{group.name}</strong>
+                  <span className={styles.projectCount}>{group.items.length}</span>
+                  {chevronFor(`p:${group.id}`, group.name)}
+                </header>
+                {!collapsed.has(`p:${group.id}`) ? (
+                  <>
+                    <div role="list" className={styles.items}>{group.items.map(task => renderTask(task))}</div>
+                    {addRow('Adicionar tarefa', onAddTask ? () => onAddTask(group.id) : undefined)}
+                  </>
+                ) : null}
+              </section>
+            ))}
+          </div>
+        ) : (
+          <>
+            <div className={styles.empty}>{isToday ? 'Nada pendente para hoje.' : 'Nenhuma tarefa neste dia.'}</div>
+            {addRow('Adicionar tarefa', onAddTask ? () => onAddTask() : undefined)}
+          </>
+        )}
       </section>
     ),
     habits: (
       <section className={styles.block} aria-label="Hábitos">
-        <SectionHeader title="Hábitos" meta={habits.length ? `${habitsDone} de ${habits.length}` : undefined} />
-        {habits.length ? (
-          <div className={styles.habits}>
-            {habits.map(item => {
-              const name = String(item.habit.nome || 'Hábito')
-              return (
-                <div key={String(item.habit.id)} className={`${styles.habit} ${item.done ? styles.habitDone : ''}`} {...quick.bind(() => habitMenu(item))}>
-                  <button type="button" className={styles.habitMain} disabled={!canLogHabits} onClick={() => logHabit(item)} aria-label={item.quantitative ? `Registrar mais 1 em ${name}` : item.done ? `Desmarcar ${name}` : `Marcar ${name} como feito`}>
-                    <IconTile icon={item.done ? 'check' : resolveMaiIcon(String(item.habit.icone || 'repeat'))} tone={item.done ? 'mint' : item.tone} solid={item.done} size={36} />
-                  </button>
-                  <button type="button" className={styles.habitInfo} onClick={() => inspect({ kind: 'habit', sourceId: String(item.habit.id), title: name, date: day, raw: item.habit })}>
-                    <span className={styles.habitName}>{name}</span>
-                    <span className={styles.habitValue}>{habitValueLabel(item)}</span>
-                  </button>
-                </div>
-              )
-            })}
-          </div>
-        ) : <div className={styles.empty}>Nenhum hábito previsto.</div>}
+        {head('habits', 'Hábitos', habits.length ? `${habitsDone}/${habits.length}` : undefined)}
+        {!collapsed.has('habits') ? (
+          habits.length ? (
+            <div className={styles.habitList} role="list">
+              {habits.map(item => {
+                const name = String(item.habit.nome || 'Hábito')
+                const color = String(item.habit.cor_hex || 'var(--ds-accent)')
+                const streak = streakOf(item.habit)
+                return (
+                  <div key={String(item.habit.id)} role="listitem" className={styles.habitRow} style={{ '--hc': color } as CSSProperties} {...quick.bind(() => habitMenu(item))}>
+                    <button type="button" className={styles.habitRing} data-done={item.done || undefined} data-failed={item.failed || undefined} data-partial={(!item.done && !item.failed && item.value > 0) || undefined} disabled={!canLogHabits} onClick={() => logHabit(item)} aria-label={item.quantitative ? `Registrar mais 1 em ${name}` : item.done ? `Desmarcar ${name}` : `Marcar ${name}`}>
+                      {item.done ? <Icon name="check" size={12} weight={600} /> : item.failed ? <span aria-hidden="true">×</span> : null}
+                    </button>
+                    <button type="button" className={styles.habitBody} onClick={() => inspect({ kind: 'habit', sourceId: String(item.habit.id), title: name, date: day, raw: item.habit })}>
+                      <span className={styles.habitTitle}>{name}</span>
+                      <span className={styles.habitDots} aria-hidden="true">
+                        {weekKeys.map(key => <i key={key} data-on={doneOn(item.habit, key) || undefined} data-today={key === day || undefined} />)}
+                      </span>
+                    </button>
+                    {item.quantitative || item.failed ? <span className={styles.habitValue}>{habitValueLabel(item)}</span> : null}
+                    <span className={styles.streak} title={`Sequência de ${streak} ${streak === 1 ? 'dia' : 'dias'}`}><Icon name="local_fire_department" size={15} />{streak}</span>
+                  </div>
+                )
+              })}
+            </div>
+          ) : <div className={styles.empty}>Nenhum hábito previsto.</div>
+        ) : null}
       </section>
     ),
     goals: (
       <section className={styles.block} aria-label="Metas">
-        <SectionHeader title="Metas" meta={goals.length ? String(goals.length) : undefined} />
-        {goals.length ? (
-          <div className={styles.items}>
-            {goals.map(goal => {
-              const total = Math.max(1, Number(goal.progresso_total || 100))
-              const pct = Math.max(0, Math.min(100, Math.round((Number(goal.progresso_atual || 0) / total) * 100)))
-              const due = goalDate(goal)
-              const title = String(goal.titulo || 'Meta')
-              return (
-                <button key={String(goal.id)} type="button" className={`${styles.item} ${styles.goal}`} onClick={() => inspect({ kind: 'goal', sourceId: String(goal.id), title, date: due, raw: goal })} aria-label={`${title}, ${pct}%`}>
-                  <Icon name="flag" size={16} className={styles.goalIcon} />
-                  <span className={styles.itemTitle}>{title}</span>
-                  <span className={`${styles.itemMeta} ${due < today ? styles.late : ''}`}>{naturalDate(due, today)}</span>
-                  <span className={styles.goalPct}>{pct}%</span>
-                  <span className={styles.goalBar} style={{ width: `${pct}%` }} />
-                </button>
-              )
-            })}
-          </div>
-        ) : <div className={styles.empty}>Nenhuma meta vencendo.</div>}
+        {head('goals', 'Metas', goals.length ? String(goals.length) : undefined)}
+        {!collapsed.has('goals') ? (
+          goals.length ? (
+            <div className={styles.items}>
+              {goals.map(goal => {
+                const total = Math.max(1, Number(goal.progresso_total || 100))
+                const pct = Math.max(0, Math.min(100, Math.round((Number(goal.progresso_atual || 0) / total) * 100)))
+                const due = goalDate(goal)
+                const title = String(goal.titulo || 'Meta')
+                return (
+                  <button key={String(goal.id)} type="button" className={`${styles.item} ${styles.goal}`} onClick={() => inspect({ kind: 'goal', sourceId: String(goal.id), title, date: due, raw: goal })} aria-label={`${title}, ${pct}%`}>
+                    <Icon name="flag" size={16} className={styles.goalIcon} />
+                    <span className={styles.itemTitle}>{title}</span>
+                    <span className={`${styles.itemMeta} ${due < today ? styles.late : ''}`}>{naturalDate(due, today)}</span>
+                    <span className={styles.goalPct}>{pct}%</span>
+                    <span className={styles.goalBar} style={{ width: `${pct}%` }} />
+                  </button>
+                )
+              })}
+            </div>
+          ) : <div className={styles.empty}>Nenhuma meta vencendo.</div>
+        ) : null}
       </section>
     ),
     finance: (
       <section className={styles.block} aria-label="Finanças">
-        <SectionHeader title="Finanças" meta={financeMode !== 'summary' && transactions.length ? plural(transactions.length, 'conta hoje', 'contas hoje') : undefined} />
-        <div className={styles.financeStack}>
-          {financeMode !== 'bills' ? (
-            <button type="button" className={styles.balanceCard} onClick={() => navigate('finance')} aria-label="Abrir Finanças">
-              <span className={styles.balanceHead}><span>Saldo atual</span><Icon name="chevron_right" size={22} /></span>
-              <span className={`${styles.balanceValue} ${summary.balance < 0 ? styles.negative : ''}`}>{money.format(summary.balance)}</span>
-              <span className={styles.balanceStats}>
-                <span className={styles.balanceStat}><span>Previsto</span><strong className={summary.projected < 0 ? styles.negative : styles.positive}>{money.format(summary.projected)}</strong></span>
-                <span className={styles.balanceStat}><span>A pagar</span><strong className={summary.toPay > 0 ? styles.negative : undefined}>{summary.toPay > 0 ? '-' : ''}{money.format(summary.toPay)}</strong></span>
-                <span className={styles.balanceStat}><span>A receber</span><strong className={styles.positive}>{money.format(summary.toReceive)}</strong></span>
-              </span>
-            </button>
-          ) : null}
-          {financeMode !== 'summary' ? (
-            transactions.length ? (
-              <div className={styles.items}>
-                {financeMode !== 'bills' ? <div className={styles.groupLabel}><span>{isToday ? 'Contas de hoje' : 'Contas do dia'}</span><span>{transactions.length}</span></div> : null}
-                {transactions.map(item => {
-                  const due = dateKey(item.data)
-                  const income = String(item.tipo || '').toLocaleLowerCase('pt-BR') === 'receita'
-                  const payment = financeCardPaymentState(item)
-                  const title = txTitle(item)
-                  return (
-                    <div key={String(item.id)} className={`${styles.item} ${styles.itemWrap} ${payment.status === 'pago' ? styles.itemPassed : ''}`} {...quick.bind(() => financeMenu(item))}>
-                      <Check className={styles.itemCheck} checked={payment.status === 'pago'} late={due < today} label={`${income ? 'Marcar como recebido' : 'Marcar como pago'}: ${title}`} onCheckedChange={() => toggleFinancePaid(item)} />
-                      <button type="button" className={styles.itemButton} onClick={() => inspect({ kind: 'finance', sourceId: String(item.id), title, date: due, raw: item })}>
-                        <span className={styles.itemTitle}>{title}</span>
-                        {payment.status === 'parcial' ? <Tag tone="peach">Parcial</Tag> : null}
-                        {due !== day ? <span className={`${styles.itemMeta} ${due < today ? styles.late : ''}`}>{naturalDate(due, today)}</span> : null}
-                        <span className={`${styles.amount} ${income ? styles.positive : styles.negative}`}>{income ? '+' : '-'}{money.format(payment.remaining || payment.total)}</span>
-                      </button>
-                    </div>
-                  )
-                })}
-              </div>
-            ) : financeMode === 'bills' ? <div className={styles.empty}>Nenhuma conta {isToday ? 'hoje' : 'neste dia'}.</div> : null
-          ) : null}
-        </div>
+        {head('finance', 'Finanças')}
+        {!collapsed.has('finance') ? (
+          <div className={styles.financeStack}>
+            {financeMode !== 'bills' ? (
+              <button type="button" className={styles.balance} onClick={() => navigate('finance')} aria-label="Abrir Finanças">
+                <span className={styles.balanceMain}>
+                  <span className={styles.balanceLabel}>Saldo atual</span>
+                  <strong className={styles.balanceValue}>{money.format(summary.balance)}</strong>
+                  <span className={`${styles.balanceForecast} ${summary.projected < 0 ? styles.negative : styles.positive}`}>Previsto em {monthEndLabel} · {money.format(summary.projected)}</span>
+                </span>
+                <span className={styles.balanceSide}>
+                  <span><small>A receber no mês</small><b className={styles.positive}>{money.format(summary.toReceive)}</b></span>
+                  <span><small>A pagar no mês</small><b className={styles.negative}>{money.format(summary.toPay)}</b></span>
+                </span>
+              </button>
+            ) : null}
+            {financeMode !== 'summary' ? (
+              transactions.length ? (
+                <>
+                  {lateTransactions.length ? <><div className={styles.subLabel}>Atrasados <span>{lateTransactions.length}</span></div><div role="list" className={styles.items}>{lateTransactions.map(renderTransaction)}</div></> : null}
+                  {dayTransactions.length ? <><div className={styles.subLabel}>{isToday ? 'Hoje' : 'Contas do dia'} <span>{dayTransactions.length}</span></div><div role="list" className={styles.items}>{dayTransactions.map(renderTransaction)}</div></> : null}
+                </>
+              ) : financeMode === 'bills' ? <div className={styles.empty}>Nenhuma conta {isToday ? 'hoje' : 'neste dia'}.</div> : null
+            ) : null}
+          </div>
+        ) : null}
       </section>
     ),
     notes: (
       <section className={styles.block} aria-label="Notas">
-        <SectionHeader title="Notas" meta={notes.length ? String(notes.length) : undefined} />
-        {notes.length ? (
-          <div className={styles.items}>
-            {notes.map(note => {
-              const title = String(note.titulo || 'Sem título')
-              return (
-                <button key={String(note.id)} type="button" className={styles.item} onClick={() => inspect({ kind: 'note', sourceId: String(note.id), title, date: dateKey(note.data || note.updated_at || note.criado_em), raw: note })}>
-                  <Icon name="sticky_note_2" size={16} className={styles.noteIcon} />
-                  <span className={styles.itemTitle}>{title}</span>
-                </button>
-              )
-            })}
-          </div>
-        ) : <div className={styles.empty}>Nenhuma nota.</div>}
+        {head('notes', 'Notas', notes.length ? String(notes.length) : undefined)}
+        {!collapsed.has('notes') ? (
+          notes.length ? (
+            <div className={styles.items}>
+              {notes.map(note => {
+                const title = String(note.titulo || 'Sem título')
+                return (
+                  <button key={String(note.id)} type="button" className={styles.item} onClick={() => inspect({ kind: 'note', sourceId: String(note.id), title, date: dateKey(note.data || note.updated_at || note.criado_em), raw: note })}>
+                    <Icon name="sticky_note_2" size={16} className={styles.noteIcon} />
+                    <span className={styles.itemTitle}>{title}</span>
+                  </button>
+                )
+              })}
+            </div>
+          ) : <div className={styles.empty}>Nenhuma nota.</div>
+        ) : null}
       </section>
     ),
   }
 
   /* ---------------------------------------------------------------- Página */
 
-  const firstName = String(profileName || '').trim().split(/\s+/)[0]
-  const dayLabel = capitalize(new Date(`${day}T12:00:00`).toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' }))
+  const dayLabel = capitalize(new Date(`${day}T12:00:00`).toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })).replace(/^([^,]+)-feira/, '$1').replace(/^([^,]+?)( \d)/, '$1,$2')
   const shortDayLabel = capitalize(new Date(`${day}T12:00:00`).toLocaleDateString('pt-BR', { weekday: 'short', day: 'numeric', month: 'short' }).replace(/\./g, ''))
-  const summaryParts: Array<{ icon: string; value: string; label: string; tone: Tone }> = [
-    { icon: 'event', value: String(events.length), label: plural(events.length, 'compromisso', 'compromissos'), tone: 'sky' },
-    { icon: 'checklist', value: String(tasks.length), label: plural(tasks.length, 'tarefa', 'tarefas'), tone: 'lilac' as Tone },
-    ...(lateCount ? [{ icon: 'schedule', value: String(lateCount), label: plural(lateCount, 'atrasada', 'atrasadas'), tone: 'rose' as Tone }] : []),
-    ...(habits.length ? [{ icon: 'autorenew', value: `${habitsDone}/${habits.length}`, label: `${habitsDone} de ${habits.length} hábitos`, tone: 'mint' as Tone }] : []),
-  ]
-  const title = isToday ? `${greetingFor(clock.getHours())}${firstName && firstName !== 'Meu' ? `, ${firstName}` : ''}` : naturalDate(day, today) === 'Amanhã' || naturalDate(day, today) === 'Ontem' ? naturalDate(day, today) : capitalize(new Date(`${day}T12:00:00`).toLocaleDateString('pt-BR', { weekday: 'long' }))
+  const title = isToday ? 'Hoje' : naturalDate(day, today) === 'Amanhã' || naturalDate(day, today) === 'Ontem' ? naturalDate(day, today) : capitalize(new Date(`${day}T12:00:00`).toLocaleDateString('pt-BR', { weekday: 'long' }))
+  const taskCountLabel = plural(tasks.length, 'tarefa', 'tarefas')
 
   // Colunas do computador. No celular vira uma coluna só, na ordem salva.
-  const COLUMN: Record<SectionId, 'main' | 'middle' | 'side'> = { tasks: 'main', appointments: 'middle', notes: 'middle', habits: 'side', finance: 'side', goals: 'side' }
+  const COLUMN: Record<SectionId, 'main' | 'side'> = { tasks: 'main', appointments: 'side', notes: 'side', habits: 'side', finance: 'side', goals: 'side' }
   const visible = order.filter(id => !hidden.has(id))
-  const column = (name: 'main' | 'middle' | 'side', extra?: ReactNode) => (
+  const column = (name: 'main' | 'side', extra?: ReactNode) => (
     <div className={`${styles.column} ${styles[`col_${name}`]}`}>
       {extra}
       {visible.filter(id => COLUMN[id] === name).map(id => (
-        <div key={id} className={styles.slot} style={{ order: visible.indexOf(id) + 1 }}>{sections[id]}</div>
+        <div key={id} className={styles.slot} data-sec={id} style={{ order: visible.indexOf(id) + 1 }}>{sections[id]}</div>
       ))}
     </div>
   )
@@ -869,11 +944,8 @@ export function TodayModern({ state, today, commit, navigate, inspect, profileNa
           <p className={styles.subline}>
             <span className={styles.dateLong}>{dayLabel}</span>
             <span className={styles.dateShort}>{shortDayLabel}</span>
-            {summaryParts.map(part => (
-              <span key={part.icon} className={styles.stat} title={part.label} aria-label={part.label}>
-                <Tag tone={part.tone} icon={part.icon}><span aria-hidden="true">{part.value}</span></Tag>
-              </span>
-            ))}
+            <span className={styles.dot} aria-hidden="true">·</span>
+            <span>{taskCountLabel}</span>
           </p>
         </div>
         <div className={styles.headerActions}>
@@ -916,7 +988,6 @@ export function TodayModern({ state, today, commit, navigate, inspect, profileNa
 
       <div className={styles.board}>
         {column('main')}
-        {column('middle')}
         {column('side')}
       </div>
       {quick.element}
