@@ -88,6 +88,9 @@ export function TasksModern(props: Props) {
   }, [state.projects])
   const projectMap = useMemo(() => new Map(projects.map(project => [String(project.id), project])), [projects])
 
+  type CtxFilter = 'all' | 'late' | 'nodate' | 'today' | 'upcoming' | 'done'
+  const [ctxFilter, setCtxFilter] = useState<CtxFilter>('all')
+  useEffect(() => { setCtxFilter('all') }, [scope])
   const projectId = scope.startsWith('project:') ? scope.slice(8) : ''
   const project = projectId ? projectMap.get(projectId) : undefined
   const isProjectLike = scope === 'entrada' || Boolean(projectId)
@@ -150,11 +153,20 @@ export function TasksModern(props: Props) {
   const sections = projectId ? rows(project?.secoes).map(String) : []
   const sectionOf = (task: Row) => (sections.includes(String(task.secao || '')) ? String(task.secao || '') : '')
 
+  const tabMatch = (task: LegacyTask) => {
+    const day = dayOf(task)
+    if (ctxFilter === 'late') return Boolean(day) && day < today
+    if (ctxFilter === 'nodate') return !day
+    if (ctxFilter === 'today') return Boolean(day) && day <= today
+    if (ctxFilter === 'upcoming') return day > today
+    if (ctxFilter === 'done') return false
+    return true
+  }
   let groups: Group[] = []
   let scopeTasks: LegacyTask[] = []
   if (projectId) {
     scopeTasks = all.filter(task => String(task.projeto_id || '') === projectId)
-    const openHere = sortTasks(scopeTasks.filter(task => !task.concluida))
+    const openHere = sortTasks(scopeTasks.filter(task => !task.concluida && tabMatch(task)))
     groups = [
       ...sections.map(section => ({ id: `s:${section}`, label: section, section, tasks: openHere.filter(task => sectionOf(task) === section) })),
       { id: 's:', label: sections.length ? 'Sem seção' : 'Tarefas', section: '', tasks: openHere.filter(task => !sectionOf(task)) },
@@ -162,7 +174,7 @@ export function TasksModern(props: Props) {
     if (sections.length && !groups[groups.length - 1].tasks.length && !kanban) groups = groups.slice(0, -1)
   } else if (scope === 'entrada') {
     scopeTasks = all.filter(task => String(task.projeto_id || 'entrada') === 'entrada')
-    groups = [{ id: 'entrada', label: 'Tarefas', section: '', tasks: sortTasks(scopeTasks.filter(task => !task.concluida)) }]
+    groups = [{ id: 'entrada', label: 'Tarefas', section: '', tasks: sortTasks(scopeTasks.filter(task => !task.concluida && tabMatch(task))) }]
   } else if (scope === 'today') {
     scopeTasks = all.filter(task => dayOf(task) && dayOf(task) <= today)
     const openHere = sortTasks(scopeTasks.filter(task => !task.concluida))
@@ -190,6 +202,7 @@ export function TasksModern(props: Props) {
     const days = [...new Set(openHere.map(dayOf))].sort()
     groups = days.map(day => ({ id: `d:${day}`, label: naturalDate(day, today), tasks: openHere.filter(task => dayOf(task) === day), addDate: day }))
   }
+  const ctxTasks = projectId ? all.filter(task => String(task.projeto_id || '') === projectId) : all.filter(task => String(task.projeto_id || 'entrada') === 'entrada')
   const completed = scopeTasks.filter(task => task.concluida).sort((a, b) => String(b.concluida_em || '').localeCompare(String(a.concluida_em || '')))
 
   /* -------------------------------------------------------------- Ações */
@@ -664,25 +677,22 @@ export function TasksModern(props: Props) {
           onClickCapture={event => { if (tabsSuppress.current) { event.preventDefault(); event.stopPropagation() } }}
           role="tablist"
         >
-          {scopeTabs.filter(tab => ['entrada', 'late', 'nodate'].includes(tab.scope) || scope === tab.scope).map(tab => (
-            <button key={tab.scope} type="button" role="tab" className={styles.pillIcon} data-active={scope === tab.scope || undefined} data-alert={tab.scope === 'late' && tab.count > 0 || undefined} aria-selected={scope === tab.scope} aria-label={tab.label} title={tab.label} onClick={() => props.onScopeChange(tab.scope)}>
-              <Icon name={tab.icon} size={17} style={{ color: scope === tab.scope ? undefined : tab.color }} />
+          {([
+            { id: 'late', label: 'Atrasadas', icon: 'warning', color: 'var(--ds-muted)', count: ctxTasks.filter(task => !task.concluida && dayOf(task) && dayOf(task) < today).length },
+            { id: 'nodate', label: 'Sem data', icon: 'event_busy', color: 'var(--ds-muted)', count: ctxTasks.filter(task => !task.concluida && !dayOf(task)).length },
+            { id: 'today', label: 'Hoje', icon: 'today', color: 'var(--ds-muted)', count: ctxTasks.filter(task => !task.concluida && dayOf(task) && dayOf(task) <= today).length },
+            { id: 'upcoming', label: 'Em breve', icon: 'event_upcoming', color: 'var(--ds-muted)', count: ctxTasks.filter(task => !task.concluida && dayOf(task) > today).length },
+            { id: 'done', label: 'Concluídos', icon: 'task_alt', color: 'var(--ds-muted)', count: ctxTasks.filter(task => task.concluida).length },
+          ] as { id: CtxFilter; label: string; icon: string; color: string; count: number }[]).map(tab => (
+            <button key={tab.id} type="button" role="tab" className={styles.pill} data-active={ctxFilter === tab.id || undefined} aria-selected={ctxFilter === tab.id} onClick={() => {
+              if (!isProjectLike) props.onScopeChange('entrada')
+              setCtxFilter(current => current === tab.id ? 'all' : tab.id)
+            }}>
+              <Icon name={tab.icon} size={17} filled={false} />
+              <span>{tab.label}</span>
               {tab.count ? <small>{tab.count}</small> : null}
             </button>
           ))}
-          <span className={styles.navDivider} aria-hidden="true" />
-          {projects.filter(item => !Number(item._depth || 0)).map(item => {
-            const id = String(item.id)
-            const active = Boolean(projectId) && String(root?.id || '') === id
-            return (
-              <button key={id} type="button" role="tab" className={styles.pill} data-active={active || undefined} aria-selected={active} onClick={() => props.onScopeChange(`project:${id}`)} onDoubleClick={() => props.onEditProject(id)}>
-                {item.imagem_url ? <img className={styles.pillAvatar} src={driveAssetUrl(item.imagem_url)} alt="" /> : <span className={styles.pillAvatar} style={{ background: String(item.cor || 'var(--ds-line-strong)') }} />}
-                <span>{String(item.nome || 'Projeto')}</span>
-                {familyCount(id) ? <small>{familyCount(id)}</small> : null}
-              </button>
-            )
-          })}
-          <button type="button" className={styles.pillRound} onClick={() => props.onNewProject()} aria-label="Novo projeto" title="Novo projeto"><Icon name="add" size={18} filled={false} /></button>
         </div>
         <button ref={optionsRef} type="button" className={styles.pillRound} data-active={priorityFilter !== 'all' || undefined} onClick={() => setOptionsOpen(true)} aria-label="Mais opções"><Icon name="more_horiz" size={20} filled={false} /></button>
         {optionsOpen ? (
@@ -802,10 +812,12 @@ export function TasksModern(props: Props) {
 
           {completed.length ? (
             <section className={styles.group}>
-              <button type="button" className={styles.doneToggle} onClick={() => toggleCollapsed('done')} aria-expanded={collapsed.has('done')}>
-                {collapsed.has('done') ? 'Esconder concluídas' : `Concluídas (${completed.length})`}
-              </button>
-              {collapsed.has('done') ? <div className={styles.cards} role="list">{completed.slice(0, 60).map(task => renderTask(task, { id: 'done', label: '', tasks: [] }))}</div> : null}
+              {ctxFilter === 'done' ? null : (
+                <button type="button" className={styles.doneToggle} onClick={() => toggleCollapsed('done')} aria-expanded={collapsed.has('done')}>
+                  {collapsed.has('done') ? 'Esconder concluídas' : `Concluídas (${completed.length})`}
+                </button>
+              )}
+              {collapsed.has('done') || ctxFilter === 'done' ? <div className={styles.cards} role="list">{completed.slice(0, 60).map(task => renderTask(task, { id: 'done', label: '', tasks: [] }))}</div> : null}
             </section>
           ) : null}
         </div>

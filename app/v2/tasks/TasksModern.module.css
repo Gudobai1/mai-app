@@ -2371,3 +2371,9 @@
 }
 .options :global(.mai-app-topbar-menu-button[data-active='true']),
 .options :global(.mai-app-topbar-menu-button[aria-expanded='true']) { color: var(--ds-accent) !important; }
+
+/* Filtros do projeto: ícone fino cinza + nome */
+.pill.pill { gap: 6px; }
+.pill.pill[data-active] svg, .pill.pill[data-active] :global(.material-symbols-rounded) { color: var(--ds-accent); }
+.pill.pill[data-active] { background: transparent; color: var(--ds-accent); box-shadow: none; }
+.pill.pill[data-active] small { color: var(--ds-accent); }
