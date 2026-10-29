@@ -832,12 +832,14 @@ export function TodayModern({ state, today, commit, navigate, inspect, options, 
                     </button>
                     <button type="button" className={styles.habitBody} onClick={() => inspect({ kind: 'habit', sourceId: String(item.habit.id), title: name, date: day, raw: item.habit })}>
                       <span className={styles.habitTitle} style={{ color: color }}>{name}</span>
-                      {plainText(item.habit.descricao) ? <span className={styles.habitDesc}>{plainText(item.habit.descricao)}</span> : null}
+                      {(() => {
+                        const sub = [item.quantitative || item.failed ? habitValueLabel(item) : '', plainText(item.habit.descricao)].filter(Boolean).join(' · ')
+                        return sub ? <span className={styles.habitDesc}>{sub}</span> : null
+                      })()}
                     </button>
                     <span className={styles.habitDots} aria-hidden="true">
                       {weekKeys.map(key => <i key={key} data-on={levelOn(item.habit, key) === 'full' || undefined} data-part={levelOn(item.habit, key) === 'part' || undefined} data-today={key === day || undefined} />)}
                     </span>
-                    {item.quantitative || item.failed ? <span className={styles.habitValue}>{habitValueLabel(item)}</span> : null}
                     <span className={styles.streak} data-on={streak > 0 || undefined} title={`Sequência de ${streak} ${streak === 1 ? 'dia' : 'dias'}`}><Icon name="local_fire_department" size={15} />{streak}</span>
                   </div>
                 )
@@ -881,8 +883,10 @@ export function TodayModern({ state, today, commit, navigate, inspect, options, 
             {financeMode !== 'bills' ? (
               <button type="button" className={styles.balance} onClick={() => navigate('finance')} aria-label="Abrir Finanças">
                 <span className={styles.balanceMain}>
-                  <span className={styles.balanceLabel}>Previsto em {monthEndLabel}</span>
-                  <strong className={`${styles.balanceValue} ${summary.projected < 0 ? styles.negative : styles.positive}`}>{money.format(summary.projected)}</strong>
+                  <span className={styles.balanceLabel}>Saldo atual</span>
+                  <strong className={styles.balanceValue}>{money.format(summary.balance)}</strong>
+                  <span className={`${styles.balanceLabel} ${styles.balanceGap}`}>Previsto em {monthEndLabel}</span>
+                  <strong className={`${styles.balanceForecastValue} ${summary.projected < 0 ? styles.negative : styles.positive}`}>{money.format(summary.projected)}</strong>
                 </span>
                 <span className={styles.balanceSide}>
                   <span><small>A receber no mês</small><b className={styles.positive}>{money.format(summary.toReceive)}</b></span>

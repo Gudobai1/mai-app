@@ -1963,3 +1963,11 @@
 .streak[data-on] { color: #E8772E; }
 .streak :global(span) { color: inherit; }
 @media (max-width: 420px) { .habitDots { gap: 5px; } .habitDots i { width: 12px; height: 12px; } }
+
+/* Finanças: saldo atual em cima (neutro) e previsto embaixo (colorido pelo sinal) */
+.balanceValue { color: var(--ds-text); }
+.balanceGap { margin-top: 10px; }
+.balanceForecastValue { font-size: 18px; line-height: 1.2; font-weight: var(--ds-fw-bold); letter-spacing: -0.01em; font-variant-numeric: tabular-nums; }
+.balanceForecastValue.positive { color: var(--ds-success); }
+.balanceForecastValue.negative { color: var(--ds-danger); }
+.balanceValue.positive, .balanceValue.negative { color: var(--ds-text); }
