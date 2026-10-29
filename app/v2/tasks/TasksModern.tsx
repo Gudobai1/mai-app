@@ -520,7 +520,7 @@ export function TasksModern(props: Props) {
             {done ? <Icon name="check" size={13} /> : null}
           </button>
         )}
-        <button type="button" className={styles.cardMain} onClick={onClick}>
+        <div tabIndex={0} className={styles.cardMain} onClick={onClick} onKeyDown={event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onClick(event as unknown as ReactMouseEvent) } }}>
           <span className={styles.cardTitle}>{String(task.titulo || 'Tarefa')}</span>
           {desc ? <span className={styles.cardDesc}>{desc}</span> : null}
           {(showDate || time || showProject || children.length || files || task.repeticao) ? (
@@ -534,15 +534,15 @@ export function TasksModern(props: Props) {
               ) : null}
               {task.repeticao ? <span><Icon name="repeat" size={12} />{({ diariamente: 'Todo dia', semanalmente: 'Toda semana', 'semanal:1,2,3,4,5': 'Dias úteis', mensalmente: 'Todo mês', anualmente: 'Todo ano' } as Record<string, string>)[String(task.repeticao)] || 'Repete'}</span> : null}
               {files ? <span><Icon name="attach_file" size={12} />{files}</span> : null}
+              {children.length ? (
+                <button type="button" className={styles.expand} data-open={expanded || undefined} onClick={event => { event.stopPropagation(); toggleSubs(id) }} aria-expanded={expanded} aria-label={`${expanded ? 'Esconder' : 'Mostrar'} subtarefas de ${String(task.titulo || 'tarefa')}`}>
+                  <span>{children.filter(child => child.concluida).length}/{children.length}</span>
+                  <Icon name={expanded ? 'expand_more' : 'chevron_right'} size={20} filled={false} />
+                </button>
+              ) : null}
             </span>
           ) : null}
-        </button>
-        {children.length ? (
-          <button type="button" className={styles.expand} data-open={expanded || undefined} onClick={() => toggleSubs(id)} aria-expanded={expanded} aria-label={`${expanded ? 'Esconder' : 'Mostrar'} subtarefas de ${String(task.titulo || 'tarefa')}`}>
-            <span>{children.filter(child => child.concluida).length}/{children.length}</span>
-            <Icon name="expand_more" size={18} filled={false} />
-          </button>
-        ) : null}
+        </div>
       </div>
       {expanded && children.length ? (
         <div className={styles.subList} role="list" aria-label={`Subtarefas de ${String(task.titulo || 'tarefa')}`}>
