@@ -269,3 +269,5 @@
 .inlinePanel { display: flex; flex-direction: column; gap: 4px; padding: 10px 12px; box-sizing: border-box; border: 1px solid var(--ds-line-strong); border-radius: 10px; background: var(--ds-bg); }
 .inlinePanel .title { font-size: 16px; }
 .inlinePanel .description { min-height: 36px; font-size: 13px; }
+.inlinePanel .footer { justify-content: flex-start; border-top: 0; padding-top: 6px; }
+.inlinePanel .primary { order: -1; }

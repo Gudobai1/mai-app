@@ -644,7 +644,7 @@ export function TodayModern({ state, today, commit, navigate, inspect, options, 
 
   /* Adicionar no próprio lugar: o formulário completo abre onde o clique aconteceu. */
   const [inlineAdd, setInlineAdd] = useState('')
-  const addRow = (label: string, kind: 'task' | 'event', projectId = '') => {
+  const addRow = (label: string, kind: 'task' | 'event' | 'finance', projectId = '') => {
     const key = `${kind}:${projectId}`
     if (inlineAdd === key) {
       return (
@@ -938,6 +938,7 @@ export function TodayModern({ state, today, commit, navigate, inspect, options, 
                 </>
               ) : financeMode === 'bills' ? <div className={styles.empty}>Nenhuma conta {isToday ? 'hoje' : 'neste dia'}.</div> : null
             ) : null}
+            {addRow('Adicionar lançamento', 'finance')}
           </div>
         ) : null}
       </section>
