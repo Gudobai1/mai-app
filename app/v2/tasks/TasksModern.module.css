@@ -2410,3 +2410,11 @@
 .list { gap: 0; }
 .projChevron { appearance: none; margin-left: auto; width: 28px; height: 28px; display: grid; place-items: center; padding: 0; border: 0; border-radius: 8px; background: transparent; color: var(--ds-muted); cursor: pointer; }
 .projChevron:hover { color: var(--ds-text); }
+
+/* Seta de esconder dentro da seção, no canto direito (como na Hoje) */
+.list .groupHead .collapse.collapse { width: 100%; }
+.groupChevron { margin-left: auto; color: var(--ds-muted); }
+.list .groupHead .collapse.collapse:hover .groupChevron { color: var(--ds-text); }
+.list .groupHead .collapse.collapse strong { font-size: 14px; font-weight: 600; color: var(--ds-text); text-transform: none; letter-spacing: 0; }
+.list .groupHead .collapse.collapse small { font-size: 12.5px; opacity: 1; font-weight: var(--ds-fw-medium); }
+.list .groupHead { padding: 22px 0 8px; border-bottom: 1px solid var(--ds-line); min-height: 0; }

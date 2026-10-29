@@ -740,19 +740,9 @@ export function TasksModern(props: Props) {
         </div>
       ) : (
         <div className={styles.list}>
-          {isProjectLike ? (
-            <header className={styles.projHead}>
-              {projectId ? projectVisual(project, 'tab') : <span className={styles.tabVisual} style={{ background: 'var(--ds-accent)' }}><Icon name="inbox" size={12} /></span>}
-              <strong>{title}</strong>
-              <span className={styles.projCount}>{ctxTasks.filter(task => !task.concluida).length}</span>
-              <button type="button" className={styles.projChevron} onClick={() => toggleCollapsed('proj')} aria-expanded={!collapsed.has('proj')} aria-label={`${collapsed.has('proj') ? 'Mostrar' : 'Esconder'} ${title}`}>
-                <Icon name={collapsed.has('proj') ? 'chevron_right' : 'expand_more'} size={20} filled={false} />
-              </button>
-            </header>
-          ) : null}
-          {(isProjectLike && collapsed.has('proj') ? [] : groups).map(group => {
+          {groups.map(group => {
             const isCollapsed = collapsed.has(group.id)
-            const showHead = groups.length > 1 || Boolean(projectId && sections.length) || !isProjectLike
+            const showHead = true
             return (
               <section key={group.id} className={styles.group} {...groupDropProps(group)}>
                 {showHead ? (
@@ -761,6 +751,7 @@ export function TasksModern(props: Props) {
                       {group.projectId ? (group.projectId === 'entrada' ? <span className={styles.tabVisual} style={{ background: 'var(--ds-accent)' }}><Icon name="inbox" size={12} /></span> : projectVisual(projectMap.get(group.projectId), 'tab')) : null}
                       <strong>{group.label}</strong>
                       <small>{group.tasks.length}</small>
+                      <Icon name={isCollapsed ? 'chevron_right' : 'expand_more'} size={20} filled={false} className={styles.groupChevron} />
                     </button>
                   </div>
                 ) : null}
