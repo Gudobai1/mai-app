@@ -2377,3 +2377,16 @@
 .pill.pill[data-active] svg, .pill.pill[data-active] :global(.material-symbols-rounded) { color: var(--ds-accent); }
 .pill.pill[data-active] { background: transparent; color: var(--ds-accent); box-shadow: none; }
 .pill.pill[data-active] small { color: var(--ds-accent); }
+
+/* ===== Mesmo padrão visual das tarefas da tela Hoje ===== */
+.groupHead { padding: 22px 0 8px; border-bottom: 1px solid var(--ds-line); }
+.groupHead strong { font-size: 14px; font-weight: 600; color: var(--ds-text); letter-spacing: 0; text-transform: none; }
+.groupHead[data-tone='danger'] strong { color: var(--ds-danger); }
+.cardTitle { font-size: 15px; font-weight: var(--ds-fw-regular); line-height: 1.3; }
+.expand.expand { height: 28px; gap: 2px; padding: 0 2px 0 4px; background: transparent; color: var(--ds-muted); font-size: 12.5px; font-weight: var(--ds-fw-medium); font-variant-numeric: tabular-nums; }
+.expand.expand:hover { background: transparent; color: var(--ds-text); }
+.expand.expand[data-open] { background: transparent; color: var(--ds-muted); }
+.expand.expand > span:last-child, .expand.expand[data-open] > span:last-child { transform: none; }
+.cardMeta { align-items: center; gap: 12px; min-height: 28px; }
+.subList { margin: 0 0 4px 36px; padding: 0; gap: 0; }
+.subRow { min-height: 0; padding: 8px 0; gap: 10px; border-bottom: 1px solid var(--ds-line); background: transparent; border-radius: 0; }
