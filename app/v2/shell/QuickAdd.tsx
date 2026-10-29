@@ -26,6 +26,7 @@ type Props = {
   today: string
   defaultProjectId?: string
   defaultDate?: string
+  defaultSection?: string
   commit: (change: (current: MaiState) => MaiState) => void
   onFinance: () => void
   onClose: () => void
@@ -81,14 +82,14 @@ const plusHour = (time: string) => {
 
 type Picker = '' | 'ftype' | 'account' | 'date' | 'priority' | 'project' | 'section' | 'repeat' | 'start' | 'end' | 'category'
 
-export function QuickAdd({ kinds, initial, state, today, defaultProjectId, defaultDate, commit, onFinance, onClose, inline }: Props) {
+export function QuickAdd({ kinds, initial, state, today, defaultProjectId, defaultDate, defaultSection, commit, onFinance, onClose, inline }: Props) {
   const [kind, setKind] = useState<QuickAddKind>(initial)
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [date, setDate] = useState(defaultDate ?? '')
   const [priority, setPriority] = useState(4)
   const [projectId, setProjectId] = useState(defaultProjectId || 'entrada')
-  const [section, setSection] = useState('')
+  const [section, setSection] = useState(defaultSection || '')
   const [repeat, setRepeat] = useState('')
   const [allDay, setAllDay] = useState(false)
   const [start, setStart] = useState('09:00')

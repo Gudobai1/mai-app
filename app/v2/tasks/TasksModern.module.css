@@ -2390,3 +2390,21 @@
 .cardMeta { align-items: center; gap: 12px; min-height: 28px; }
 .subList { margin: 0 0 4px 36px; padding: 0; gap: 0; }
 .subRow { min-height: 0; padding: 8px 0; gap: 10px; border-bottom: 1px solid var(--ds-line); background: transparent; border-radius: 0; }
+
+/* ===== Datas: futuro verde, hoje amarelo, vencido vermelho (padrão do app) ===== */
+.cardMeta > span[data-future] { color: var(--ds-success); }
+.cardMeta > span[data-today] { color: var(--ds-warn); }
+.cardMeta > span[data-late] { color: var(--ds-danger); }
+.subMeta[data-late] { color: var(--ds-danger); }
+
+/* Largura total, como na tela Hoje */
+.page { max-width: none; margin: 0; }
+
+/* Cabeçalho do projeto, igual ao da tela Hoje */
+.projHead { display: flex; align-items: center; gap: 8px; padding: 22px 0 8px; border-bottom: 1px solid var(--ds-line); }
+.projHead strong { font-size: 14px; font-weight: 600; color: var(--ds-text); }
+.projCount { font-size: 12.5px; color: var(--ds-muted); font-weight: var(--ds-fw-medium); }
+.projHead .tabVisual { width: 20px; height: 20px; border-radius: 50%; }
+.descLink { color: var(--ds-accent); text-decoration: underline; text-underline-offset: 2px; }
+.cardDesc { white-space: normal; overflow-wrap: anywhere; }
+.list { gap: 0; }

@@ -71,7 +71,7 @@
   gap: 4px;
   font-size: 12px;
   font-weight: var(--ds-fw-medium);
-  color: var(--ds-success);
+  color: var(--ds-warn);
   font-variant-numeric: tabular-nums;
 }
 
