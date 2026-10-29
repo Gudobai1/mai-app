@@ -314,13 +314,13 @@ export function UnifiedAppUx() {
   }
 
   return <div className={`${styles.appShell} mai-v3-shell`} data-view={String(view)}>
-    <ModernSidebar state={runtime.state} today={runtime.today} view={view} navigate={navigate} onSearch={() => setSearchOpen(true)} onAdd={() => contextualAdd()} onSettings={() => setSettingsOpen(true)} onToggleTheme={toggleTheme} dark={isDark} profile={googleProfile} />
+    <ModernSidebar state={runtime.state} today={runtime.today} view={view} navigate={navigate} onSearch={() => setSearchOpen(true)} onAdd={() => contextualAdd()} onSettings={() => setSettingsOpen(true)} onToggleTheme={toggleTheme} onNewProject={parentId => setProjectDialog(parentId ? { parentId } : {})} activeProjectId={activeProjectId} dark={isDark} profile={googleProfile} />
 
     <main className={`${styles.main} mai-v3-main`}>
       <div className={`${styles.workspace} mai-v3-workspace`}>
         {runtime.ready && view !== 'today' && view !== 'tasks' && view !== 'upcoming' ? <AppTopBar state={runtime.state} today={runtime.today} view={view} taskScope={taskScope} commit={runtime.commit} onTaskScopeChange={setTaskScope} onSettings={() => setSettingsOpen(true)} /> : null}
         {!runtime.ready ? <div className={styles.loadingState}>Carregando seu MAI…</div> : <>
-          {view === 'today' ? <TodayModern state={viewState} today={runtime.today} commit={runtime.commit} navigate={navigate} inspect={setSelected} profileName={String(googleProfile?.name || runtime.state.configs.profileName || runtime.state.configs.userName || '')} options={<AppTopBar state={runtime.state} today={runtime.today} view={view} taskScope={taskScope} commit={runtime.commit} onTaskScopeChange={setTaskScope} onSettings={() => setSettingsOpen(true)} />}/> : null}
+          {view === 'today' ? <TodayModern state={viewState} today={runtime.today} commit={runtime.commit} navigate={navigate} inspect={setSelected} onAddTask={projectId => setQuickAdd({ kinds: ['task'], initial: 'task', projectId, date: runtime.today })} onAddEvent={() => setQuickAdd({ kinds: ['event'], initial: 'event', date: runtime.today })} options={<AppTopBar state={runtime.state} today={runtime.today} view={view} taskScope={taskScope} commit={runtime.commit} onTaskScopeChange={setTaskScope} onSettings={() => setSettingsOpen(true)} />}/> : null}
           {view === 'agenda' ? <AgendaView state={runtime.state} today={runtime.today} connected={runtime.googleConnected} commit={runtime.commit} googleRpc={runtime.googleRpc} refreshEvents={(start, end) => runtime.syncCalendar(runtime.state.configs.calendarios || [], start, end)} openTask={() => navigate('tasks')} openArea={area => navigate(area)} /> : null}
           {view === 'upcoming' ? <EmBreve state={viewState} today={runtime.today} commit={runtime.commit} inspect={setSelected} syncRange={(start, end) => { runtime.syncCalendar(runtime.state.configs.calendarios || [], start, end) }} /> : null}
           {view === 'completed' ? <CompletedV4 state={viewState} today={runtime.today} commit={runtime.commit} inspect={setSelected}/> : null}
