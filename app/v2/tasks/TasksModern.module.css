@@ -2357,3 +2357,17 @@
   height: 28px;
   margin-top: 0;
 }
+
+/* Opções: só o ícone, sem fundo */
+.options :global(.mai-app-topbar-menu-button),
+.options :global(.mai-app-topbar-menu-button:hover),
+.options :global(.mai-app-topbar-menu-button:focus-visible),
+.options :global(.mai-app-topbar-menu-button[data-active='true']),
+.options :global(.mai-app-topbar-menu-button[aria-expanded='true']) {
+  background: transparent !important;
+  box-shadow: none !important;
+  outline: 0 !important;
+  color: var(--ds-muted) !important;
+}
+.options :global(.mai-app-topbar-menu-button[data-active='true']),
+.options :global(.mai-app-topbar-menu-button[aria-expanded='true']) { color: var(--ds-accent) !important; }
