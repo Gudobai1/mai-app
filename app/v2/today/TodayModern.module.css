@@ -1909,3 +1909,30 @@
 .page .subCheck.subCheck { width: 18px; height: 18px; border-width: 2px; border-color: var(--ds-muted); }
 .page .subTitle.subTitle { font-size: 14px; font-weight: var(--ds-fw-regular); }
 .page .subRow, .page .subRow:hover { background: transparent; border-radius: 0; padding-left: 0; padding-right: 0; }
+
+/* Ajustes: menos negrito, seta de subtarefas sem fundo, semana dos hábitos abaixo do nome */
+.subChip.subChip { width: 28px; padding: 0; justify-content: center; background: transparent; color: var(--ds-muted); font-weight: var(--ds-fw-medium); }
+.subChip.subChip:hover { color: var(--ds-text); background: transparent; }
+.subChip.subChip > span:last-child { transform: none; }
+.subChip.subChip > span:first-child { transition: transform var(--ds-dur) var(--ds-ease); }
+.subChip.subChip[data-open] { color: var(--ds-muted); }
+.subChip.subChip[data-open] > span:first-child { transform: rotate(180deg); }
+
+.page .block .secHead h2 { font-weight: 600; }
+.projectHead strong { font-weight: 600; }
+.subLabel { font-weight: 600; }
+.balanceValue { font-weight: 700; }
+.balanceSide b { font-weight: 600; }
+.streak { font-weight: 600; }
+.greeting { font-weight: 600; }
+.page .items .itemPassed .taskTitleBtn { font-weight: var(--ds-fw-regular); }
+.amount { font-weight: 600; }
+
+.habitBody.habitBody { flex-direction: column; align-items: flex-start; justify-content: center; gap: 6px; }
+
+/* Subtarefas: contagem + seta, sem fundo */
+.subChip.subChip { width: auto; padding: 0 2px 0 4px; gap: 2px; font-size: 12.5px; font-weight: var(--ds-fw-medium); font-variant-numeric: tabular-nums; }
+.subChip.subChip > span:first-child { transform: none; }
+.subChip.subChip > span:last-child { transition: transform var(--ds-dur) var(--ds-ease); }
+.subChip.subChip[data-open] > span:first-child { transform: none; }
+.subChip.subChip[data-open] > span:last-child { transform: rotate(180deg); }
