@@ -641,12 +641,59 @@ export function TodayModern({ state, today, commit, navigate, inspect, options, 
     </div>
   )
 
-  const addRow = (label: string, onClick?: () => void) => onClick ? (
-    <button type="button" className={styles.addRow} onClick={onClick}>
-      <Icon name="add" size={20} filled={false} />
-      <span>{label}</span>
-    </button>
-  ) : null
+  /* Adicionar no próprio lugar: abre uma linha em branco onde o clique aconteceu.
+     Enter cria o item e deixa a linha pronta para o próximo; clicar no item criado abre os detalhes. */
+  const [inlineAdd, setInlineAdd] = useState('')
+  const [inlineTitle, setInlineTitle] = useState('')
+  const closeInline = () => { setInlineAdd(''); setInlineTitle('') }
+  const createInline = (kind: 'task' | 'event', projectId: string) => {
+    const name = inlineTitle.trim()
+    if (!name) return
+    if (kind === 'task') {
+      const task: Row = {
+        id: uid('t'), titulo: name, descricao: '', data_vencimento: day, prioridade: 4, concluida: false,
+        projeto_id: projectId || 'entrada', parent_id: '', secao: '', criado_em: new Date().toISOString(), ordem: Date.now(),
+        notas: [], anexos: [], subtarefas: [], lembretes: [], etiquetas: [], repeticao: '', ocultar_agenda: false,
+      }
+      commit(current => ({ ...current, tasks: [...current.tasks, task as (typeof current.tasks)[number]] }))
+    } else {
+      const eventRow: Row = {
+        id: uid('local-event'), tipo: 'local', titulo: name, descricao: '',
+        data_inicio: day, hora_inicio: '', hora_fim: '', dia_inteiro: true, local: '', categoria: '', categoria_cor: '#6f8168',
+        categoria_icone: 'calendar', repeticao: '', lembretes: [], anexos: [], cor: '#6f8168',
+      }
+      commit(current => ({ ...current, events: [...rows(current.events), eventRow] }))
+    }
+    setInlineTitle('')
+  }
+  const addRow = (label: string, kind: 'task' | 'event', projectId = '') => {
+    const key = `${kind}:${projectId}`
+    if (inlineAdd === key) {
+      return (
+        <div className={styles.inlineAdd}>
+          <span className={styles.inlineCircle} aria-hidden="true" />
+          <input
+            autoFocus
+            className={styles.inlineInput}
+            value={inlineTitle}
+            placeholder={kind === 'task' ? 'Nome da tarefa' : 'Nome do compromisso'}
+            onChange={event => setInlineTitle(event.target.value)}
+            onKeyDown={event => {
+              if (event.key === 'Enter') { event.preventDefault(); createInline(kind, projectId) }
+              if (event.key === 'Escape') closeInline()
+            }}
+            onBlur={() => { if (inlineTitle.trim()) createInline(kind, projectId); closeInline() }}
+          />
+        </div>
+      )
+    }
+    return (
+      <button type="button" className={styles.addRow} onClick={() => { setInlineAdd(key); setInlineTitle('') }}>
+        <Icon name="add" size={20} filled={false} />
+        <span>{label}</span>
+      </button>
+    )
+  }
 
   const renderTask = (task: Row) => {
     const due = dateKey(task.data_vencimento)
@@ -786,7 +833,7 @@ export function TodayModern({ state, today, commit, navigate, inspect, options, 
         {!collapsed.has('appointments') ? (
           <>
             {events.length ? <AgendaStrip items={events} nowMinutes={isToday && clockIsToday ? nowMinutes : null} isPassed={eventPassed} onOpen={inspectPlanner} onToggle={toggleEventDone} bind={item => quick.bind(() => eventMenu(item))} /> : <div className={styles.empty}>{isToday ? 'Nada na agenda hoje.' : 'Nada na agenda neste dia.'}</div>}
-            {addRow('Adicionar compromisso', onAddEvent)}
+            {addRow('Adicionar compromisso', 'event')}
           </>
         ) : null}
       </section>
@@ -806,7 +853,7 @@ export function TodayModern({ state, today, commit, navigate, inspect, options, 
                 {!collapsed.has(`p:${group.id}`) ? (
                   <>
                     <div role="list" className={styles.items}>{group.items.map(task => renderTask(task))}</div>
-                    {addRow('Adicionar tarefa', onAddTask ? () => onAddTask(group.id) : undefined)}
+                    {addRow('Adicionar tarefa', 'task', group.id)}
                   </>
                 ) : null}
               </section>
@@ -815,7 +862,7 @@ export function TodayModern({ state, today, commit, navigate, inspect, options, 
         ) : (
           <>
             <div className={styles.empty}>{isToday ? 'Nada pendente para hoje.' : 'Nenhuma tarefa neste dia.'}</div>
-            {addRow('Adicionar tarefa', onAddTask ? () => onAddTask() : undefined)}
+            {addRow('Adicionar tarefa', 'task')}
           </>
         )}
       </section>
