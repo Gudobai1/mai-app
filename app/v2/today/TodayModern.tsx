@@ -671,6 +671,7 @@ export function TodayModern({ state, today, commit, navigate, inspect, options, 
             {when ? <span className={`${styles.dateTag} ${late ? styles.dateLate : due === today ? styles.dateToday : ''}`}><Icon name="calendar_today" size={14} filled={false} />{when}</span> : null}
             {children.length ? (
               <button type="button" className={styles.subChip} data-open={expanded || undefined} onClick={event => { event.stopPropagation(); toggleSubs(taskId) }} aria-expanded={expanded} title={`${children.filter(child => child.concluida).length}/${children.length} subtarefas`} aria-label={`${expanded ? 'Esconder' : 'Mostrar'} subtarefas de ${title} (${children.filter(child => child.concluida).length} de ${children.length} concluídas)`}>
+                <span>{children.filter(child => child.concluida).length}/{children.length}</span>
                 <Icon name="expand_more" size={20} filled={false} />
               </button>
             ) : null}
