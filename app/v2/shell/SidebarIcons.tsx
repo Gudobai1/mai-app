@@ -103,6 +103,10 @@ const SPECS: Record<string, Spec> = {
       </>
     ),
   },
+  inbox: {
+    color: 'var(--ds-muted)',
+    node: () => (<><path d="M4 13.5l2.2-7.2A2 2 0 0 1 8.1 5h7.8a2 2 0 0 1 1.9 1.3L20 13.5" /><path d="M4 13.5V18a1.5 1.5 0 0 0 1.5 1.5h13A1.5 1.5 0 0 0 20 18v-4.5h-4.2a3.8 3.8 0 0 1-7.6 0H4z" /></>),
+  },
   settings: {
     color: 'var(--ds-muted)',
     node: () => (<><path d={GEAR} /><circle cx="12" cy="12" r="3" /></>),

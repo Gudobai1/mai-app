@@ -60,6 +60,8 @@ export function ModernSidebar({ state, today, view, navigate, onSearch, onSettin
   const childrenOf = (id: string) => projects.filter(project => String(project.parent_id || '') === id)
   const openCount = (id: string) => state.tasks.filter(task => !task.concluida && !task.parent_id && String(task.projeto_id || '') === id).length
 
+  const inboxCount = state.tasks.filter(task => !task.concluida && !task.parent_id && (!String(task.projeto_id || '') || String(task.projeto_id) === 'entrada')).length
+
   const toggle = (id: string) => setOpen(current => {
     const next = new Set(current)
     if (next.has(id)) next.delete(id)
@@ -158,6 +160,15 @@ export function ModernSidebar({ state, today, view, navigate, onSearch, onSettin
         </div>
         <div className={styles.group}>
           <div className={styles.groupLabel}>Projetos</div>
+          <div className={styles.projectBlock}>
+            <div className={styles.projectRow} data-active={(view === 'tasks' && activeProjectId === 'entrada') || undefined}>
+              <button type="button" className={styles.projectButton} aria-current={view === 'tasks' && activeProjectId === 'entrada' ? 'page' : undefined} onClick={() => navigate('inbox' as AppView)}>
+                <SidebarIcon name="inbox" />
+                <span className={styles.itemLabel}>Entrada</span>
+                {inboxCount ? <span className={styles.projectCount}>{inboxCount}</span> : null}
+              </button>
+            </div>
+          </div>
           {roots.map(project => renderProject(project))}
           {onNewProject ? (
             <button type="button" className={styles.addProject} onClick={() => onNewProject()}>
