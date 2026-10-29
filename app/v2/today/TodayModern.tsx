@@ -912,8 +912,7 @@ export function TodayModern({ state, today, commit, navigate, inspect, options, 
             {financeMode !== 'summary' ? (
               transactions.length ? (
                 <>
-                  {lateTransactions.length ? <><div className={styles.subLabel}>Atrasados <span>{lateTransactions.length}</span></div><div role="list" className={styles.items}>{lateTransactions.map(renderTransaction)}</div></> : null}
-                  {dayTransactions.length ? <><div className={styles.subLabel}>{isToday ? 'Hoje' : 'Contas do dia'} <span>{dayTransactions.length}</span></div><div role="list" className={styles.items}>{dayTransactions.map(renderTransaction)}</div></> : null}
+                  <div role="list" className={styles.items}>{[...lateTransactions, ...dayTransactions].map(renderTransaction)}</div>
                 </>
               ) : financeMode === 'bills' ? <div className={styles.empty}>Nenhuma conta {isToday ? 'hoje' : 'neste dia'}.</div> : null
             ) : null}
