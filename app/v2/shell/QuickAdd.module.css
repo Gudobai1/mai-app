@@ -263,3 +263,9 @@
 .ghost.ghost, .primary.primary { height: 36px; border-radius: 8px; }
 .ghost.ghost { border: 1px solid var(--ds-line); color: var(--ds-text); }
 .ghost.ghost:hover { background: transparent; border-color: var(--ds-line-strong); }
+
+/* Adicionar no próprio lugar (dentro das listas) */
+.inlineWrap { display: block; margin: 6px 0 10px; font-family: var(--ds-font); color: var(--ds-text); }
+.inlinePanel { display: flex; flex-direction: column; gap: 4px; padding: 10px 12px; box-sizing: border-box; border: 1px solid var(--ds-line-strong); border-radius: 10px; background: var(--ds-bg); }
+.inlinePanel .title { font-size: 16px; }
+.inlinePanel .description { min-height: 36px; font-size: 13px; }
