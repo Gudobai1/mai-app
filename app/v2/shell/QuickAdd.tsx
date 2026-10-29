@@ -79,7 +79,7 @@ const plusHour = (time: string) => {
   return `${String(Math.min(23, h + 1)).padStart(2, '0')}:${String(m || 0).padStart(2, '0')}`
 }
 
-type Picker = '' | 'date' | 'priority' | 'project' | 'section' | 'repeat' | 'start' | 'end' | 'category'
+type Picker = '' | 'ftype' | 'account' | 'date' | 'priority' | 'project' | 'section' | 'repeat' | 'start' | 'end' | 'category'
 
 export function QuickAdd({ kinds, initial, state, today, defaultProjectId, defaultDate, commit, onFinance, onClose, inline }: Props) {
   const [kind, setKind] = useState<QuickAddKind>(initial)
@@ -95,11 +95,15 @@ export function QuickAdd({ kinds, initial, state, today, defaultProjectId, defau
   const [end, setEnd] = useState('10:00')
   const [place, setPlace] = useState('')
   const [category, setCategory] = useState<EventCategory | null>(null)
+  const [amount, setAmount] = useState('')
+  const [finType, setFinType] = useState<'despesa' | 'receita'>('despesa')
+  const [accountId, setAccountId] = useState('')
   const [picker, setPicker] = useState<Picker>('')
   const anchor = useRef<HTMLElement | null>(null)
   const open = (which: Picker) => (event: ReactMouseEvent<HTMLElement>) => { anchor.current = event.currentTarget; setPicker(which) }
 
   const projects = rows(state.projects).filter(item => item.ativo !== false)
+  const accounts = rows((state.finance as Row | undefined)?.accounts)
   const project = projects.find(item => String(item.id) === projectId)
   const sections = project ? rows(project.secoes).map(String) : []
 
@@ -113,7 +117,7 @@ export function QuickAdd({ kinds, initial, state, today, defaultProjectId, defau
   }, [onClose])
 
   const switchKind = (next: QuickAddKind) => {
-    if (next === 'finance') { onClose(); onFinance(); return }
+    if (next === 'finance' && !inline) { onClose(); onFinance(); return }
     if (next === kind) return
     setKind(next)
     setPicker('')
@@ -123,7 +127,14 @@ export function QuickAdd({ kinds, initial, state, today, defaultProjectId, defau
   const submit = () => {
     const name = title.trim()
     if (!name) return
-    if (kind === 'task') {
+    if (kind === 'finance') {
+      const value = Math.abs(Number(String(amount).replace(',', '.')) || 0)
+      const entry: Row = {
+        id: uid('fin'), titulo: name, observacao: '', valor: value, valor_pago: 0, tipo: finType, data: date || today, status: 'pendente',
+        categoria: '', conta_id: accountId, cartao_id: '', anexos: [], pagamentos: [], ignorar_calculo: false, recorrencia: 'unico',
+      }
+      commit(current => ({ ...current, finance: { ...current.finance, transactions: [entry, ...rows(current.finance.transactions)] } }))
+    } else if (kind === 'task') {
       const task: Row = {
         id: uid('t'), titulo: name, descricao: description.trim(), data_vencimento: date, prioridade: priority, concluida: false,
         projeto_id: projectId, parent_id: '', secao: section, criado_em: new Date().toISOString(), ordem: Date.now(),
@@ -167,19 +178,36 @@ export function QuickAdd({ kinds, initial, state, today, defaultProjectId, defau
             autoFocus
             className={styles.title}
             value={title}
-            placeholder={kind === 'task' ? 'Nome da tarefa' : 'Nome do compromisso'}
+            placeholder={kind === 'task' ? 'Nome da tarefa' : kind === 'finance' ? 'Nome do lançamento' : 'Nome do compromisso'}
             enterKeyHint="done"
             onChange={event => setTitle(event.target.value)}
             onKeyDown={event => { if (event.key === 'Enter') { event.preventDefault(); submit() } }}
           />
-          <textarea className={styles.description} value={description} rows={2} placeholder="Descrição" onChange={event => setDescription(event.target.value)} />
+          {inline ? null : <textarea className={styles.description} value={description} rows={2} placeholder="Descrição" onChange={event => setDescription(event.target.value)} />}
+          {kind === 'finance' ? (
+            <label className={styles.place}>
+              <Icon name="payments" size={16} filled={false} />
+              <input value={amount} inputMode="decimal" placeholder="Valor (R$)" onChange={event => setAmount(event.target.value)} />
+            </label>
+          ) : null}
 
           <div className={styles.chips}>
             <button type="button" className={styles.chip} data-set={date || undefined} data-late={(kind === 'task' && date && date < today) || undefined} onClick={open('date')}>
-              <Icon name="event" size={16} filled={false} />{naturalDate(kind === 'event' ? eventDate : date, today)}
+              <Icon name="event" size={16} filled={false} />{naturalDate(kind === 'event' ? eventDate : kind === 'finance' ? (date || today) : date, today)}
             </button>
 
-            {kind === 'task' ? (
+            {kind === 'finance' ? (
+              <>
+                <button type="button" className={styles.chip} data-set style={{ '--chip-color': finType === 'receita' ? 'var(--ds-success)' : 'var(--ds-danger)' } as CSSProperties} onClick={open('ftype')}>
+                  <Icon name={finType === 'receita' ? 'trending_up' : 'trending_down'} size={16} filled={false} />{finType === 'receita' ? 'Receita' : 'Despesa'}
+                </button>
+                {accounts.length ? (
+                  <button type="button" className={styles.chip} data-set={accountId || undefined} onClick={open('account')}>
+                    <Icon name="account_balance" size={16} filled={false} /><span>{String(accounts.find(item => String(item.id) === accountId)?.nome || 'Conta')}</span>
+                  </button>
+                ) : null}
+              </>
+            ) : kind === 'task' ? (
               <>
                 <button type="button" className={styles.chip} data-set={priority < 4 || undefined} style={PRIORITY_COLOR[priority] ? ({ '--chip-color': PRIORITY_COLOR[priority] } as CSSProperties) : undefined} onClick={open('priority')}>
                   <Icon name="flag" size={16} filled={priority < 4} />{priority < 4 ? PRIORITIES[priority - 1].label : 'Prioridade'}
@@ -211,9 +239,11 @@ export function QuickAdd({ kinds, initial, state, today, defaultProjectId, defau
               </>
             )}
 
-            <button type="button" className={styles.chip} data-set={repeat || undefined} onClick={open('repeat')}>
-              <Icon name="repeat" size={16} filled={false} />{repeatLabel}
-            </button>
+            {kind === 'finance' ? null : (
+              <button type="button" className={styles.chip} data-set={repeat || undefined} onClick={open('repeat')}>
+                <Icon name="repeat" size={16} filled={false} />{repeatLabel}
+              </button>
+            )}
           </div>
 
           {kind === 'event' ? (
@@ -226,13 +256,23 @@ export function QuickAdd({ kinds, initial, state, today, defaultProjectId, defau
 
         <div className={styles.footer}>
           <button type="button" className={styles.ghost} onClick={onClose}>Cancelar</button>
-          <button type="button" className={styles.primary} disabled={!title.trim()} onClick={submit}>{kind === 'task' ? 'Adicionar tarefa' : 'Adicionar compromisso'}</button>
+          <button type="button" className={styles.primary} disabled={!title.trim()} onClick={submit}>{kind === 'task' ? 'Adicionar tarefa' : kind === 'finance' ? 'Adicionar lançamento' : 'Adicionar compromisso'}</button>
         </div>
       </div>
 
       {picker === 'date' ? (
         <Floating anchor={anchor} title="Data" width={300} onClose={() => setPicker('')}>
-          <DatePicker value={kind === 'event' ? eventDate : date} today={today} allowEmpty={kind === 'task'} onSelect={value => done(() => setDate(value))} />
+          <DatePicker value={kind === 'event' ? eventDate : kind === 'finance' ? (date || today) : date} today={today} allowEmpty={kind === 'task'} onSelect={value => done(() => setDate(value))} />
+        </Floating>
+      ) : null}
+      {picker === 'ftype' ? (
+        <Floating anchor={anchor} title="Tipo" width={220} onClose={() => setPicker('')}>
+          <OptionList options={[{ value: 'despesa', label: 'Despesa', icon: 'trending_down', color: 'var(--ds-danger)' }, { value: 'receita', label: 'Receita', icon: 'trending_up', color: 'var(--ds-success)' }]} value={finType} onSelect={value => done(() => setFinType(value === 'receita' ? 'receita' : 'despesa'))} />
+        </Floating>
+      ) : null}
+      {picker === 'account' ? (
+        <Floating anchor={anchor} title="Conta" width={240} onClose={() => setPicker('')}>
+          <OptionList options={[{ value: '', label: 'Sem conta', icon: 'horizontal_rule' }, ...accounts.map(item => ({ value: String(item.id), label: String(item.nome || 'Conta'), icon: 'account_balance' }))]} value={accountId} onSelect={value => done(() => setAccountId(value))} />
         </Floating>
       ) : null}
       {picker === 'priority' ? (
