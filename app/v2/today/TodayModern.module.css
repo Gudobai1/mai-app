@@ -2065,3 +2065,9 @@
 .options :global(.mai-app-topbar-menu-button[data-active='true']),
 .options :global(.mai-app-topbar-menu-button[aria-expanded='true']) { color: var(--ds-accent) !important; }
 .options :global(.mai-app-topbar-menu-button) :global(.material-symbols-rounded) { font-variation-settings: 'FILL' 0, 'wght' 300 !important; }
+
+/* Adicionar no lugar: linha em branco com campo de texto */
+.inlineAdd { display: flex; align-items: center; gap: 10px; padding: 8px 0 10px; border-bottom: 1px solid var(--ds-line); }
+.inlineCircle { width: 18px; height: 18px; flex-shrink: 0; box-sizing: border-box; border: 1.5px solid var(--ds-line-strong); border-radius: 50%; }
+.inlineInput { flex: 1; min-width: 0; padding: 4px 0; border: 0; outline: 0; background: transparent; color: var(--ds-text); font: inherit; font-size: 15px; }
+.inlineInput::placeholder { color: var(--ds-muted); }
