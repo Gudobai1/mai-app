@@ -670,10 +670,8 @@ export function TodayModern({ state, today, commit, navigate, inspect, options, 
           <div className={styles.taskMeta}>
             {when ? <span className={`${styles.dateTag} ${late ? styles.dateLate : due === today ? styles.dateToday : ''}`}><Icon name="calendar_today" size={14} filled={false} />{when}</span> : null}
             {children.length ? (
-              <button type="button" className={styles.subChip} data-open={expanded || undefined} onClick={event => { event.stopPropagation(); toggleSubs(taskId) }} aria-expanded={expanded} aria-label={`${expanded ? 'Esconder' : 'Mostrar'} subtarefas de ${title}`}>
-                <Icon name="account_tree" size={16} filled={false} />
-                <span>{children.filter(child => child.concluida).length}/{children.length}</span>
-                <Icon name="expand_more" size={18} filled={false} />
+              <button type="button" className={styles.subChip} data-open={expanded || undefined} onClick={event => { event.stopPropagation(); toggleSubs(taskId) }} aria-expanded={expanded} title={`${children.filter(child => child.concluida).length}/${children.length} subtarefas`} aria-label={`${expanded ? 'Esconder' : 'Mostrar'} subtarefas de ${title} (${children.filter(child => child.concluida).length} de ${children.length} concluídas)`}>
+                <Icon name="expand_more" size={20} filled={false} />
               </button>
             ) : null}
             <span className={styles.projLabel}>{projectLabel}<b style={{ color: projectColor(task.projeto_id) }}>#</b></span>
