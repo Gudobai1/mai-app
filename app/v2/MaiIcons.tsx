@@ -38,7 +38,6 @@ const aliases: Record<string, string> = {
   goals: 'target',
   notes: 'description',
   finance: 'account_balance_wallet',
-  health: 'favorite',
   files: 'folder',
   chevron: 'chevron_right',
   close: 'close',

@@ -42,7 +42,7 @@ export const NAV_GROUPS: NavGroup[] = [
 ]
 
 /** Telas que não têm item próprio no menu e acendem o de outra. */
-export const NAV_ALIAS: Partial<Record<AppView, AppView>> = { health: 'habits', agenda: 'upcoming' }
+export const NAV_ALIAS: Partial<Record<AppView, AppView>> = { agenda: 'upcoming' }
 
 /** Tarefas abertas que vencem hoje ou já venceram (só tarefas principais). */
 export function todayCounts(state: MaiState, today: string) {

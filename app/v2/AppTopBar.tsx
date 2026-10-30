@@ -68,12 +68,12 @@ export function AppTopBar({ state, today, view, taskScope, commit, onTaskScopeCh
   const upcomingOccurrence = upcomingFilters.occurrenceMode && typeof upcomingFilters.occurrenceMode === 'object' ? { ...occurrenceDefaults, ...upcomingFilters.occurrenceMode } : occurrenceDefaults
 
   const defaultSort: Partial<Record<AppView,string>> = {
-    today:'overdue', upcoming:'time', completed:'recent', tasks:'manual', habits:'name', goals:'date', notes:'recent', finance:'date_desc', health:'recent', files:'name'
+    today:'overdue', upcoming:'time', completed:'recent', tasks:'manual', habits:'name', goals:'date', notes:'recent', finance:'date_desc', files:'name'
   }
   const sortMode = String(control.sort || defaultSort[view] || 'manual')
   const layoutMode = control.layout === 'kanban' ? 'kanban' : 'normal'
   const activeProject = taskScope.startsWith('project:') ? projects.find(project => String(project.id) === taskScope.slice(8)) : null
-  const titleMap: Partial<Record<AppView,string>> = { today:'Hoje', upcoming:'Em breve', completed:'Concluídos', tasks:'Tarefas', habits:'Hábitos', goals:'Metas', notes:'Notas', finance:'Finanças', health:'Bem-estar', files:'Arquivos' }
+  const titleMap: Partial<Record<AppView,string>> = { today:'Hoje', upcoming:'Em breve', completed:'Concluídos', tasks:'Tarefas', habits:'Hábitos', goals:'Metas', notes:'Notas', finance:'Finanças', files:'Arquivos' }
   const title = titleMap[view] || 'MAI'
   const dayLabel = new Date(`${today}T12:00:00`).toLocaleDateString('pt-BR', { weekday:'short', day:'numeric', month:'short' }).replace('.', '')
   const overdueTasks = activeTasks.filter(task => dateKey(task.data_vencimento) && dateKey(task.data_vencimento) < today).length
@@ -87,7 +87,6 @@ export function AppTopBar({ state, today, view, taskScope, commit, onTaskScopeCh
   if (view === 'goals') info = `${goals.filter(goal => goal.concluida !== true && !String(goal.status || '').toLocaleLowerCase('pt-BR').includes('conclu')).length} em andamento`
   if (view === 'notes') info = `${notes.length} nota${notes.length === 1 ? '' : 's'}`
   if (view === 'finance') info = `${transactions.length} lançamento${transactions.length === 1 ? '' : 's'}`
-  if (view === 'health') info = areaTabs.health === 'history' ? 'Histórico' : 'Hoje'
   if (view === 'files') info = areaTabs.files === 'grid' ? 'Grade' : 'Lista'
   if (view === 'completed') info = 'Histórico geral'
   if (layoutMode === 'kanban') info = `${info} · Kanban`
@@ -224,11 +223,6 @@ export function AppTopBar({ state, today, view, taskScope, commit, onTaskScopeCh
       <PanelSection title="Classificação"><Choices value={sortMode} onChange={value => patchControl({ sort:value })} items={[{value:'pending_first',label:'Pendentes primeiro'},{value:'date_desc',label:'Recentes'},{value:'date_asc',label:'Antigos'},{value:'value_desc',label:'Maior valor'},{value:'value_asc',label:'Menor valor'},{value:'name',label:'Nome'}]}/></PanelSection>
     </> : null}
 
-    {view === 'health' ? <>
-      <PanelSection title="Filtros"><SelectLine label="Período" value={String(filter.period || '30')} onChange={value => patchFilter({ period:value })}><option value="7">7 dias</option><option value="30">30 dias</option><option value="all">Todo histórico</option></SelectLine></PanelSection>
-      <PanelSection title="Classificação"><Choices value={sortMode} onChange={value => patchControl({ sort:value })} items={[{value:'recent',label:'Recentes'},{value:'oldest',label:'Antigos'}]}/></PanelSection>
-      <PanelSection title="Visualização"><Choices value={areaTabs.health || 'today'} onChange={value => setAreaTab('health', value)} items={[{value:'today',label:'Hoje'},{value:'history',label:'Histórico'}]}/></PanelSection>
-    </> : null}
 
     {view === 'files' ? <>
       <PanelSection title="Filtros"><SelectLine label="Tipo" value={String(filter.kind || 'all')} onChange={value => patchFilter({ kind:value })}><option value="all">Todos</option><option value="folder">Pastas</option><option value="file">Arquivos</option></SelectLine></PanelSection>

@@ -295,29 +295,6 @@
 .weekNavigator > button:nth-child(2), .financeMonth > button:nth-child(2) { min-width: 190px; border: 0; background: transparent; }
 .weekNavigator strong, .financeMonth strong { display: block; font-size: 12px; }
 .weekNavigator small, .financeMonth small { display: block; color: var(--faint); font-size: 8px; }
-.habitGrid { width: 100%; overflow-x: auto; border: 1px solid var(--line); border-radius: 13px; background: var(--bg-card); }
-.habitGrid > header, .habitRow { min-width: 790px; display: grid; grid-template-columns: minmax(210px,1fr) repeat(7,58px) 38px; align-items: center; gap: 3px; }
-.habitGrid > header { min-height: 58px; padding: 0 9px; border-bottom: 1px solid var(--line); background: var(--bg-soft); }
-.habitGrid > header > div strong, .habitGrid > header > div small { display: block; }
-.habitGrid > header > div strong { font-size: 10px; }
-.habitGrid > header > div small { color: var(--faint); font-size: 8px; }
-.habitGrid > header > span { text-align: center; }
-.habitGrid > header > span small, .habitGrid > header > span b { display: block; }
-.habitGrid > header > span small { color: var(--faint); font-size: 8px; text-transform: capitalize; }
-.habitGrid > header > span b { margin-top: 2px; font-size: 11px; }
-.habitGrid > header > span[data-today="true"] b { color: var(--accent); }
-.habitRow { min-height: 66px; padding: 0 9px; border-bottom: 1px solid var(--line); }
-.habitRow:last-child { border-bottom: 0; }
-.habitIdentity { min-width: 0; display: grid; grid-template-columns: 34px minmax(0,1fr); align-items: center; gap: 9px; border: 0; background: transparent; text-align: left; }
-.habitIdentity > i { width: 32px; height: 32px; display: grid; place-items: center; border-radius: 9px; color: #fff; font-style: normal; }
-.habitIdentity > i span { font-size: 17px; }
-.habitIdentity strong, .habitIdentity small { display: block; }
-.habitIdentity strong { font-size: 11px; }
-.habitIdentity small { margin-top: 2px; color: var(--muted); font-size: 8px; }
-.habitCheck { width: 27px; height: 27px; justify-self: center; padding: 0; border: 1px solid var(--line-strong); border-radius: 50%; background: transparent; color: #fff; font-size: 10px; }
-.habitCheck:disabled { opacity: .2; cursor: default; }
-.habitCheck[data-partial="true"] { color: var(--text); }
-.habitCheck small { font-size: 7px; }
 .rowMenuButton { width: 30px; height: 30px; border: 0; border-radius: 8px; background: transparent; color: var(--muted); }
 .rowMenuButton:hover { background: var(--bg-hover); }
 .areaForm { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 18px; }
@@ -352,10 +329,6 @@
 .performanceBars > div { display: grid; grid-template-columns: 36px minmax(0,1fr) 36px; align-items: center; gap: 8px; font-size: 9px; }
 .performanceBars i, .reportBarRow > i { height: 7px; border-radius: 8px; background: var(--bg-hover); overflow: hidden; }
 .performanceBars i b, .reportBarRow > i b { display: block; height: 100%; border-radius: inherit; background: var(--accent); }
-.monthHabitGrid { display: grid; grid-template-columns: repeat(7,1fr); gap: 5px; }
-.monthHabitGrid small { text-align: center; color: var(--faint); font-size: 8px; }
-.monthHabitGrid button { aspect-ratio: 1.25; border: 1px solid var(--line); border-radius: 7px; background: transparent; font-size: 9px; }
-.monthHabitGrid button[data-done="true"] { color: #fff; border-color: transparent; }
 .historyList > div { display: flex; justify-content: space-between; gap: 10px; padding: 7px 0; border-bottom: 1px solid var(--line); font-size: 9px; }
 .historyList > div:last-child { border-bottom: 0; }
 
@@ -719,7 +692,6 @@
   .span2 { grid-column: auto; }
   .areaForm > footer { grid-column: auto; }
   .iconPicker { grid-template-columns: repeat(5,1fr); }
-  .habitGrid > header, .habitRow { grid-template-columns: minmax(180px,1fr) repeat(7,48px) 34px; }
   .goalGrid { grid-template-columns: 1fr; }
   .notesGrid { grid-template-columns: 1fr; }
   .noteSize_largo, .noteSize_grande { grid-column: auto; grid-row: auto; min-height: 210px; }

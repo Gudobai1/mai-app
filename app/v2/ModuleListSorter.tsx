@@ -197,7 +197,7 @@ export function ModuleListSorter() {
       root.querySelectorAll<HTMLElement>('.mai-item-row-v2').forEach(row => { if (row.parentElement) parents.add(row.parentElement) })
       parents.forEach(parent => sortChildren(parent, mode, state, view, today, '.mai-item-row-v2'))
 
-      root.querySelectorAll<HTMLElement>('.mai-v3-file-list,.mai-v3-file-grid,.mai-v3-health-history,.mai-v3-finance-rows,.mai-v3-report-list,.mai-v3-account-list,.mai-v3-card-list').forEach(parent => sortChildren(parent, mode, state, view, today, 'button,article'))
+      root.querySelectorAll<HTMLElement>('.mai-v3-file-list,.mai-v3-file-grid,.mai-v3-finance-rows,.mai-v3-report-list,.mai-v3-account-list,.mai-v3-card-list').forEach(parent => sortChildren(parent, mode, state, view, today, 'button,article'))
       root.querySelectorAll<HTMLElement>('.mai-v3-week-grid').forEach(parent => sortChildren(parent, mode, state, view, today, 'div'))
       sortCompletedDays(root, mode, state, view, today)
     }
