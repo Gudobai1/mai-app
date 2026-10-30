@@ -1,9 +1,10 @@
+import { PALETTE } from './palette'
 import { stateRows, type MaiState } from './state-model'
 
 /** Categoria de compromisso: nome + cor. A lista fica salva em configs.categoriasEvento. */
 export type EventCategory = { nome: string; cor: string }
 
-export const EVENT_CATEGORY_COLORS = ['#3B82F6', '#A78BFA', '#2DD4BF', '#F59E0B', '#EF4444', '#EC4899', '#10B981', '#64748B']
+export const EVENT_CATEGORY_COLORS = PALETTE.map(item => item.color)
 
 const clean = (value: unknown) => String(value ?? '').trim()
 

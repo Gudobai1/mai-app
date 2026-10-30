@@ -1,5 +1,6 @@
 'use client'
 
+import { ColorField } from './detail/ColorField'
 import { FormEvent, useEffect, useMemo, useRef, useState } from 'react'
 import type { MaiState } from '../../lib/v2/state'
 import { MaiIcon } from './MaiIcons'
@@ -233,7 +234,7 @@ export function ContextDrawer({ item, state, today, commit, googleRpc, refreshEv
         <label className="mai-v3-switch-field"><span>Dia inteiro</span><input type="checkbox" checked={draft.dia_inteiro === true} onChange={e => set({ dia_inteiro: e.target.checked })} /></label>
         {!draft.dia_inteiro ? <label><span>Horário · duração</span><div className="mai-v3-time-duration"><input type="time" value={draft.hora_inicio || ''} onChange={e => set({ hora_inicio: e.target.value })} /><i>·</i><select value={Number(draft._duracao || 60)} onChange={e => set({ _duracao: Number(e.target.value) })}><option value={15}>15 min</option><option value={30}>30 min</option><option value={45}>45 min</option><option value={60}>1 h</option><option value={90}>1 h 30</option><option value={120}>2 h</option></select></div></label> : null}
         <label><span>Local</span><input value={draft.local || ''} onChange={e => set({ local: e.target.value })} /></label>
-        <label><span>Categoria</span><div className="mai-v3-category-field"><input type="color" value={draft.categoria_cor || draft.cor || '#6f8168'} onChange={e => set({ categoria_cor: e.target.value, cor: e.target.value })} /><input value={draft.categoria || ''} placeholder="Sem categoria" onChange={e => set({ categoria: e.target.value })} /></div></label>
+        <label><span>Categoria</span><div className="mai-v3-category-field"><ColorField value={draft.categoria_cor || draft.cor || '#4073FF'} onChange={color => set({ categoria_cor: color, cor: color })} /><input value={draft.categoria || ''} placeholder="Sem categoria" onChange={e => set({ categoria: e.target.value })} /></div></label>
         <label><span>Repetir</span><select value={draft.repeticao || ''} onChange={e => set({ repeticao: e.target.value })}><option value="">Não repetir</option><option value="diariamente">Todos os dias</option><option value="semanalmente">Toda semana</option><option value="semanal:1,2,3,4,5">Dias úteis</option><option value="mensalmente">Todo mês</option></select></label>
         <section className="mai-v3-context-section"><span className="mai-v3-context-label">Observações</span><textarea rows={5} value={draft.descricao || ''} onChange={e => set({ descricao: e.target.value })} /></section>
         <section className="mai-v3-context-section"><div className="mai-v3-context-section-head"><strong>Lembretes</strong></div><div className="mai-v3-reminders">{reminders.map(reminder => <button type="button" key={reminder} onClick={() => set({ lembretes: reminders.filter(item => item !== reminder) })}>{reminder} ×</button>)}<select defaultValue="" onChange={event => { addReminder(event.target.value); event.currentTarget.value = '' }}><option value="">+ Adicionar lembrete</option><option value="10m">10 min antes</option><option value="30m">30 min antes</option><option value="1h">1 h antes</option><option value="1d">1 dia antes</option></select></div></section>
