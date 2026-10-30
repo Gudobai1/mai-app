@@ -5,6 +5,8 @@ import type { MaiState } from '../../../lib/v2/state'
 import { Icon } from '../../ds'
 import type { Row } from '../app-types'
 import type { InspectableItem } from '../ContextDrawer'
+import { DEFAULT_COLOR } from '../../../lib/v2/palette'
+import { ColorField } from '../detail/ColorField'
 import { Floating, OptionList, type PickerOption } from '../detail/Pickers'
 import { askConfirm } from '../shell/ConfirmDialog'
 import quick from '../shell/QuickAdd.module.css'
@@ -34,7 +36,6 @@ const failed = (entry?: Row) => entry?.falhou === true || String(entry?.status |
 const longDate = (key: string) => new Date(`${key}T12:00:00`).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' }).replace('.', '')
 const WEEKDAYS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
 const INITIALS = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S']
-const COLORS = ['#1E6FD9', '#058527', '#D1453B', '#A970FF', '#EB8909', '#0E7C8F', '#C2549B', '#6B7280']
 const FREQUENCIES: PickerOption[] = [
   { value: 'diariamente', label: 'Todos os dias', icon: 'today' },
   { value: 'semanal:1,2,3,4,5', label: 'Dias úteis', icon: 'work' },
@@ -73,7 +74,7 @@ function frequencyLabel(habit: Row) {
 }
 
 function blankHabit(today: string): Row {
-  return { id: uid('hab'), nome: '', descricao: '', meta: 1, unidade: '', hora: '', cor_hex: COLORS[0], dias_semana: [0, 1, 2, 3, 4, 5, 6], repeticao: 'diariamente', data_inicio: today, ocultar_agenda: false, ativo: true, criado_em: new Date().toISOString(), anexos: [], _persisted: false }
+  return { id: uid('hab'), nome: '', descricao: '', meta: 1, unidade: '', hora: '', cor_hex: DEFAULT_COLOR, dias_semana: [0, 1, 2, 3, 4, 5, 6], repeticao: 'diariamente', data_inicio: today, ocultar_agenda: false, ativo: true, criado_em: new Date().toISOString(), anexos: [], _persisted: false }
 }
 
 function cleanHabit(snapshot: Row, today: string): Row {
@@ -90,7 +91,7 @@ function cleanHabit(snapshot: Row, today: string): Row {
     days = []
   }
   const { _persisted: _ignored, ...rest } = snapshot
-  return { ...rest, id: rest.id || uid('hab'), nome: String(rest.nome || '').trim(), meta: Math.max(1, Number(rest.meta || 1)), dias_semana: days, repeticao: repeat, data_inicio: dateKey(rest.data_inicio) || today, cor_hex: rest.cor_hex || COLORS[0], anexos: rows(rest.anexos), ativo: true, criado_em: rest.criado_em || new Date().toISOString() }
+  return { ...rest, id: rest.id || uid('hab'), nome: String(rest.nome || '').trim(), meta: Math.max(1, Number(rest.meta || 1)), dias_semana: days, repeticao: repeat, data_inicio: dateKey(rest.data_inicio) || today, cor_hex: rest.cor_hex || DEFAULT_COLOR, anexos: rows(rest.anexos), ativo: true, criado_em: rest.criado_em || new Date().toISOString() }
 }
 
 type Props = {
@@ -229,7 +230,7 @@ export function HabitsModern({ state, today, commit, createRequest }: Props) {
         {visible.length ? (
           <div role="list">
             {visible.map(habit => {
-              const color = String(habit.cor_hex || COLORS[0])
+              const color = String(habit.cor_hex || DEFAULT_COLOR)
               const streak = streakOf(habit)
               const detailText = [target(habit) > 1 || habit.unidade ? `${amountOf(habit, today)} de ${target(habit)}${habit.unidade ? ` ${habit.unidade}` : ''}` : '', String(habit.descricao || '').trim()].filter(Boolean).join(' · ')
               return (
@@ -314,9 +315,8 @@ export function HabitsModern({ state, today, commit, createRequest }: Props) {
 
 function HabitComposer({ today, onCancel, onSave }: { today: string; onCancel: () => void; onSave: (habit: Row) => void }) {
   const [draft, setDraft] = useState<Row>(() => blankHabit(today))
-  const [picker, setPicker] = useState<'' | 'freq' | 'color'>('')
+  const [picker, setPicker] = useState<'' | 'freq'>('')
   const freqRef = useRef<HTMLButtonElement | null>(null)
-  const colorRef = useRef<HTMLButtonElement | null>(null)
   const submit = () => { if (String(draft.nome || '').trim()) onSave(cleanHabit(draft, today)) }
 
   useEffect(() => {
@@ -346,9 +346,7 @@ function HabitComposer({ today, onCancel, onSave }: { today: string; onCancel: (
             <button ref={freqRef} type="button" className={quick.chip} data-set onClick={() => setPicker('freq')}>
               <Icon name="repeat" size={16} filled={false} />{frequencyLabel(draft)}
             </button>
-            <button ref={colorRef} type="button" className={quick.chip} data-set style={{ '--chip-color': String(draft.cor_hex) } as CSSProperties} onClick={() => setPicker('color')}>
-              <span className={styles.swatch} style={{ background: String(draft.cor_hex) }} />Cor
-            </button>
+            <ColorField value={draft.cor_hex} className={quick.chip} onChange={color => setDraft({ ...draft, cor_hex: color })} />
           </div>
         </div>
         <div className={quick.footer}>
@@ -359,13 +357,6 @@ function HabitComposer({ today, onCancel, onSave }: { today: string; onCancel: (
       {picker === 'freq' ? (
         <Floating anchor={freqRef} title="Frequência" width={240} onClose={() => setPicker('')}>
           <OptionList options={FREQUENCIES} value={String(draft.repeticao)} onSelect={value => { setDraft({ ...draft, repeticao: value, dias_semana: value === 'diariamente' ? [0, 1, 2, 3, 4, 5, 6] : nums(value.slice(8).split(',')) }); setPicker('') }} />
-        </Floating>
-      ) : null}
-      {picker === 'color' ? (
-        <Floating anchor={colorRef} title="Cor" width={220} onClose={() => setPicker('')}>
-          <div className={styles.swatches}>
-            {COLORS.map(color => <button key={color} type="button" className={styles.swatchButton} data-active={draft.cor_hex === color || undefined} style={{ background: color }} aria-label={color} onClick={() => { setDraft({ ...draft, cor_hex: color }); setPicker('') }} />)}
-          </div>
         </Floating>
       ) : null}
     </div>
@@ -422,7 +413,7 @@ function HabitDetail({ habit, today, stats, levelOf, progressOf, entries, onTogg
   const [tab, setTab] = useState<'summary' | 'edit'>('summary')
   const [month, setMonth] = useState(today.slice(0, 7))
   const [draft, setDraft] = useState<Row>(() => ({ ...habit, _persisted: true }))
-  const color = String(habit.cor_hex || COLORS[0])
+  const color = String(habit.cor_hex || DEFAULT_COLOR)
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => { if (event.key === 'Escape') onClose() }
@@ -516,9 +507,7 @@ function HabitDetail({ habit, today, stats, levelOf, progressOf, entries, onTogg
 
             <div className={styles.field}>
               <span>Cor</span>
-              <div className={styles.swatches}>
-                {COLORS.map(item => <button key={item} type="button" className={styles.swatchButton} data-active={draft.cor_hex === item || undefined} style={{ background: item }} aria-label={item} onClick={() => setDraft({ ...draft, cor_hex: item })} />)}
-              </div>
+              <ColorField value={draft.cor_hex} onChange={color => setDraft({ ...draft, cor_hex: color })} />
             </div>
 
             <div className={styles.field}>
@@ -591,9 +580,7 @@ function QuickEdit({ habit, today, commit }: { habit: Row; today: string; commit
               <label className={styles.field}><span>Meta</span><input type="number" min="1" step="0.1" value={Number(draft.meta || 1)} onChange={event => setDraft({ ...draft, meta: Number(event.target.value) })} /></label>
               <label className={styles.field}><span>Unidade</span><input value={String(draft.unidade || '')} placeholder="copos…" onChange={event => setDraft({ ...draft, unidade: event.target.value })} /></label>
             </div>
-            <div className={styles.swatches}>
-              {COLORS.map(item => <button key={item} type="button" className={styles.swatchButton} data-active={draft.cor_hex === item || undefined} style={{ background: item }} aria-label={item} onClick={() => setDraft({ ...draft, cor_hex: item })} />)}
-            </div>
+            <ColorField value={draft.cor_hex} onChange={color => setDraft({ ...draft, cor_hex: color })} />
             <OptionList options={FREQUENCIES} value={String(draft.repeticao)} onSelect={value => setDraft({ ...draft, repeticao: value, dias_semana: value === 'diariamente' ? [0, 1, 2, 3, 4, 5, 6] : nums(value.slice(8).split(',')) })} />
           </div>
         </Floating>

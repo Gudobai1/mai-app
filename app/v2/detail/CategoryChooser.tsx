@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { Icon } from '../../ds'
+import { ColorField } from './ColorField'
 import { EVENT_CATEGORY_COLORS, type EventCategory } from '../../../lib/v2/event-categories'
 import { OptionList } from './Pickers'
 import styles from './CategoryChooser.module.css'
@@ -40,11 +41,7 @@ export function CategoryChooser({ categories, value, onSelect, onCreate }: {
           />
           <button type="button" className={styles.add} disabled={!name.trim()} onClick={create} aria-label="Criar categoria"><Icon name="add" size={18} /></button>
         </div>
-        <div className={styles.colors}>
-          {EVENT_CATEGORY_COLORS.map(item => (
-            <button key={item} type="button" className={styles.color} data-active={item === color || undefined} style={{ background: item }} onClick={() => setColor(item)} aria-label={`Cor ${item}`} />
-          ))}
-        </div>
+        <ColorField value={color} onChange={setColor} />
       </div>
     </div>
   )

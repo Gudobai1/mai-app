@@ -1,5 +1,7 @@
 'use client'
 
+import { DEFAULT_COLOR } from '../../../lib/v2/palette'
+import { ColorField } from '../detail/ColorField'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import type { MaiState } from '../../../lib/v2/state'
@@ -26,7 +28,7 @@ type Props = {
 type SectionDraft = { id: string; name: string; original: string }
 
 const rows = (value: unknown): Row[] => (Array.isArray(value) ? (value as Row[]) : [])
-const COLORS = ['#3B82F6', '#8B5CF6', '#EC4899', '#EF4444', '#F97316', '#F59E0B', '#84CC16', '#10B981', '#14B8A6', '#0EA5E9', '#64748B', '#A855F7']
+const COLORS = [DEFAULT_COLOR]
 const ICONS = ['folder', 'work', 'home', 'rocket_launch', 'target', 'school', 'fitness_center', 'payments', 'favorite', 'flight', 'lightbulb', 'inventory_2', 'shopping_cart', 'groups', 'code', 'brush']
 
 function descendants(projects: Row[], rootId: string) {
@@ -278,9 +280,7 @@ export function ProjectEditor({ state, commit, projectId, parentId, initialTab =
 
               <div className={styles.field}>
                 <span className={styles.label}>Cor</span>
-                <div className={styles.colors}>
-                  {COLORS.map(color => <button key={color} type="button" className={styles.color} style={{ background: color }} data-active={String(draft.cor).toLowerCase() === color.toLowerCase() || undefined} onClick={() => setDraft(current => ({ ...current, cor: color }))} aria-label={`Cor ${color}`} />)}
-                </div>
+                <ColorField value={draft.cor} onChange={color => setDraft(current => ({ ...current, cor: color }))} />
               </div>
 
               <div className={styles.field}>
