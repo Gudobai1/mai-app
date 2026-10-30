@@ -1,5 +1,6 @@
 'use client'
 
+import { isDarkMode } from './theme'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { MaiState } from '../../lib/v2/state'
 import { AgendaView } from './AgendaView'
@@ -235,9 +236,9 @@ export function UnifiedAppUx() {
     return () => window.removeEventListener('keydown', onKey)
   }, [view, taskScope])
 
-  const isDark = runtime.state.configs.theme === 'dark'
+  const isDark = isDarkMode(runtime.state.configs.theme)
   function toggleTheme() {
-    runtime.commit(current => ({ ...current, configs: { ...current.configs, theme: current.configs.theme === 'dark' ? 'light' : 'dark' } }))
+    runtime.commit(current => ({ ...current, configs: { ...current.configs, theme: isDarkMode(current.configs.theme) ? 'light' : 'dark' } }))
   }
 
   function setTaskScope(scope: TaskModuleScope) {

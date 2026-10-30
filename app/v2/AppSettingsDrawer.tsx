@@ -3,15 +3,8 @@
 import { useEffect, useRef, type RefObject } from 'react'
 import type { MaiState, SyncStatus } from '../../lib/v2/state'
 import styles from './unified.module.css'
+import { ThemePicker } from './ThemePicker'
 
-const ACCENT_COLORS = [
-  { id: 'blue', label: 'Azul', color: '#2563EB' },
-  { id: 'teal', label: 'Verde-água', color: '#0D9488' },
-  { id: 'green', label: 'Verde', color: '#16A34A' },
-  { id: 'orange', label: 'Laranja', color: '#EA580C' },
-  { id: 'pink', label: 'Rosa', color: '#DB2777' },
-  { id: 'mono', label: 'Preto e branco', color: 'linear-gradient(135deg, #0F1115 50%, #F3F4F7 50%)' },
-] as const
 
 type Calendar = { id: string; nome: string; cor: string; primary?: boolean }
 
@@ -57,8 +50,12 @@ export function AppSettingsDrawer(props: Props) {
   return <div className={styles.modalLayer} onMouseDown={props.onClose}><section className={`${styles.modalCard} ${styles.settingsCard}`} onMouseDown={event => event.stopPropagation()}>
     <header className={styles.modalHeader}><div><h2>Ajustes</h2></div><button onClick={props.onClose}>×</button></header>
     <section><h3>Aparência</h3>
-      <div className={styles.settingsRow}><span><strong>Tema</strong><small>Claro ou escuro</small></span><button onClick={() => props.commit(current => ({ ...current, configs: { ...current.configs, theme: current.configs.theme === 'dark' ? 'light' : 'dark' } }))}>{props.state.configs.theme === 'dark' ? 'Usar claro' : 'Usar escuro'}</button></div>
-      <div className={styles.settingsRow}><span><strong>Cor principal</strong><small>{ACCENT_COLORS.find(item => item.id === String(props.state.configs.accentColor || 'blue'))?.label || 'Azul'}</small></span><div role="radiogroup" aria-label="Cor principal" style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' }}>{ACCENT_COLORS.map(item => { const selected = String(props.state.configs.accentColor || 'blue') === item.id; return <button key={item.id} type="button" role="radio" aria-checked={selected} aria-label={item.label} title={item.label} onClick={() => props.commit(current => ({ ...current, configs: { ...current.configs, accentColor: item.id } }))} style={{ width: 32, height: 32, minWidth: 32, padding: 0, borderRadius: '50%', border: 0, background: item.color, boxShadow: selected ? '0 0 0 2px var(--ds-surface), 0 0 0 4px var(--ds-text)' : 'inset 0 0 0 1px rgba(0,0,0,0.12)', cursor: 'pointer' }} /> })}</div></div>
+      <ThemePicker
+        mode={props.state.configs.theme}
+        theme={props.state.configs.accentColor}
+        onMode={mode => props.commit(current => ({ ...current, configs: { ...current.configs, theme: mode } }))}
+        onTheme={theme => props.commit(current => ({ ...current, configs: { ...current.configs, accentColor: theme } }))}
+      />
       <div className={styles.settingsRow}><span><strong>Notificações</strong><small>Lembretes dos itens com horário</small></span><button onClick={() => void props.requestNotifications()}>{props.state.configs.notificationsEnabled ? 'Desativar' : 'Ativar'}</button></div>
       {props.installPrompt ? <div className={styles.settingsRow}><span><strong>Instalar MAI</strong><small>Usar como aplicativo</small></span><button onClick={() => void props.install()}>Instalar</button></div> : null}
     </section>
