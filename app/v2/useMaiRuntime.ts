@@ -1,5 +1,6 @@
 'use client'
 
+import { isDarkMode, normalizeMode, normalizeTheme } from './theme'
 import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { addDays, plannerItems } from '../../lib/v2/planner'
@@ -98,17 +99,25 @@ export function useMaiRuntime() {
   }, [])
 
   useEffect(() => {
-    document.documentElement.dataset.maiTheme = String(state.configs.theme || 'light')
-    delete document.documentElement.dataset.maiAccent
-    document.documentElement.dataset.maiColor = String(state.configs.accentColor || 'blue')
-    // Barra do navegador/PWA acompanha o tema escolhido no app.
-    let meta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]')
-    if (!meta) {
-      meta = document.createElement('meta')
-      meta.name = 'theme-color'
-      document.head.appendChild(meta)
+    const apply = () => {
+      const dark = isDarkMode(state.configs.theme)
+      document.documentElement.dataset.maiTheme = dark ? 'dark' : 'light'
+      delete document.documentElement.dataset.maiAccent
+      document.documentElement.dataset.maiColor = normalizeTheme(state.configs.accentColor)
+      // Barra do navegador/PWA acompanha o tema escolhido no app.
+      let meta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]')
+      if (!meta) {
+        meta = document.createElement('meta')
+        meta.name = 'theme-color'
+        document.head.appendChild(meta)
+      }
+      meta.content = dark ? '#1E1E1E' : '#FFFFFF'
     }
-    meta.content = state.configs.theme === 'dark' ? '#0D0E12' : '#F4F5F9'
+    apply()
+    if (normalizeMode(state.configs.theme) !== 'system' || typeof window.matchMedia !== 'function') return
+    const query = window.matchMedia('(prefers-color-scheme: dark)')
+    query.addEventListener('change', apply)
+    return () => query.removeEventListener('change', apply)
   }, [state.configs.theme, state.configs.accentColor])
 
   // Regra global de persistência do MAI:
