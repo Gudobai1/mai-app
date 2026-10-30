@@ -23,7 +23,6 @@ const sheetTones: Partial<Record<string, Tone>> = {
   completed: 'mint',
   habits: 'mint',
   goals: 'lilac',
-  health: 'rose',
   notes: 'peach',
   finance: 'sky',
   files: 'accent',

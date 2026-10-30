@@ -1,7 +1,7 @@
 'use client'
 
 import type { MaiState } from '../../lib/v2/state'
-import type { SecondaryView } from './V2Areas'
+import type { SecondaryView } from './app-types'
 import { AgendaView as BaseAgendaView } from './AgendaViewBase'
 import { AgendaParityExtras } from './AgendaParityExtras'
 

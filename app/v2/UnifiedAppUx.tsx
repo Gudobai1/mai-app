@@ -5,7 +5,7 @@ import type { MaiState } from '../../lib/v2/state'
 import { AgendaView } from './AgendaView'
 import { AppSettingsDrawer } from './AppSettingsDrawer'
 import { AppTopBar } from './AppTopBar'
-import type { AppView, TaskModuleScope } from './app-types'
+import type { AppView, SecondaryView, TaskModuleScope } from './app-types'
 import { CompletedV4 } from './CompletedV4'
 import { ItemDetail } from './detail/ItemDetail'
 import { ConfirmHost } from './shell/ConfirmDialog'
@@ -14,16 +14,13 @@ import type { InspectableItem } from './ContextDrawer'
 import { FilesV4 } from './FilesV4'
 import { FinanceV4 } from './FinanceV4'
 import { GoalsV4 } from './GoalsV4'
-import { HabitsV4 } from './HabitsV4'
-import { HealthQuickAddDrawer } from './HealthQuickAddDrawer'
-import { MinimalAreas, type SecondaryView } from './MinimalAreas'
+import { HabitsModern } from './habits/HabitsModern'
 import { NotesV4 } from './NotesV4'
 import { ProjectEditor } from './tasks/ProjectEditor'
 import { QuickCreateDrawer } from './QuickCreateDrawer'
 import { SearchOverlay } from './SearchOverlay'
 import { SectionInlineAdd } from './SectionInlineAdd'
 import { ModernBottomNav } from './shell/ModernBottomNav'
-import { ModuleTabs } from './shell/ModuleTabs'
 import { ModernSidebar } from './shell/ModernSidebar'
 import { TasksModern } from './tasks/TasksModern'
 import { TodayModern } from './today/TodayModern'
@@ -31,7 +28,7 @@ import { EmBreve } from './upcoming/EmBreve'
 import { useMaiRuntime } from './useMaiRuntime'
 import styles from './unified.module.css'
 
-const secondary: SecondaryView[] = ['habits', 'goals', 'notes', 'finance', 'health', 'files']
+const secondary: SecondaryView[] = ['habits', 'goals', 'notes', 'finance', 'files']
 type ProjectDialog = { projectId?: string; parentId?: string; tab?: 'details' | 'sections' } | null
 type CreateState = { kind: 'task' | 'event'; switchable?: boolean } | null
 type GoogleProfile = { name: string; picture?: string; email?: string } | null
@@ -130,19 +127,6 @@ function filteredStateForView(state: MaiState, view: AppView, today: string): Ma
     return { ...state, finance: { ...finance, transactions: filtered } }
   }
 
-  if (view === 'health') {
-    const period = String(filters.period || '30')
-    if (period === 'all') return state
-    const days = Math.max(1, Number(period) || 30)
-    const health = state.health || {}
-    const diary = health.diary && typeof health.diary === 'object' ? health.diary as Record<string, Row> : {}
-    const start = new Date(`${today}T12:00:00`)
-    start.setDate(start.getDate() - (days - 1))
-    const startKey = `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, '0')}-${String(start.getDate()).padStart(2, '0')}`
-    const filteredDiary = Object.fromEntries(Object.entries(diary).filter(([key]) => key >= startKey && key <= today))
-    return { ...state, health: { ...health, diary: filteredDiary } }
-  }
-
   if (view === 'completed') {
     const kind = String(filters.kind || 'all')
     if (kind === 'all') return state
@@ -188,7 +172,6 @@ export function UnifiedAppUx() {
   const [selected, setSelected] = useState<InspectableItem | null>(null)
   const [creating, setCreating] = useState<CreateState>(null)
   const [quickAdd, setQuickAdd] = useState<{ kinds: QuickAddKind[]; initial: QuickAddKind; projectId?: string; date?: string } | null>(null)
-  const [healthCreating, setHealthCreating] = useState(false)
   const [areaCreateRequest, setAreaCreateRequest] = useState('')
   const [googleProfile, setGoogleProfile] = useState<GoogleProfile>(null)
   const taskScope = scopeFromLegacy(runtime.state.configs.taskModuleScope)
@@ -246,7 +229,7 @@ export function UnifiedAppUx() {
       if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') { event.preventDefault(); setSearchOpen(true) }
       if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'z' && !editing) { event.preventDefault(); runtime.undo() }
       if (!event.ctrlKey && !event.metaKey && !event.altKey && event.key.toLowerCase() === 'q' && !editing && view !== 'completed') { event.preventDefault(); contextualAdd() }
-      if (event.key === 'Escape') { setSearchOpen(false); setSettingsOpen(false); setProjectDialog(null); setSelected(null); setCreating(null); setQuickAdd(null); setHealthCreating(false) }
+      if (event.key === 'Escape') { setSearchOpen(false); setSettingsOpen(false); setProjectDialog(null); setSelected(null); setCreating(null); setQuickAdd(null) }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
@@ -283,7 +266,6 @@ export function UnifiedAppUx() {
       setQuickAdd({ kinds: ['task', 'event', 'finance'], initial: wantsEvent ? 'event' : 'task', date: runtime.today })
       return
     }
-    if (type === 'health') { if (view !== 'health') navigate('health'); setHealthCreating(true); return }
     if (secondary.includes(type as SecondaryView)) {
       if (view !== type) navigate(type as SecondaryView)
       setAreaCreateRequest(`${type}:${Date.now()}`)
@@ -332,12 +314,10 @@ export function UnifiedAppUx() {
             onEditProject={id => setProjectDialog({ projectId: id, tab: 'details' })}
             onManageSections={id => setProjectDialog({ projectId: id, tab: 'sections' })}
           /> : null}
-          {view === 'habits' || view === 'health' ? <ModuleTabs tabs={[{ id: 'habits', label: 'Hábitos', icon: 'autorenew' }, { id: 'health', label: 'Bem-estar', icon: 'favorite' }]} view={view} navigate={navigate} /> : null}
-          {view === 'habits' ? <HabitsV4 state={viewState} today={runtime.today} commit={runtime.commit} createRequest={areaCreateRequest} inspect={setSelected}/> : null}
+          {view === 'habits' ? <HabitsModern state={viewState} today={runtime.today} commit={runtime.commit} createRequest={areaCreateRequest} inspect={setSelected}/> : null}
           {view === 'goals' ? <GoalsV4 state={viewState} today={runtime.today} commit={runtime.commit} createRequest={areaCreateRequest} inspect={setSelected}/> : null}
           {view === 'notes' ? <NotesV4 state={viewState} today={runtime.today} commit={runtime.commit} createRequest={areaCreateRequest} inspect={setSelected}/> : null}
           {view === 'finance' ? <FinanceV4 state={viewState} today={runtime.today} commit={runtime.commit} createRequest={areaCreateRequest} inspect={setSelected}/> : null}
-          {view === 'health' ? <MinimalAreas key="health" view="health" state={viewState} today={runtime.today} commit={runtime.commit} googleRpc={moduleGoogleRpc} createRequest={areaCreateRequest} inspect={setSelected} /> : null}
           {view === 'files' ? <FilesV4 state={runtime.state} commit={runtime.commit} createRequest={areaCreateRequest}/> : null}
         </>}
       </div>
@@ -350,7 +330,6 @@ export function UnifiedAppUx() {
     {settingsOpen ? <AppSettingsDrawer state={runtime.state} commit={runtime.commit} onClose={() => setSettingsOpen(false)} googleConnected={runtime.googleConnected} calendars={runtime.calendars} calendarDraft={runtime.calendarDraft} setCalendarDraft={runtime.setCalendarDraft} calendarBusy={runtime.calendarBusy} saveCalendars={runtime.saveCalendars} disconnectGoogle={runtime.disconnectGoogle} requestNotifications={runtime.requestNotifications} installPrompt={runtime.installPrompt} install={runtime.install} exportData={runtime.exportData} importData={runtime.importData} importRef={runtime.importRef} syncStatus={runtime.syncStatus} flushRemoteSync={runtime.flushRemoteSync} logout={runtime.logout} /> : null}
     {quickAdd ? <QuickAdd kinds={quickAdd.kinds} initial={quickAdd.initial} state={runtime.state} today={runtime.today} defaultProjectId={quickAdd.projectId} defaultDate={quickAdd.date} commit={runtime.commit} onFinance={() => addByType('finance')} onClose={() => setQuickAdd(null)} /> : null}
     {creating ? <QuickCreateDrawer kind={creating.kind} allowKindSwitch={creating.switchable} state={runtime.state} today={runtime.today} defaultProjectId={creating.kind === 'task' ? activeProjectId : undefined} defaultDate={view === 'today' || (view === 'tasks' && taskScope === 'today') ? runtime.today : ''} commit={runtime.commit} onClose={() => setCreating(null)} /> : null}
-    {healthCreating ? <HealthQuickAddDrawer state={runtime.state} today={runtime.today} commit={runtime.commit} onClose={() => setHealthCreating(false)}/> : null}
     <ConfirmHost />
     <ItemDetail item={selected} state={runtime.state} today={runtime.today} commit={runtime.commit} googleRpc={runtime.googleRpc} refreshEvents={() => runtime.syncCalendar(runtime.state.configs.calendarios || [])} onClose={() => setSelected(null)} />
   </div>

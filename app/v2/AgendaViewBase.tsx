@@ -4,7 +4,7 @@ import { DragEvent, FormEvent, useEffect, useMemo, useState } from 'react'
 import { addDays, PlannerItem, plannerItems } from '../../lib/v2/planner'
 import { MaiState, nextRepeat } from '../../lib/v2/state'
 import styles from './mai-v2.module.css'
-import type { SecondaryView } from './V2Areas'
+import type { SecondaryView } from './app-types'
 
 type Row = Record<string, any>
 type Mode = 'day' | 'week' | 'month' | 'year'
