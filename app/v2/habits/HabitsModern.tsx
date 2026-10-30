@@ -231,22 +231,9 @@ export function HabitsModern({ state, today, commit, createRequest }: Props) {
             {visible.map(habit => {
               const color = String(habit.cor_hex || COLORS[0])
               const streak = streakOf(habit)
-              const todayLevel = levelOf(habit, today)
-              const due = eligible(habit, today)
               const detailText = [target(habit) > 1 || habit.unidade ? `${amountOf(habit, today)} de ${target(habit)}${habit.unidade ? ` ${habit.unidade}` : ''}` : '', String(habit.descricao || '').trim()].filter(Boolean).join(' · ')
               return (
                 <div key={String(habit.id)} role="listitem" className={styles.row} style={{ '--hc': color } as CSSProperties}>
-                  <button
-                    type="button"
-                    className={styles.ring}
-                    data-level={todayLevel || undefined}
-                    disabled={!due}
-                    style={todayLevel === 'part' ? ({ '--p': progressOf(habit, today) } as CSSProperties) : undefined}
-                    onClick={() => toggleDay(habit, today)}
-                    aria-label={`${todayLevel === 'full' ? 'Desmarcar' : 'Concluir'} ${String(habit.nome)} hoje`}
-                  >
-                    {todayLevel === 'full' ? <Icon name="check" size={14} weight={600} /> : null}
-                  </button>
                   <button type="button" className={styles.body} onClick={() => setDetailId(String(habit.id))}>
                     <span className={styles.title}>{String(habit.nome)}</span>
                     <span className={styles.desc}>{detailText || frequencyLabel(habit)}</span>
@@ -277,6 +264,7 @@ export function HabitsModern({ state, today, commit, createRequest }: Props) {
                   <span className={styles.streak} data-on={streak > 0 || undefined} title={`Sequência de ${streak} ${streak === 1 ? 'dia' : 'dias'}`}>
                     <Icon name="local_fire_department" size={16} />{streak}
                   </span>
+                  <QuickEdit habit={habit} today={today} commit={commit} />
                 </div>
               )
             })}
@@ -459,15 +447,14 @@ function HabitDetail({ habit, today, stats, levelOf, progressOf, entries, onTogg
     onClose()
   }
 
-  const heat = Array.from({ length: 126 }, (_, index) => moveDate(today, index - 125))
   const [year, monthNumber] = month.split('-').map(Number)
   const monthDays = new Date(year, monthNumber, 0).getDate()
   const monthStart = new Date(year, monthNumber - 1, 1).getDay()
-  const perWeekday = WEEKDAYS.map((label, weekday) => {
-    const keys = Array.from({ length: 180 }, (_, index) => moveDate(today, index - 179)).filter(key => eligible(habit, key) && new Date(`${key}T12:00:00`).getDay() === weekday)
-    return { label, rate: percent(keys.filter(key => levelOf(habit, key) === 'full').length, keys.length) }
-  })
-  const history = [...entries].sort((a, b) => dateKey(b.data).localeCompare(dateKey(a.data))).slice(0, 12)
+  const monthKeys = Array.from({ length: monthDays }, (_, index) => `${year}-${String(monthNumber).padStart(2, '0')}-${String(index + 1).padStart(2, '0')}`)
+  const due = monthKeys.filter(key => eligible(habit, key) && key <= today)
+  const doneCount = due.filter(key => levelOf(habit, key) === 'full').length
+  const shiftMonth = (amount: number) => { const next = new Date(year, monthNumber - 1 + amount, 1); setMonth(`${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, '0')}`) }
+  const monthTitle = new Date(year, monthNumber - 1, 1).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
 
   const mode = String(draft.repeticao || 'diariamente').startsWith('intervalo:') ? 'interval' : String(draft.repeticao || '').startsWith('semanal:') && !['semanal:1,2,3,4,5', 'semanal:0,6'].includes(String(draft.repeticao)) ? 'days' : 'daily'
   const draftDays = nums(draft.dias_semana)
@@ -494,50 +481,28 @@ function HabitDetail({ habit, today, stats, levelOf, progressOf, entries, onTogg
 
         {tab === 'summary' ? (
           <div className={styles.panelBody}>
-            <div className={styles.metrics}>
-              <div><span>Sequência atual</span><strong>{stats.current} {stats.current === 1 ? 'dia' : 'dias'}</strong></div>
-              <div><span>Melhor sequência</span><strong>{stats.best} {stats.best === 1 ? 'dia' : 'dias'}</strong></div>
-              <div><span>Últimos 30 dias</span><strong>{stats.rate}%</strong></div>
-              <div><span>Meta</span><strong>{Number(habit.meta || 1)} {String(habit.unidade || '')}</strong></div>
+            <div className={styles.stats}>
+              <div><strong>{stats.current}</strong><span>Sequência</span></div>
+              <div><strong>{stats.best}</strong><span>Melhor</span></div>
+              <div><strong>{stats.rate}%</strong><span>30 dias</span></div>
             </div>
-
-            <h3 className={styles.section}>Últimas 18 semanas</h3>
-            <div className={styles.heat}>
-              {heat.map(day => (
-                <button key={day} type="button" className={styles.heatCell} data-level={levelOf(habit, day) || undefined} data-off={!eligible(habit, day) || undefined} disabled={!eligible(habit, day) || day > today} style={cellStyle(day)} onClick={() => onToggle(day)} title={longDate(day)} aria-label={longDate(day)} />
-              ))}
-            </div>
-
-            <h3 className={styles.section}>Desempenho por dia da semana</h3>
-            <div className={styles.bars}>
-              {perWeekday.map(item => (
-                <div key={item.label}><span>{item.label}</span><i><b style={{ width: `${item.rate}%`, background: color }} /></i><strong>{item.rate}%</strong></div>
-              ))}
-            </div>
-
             <div className={styles.monthHead}>
-              <h3 className={styles.section}>Calendário</h3>
-              <input type="month" value={month} onChange={event => setMonth(event.target.value)} />
+              <button type="button" className={styles.navButton} onClick={() => shiftMonth(-1)} aria-label="Mês anterior"><Icon name="chevron_left" size={20} filled={false} /></button>
+              <div><strong>{monthTitle}</strong><small>{doneCount} de {due.length} {due.length === 1 ? 'dia' : 'dias'} concluídos</small></div>
+              <button type="button" className={styles.navButton} onClick={() => shiftMonth(1)} aria-label="Próximo mês"><Icon name="chevron_right" size={20} filled={false} /></button>
             </div>
             <div className={styles.month}>
               {INITIALS.map((label, index) => <small key={`${label}-${index}`}>{label}</small>)}
               {Array.from({ length: monthStart }, (_, index) => <span key={`gap-${index}`} />)}
-              {Array.from({ length: monthDays }, (_, index) => {
-                const day = `${year}-${String(monthNumber).padStart(2, '0')}-${String(index + 1).padStart(2, '0')}`
-                return <button key={day} type="button" className={styles.monthCell} data-level={levelOf(habit, day) || undefined} disabled={!eligible(habit, day) || day > today} style={cellStyle(day)} onClick={() => onToggle(day)}>{index + 1}</button>
+              {monthKeys.map((day, index) => {
+                const level = levelOf(habit, day)
+                return (
+                  <button key={day} type="button" className={styles.dot} data-level={level || undefined} data-today={day === today || undefined} data-off={!eligible(habit, day) || undefined} disabled={!eligible(habit, day) || day > today} style={level === 'part' ? ({ '--p': progressOf(habit, day) } as CSSProperties) : undefined} onClick={() => onToggle(day)} aria-label={longDate(day)}>
+                    <span className={styles.dayNumber}>{index + 1}</span>
+                  </button>
+                )
               })}
             </div>
-
-            {history.length ? (
-              <>
-                <h3 className={styles.section}>Histórico recente</h3>
-                <div className={styles.history}>
-                  {history.map(item => (
-                    <div key={String(item.id)}><span>{longDate(dateKey(item.data))}</span><strong>{failed(item) ? 'Falha' : `${Number(item.valor || 0)} ${String(habit.unidade || '')}`}</strong></div>
-                  ))}
-                </div>
-              </>
-            ) : null}
           </div>
         ) : (
           <div className={styles.panelBody}>
@@ -592,5 +557,47 @@ function HabitDetail({ habit, today, stats, levelOf, progressOf, entries, onTogg
         )}
       </section>
     </div>
+  )
+}
+
+/* --------------------------------------------------------- Edição rápida */
+
+function QuickEdit({ habit, today, commit }: { habit: Row; today: string; commit: Commit }) {
+  const [open, setOpen] = useState(false)
+  const [draft, setDraft] = useState<Row>(habit)
+  const anchor = useRef<HTMLButtonElement | null>(null)
+
+  useAutosaveDraft({
+    value: open ? draft : null,
+    identity: String(habit.id),
+    enabled: open,
+    save: snapshot => {
+      if (!String(snapshot.nome || '').trim()) return
+      const next = cleanHabit({ ...snapshot, _persisted: true }, today)
+      commit(current => ({ ...current, habits: rows(current.habits).map(item => String(item.id) === String(next.id) ? next : item) }))
+    },
+  })
+
+  return (
+    <>
+      <button ref={anchor} type="button" className={styles.quickButton} aria-label={`Editar ${String(habit.nome)} rapidamente`} title="Edição rápida" onClick={() => { setDraft(habit); setOpen(true) }}>
+        <Icon name="edit" size={17} filled={false} />
+      </button>
+      {open ? (
+        <Floating anchor={anchor} title="Edição rápida" width={290} onClose={() => setOpen(false)}>
+          <div className={styles.quick}>
+            <label className={styles.field}><span>Nome</span><input autoFocus value={String(draft.nome || '')} onChange={event => setDraft({ ...draft, nome: event.target.value })} onKeyDown={event => { if (event.key === 'Enter') setOpen(false) }} /></label>
+            <div className={styles.fieldRow}>
+              <label className={styles.field}><span>Meta</span><input type="number" min="1" step="0.1" value={Number(draft.meta || 1)} onChange={event => setDraft({ ...draft, meta: Number(event.target.value) })} /></label>
+              <label className={styles.field}><span>Unidade</span><input value={String(draft.unidade || '')} placeholder="copos…" onChange={event => setDraft({ ...draft, unidade: event.target.value })} /></label>
+            </div>
+            <div className={styles.swatches}>
+              {COLORS.map(item => <button key={item} type="button" className={styles.swatchButton} data-active={draft.cor_hex === item || undefined} style={{ background: item }} aria-label={item} onClick={() => setDraft({ ...draft, cor_hex: item })} />)}
+            </div>
+            <OptionList options={FREQUENCIES} value={String(draft.repeticao)} onSelect={value => setDraft({ ...draft, repeticao: value, dias_semana: value === 'diariamente' ? [0, 1, 2, 3, 4, 5, 6] : nums(value.slice(8).split(',')) })} />
+          </div>
+        </Floating>
+      ) : null}
+    </>
   )
 }
