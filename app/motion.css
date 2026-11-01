@@ -1,0 +1,48 @@
+/*
+ * Movimento do MAI: respostas curtas às ações (toque, conclusão, abrir/fechar,
+ * trocar de tela e de tema). Tudo é desligado com "reduzir movimento".
+ */
+:root { --mai-ease: cubic-bezier(0.2, 0.8, 0.2, 1); --mai-ease-pop: cubic-bezier(0.34, 1.56, 0.64, 1); }
+
+@keyframes mai-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes mai-pop { from { opacity: 0; translate: 0 10px; scale: 0.97; } to { opacity: 1; translate: 0 0; scale: 1; } }
+@keyframes mai-sheet { from { opacity: 0.6; translate: 0 100%; } to { opacity: 1; translate: 0 0; } }
+@keyframes mai-rise { from { opacity: 0; translate: 0 6px; } to { opacity: 1; translate: 0 0; } }
+@keyframes mai-view { from { opacity: 0; translate: 0 8px; } to { opacity: 1; translate: 0 0; } }
+@keyframes mai-bounce { 0% { scale: 0.6; } 55% { scale: 1.18; } 100% { scale: 1; } }
+@keyframes mai-tick { from { scale: 0; rotate: -20deg; } to { scale: 1; rotate: 0deg; } }
+
+@media (prefers-reduced-motion: no-preference) {
+  html { scroll-behavior: smooth; }
+
+  /* Toque: o controle "afunda" um pouquinho. */
+  :where(button, [role="button"], [role="checkbox"], [role="switch"], [role="tab"], [role="radio"], [role="option"], summary) {
+    transition: scale 140ms var(--mai-ease), background-color 140ms var(--mai-ease), border-color 140ms var(--mai-ease), color 140ms var(--mai-ease), opacity 140ms var(--mai-ease);
+  }
+  :where(button, [role="button"], [role="checkbox"], [role="switch"], [role="tab"], [role="radio"], [role="option"]):not(:disabled):active { scale: 0.95; }
+
+  /* Janelas, menus e seletores: fundo suaviza, janela sobe. */
+  :where(div):has(> [role="dialog"]) { animation: mai-fade 160ms ease-out both; }
+  [role="dialog"], [role="menu"] { animation: mai-pop 220ms var(--mai-ease) both; }
+  @media (max-width: 720px) { [role="dialog"] { animation-name: mai-sheet; animation-duration: 280ms; } }
+
+  /* Itens novos entram suavemente (e a lista toda ao abrir uma tela). */
+  [role="listitem"] { animation: mai-rise 240ms var(--mai-ease) both; }
+  [role="listitem"]:nth-child(2) { animation-delay: 25ms; }
+  [role="listitem"]:nth-child(3) { animation-delay: 50ms; }
+  [role="listitem"]:nth-child(4) { animation-delay: 75ms; }
+  [role="listitem"]:nth-child(5) { animation-delay: 100ms; }
+  [role="listitem"]:nth-child(n + 6) { animation-delay: 125ms; }
+
+  /* Trocar de tela. */
+  .mai-view-enter { animation: mai-view 260ms var(--mai-ease) both; }
+
+  /* Concluir: o círculo "estoura" e o visto aparece. */
+  [role="checkbox"][aria-checked="true"] { animation: mai-bounce 320ms var(--mai-ease-pop); }
+  [role="checkbox"][aria-checked="true"] svg, [role="checkbox"][aria-checked="true"] .material-symbols-rounded { animation: mai-tick 260ms var(--mai-ease-pop) 60ms both; }
+  [class*="habitDay"][data-on], [class*="habitDay"][data-part], [class*="dot"][data-level="full"], [class*="dot"][data-level="part"], [class*="streak"][data-on] { animation: mai-bounce 360ms var(--mai-ease-pop); }
+  [role="switch"][aria-checked="true"] { animation: none; }
+
+  /* Trocar de tema: cores deslizam em vez de piscar. */
+  html.mai-theme-fade, html.mai-theme-fade *, html.mai-theme-fade *::before, html.mai-theme-fade *::after { transition: background-color 280ms ease, border-color 280ms ease, color 280ms ease, fill 280ms ease !important; }
+}

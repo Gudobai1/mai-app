@@ -51,6 +51,7 @@ import './mai-task-selection.css'
 import './ds/tokens.css'
 import './v2/shell/shell-overrides.css'
 import './v2/shell/detail-popup.css'
+import './motion.css'
 
 export const metadata: Metadata = {
   title: 'MAI — Meu Sistema',

@@ -116,3 +116,12 @@
 .row { position: relative; }
 .source { position: absolute; right: 0; top: 50%; transform: translateY(-50%); align-self: auto; }
 .body { max-width: calc(100% - 150px); }
+
+/* Compromisso: pontinho na cor do evento (sem círculo de conclusão). */
+.dot { flex-shrink: 0; width: 8px; height: 8px; margin: 6px 2px 0; border-radius: 50%; background: var(--ev); }
+.row { align-items: flex-start; }
+.row[data-external] { margin: 6px 0; padding: 10px 12px; border: 1px solid var(--ev); border-radius: 10px; background: color-mix(in srgb, var(--ev) 9%, transparent); }
+.list > .row[data-external]:last-child { border-bottom: 1px solid var(--ev); }
+.row[data-external] .source { right: 12px; }
+.row[data-external] .body { max-width: calc(100% - 140px); }
+.row[data-external] .source b { display: none; }

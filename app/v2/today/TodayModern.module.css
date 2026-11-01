@@ -1732,27 +1732,6 @@
   -webkit-user-select: none;
   user-select: none;
 }
-.habitRing.habitRing {
-  appearance: none;
-  flex-shrink: 0;
-  width: 18px;
-  height: 18px;
-  box-sizing: border-box;
-  padding: 0;
-  border: 2px solid var(--hc);
-  border-radius: 50%;
-  background: transparent;
-  color: #fff;
-  display: grid;
-  place-items: center;
-  cursor: pointer;
-  font-size: 12px;
-  line-height: 1;
-}
-.habitRing[data-done] { background: var(--hc); }
-.habitRing[data-partial] { background: color-mix(in srgb, var(--hc) 30%, transparent); }
-.habitRing[data-failed] { border-color: var(--ds-danger); color: var(--ds-danger); }
-.habitRing:disabled { opacity: 0.5; cursor: default; }
 .habitBody.habitBody {
   appearance: none;
   flex: 1;
@@ -1771,9 +1750,6 @@
 }
 .habitTitle { font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .habitDots { display: inline-flex; gap: 4px; flex-shrink: 0; }
-.habitDots i { width: 7px; height: 7px; border-radius: 50%; background: var(--ds-line-strong); opacity: 0.5; }
-.habitDots i[data-on] { background: var(--hc); opacity: 1; }
-.habitDots i[data-today]:not([data-on]) { opacity: 1; outline: 1.5px solid var(--hc); outline-offset: 1px; background: transparent; }
 .habitValue { font-size: 12px; color: var(--ds-muted); font-variant-numeric: tabular-nums; }
 .streak { display: inline-flex; align-items: center; gap: 2px; min-width: 34px; justify-content: flex-end; font-size: 12.5px; font-weight: var(--ds-fw-bold); color: var(--ds-muted); font-variant-numeric: tabular-nums; }
 .streak :global(.material-symbols-rounded) { color: #E8772E; }
@@ -1952,18 +1928,12 @@
 
 /* Hábitos: anel maior, descrição abaixo do título, semana grande ao lado, sequência colorida */
 .habitRow { gap: 12px; }
-.habitRing.habitRing { width: 22px; height: 22px; }
 .habitBody.habitBody { gap: 2px; }
 .habitDesc { font-size: 12.5px; color: var(--ds-muted); line-height: 1.35; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
 .habitDots { display: inline-flex; align-items: center; gap: 8px; flex-shrink: 0; }
-.habitDots i { width: 14px; height: 14px; border-radius: 50%; background: transparent; border: 2px solid var(--ds-line-strong); box-sizing: border-box; opacity: 1; outline: 0; }
-.habitDots i[data-part] { border-color: var(--hc); background: color-mix(in srgb, var(--hc) 35%, transparent); }
-.habitDots i[data-on] { border-color: var(--hc); background: var(--hc); }
-.habitDots i[data-today]:not([data-on]):not([data-part]) { border-color: var(--hc); background: transparent; outline: 0; }
 .streak { color: var(--ds-muted); min-width: 40px; }
 .streak[data-on] { color: #E8772E; }
 .streak :global(span) { color: inherit; }
-@media (max-width: 420px) { .habitDots { gap: 5px; } .habitDots i { width: 12px; height: 12px; } }
 
 /* Finanças: saldo atual em cima (neutro) e previsto embaixo (colorido pelo sinal) */
 .balanceValue { color: var(--ds-text); }
@@ -1975,8 +1945,6 @@
 
 /* Hábitos mais firmes; saldo atual do mesmo tamanho do previsto */
 .habitTitle { font-weight: 600; }
-.habitRing.habitRing { border-width: 3px; }
-.habitDots i { border-width: 3px; }
 .balanceValue { font-size: 18px; line-height: 1.2; font-weight: var(--ds-fw-bold); letter-spacing: -0.01em; }
 
 /* Padrão do app: "Adicionar …" em cinza fraco e a última linha da lista sem divisor */
@@ -2010,8 +1978,6 @@
 .balanceStatValue.negative { color: var(--ds-danger); }
 
 /* Hábitos: dia atual em cinza bold; com progresso, na cor do hábito */
-.habitDots i[data-today]:not([data-on]):not([data-part]) { border-color: var(--ds-muted); border-width: 3px; background: transparent; }
-.habitDots i[data-today][data-on], .habitDots i[data-today][data-part] { border-color: var(--hc); }
 
 /* Adicionar tarefa mais perto do último cartão */
 .page .items + .addRow.addRow { margin-top: -6px; padding-top: 0; }
@@ -2023,10 +1989,6 @@
 
 /* Hábitos: círculos dos dias maiores, preenchidos como pizza pelo percentual */
 .habitDots { gap: 10px; }
-.habitDots i { width: 20px; height: 20px; }
-.habitDots i[data-part] { border-color: var(--hc); background: conic-gradient(var(--hc) calc(var(--p) * 1%), transparent 0); }
-.habitDots i[data-on] { border-color: var(--hc); background: var(--hc); }
-@media (max-width: 420px) { .habitDots { gap: 6px; } .habitDots i { width: 15px; height: 15px; } }
 
 /* Finanças: ainda mais compacto */
 .page .balance.balance { gap: 0; padding: 8px 0; }
@@ -2040,13 +2002,8 @@
 .habitBody.habitBody { overflow: hidden; }
 .habitTitle { max-width: 100%; }
 .habitDots { gap: 6px; }
-.habitDots i, .habitDots i[data-today] { outline: 0; }
-.habitDots i[data-part] { border: 0; background: conic-gradient(var(--hc) calc(var(--p) * 1%), var(--ds-line-strong) 0); }
-.habitDots i[data-on] { border: 0; background: var(--hc); }
 
 /* Hoje também é pizza: sem anel nem contorno nos parciais */
-.habitDots i[data-today][data-part]:not([data-on]) { outline: 0; border: 0; opacity: 1; background: conic-gradient(var(--hc) calc(var(--p) * 1%), var(--ds-line-strong) 0); }
-.habitDots i[data-today][data-on] { outline: 0; border: 0; background: var(--hc); }
 
 /* Opções (engrenagem): só o ícone, sem círculo nem fundo; ativo = só o ícone em azul */
 .options :global(.mai-app-topbar-menu-button),
@@ -2079,3 +2036,14 @@
 .page .items .item.task .taskTitleBtn { max-width: calc(100% - 150px); }
 
 .page { max-width: none; margin: 0; }
+
+/* Hábitos em Hoje: o dia é o círculo (pizza), sem círculo de confirmação à parte. */
+.habitDots.habitDots { display: inline-flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.habitDay.habitDay { --p: 0; appearance: none; position: relative; width: 30px; height: 30px; padding: 0; box-sizing: border-box; border: 2px solid var(--ds-line); border-radius: 50%; background: transparent; cursor: pointer; }
+.habitDay.habitDay:disabled { cursor: default; }
+.habitDay.habitDay[data-off] { opacity: 0.35; border-style: dashed; }
+.habitDay.habitDay[data-today]:not([data-on]):not([data-part]) { border-color: var(--ds-muted); border-width: 2.5px; }
+.habitDay.habitDay[data-part] { border: 0; background: conic-gradient(var(--hc) calc(var(--p) * 1%), var(--ds-line) 0); }
+.habitDay.habitDay[data-on] { border-color: var(--hc); background: var(--hc); }
+.habitDay.habitDay[data-failed] { border-color: var(--ds-danger); }
+@media (max-width: 560px) { .habitDots.habitDots { gap: 4px; } .habitDay.habitDay { width: 26px; height: 26px; } }

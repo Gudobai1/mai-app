@@ -100,6 +100,11 @@ export function useMaiRuntime() {
 
   useEffect(() => {
     const apply = () => {
+      const root = document.documentElement
+      if (root.dataset.maiTheme && (root.dataset.maiTheme !== (isDarkMode(state.configs.theme) ? 'dark' : 'light') || root.dataset.maiColor !== normalizeTheme(state.configs.accentColor))) {
+        root.classList.add('mai-theme-fade')
+        window.setTimeout(() => root.classList.remove('mai-theme-fade'), 320)
+      }
       const dark = isDarkMode(state.configs.theme)
       document.documentElement.dataset.maiTheme = dark ? 'dark' : 'light'
       delete document.documentElement.dataset.maiAccent

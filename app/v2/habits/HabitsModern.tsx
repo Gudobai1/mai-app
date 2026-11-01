@@ -8,6 +8,7 @@ import type { InspectableItem } from '../ContextDrawer'
 import { DEFAULT_COLOR } from '../../../lib/v2/palette'
 import { ColorField } from '../detail/ColorField'
 import { Floating, OptionList, type PickerOption } from '../detail/Pickers'
+import { ItemAttachments } from '../ItemAttachments'
 import { askConfirm } from '../shell/ConfirmDialog'
 import quick from '../shell/QuickAdd.module.css'
 import { useAutosaveDraft } from '../useAutosaveDraft'
@@ -34,6 +35,7 @@ const diffDays = (start: string, end: string) => Math.round((new Date(`${end}T12
 const percent = (value: number, total: number) => (total > 0 ? Math.max(0, Math.min(100, Math.round((value / total) * 100))) : 0)
 const failed = (entry?: Row) => entry?.falhou === true || String(entry?.status || '').toLowerCase() === 'falha'
 const longDate = (key: string) => new Date(`${key}T12:00:00`).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' }).replace('.', '')
+const ICONS = ['star', 'favorite', 'fitness_center', 'local_drink', 'menu_book', 'self_improvement', 'directions_run', 'bedtime', 'palette', 'code', 'attach_money', 'psychology', 'restaurant', 'cleaning_services', 'directions_bike', 'air', 'spa', 'bolt', 'school', 'monitor_heart']
 const WEEKDAYS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
 const INITIALS = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S']
 const FREQUENCIES: PickerOption[] = [
@@ -74,7 +76,7 @@ function frequencyLabel(habit: Row) {
 }
 
 function blankHabit(today: string): Row {
-  return { id: uid('hab'), nome: '', descricao: '', meta: 1, unidade: '', hora: '', cor_hex: DEFAULT_COLOR, dias_semana: [0, 1, 2, 3, 4, 5, 6], repeticao: 'diariamente', data_inicio: today, ocultar_agenda: false, ativo: true, criado_em: new Date().toISOString(), anexos: [], _persisted: false }
+  return { id: uid('hab'), nome: '', descricao: '', meta: 1, unidade: '', hora: '', cor_hex: DEFAULT_COLOR, icone: 'star', dias_semana: [0, 1, 2, 3, 4, 5, 6], repeticao: 'diariamente', data_inicio: today, ocultar_agenda: false, ativo: true, criado_em: new Date().toISOString(), anexos: [], _persisted: false }
 }
 
 function cleanHabit(snapshot: Row, today: string): Row {
@@ -91,7 +93,7 @@ function cleanHabit(snapshot: Row, today: string): Row {
     days = []
   }
   const { _persisted: _ignored, ...rest } = snapshot
-  return { ...rest, id: rest.id || uid('hab'), nome: String(rest.nome || '').trim(), meta: Math.max(1, Number(rest.meta || 1)), dias_semana: days, repeticao: repeat, data_inicio: dateKey(rest.data_inicio) || today, cor_hex: rest.cor_hex || DEFAULT_COLOR, anexos: rows(rest.anexos), ativo: true, criado_em: rest.criado_em || new Date().toISOString() }
+  return { ...rest, id: rest.id || uid('hab'), nome: String(rest.nome || '').trim(), meta: Math.max(1, Number(rest.meta || 1)), dias_semana: days, repeticao: repeat, data_inicio: dateKey(rest.data_inicio) || today, cor_hex: rest.cor_hex || DEFAULT_COLOR, icone: rest.icone || 'star', anexos: rows(rest.anexos), ativo: true, criado_em: rest.criado_em || new Date().toISOString() }
 }
 
 type Props = {
@@ -236,7 +238,7 @@ export function HabitsModern({ state, today, commit, createRequest }: Props) {
               return (
                 <div key={String(habit.id)} role="listitem" className={styles.row} style={{ '--hc': color } as CSSProperties}>
                   <button type="button" className={styles.body} onClick={() => setDetailId(String(habit.id))}>
-                    <span className={styles.title}>{String(habit.nome)}</span>
+                    <span className={styles.title}><Icon name={String(habit.icone || 'star')} size={17} filled={false} className={styles.habitIcon} />{String(habit.nome)}</span>
                     <span className={styles.desc}>{detailText || frequencyLabel(habit)}</span>
                   </button>
                   <div className={styles.dots}>
@@ -254,6 +256,7 @@ export function HabitsModern({ state, today, commit, createRequest }: Props) {
                           disabled={!ok}
                           style={level === 'part' ? ({ '--p': progressOf(habit, day) } as CSSProperties) : undefined}
                           onClick={() => toggleDay(habit, day)}
+                          onContextMenu={event => { event.preventDefault(); if (ok) setValueFor({ habit, day }) }}
                           aria-label={`${String(habit.nome)} em ${longDate(day)}`}
                           title={level === 'fail' ? 'Falha' : level === 'part' ? `${progressOf(habit, day)}%` : !eligible(habit, day) ? 'Fora da frequência' : longDate(day)}
                         >
@@ -283,16 +286,6 @@ export function HabitsModern({ state, today, commit, createRequest }: Props) {
         )}
       </section>
 
-      {valueFor ? (
-        <ValueDialog
-          habit={valueFor.habit}
-          day={valueFor.day}
-          initial={amountOf(valueFor.habit, valueFor.day) || target(valueFor.habit)}
-          onClose={() => setValueFor(null)}
-          onSave={amount => { writeEntry(valueFor.habit, valueFor.day, amount); setValueFor(null) }}
-          onFail={() => { writeEntry(valueFor.habit, valueFor.day, 0, true); setValueFor(null) }}
-        />
-      ) : null}
 
       {detail ? (
         <HabitDetail
@@ -302,9 +295,22 @@ export function HabitsModern({ state, today, commit, createRequest }: Props) {
           levelOf={levelOf}
           progressOf={progressOf}
           entries={entries.filter(item => String(item.habito_id) === String(detail.id))}
-          onToggle={day => toggleDay(detail, day)}
+          onToggle={day => setValueFor({ habit: detail, day })}
           onClose={() => setDetailId('')}
           commit={commit}
+        />
+      ) : null}
+
+      {valueFor ? (
+        <ValueDialog
+          habit={valueFor.habit}
+          day={valueFor.day}
+          initial={amountOf(valueFor.habit, valueFor.day) || target(valueFor.habit)}
+          hasEntry={Boolean(entryOf(valueFor.habit, valueFor.day))}
+          onClear={() => { clearEntry(valueFor.habit, valueFor.day); setValueFor(null) }}
+          onClose={() => setValueFor(null)}
+          onSave={amount => { writeEntry(valueFor.habit, valueFor.day, amount); setValueFor(null) }}
+          onFail={() => { writeEntry(valueFor.habit, valueFor.day, 0, true); setValueFor(null) }}
         />
       ) : null}
     </div>
@@ -338,6 +344,7 @@ function HabitComposer({ today, onCancel, onSave }: { today: string; onCancel: (
             onKeyDown={event => { if (event.key === 'Enter') { event.preventDefault(); submit() } }}
           />
           <div className={styles.composerFields}>
+            <label className={styles.wideField}><span>Descrição</span><input value={String(draft.descricao || '')} placeholder="Opcional" onChange={event => setDraft({ ...draft, descricao: event.target.value })} /></label>
             <label><span>Meta</span><input type="number" min="1" step="1" value={Number(draft.meta || 1)} onChange={event => setDraft({ ...draft, meta: Number(event.target.value) })} /></label>
             <label><span>Unidade</span><input value={String(draft.unidade || '')} placeholder="copos, páginas…" onChange={event => setDraft({ ...draft, unidade: event.target.value })} /></label>
             <label><span>Horário</span><input type="time" value={String(draft.hora || '')} onChange={event => setDraft({ ...draft, hora: event.target.value })} /></label>
@@ -365,7 +372,9 @@ function HabitComposer({ today, onCancel, onSave }: { today: string; onCancel: (
 
 /* --------------------------------------------------------------- Registro */
 
-function ValueDialog({ habit, day, initial, onClose, onSave, onFail }: { habit: Row; day: string; initial: number; onClose: () => void; onSave: (amount: number) => void; onFail: () => void }) {
+function ValueDialog({ habit, day, initial, hasEntry, onClose, onSave, onFail, onClear }: { habit: Row; day: string; initial: number; hasEntry: boolean; onClose: () => void; onSave: (amount: number) => void; onFail: () => void; onClear: () => void }) {
+  const goal = Math.max(1, Number(habit.meta || 1))
+  const quantitative = goal > 1 || Boolean(habit.unidade)
   const [value, setValue] = useState(String(initial))
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => { if (event.key === 'Escape') onClose() }
@@ -380,16 +389,21 @@ function ValueDialog({ habit, day, initial, onClose, onSave, onFail }: { habit: 
           <div><strong>{String(habit.nome)}</strong><small>{longDate(day)}</small></div>
           <button type="button" className={styles.close} onClick={onClose} aria-label="Fechar"><Icon name="close" size={20} filled={false} /></button>
         </header>
-        <div className={styles.valueBody}>
-          <label className={styles.field}>
-            <span>Quantidade{habit.unidade ? ` (${String(habit.unidade)})` : ''}</span>
-            <input autoFocus type="number" step="0.1" min="0" value={value} onChange={event => setValue(event.target.value)} onKeyDown={event => { if (event.key === 'Enter' && Number.isFinite(amount) && amount >= 0) onSave(amount) }} />
-          </label>
-          <p className={styles.hint}>Meta do dia: <strong>{Number(habit.meta || 1)} {String(habit.unidade || '')}</strong></p>
-        </div>
+        {quantitative ? (
+          <div className={styles.valueBody}>
+            <label className={styles.field}>
+              <span>Quantidade{habit.unidade ? ` (${String(habit.unidade)})` : ''}</span>
+              <input autoFocus type="number" step="0.1" min="0" value={value} onChange={event => setValue(event.target.value)} onKeyDown={event => { if (event.key === 'Enter' && Number.isFinite(amount) && amount >= 0) onSave(amount) }} />
+            </label>
+            <p className={styles.hint}>Meta do dia: <strong>{goal} {String(habit.unidade || '')}</strong></p>
+          </div>
+        ) : null}
         <footer className={styles.panelFoot}>
-          <button type="button" className={styles.textPrimary} disabled={!Number.isFinite(amount) || amount < 0} onClick={() => onSave(amount)}>Salvar</button>
+          {quantitative
+            ? <button type="button" className={styles.textPrimary} disabled={!Number.isFinite(amount) || amount < 0} onClick={() => onSave(amount)}>Salvar</button>
+            : <button type="button" className={styles.textPrimary} onClick={() => onSave(goal)}>Concluir</button>}
           <button type="button" className={styles.textButton} onClick={onClose}>Cancelar</button>
+          {hasEntry ? <button type="button" className={styles.textButton} onClick={onClear}>Limpar</button> : null}
           <button type="button" className={styles.textDanger} onClick={onFail}>Marcar falha</button>
         </footer>
       </section>
@@ -444,6 +458,18 @@ function HabitDetail({ habit, today, stats, levelOf, progressOf, entries, onTogg
   const monthKeys = Array.from({ length: monthDays }, (_, index) => `${year}-${String(monthNumber).padStart(2, '0')}-${String(index + 1).padStart(2, '0')}`)
   const due = monthKeys.filter(key => eligible(habit, key) && key <= today)
   const doneCount = due.filter(key => levelOf(habit, key) === 'full').length
+  const heat = Array.from({ length: 126 }, (_, index) => moveDate(today, index - 125))
+  const perWeekday = WEEKDAYS.map((label, weekday) => {
+    const keys = Array.from({ length: 180 }, (_, index) => moveDate(today, index - 179)).filter(key => eligible(habit, key) && new Date(`${key}T12:00:00`).getDay() === weekday)
+    return { label, rate: percent(keys.filter(key => levelOf(habit, key) === 'full').length, keys.length) }
+  })
+  const history = [...entries].sort((a, b) => dateKey(b.data).localeCompare(dateKey(a.data))).slice(0, 12)
+  const cellStyle = (day: string): CSSProperties | undefined => {
+    const level = levelOf(habit, day)
+    if (level === 'full') return { background: color }
+    if (level === 'part') return { background: `color-mix(in srgb, ${color} ${Math.max(25, progressOf(habit, day))}%, transparent)` }
+    return undefined
+  }
   const shiftMonth = (amount: number) => { const next = new Date(year, monthNumber - 1 + amount, 1); setMonth(`${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, '0')}`) }
   const monthTitle = new Date(year, monthNumber - 1, 1).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
 
@@ -451,18 +477,12 @@ function HabitDetail({ habit, today, stats, levelOf, progressOf, entries, onTogg
   const draftDays = nums(draft.dias_semana)
   const draftEvery = Math.max(1, Number(String(draft.repeticao || '').match(/^intervalo:(\d+)$/)?.[1] || 2))
 
-  const cellStyle = (day: string): CSSProperties | undefined => {
-    const level = levelOf(habit, day)
-    if (level === 'full') return { background: color }
-    if (level === 'part') return { background: `color-mix(in srgb, ${color} ${Math.max(25, progressOf(habit, day))}%, transparent)` }
-    return undefined
-  }
 
   return (
     <div className={styles.layer} onMouseDown={onClose}>
       <section className={styles.panel} role="dialog" aria-modal="true" aria-label={String(habit.nome)} onMouseDown={event => event.stopPropagation()} style={{ '--hc': color } as CSSProperties}>
         <header className={styles.panelHead}>
-          <div><strong style={{ color }}>{String(habit.nome)}</strong><small>{frequencyLabel(habit)}</small></div>
+          <div><strong style={{ color }}>{String(habit.nome)}</strong><small>{frequencyLabel(habit)} · meta {Number(habit.meta || 1)} {String(habit.unidade || '')}{habit.hora ? ` · ${String(habit.hora)}` : ''}</small></div>
           <button type="button" className={styles.close} onClick={onClose} aria-label="Fechar"><Icon name="close" size={20} filled={false} /></button>
         </header>
         <div className={styles.panelTabs} role="tablist">
@@ -494,6 +514,31 @@ function HabitDetail({ habit, today, stats, levelOf, progressOf, entries, onTogg
                 )
               })}
             </div>
+
+            <h3 className={styles.section}>Últimas 18 semanas</h3>
+            <div className={styles.heat}>
+              {heat.map(day => (
+                <button key={day} type="button" className={styles.heatCell} data-level={levelOf(habit, day) || undefined} data-off={!eligible(habit, day) || undefined} disabled={!eligible(habit, day) || day > today} style={cellStyle(day)} onClick={() => onToggle(day)} title={longDate(day)} aria-label={longDate(day)} />
+              ))}
+            </div>
+
+            <h3 className={styles.section}>Desempenho por dia da semana</h3>
+            <div className={styles.bars}>
+              {perWeekday.map(item => (
+                <div key={item.label}><span>{item.label}</span><i><b style={{ width: `${item.rate}%`, background: color }} /></i><strong>{item.rate}%</strong></div>
+              ))}
+            </div>
+
+            {history.length ? (
+              <>
+                <h3 className={styles.section}>Histórico recente</h3>
+                <div className={styles.history}>
+                  {history.map(item => (
+                    <div key={String(item.id)}><span>{longDate(dateKey(item.data))}</span><strong>{failed(item) ? 'Falha' : `${Number(item.valor || 0)} ${String(habit.unidade || '')}`}</strong></div>
+                  ))}
+                </div>
+              </>
+            ) : null}
           </div>
         ) : (
           <div className={styles.panelBody}>
@@ -532,6 +577,15 @@ function HabitDetail({ habit, today, stats, levelOf, progressOf, entries, onTogg
                 </div>
               ) : null}
             </div>
+
+            <div className={styles.field}>
+              <span>Ícone</span>
+              <div className={styles.iconGrid}>
+                {ICONS.map(icon => <button key={icon} type="button" data-active={draft.icone === icon || undefined} onClick={() => setDraft({ ...draft, icone: icon })} aria-label={icon}><Icon name={icon} size={20} filled={false} /></button>)}
+              </div>
+            </div>
+
+            <ItemAttachments attachments={rows(draft.anexos)} onChange={anexos => setDraft({ ...draft, anexos })} />
 
             <label className={styles.check}>
               <input type="checkbox" checked={draft.ocultar_agenda !== true} onChange={event => setDraft({ ...draft, ocultar_agenda: !event.target.checked })} />
