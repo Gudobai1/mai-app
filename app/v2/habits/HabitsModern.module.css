@@ -178,3 +178,8 @@
 .iconGrid button[data-active] { border-color: var(--hc, var(--ds-accent)); color: var(--hc, var(--ds-accent)); }
 .wideField { flex-basis: 100%; }
 .composerFields .wideField input { width: 100%; box-sizing: border-box; }
+
+.presets { display: flex; gap: 4px; margin-top: 4px; }
+.presets button { height: 28px; padding: 0 8px; border: 0; border-radius: 6px; background: transparent; color: var(--ds-muted); font: inherit; font-size: 12px; font-weight: 600; cursor: pointer; }
+.presets button:hover { background: var(--ds-surface-hover); color: var(--ds-text); }
+.weekdays button[aria-pressed="true"] { background: var(--ds-accent-soft); }

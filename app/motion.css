@@ -40,9 +40,41 @@
   /* Concluir: o círculo "estoura" e o visto aparece. */
   [role="checkbox"][aria-checked="true"] { animation: mai-bounce 320ms var(--mai-ease-pop); }
   [role="checkbox"][aria-checked="true"] svg, [role="checkbox"][aria-checked="true"] .material-symbols-rounded { animation: mai-tick 260ms var(--mai-ease-pop) 60ms both; }
-  [class*="habitDay"][data-on], [class*="habitDay"][data-part], [class*="dot"][data-level="full"], [class*="dot"][data-level="part"], [class*="streak"][data-on] { animation: mai-bounce 360ms var(--mai-ease-pop); }
+  [class*="streak"][data-on] { animation: mai-bounce 360ms var(--mai-ease-pop); }
   [role="switch"][aria-checked="true"] { animation: none; }
 
   /* Trocar de tema: cores deslizam em vez de piscar. */
   html.mai-theme-fade, html.mai-theme-fade *, html.mai-theme-fade *::before, html.mai-theme-fade *::after { transition: background-color 280ms ease, border-color 280ms ease, color 280ms ease, fill 280ms ease !important; }
+}
+
+/* ------------------------------------------------------------------------
+ * Concluir: reação ao passar o mouse e ao clicar (tarefas, finanças, subtarefas,
+ * dias dos hábitos).
+ * ---------------------------------------------------------------------- */
+@keyframes mai-ring { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--mai-fx, var(--ds-accent)) 55%, transparent); } 100% { box-shadow: 0 0 0 11px color-mix(in srgb, var(--mai-fx, var(--ds-accent)) 0%, transparent); } }
+@keyframes mai-hint { from { opacity: 0; scale: 0.5; } to { opacity: 0.55; scale: 1; } }
+
+@media (prefers-reduced-motion: no-preference) {
+  /* Passar o mouse: o círculo cresce, ganha a cor do tema e mostra o visto "de prévia". */
+  html button[role="checkbox"]:not([aria-checked="true"]):not(:disabled):hover,
+  html span[role="checkbox"]:not([aria-checked="true"]):hover {
+    scale: 1.14;
+    border-color: var(--ds-accent);
+    background-color: color-mix(in srgb, var(--ds-accent) 12%, transparent);
+    color: var(--ds-accent);
+  }
+  html [role="checkbox"]:not([aria-checked="true"]):not(:disabled):hover svg,
+  html [role="checkbox"]:not([aria-checked="true"]):hover .material-symbols-rounded { animation: mai-hint 180ms var(--mai-ease-pop) both; }
+
+  /* Clicar: aperta, estoura e solta um anel de onda. */
+  html [role="checkbox"]:not(:disabled):active { scale: 0.82; }
+  [role="checkbox"][aria-checked="true"] { animation: mai-bounce 340ms var(--mai-ease-pop), mai-ring 520ms ease-out; }
+
+  /* Dias dos hábitos (Hoje e módulo). */
+  html button[data-day]:not(:disabled):hover {
+    scale: 1.12;
+    border-color: var(--hc, var(--ds-accent));
+  }
+  html button[data-day]:not(:disabled):active { scale: 0.85; }
+  button[data-day][data-on], button[data-day][data-part], button[data-day][data-level="full"], button[data-day][data-level="part"] { --mai-fx: var(--hc, var(--ds-accent)); animation: mai-bounce 360ms var(--mai-ease-pop), mai-ring 520ms ease-out; }
 }

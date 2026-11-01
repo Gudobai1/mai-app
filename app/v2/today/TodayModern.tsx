@@ -851,7 +851,7 @@ export function TodayModern({ state, today, commit, navigate, inspect, options, 
                     </button>
                     <span className={styles.habitDots}>
                       {weekKeys.map(key => (
-                        <button key={key} type="button" className={styles.habitDay} style={{ ['--p' as string]: pctOn(item.habit, key) }} data-on={levelOn(item.habit, key) === 'full' || undefined} data-part={levelOn(item.habit, key) === 'part' || undefined} data-failed={failedEntry(entryByKey.get(`${item.habit.id}|${key}`)) || undefined} data-today={key === day || undefined} data-off={!habitEligible(item.habit, key) || undefined} disabled={key > today || !habitEligible(item.habit, key)} onClick={() => logHabitOn(item.habit, key)} aria-label={`${name} em ${naturalDate(key, today)}`} />
+                        <button key={key} type="button" className={styles.habitDay} data-day="" style={{ ['--p' as string]: pctOn(item.habit, key) }} data-on={levelOn(item.habit, key) === 'full' || undefined} data-part={levelOn(item.habit, key) === 'part' || undefined} data-failed={failedEntry(entryByKey.get(`${item.habit.id}|${key}`)) || undefined} data-today={key === day || undefined} data-off={!habitEligible(item.habit, key) || undefined} disabled={key > today || !habitEligible(item.habit, key)} onClick={() => logHabitOn(item.habit, key)} aria-label={`${name} em ${naturalDate(key, today)}`} />
                       ))}
                     </span>
                     <span className={styles.streak} data-on={streak > 0 || undefined} title={`Sequência de ${streak} ${streak === 1 ? 'dia' : 'dias'}`}><Icon name="local_fire_department" size={15} />{streak}</span>
