@@ -533,7 +533,7 @@ export function TasksModern(props: Props) {
             <span className={styles.cardMeta}>
               {showDate ? <span data-late={late || undefined} data-today={due === today || undefined} data-future={due > today || undefined}><Icon name="calendar_today" size={12} />{naturalDate(due, today)}{time ? ` · ${time}` : ''}</span> : time ? <span><Icon name="schedule" size={12} />{time}</span> : null}
               {showProject ? (
-                <span className={styles.metaProject}>
+                <span className={styles.metaProject} style={{ color: String(projectMap.get(String(task.projeto_id || ''))?.cor || 'var(--ds-accent)') }}>
                   {projectMap.get(String(task.projeto_id || ''))?.imagem_url ? <img src={driveAssetUrl(projectMap.get(String(task.projeto_id))?.imagem_url)} alt="" /> : <i style={{ background: String(projectMap.get(String(task.projeto_id || ''))?.cor || 'var(--ds-accent)') }} />}
                   {projectName(task.projeto_id)}{task.secao ? <em> · {String(task.secao)}</em> : null}
                 </span>
