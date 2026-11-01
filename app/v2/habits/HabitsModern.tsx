@@ -7,7 +7,7 @@ import type { Row } from '../app-types'
 import type { InspectableItem } from '../ContextDrawer'
 import { DEFAULT_COLOR } from '../../../lib/v2/palette'
 import { ColorField } from '../detail/ColorField'
-import { Floating, OptionList, type PickerOption } from '../detail/Pickers'
+import { Floating } from '../detail/Pickers'
 import { ItemAttachments } from '../ItemAttachments'
 import { askConfirm } from '../shell/ConfirmDialog'
 import quick from '../shell/QuickAdd.module.css'
@@ -38,11 +38,6 @@ const longDate = (key: string) => new Date(`${key}T12:00:00`).toLocaleDateString
 const ICONS = ['star', 'favorite', 'fitness_center', 'local_drink', 'menu_book', 'self_improvement', 'directions_run', 'bedtime', 'palette', 'code', 'attach_money', 'psychology', 'restaurant', 'cleaning_services', 'directions_bike', 'air', 'spa', 'bolt', 'school', 'monitor_heart']
 const WEEKDAYS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
 const INITIALS = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S']
-const FREQUENCIES: PickerOption[] = [
-  { value: 'diariamente', label: 'Todos os dias', icon: 'today' },
-  { value: 'semanal:1,2,3,4,5', label: 'Dias úteis', icon: 'work' },
-  { value: 'semanal:0,6', label: 'Fins de semana', icon: 'weekend' },
-]
 
 function interval(habit: Row) {
   const match = String(habit.repeticao || '').match(/^intervalo:(\d+)$/)
@@ -250,6 +245,7 @@ export function HabitsModern({ state, today, commit, createRequest }: Props) {
                           key={day}
                           type="button"
                           className={styles.dot}
+                          data-day=""
                           data-level={level || undefined}
                           data-today={day === today || undefined}
                           data-off={!eligible(habit, day) || undefined}
@@ -321,8 +317,6 @@ export function HabitsModern({ state, today, commit, createRequest }: Props) {
 
 function HabitComposer({ today, onCancel, onSave }: { today: string; onCancel: () => void; onSave: (habit: Row) => void }) {
   const [draft, setDraft] = useState<Row>(() => blankHabit(today))
-  const [picker, setPicker] = useState<'' | 'freq'>('')
-  const freqRef = useRef<HTMLButtonElement | null>(null)
   const submit = () => { if (String(draft.nome || '').trim()) onSave(cleanHabit(draft, today)) }
 
   useEffect(() => {
@@ -349,10 +343,8 @@ function HabitComposer({ today, onCancel, onSave }: { today: string; onCancel: (
             <label><span>Unidade</span><input value={String(draft.unidade || '')} placeholder="copos, páginas…" onChange={event => setDraft({ ...draft, unidade: event.target.value })} /></label>
             <label><span>Horário</span><input type="time" value={String(draft.hora || '')} onChange={event => setDraft({ ...draft, hora: event.target.value })} /></label>
           </div>
+          <FrequencyEditor draft={draft} setDraft={setDraft} today={today} />
           <div className={quick.chips}>
-            <button ref={freqRef} type="button" className={quick.chip} data-set onClick={() => setPicker('freq')}>
-              <Icon name="repeat" size={16} filled={false} />{frequencyLabel(draft)}
-            </button>
             <ColorField value={draft.cor_hex} className={quick.chip} onChange={color => setDraft({ ...draft, cor_hex: color })} />
           </div>
         </div>
@@ -361,11 +353,6 @@ function HabitComposer({ today, onCancel, onSave }: { today: string; onCancel: (
           <button type="button" className={quick.primary} disabled={!String(draft.nome || '').trim()} onClick={submit}>Adicionar hábito</button>
         </div>
       </div>
-      {picker === 'freq' ? (
-        <Floating anchor={freqRef} title="Frequência" width={240} onClose={() => setPicker('')}>
-          <OptionList options={FREQUENCIES} value={String(draft.repeticao)} onSelect={value => { setDraft({ ...draft, repeticao: value, dias_semana: value === 'diariamente' ? [0, 1, 2, 3, 4, 5, 6] : nums(value.slice(8).split(',')) }); setPicker('') }} />
-        </Floating>
-      ) : null}
     </div>
   )
 }
@@ -473,9 +460,6 @@ function HabitDetail({ habit, today, stats, levelOf, progressOf, entries, onTogg
   const shiftMonth = (amount: number) => { const next = new Date(year, monthNumber - 1 + amount, 1); setMonth(`${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, '0')}`) }
   const monthTitle = new Date(year, monthNumber - 1, 1).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
 
-  const mode = String(draft.repeticao || 'diariamente').startsWith('intervalo:') ? 'interval' : String(draft.repeticao || '').startsWith('semanal:') && !['semanal:1,2,3,4,5', 'semanal:0,6'].includes(String(draft.repeticao)) ? 'days' : 'daily'
-  const draftDays = nums(draft.dias_semana)
-  const draftEvery = Math.max(1, Number(String(draft.repeticao || '').match(/^intervalo:(\d+)$/)?.[1] || 2))
 
 
   return (
@@ -508,7 +492,7 @@ function HabitDetail({ habit, today, stats, levelOf, progressOf, entries, onTogg
               {monthKeys.map((day, index) => {
                 const level = levelOf(habit, day)
                 return (
-                  <button key={day} type="button" className={styles.dot} data-level={level || undefined} data-today={day === today || undefined} data-off={!eligible(habit, day) || undefined} disabled={!eligible(habit, day) || day > today} style={level === 'part' ? ({ '--p': progressOf(habit, day) } as CSSProperties) : undefined} onClick={() => onToggle(day)} aria-label={longDate(day)}>
+                  <button key={day} type="button" className={styles.dot} data-day="" data-level={level || undefined} data-today={day === today || undefined} data-off={!eligible(habit, day) || undefined} disabled={!eligible(habit, day) || day > today} style={level === 'part' ? ({ '--p': progressOf(habit, day) } as CSSProperties) : undefined} onClick={() => onToggle(day)} aria-label={longDate(day)}>
                     <span className={styles.dayNumber}>{index + 1}</span>
                   </button>
                 )
@@ -555,28 +539,7 @@ function HabitDetail({ habit, today, stats, levelOf, progressOf, entries, onTogg
               <ColorField value={draft.cor_hex} onChange={color => setDraft({ ...draft, cor_hex: color })} />
             </div>
 
-            <div className={styles.field}>
-              <span>Frequência</span>
-              <div className={styles.modes}>
-                <button type="button" data-active={mode === 'daily' || undefined} onClick={() => setDraft({ ...draft, repeticao: 'diariamente', dias_semana: [0, 1, 2, 3, 4, 5, 6] })}>Todos os dias</button>
-                <button type="button" data-active={mode === 'days' || undefined} onClick={() => { const selected = draftDays.length && draftDays.length < 7 ? draftDays : [1, 2, 3, 4, 5]; setDraft({ ...draft, repeticao: `semanal:${selected.join(',')}`, dias_semana: selected }) }}>Dias da semana</button>
-                <button type="button" data-active={mode === 'interval' || undefined} onClick={() => setDraft({ ...draft, repeticao: `intervalo:${draftEvery}`, dias_semana: [], data_inicio: dateKey(draft.data_inicio) || today })}>A cada X dias</button>
-              </div>
-              {mode === 'days' ? (
-                <div className={styles.weekdays}>
-                  {INITIALS.map((label, day) => {
-                    const on = draftDays.includes(day)
-                    return <button key={`${label}-${day}`} type="button" data-active={on || undefined} aria-label={WEEKDAYS[day]} onClick={() => { const next = on ? draftDays.filter(item => item !== day) : [...draftDays, day].sort((a, b) => a - b); setDraft({ ...draft, dias_semana: next, repeticao: `semanal:${next.join(',')}` }) }}>{label}</button>
-                  })}
-                </div>
-              ) : null}
-              {mode === 'interval' ? (
-                <div className={styles.fieldRow}>
-                  <label className={styles.field}><span>Repetir a cada (dias)</span><input type="number" min="1" max="365" value={draftEvery} onChange={event => setDraft({ ...draft, repeticao: `intervalo:${Math.max(1, Number(event.target.value) || 1)}` })} /></label>
-                  <label className={styles.field}><span>Começando em</span><input type="date" value={dateKey(draft.data_inicio) || today} onChange={event => setDraft({ ...draft, data_inicio: event.target.value })} /></label>
-                </div>
-              ) : null}
-            </div>
+            <FrequencyEditor draft={draft} setDraft={setDraft} today={today} />
 
             <div className={styles.field}>
               <span>Ícone</span>
@@ -635,10 +598,54 @@ function QuickEdit({ habit, today, commit }: { habit: Row; today: string; commit
               <label className={styles.field}><span>Unidade</span><input value={String(draft.unidade || '')} placeholder="copos…" onChange={event => setDraft({ ...draft, unidade: event.target.value })} /></label>
             </div>
             <ColorField value={draft.cor_hex} onChange={color => setDraft({ ...draft, cor_hex: color })} />
-            <OptionList options={FREQUENCIES} value={String(draft.repeticao)} onSelect={value => setDraft({ ...draft, repeticao: value, dias_semana: value === 'diariamente' ? [0, 1, 2, 3, 4, 5, 6] : nums(value.slice(8).split(',')) })} />
+            <FrequencyEditor draft={draft} setDraft={setDraft} today={today} />
           </div>
         </Floating>
       ) : null}
     </>
+  )
+}
+
+/* ----------------------------------------------------------- Frequência */
+
+/* Todos os dias, dias da semana à escolha (D S T Q Q S S) ou a cada X dias. */
+function FrequencyEditor({ draft, setDraft, today }: { draft: Row; setDraft: (next: Row) => void; today: string }) {
+  const repeat = String(draft.repeticao || 'diariamente')
+  const mode = repeat.startsWith('intervalo:') ? 'interval' : repeat.startsWith('semanal:') ? 'days' : 'daily'
+  const days = mode === 'days' ? nums(repeat.slice(8).split(',')) : nums(draft.dias_semana)
+  const every = Math.max(1, Number(repeat.match(/^intervalo:(\d+)$/)?.[1] || 2))
+  const presets: { label: string; days: number[] }[] = [
+    { label: 'Dias úteis', days: [1, 2, 3, 4, 5] },
+    { label: 'Fins de semana', days: [0, 6] },
+  ]
+  const setDays = (next: number[]) => setDraft({ ...draft, dias_semana: next, repeticao: `semanal:${next.join(',')}` })
+  return (
+    <div className={styles.field}>
+      <span>Frequência</span>
+      <div className={styles.modes}>
+        <button type="button" data-active={mode === 'daily' || undefined} onClick={() => setDraft({ ...draft, repeticao: 'diariamente', dias_semana: [0, 1, 2, 3, 4, 5, 6] })}>Todos os dias</button>
+        <button type="button" data-active={mode === 'days' || undefined} onClick={() => setDays(days.length && days.length < 7 ? days : [1, 2, 3, 4, 5])}>Dias da semana</button>
+        <button type="button" data-active={mode === 'interval' || undefined} onClick={() => setDraft({ ...draft, repeticao: `intervalo:${every}`, dias_semana: [], data_inicio: dateKey(draft.data_inicio) || today })}>A cada X dias</button>
+      </div>
+      {mode === 'days' ? (
+        <>
+          <div className={styles.weekdays}>
+            {INITIALS.map((label, day) => {
+              const on = days.includes(day)
+              return <button key={`${label}-${day}`} type="button" data-active={on || undefined} aria-pressed={on} aria-label={WEEKDAYS[day]} title={WEEKDAYS[day]} onClick={() => { const next = on ? days.filter(item => item !== day) : [...days, day].sort((a, b) => a - b); if (next.length) setDays(next) }}>{label}</button>
+            })}
+          </div>
+          <div className={styles.presets}>
+            {presets.map(preset => <button key={preset.label} type="button" onClick={() => setDays(preset.days)}>{preset.label}</button>)}
+          </div>
+        </>
+      ) : null}
+      {mode === 'interval' ? (
+        <div className={styles.fieldRow}>
+          <label className={styles.field}><span>Repetir a cada (dias)</span><input type="number" min="1" max="365" value={every} onChange={event => setDraft({ ...draft, repeticao: `intervalo:${Math.max(1, Number(event.target.value) || 1)}` })} /></label>
+          <label className={styles.field}><span>Começando em</span><input type="date" value={dateKey(draft.data_inicio) || today} onChange={event => setDraft({ ...draft, data_inicio: event.target.value })} /></label>
+        </div>
+      ) : null}
+    </div>
   )
 }
