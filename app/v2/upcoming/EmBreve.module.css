@@ -196,3 +196,5 @@
   .stripWrap { top: 0; }
   .daySlot { scroll-margin-top: 96px; }
 }
+
+.event[data-external] { margin: 4px 0; padding: 8px 12px; border: 1px solid var(--ev); border-radius: 10px; background: color-mix(in srgb, var(--ev) 9%, transparent); }

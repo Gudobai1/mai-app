@@ -17,7 +17,6 @@ type Props = {
   nowMinutes: number | null
   isPassed: (item: PlannerItem) => boolean
   onOpen: (item: PlannerItem) => void
-  /** Marca o compromisso como concluído (círculo à esquerda). */
   onToggle?: (item: PlannerItem) => void
   bind: (item: PlannerItem) => HTMLAttributes<HTMLElement>
 }
@@ -31,7 +30,7 @@ const hm = (minutes: number) => `${String(Math.floor(minutes / 60)).padStart(2, 
 const isGoogle = (item: PlannerItem) => item.raw.tipo === 'google' || item.raw.tipo === 'gcalendar'
 const sourceOf = (item: PlannerItem) => String(item.raw.calendario_nome || (isGoogle(item) ? 'Google Agenda' : item.raw.categoria || 'MAI'))
 
-export function AgendaStrip({ items, nowMinutes, onOpen, onToggle, bind }: Props) {
+export function AgendaStrip({ items, nowMinutes, onOpen, bind }: Props) {
   const allDay = items.filter(item => item.raw.dia_inteiro === true || !item.time || item.subtitle === 'Em andamento')
   const timed = useMemo(
     () => items
@@ -49,16 +48,19 @@ export function AgendaStrip({ items, nowMinutes, onOpen, onToggle, bind }: Props
     [items],
   )
 
-  const row = (item: PlannerItem, when: string, icon: string, now: boolean) => (
+  const row = (item: PlannerItem, when: string, icon: string, now: boolean) => {
+  const external = isGoogle(item)
+  return (
     <div
       key={item.id}
       role="listitem"
       className={styles.row}
       data-now={now || undefined}
+      data-external={external || undefined}
       style={{ '--ev': eventColor(item.raw) } as CSSProperties}
       {...bind(item)}
     >
-      <button type="button" className={styles.ring} aria-label={`Concluir: ${item.title}`} onClick={() => onToggle?.(item)} />
+      {external ? null : <span className={styles.dot} aria-hidden="true" />}
       <button type="button" className={styles.body} onClick={() => onOpen(item)}>
         <span className={styles.title}>
           {item.title}
@@ -69,6 +71,7 @@ export function AgendaStrip({ items, nowMinutes, onOpen, onToggle, bind }: Props
       <span className={styles.source}>{sourceOf(item)}<b>#</b></span>
     </div>
   )
+  }
 
   return (
     <div className={styles.list} role="list">

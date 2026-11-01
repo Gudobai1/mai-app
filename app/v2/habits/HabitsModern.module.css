@@ -169,3 +169,12 @@
 .quickButton:hover { background: var(--ds-surface-hover); color: var(--ds-text); }
 @media (hover: none) { .quickButton { opacity: 1; } }
 .quick { display: grid; gap: 10px; padding: 4px; }
+
+.habitIcon { display: inline-block; margin-right: 6px; vertical-align: -3px; color: var(--ds-muted); }
+.title { display: flex; align-items: center; }
+.iconGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(38px, 1fr)); gap: 6px; }
+.iconGrid button { display: grid; place-items: center; height: 38px; border: 1px solid var(--ds-line); border-radius: 8px; background: transparent; color: var(--ds-muted); cursor: pointer; }
+.iconGrid button:hover { background: var(--ds-surface-hover); color: var(--ds-text); }
+.iconGrid button[data-active] { border-color: var(--hc, var(--ds-accent)); color: var(--hc, var(--ds-accent)); }
+.wideField { flex-basis: 100%; }
+.composerFields .wideField input { width: 100%; box-sizing: border-box; }

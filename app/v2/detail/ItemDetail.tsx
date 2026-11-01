@@ -606,14 +606,6 @@ function EventDetail({ item, state, today, commit, googleRpc, refreshEvents, reg
     } finally { setBusy(false) }
   }), [register, google, googleRpc, refreshEvents, source])
 
-  const key = `${item.sourceId}|${day}|${String(source.hora_inicio || item.time || '')}`
-  const completions = rows(state.eventCompletions)
-  const done = completions.some(entry => entry.chave === key || (String(entry.evento_id) === item.sourceId && dateKey(entry.data) === day && entry.concluida !== false))
-  const toggleDone = () => commit(current => {
-    const list = rows(current.eventCompletions)
-    return { ...current, eventCompletions: done ? list.filter(entry => !(entry.chave === key || (String(entry.evento_id) === item.sourceId && dateKey(entry.data) === day))) : [...list, { chave: key, evento_id: item.sourceId, data: day, hora: draft.hora_inicio, concluida: true, atualizado_em: new Date().toISOString() }] }
-  })
-
   async function remove() {
     if (!(await askConfirm({ title: 'Excluir compromisso?', message: `“${draft.titulo || 'Compromisso'}” será excluído${google ? ' também do Google Agenda' : ''}. Não dá para desfazer.` }))) return
     if (google) {
@@ -638,7 +630,7 @@ function EventDetail({ item, state, today, commit, googleRpc, refreshEvents, reg
         <div className={styles.titleRow}>
           <span className={styles.tile} style={{ background: color.startsWith('#') ? color : undefined }}><Icon name="event" size={17} /></span>
           <div className={styles.titleBody}>
-            <GrowText className={`${styles.title} ${done ? styles.titleDone : ''}`} value={draft.titulo} placeholder="Nome do compromisso" multiline={false} onChange={titulo => update({ titulo })} />
+            <GrowText className={styles.title} value={draft.titulo} placeholder="Nome do compromisso" multiline={false} onChange={titulo => update({ titulo })} />
             <GrowText className={styles.description} value={draft.descricao} placeholder="Adicionar descrição" onChange={descricao => update({ descricao })} />
           </div>
         </div>
@@ -655,11 +647,6 @@ function EventDetail({ item, state, today, commit, googleRpc, refreshEvents, reg
         </div>
 
         <div className={styles.actions}>
-          <button type="button" className={styles.actionRow} data-on={done || undefined} onClick={toggleDone}>
-            <Icon name={done ? 'check_circle' : 'radio_button_unchecked'} size={20} filled={done} />
-            <span>{done ? 'Concluído' : 'Marcar como concluído'}</span>
-            <small>{friendlyDate(day, today)}</small>
-          </button>
           {google && source.url ? (
             <a className={styles.actionRow} href={String(source.url)} target="_blank" rel="noreferrer">
               <Icon name="open_in_new" size={20} filled={false} /><span>Abrir no Google Agenda</span>

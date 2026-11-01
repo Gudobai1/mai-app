@@ -398,21 +398,24 @@ export function TodayModern({ state, today, commit, navigate, inspect, options, 
   }).sort((a, b) => Number(a.done) - Number(b.done))
   const habitsDone = habits.filter(item => item.done).length
 
-  function logHabit(item: (typeof habits)[number]) {
-    if (!canLogHabits) return
-    const habitId = item.habit.id
+  /* Clique no círculo de um dia da semana: registra (ou desfaz) aquele dia. */
+  function logHabitOn(habit: Row, key: string) {
+    if (key > today || !habitEligible(habit, key)) return
+    const habitId = habit.id
+    const target = Math.max(1, Number(habit.meta || 1))
+    const quantitative = target > 1 || Boolean(habit.unidade)
     commit(current => {
       const all = rows(current.habitEntries)
-      const existing = all.find(entry => String(entry.habito_id) === String(habitId) && dateKey(entry.data) === day)
-      const others = all.filter(entry => !(String(entry.habito_id) === String(habitId) && dateKey(entry.data) === day))
-      if (!item.quantitative) {
+      const existing = all.find(entry => String(entry.habito_id) === String(habitId) && dateKey(entry.data) === key)
+      const others = all.filter(entry => !(String(entry.habito_id) === String(habitId) && dateKey(entry.data) === key))
+      if (!quantitative) {
         if (existing && !failedEntry(existing) && Number(existing.valor || 0) > 0) return { ...current, habitEntries: others }
-        return { ...current, habitEntries: [...others, { id: existing?.id || uid('hr'), habito_id: habitId, data: day, valor: item.target, falhou: false, status: '', criado_em: existing?.criado_em || new Date().toISOString() }] }
+        return { ...current, habitEntries: [...others, { id: existing?.id || uid('hr'), habito_id: habitId, data: key, valor: target, falhou: false, status: '', criado_em: existing?.criado_em || new Date().toISOString() }] }
       }
       const currentValue = existing && !failedEntry(existing) ? Number(existing.valor || 0) : 0
-      const nextValue = currentValue >= item.target ? 0 : currentValue + 1
+      const nextValue = currentValue >= target ? 0 : currentValue + 1
       if (nextValue === 0) return { ...current, habitEntries: others }
-      return { ...current, habitEntries: [...others, { id: existing?.id || uid('hr'), habito_id: habitId, data: day, valor: nextValue, falhou: false, status: '', criado_em: existing?.criado_em || new Date().toISOString() }] }
+      return { ...current, habitEntries: [...others, { id: existing?.id || uid('hr'), habito_id: habitId, data: key, valor: nextValue, falhou: false, status: '', criado_em: existing?.criado_em || new Date().toISOString() }] }
     })
   }
 
@@ -509,19 +512,6 @@ export function TodayModern({ state, today, commit, navigate, inspect, options, 
     }
   }
 
-  function toggleEventDone(item: PlannerItem) {
-    const key = `${item.sourceId}|${item.date}|${item.time || ''}`
-    commit(current => {
-      const completions = rows(current.eventCompletions)
-      const exists = completions.some(entry => entry.chave === key || (String(entry.evento_id) === item.sourceId && dateKey(entry.data) === item.date && entry.concluida !== false))
-      return {
-        ...current,
-        eventCompletions: exists
-          ? completions.filter(entry => !(entry.chave === key || (String(entry.evento_id) === item.sourceId && dateKey(entry.data) === item.date)))
-          : [...completions, { chave: key, evento_id: item.sourceId, data: item.date, hora: item.time, concluida: true, atualizado_em: new Date().toISOString() }],
-      }
-    })
-  }
 
   function patchEvent(id: string, patch: (event: Row) => Row) {
     commit(current => ({ ...current, events: rows(current.events).map(event => String(event.id) === id ? patch(event) : event) }))
@@ -536,14 +526,12 @@ export function TodayModern({ state, today, commit, navigate, inspect, options, 
       const shift = Math.round((new Date(`${target}T12:00:00`).getTime() - new Date(`${start}T12:00:00`).getTime()) / 86400000)
       return { ...event, data_inicio: target, ...(end ? { data_fim: addDays(end, shift) } : {}) }
     })
-    const done = Boolean(item.completed)
     return {
       title: item.title,
       subtitle: `${item.time ? `${item.time} · ` : ''}${google ? String(item.raw.calendario_nome || 'Google Agenda') : String(item.raw.categoria || 'MAI')}`,
       groups: [
         google || !start ? { options: [] } : { label: 'Mover para', inline: true, options: dateChoices.map(choice => ({ label: choice.label, icon: choice.icon, active: start === choice.value, onSelect: () => moveTo(choice.value) })) },
         { options: [
-          { label: done ? 'Desmarcar concluído' : 'Marcar como concluído', icon: done ? 'undo' : 'check_circle', onSelect: () => toggleEventDone(item) },
           { label: 'Abrir detalhes', icon: 'open_in_full', onSelect: () => inspectPlanner(item) },
           ...(google && item.raw.url ? [{ label: 'Abrir no Google Agenda', icon: 'open_in_new', onSelect: () => { window.open(String(item.raw.url), '_blank', 'noopener') } }] : []),
           ...(!google ? [{ label: 'Excluir', icon: 'delete', tone: 'danger' as const, onSelect: async () => {
@@ -807,7 +795,7 @@ export function TodayModern({ state, today, commit, navigate, inspect, options, 
         {head('appointments', 'Agenda', events.length ? plural(events.length, 'compromisso', 'compromissos') : undefined)}
         {!collapsed.has('appointments') ? (
           <>
-            {events.length ? <AgendaStrip items={events} nowMinutes={isToday && clockIsToday ? nowMinutes : null} isPassed={eventPassed} onOpen={inspectPlanner} onToggle={toggleEventDone} bind={item => quick.bind(() => eventMenu(item))} /> : <div className={styles.empty}>{isToday ? 'Nada na agenda hoje.' : 'Nada na agenda neste dia.'}</div>}
+            {events.length ? <AgendaStrip items={events} nowMinutes={isToday && clockIsToday ? nowMinutes : null} isPassed={eventPassed} onOpen={inspectPlanner} bind={item => quick.bind(() => eventMenu(item))} /> : <div className={styles.empty}>{isToday ? 'Nada na agenda hoje.' : 'Nada na agenda neste dia.'}</div>}
             {addRow('Adicionar compromisso', 'event')}
           </>
         ) : null}
@@ -854,9 +842,6 @@ export function TodayModern({ state, today, commit, navigate, inspect, options, 
                 const streak = streakOf(item.habit)
                 return (
                   <div key={String(item.habit.id)} role="listitem" className={styles.habitRow} style={{ '--hc': color } as CSSProperties} {...quick.bind(() => habitMenu(item))}>
-                    <button type="button" className={styles.habitRing} data-done={item.done || undefined} data-failed={item.failed || undefined} data-partial={(!item.done && !item.failed && item.value > 0) || undefined} disabled={!canLogHabits} onClick={() => logHabit(item)} aria-label={item.quantitative ? `Registrar mais 1 em ${name}` : item.done ? `Desmarcar ${name}` : `Marcar ${name}`}>
-                      {item.done ? <Icon name="check" size={12} weight={600} /> : item.failed ? <span aria-hidden="true">×</span> : null}
-                    </button>
                     <button type="button" className={styles.habitBody} onClick={() => inspect({ kind: 'habit', sourceId: String(item.habit.id), title: name, date: day, raw: item.habit })}>
                       <span className={styles.habitTitle} style={{ color: color }}>{name}</span>
                       {(() => {
@@ -864,8 +849,10 @@ export function TodayModern({ state, today, commit, navigate, inspect, options, 
                         return sub ? <span className={styles.habitDesc}>{sub}</span> : null
                       })()}
                     </button>
-                    <span className={styles.habitDots} aria-hidden="true">
-                      {weekKeys.map(key => <i key={key} style={{ ['--p' as string]: pctOn(item.habit, key) }} data-on={levelOn(item.habit, key) === 'full' || undefined} data-part={levelOn(item.habit, key) === 'part' || undefined} data-today={key === day || undefined} />)}
+                    <span className={styles.habitDots}>
+                      {weekKeys.map(key => (
+                        <button key={key} type="button" className={styles.habitDay} style={{ ['--p' as string]: pctOn(item.habit, key) }} data-on={levelOn(item.habit, key) === 'full' || undefined} data-part={levelOn(item.habit, key) === 'part' || undefined} data-failed={failedEntry(entryByKey.get(`${item.habit.id}|${key}`)) || undefined} data-today={key === day || undefined} data-off={!habitEligible(item.habit, key) || undefined} disabled={key > today || !habitEligible(item.habit, key)} onClick={() => logHabitOn(item.habit, key)} aria-label={`${name} em ${naturalDate(key, today)}`} />
+                      ))}
                     </span>
                     <span className={styles.streak} data-on={streak > 0 || undefined} title={`Sequência de ${streak} ${streak === 1 ? 'dia' : 'dias'}`}><Icon name="local_fire_department" size={15} />{streak}</span>
                   </div>

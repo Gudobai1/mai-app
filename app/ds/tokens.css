@@ -166,8 +166,8 @@ html[data-mai-theme="dark"][data-mai-color="lavanda"] { --ds-accent: #A596DB; --
 html[data-mai-color="framboesa"] { --ds-accent: #C94A6C; --ds-accent-strong: #A33A57; --ds-accent-soft: #FBE6EC; }
 html[data-mai-theme="dark"][data-mai-color="framboesa"] { --ds-accent: #E2708D; --ds-accent-strong: #F096AC; --ds-accent-soft: #381B25; }
 
-:root { --mai-side-bg: color-mix(in srgb, var(--ds-accent) 5%, #FAFAFA); }
-html[data-mai-theme="dark"] { --mai-side-bg: color-mix(in srgb, var(--ds-accent) 5%, #262626); }
+:root { --mai-side-bg: color-mix(in srgb, var(--ds-accent) 2%, #FCFCFC); }
+html[data-mai-theme="dark"] { --mai-side-bg: color-mix(in srgb, var(--ds-accent) 2.5%, #262626); }
 
 @media (prefers-reduced-motion: reduce) {
   :root {

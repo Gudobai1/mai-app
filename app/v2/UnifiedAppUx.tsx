@@ -295,7 +295,7 @@ export function UnifiedAppUx() {
     <ModernSidebar state={runtime.state} today={runtime.today} view={view} navigate={navigate} onSearch={() => setSearchOpen(true)} onAdd={() => contextualAdd()} onSettings={() => setSettingsOpen(true)} onToggleTheme={toggleTheme} onNewProject={parentId => setProjectDialog(parentId ? { parentId } : {})} activeProjectId={activeProjectId} dark={isDark} profile={googleProfile} />
 
     <main className={`${styles.main} mai-v3-main`}>
-      <div className={`${styles.workspace} mai-v3-workspace`}>
+      <div key={view} className={`${styles.workspace} mai-v3-workspace mai-view-enter`}>
         {runtime.ready && view !== 'today' && view !== 'tasks' && view !== 'upcoming' ? <AppTopBar state={runtime.state} today={runtime.today} view={view} taskScope={taskScope} commit={runtime.commit} onTaskScopeChange={setTaskScope} onSettings={() => setSettingsOpen(true)} /> : null}
         {!runtime.ready ? <div className={styles.loadingState}>Carregando seu MAI…</div> : <>
           {view === 'today' ? <TodayModern state={viewState} today={runtime.today} commit={runtime.commit} navigate={navigate} inspect={setSelected} onAddTask={projectId => setQuickAdd({ kinds: ['task'], initial: 'task', projectId, date: runtime.today })} onAddEvent={() => setQuickAdd({ kinds: ['event'], initial: 'event', date: runtime.today })} options={<AppTopBar state={runtime.state} today={runtime.today} view={view} taskScope={taskScope} commit={runtime.commit} onTaskScopeChange={setTaskScope} onSettings={() => setSettingsOpen(true)} />}/> : null}
