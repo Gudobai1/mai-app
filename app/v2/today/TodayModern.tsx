@@ -697,7 +697,7 @@ export function TodayModern({ state, today, commit, navigate, inspect, options, 
                 <Icon name={expanded ? 'expand_more' : 'chevron_right'} size={20} filled={false} />
               </button>
             ) : null}
-            <span className={styles.projLabel}>{projectLabel}<b style={{ color: projectColor(task.projeto_id) }}>#</b></span>
+            <span className={styles.projLabel} style={{ color: projectColor(task.projeto_id) }}>{projectLabel}<b>#</b></span>
           </div>
         </div>
       </div>

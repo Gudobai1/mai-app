@@ -1,14 +1,16 @@
 'use client'
 
-import { useEffect, useRef, type RefObject } from 'react'
+import { useEffect, useRef, useState, type RefObject } from 'react'
 import type { MaiState, SyncStatus } from '../../lib/v2/state'
-import styles from './unified.module.css'
+import { Icon } from '../ds'
+import styles from './Settings.module.css'
 import { ThemePicker } from './ThemePicker'
 
 
 type Calendar = { id: string; nome: string; cor: string; primary?: boolean }
 
 type Props = {
+  profile?: { name: string; picture?: string; email?: string } | null
   state: MaiState
   commit: (change: (current: MaiState) => MaiState) => void
   onClose: () => void
@@ -47,20 +49,141 @@ export function AppSettingsDrawer(props: Props) {
     return () => window.clearTimeout(timer)
   }, [props.calendarDraft, props.googleConnected])
 
-  return <div className={styles.modalLayer} onMouseDown={props.onClose}><section className={`${styles.modalCard} ${styles.settingsCard}`} onMouseDown={event => event.stopPropagation()}>
-    <header className={styles.modalHeader}><div><h2>Ajustes</h2></div><button onClick={props.onClose}>×</button></header>
-    <section><h3>Aparência</h3>
-      <ThemePicker
-        mode={props.state.configs.theme}
-        theme={props.state.configs.accentColor}
-        onMode={mode => props.commit(current => ({ ...current, configs: { ...current.configs, theme: mode } }))}
-        onTheme={theme => props.commit(current => ({ ...current, configs: { ...current.configs, accentColor: theme } }))}
-      />
-      <div className={styles.settingsRow}><span><strong>Notificações</strong><small>Lembretes dos itens com horário</small></span><button onClick={() => void props.requestNotifications()}>{props.state.configs.notificationsEnabled ? 'Desativar' : 'Ativar'}</button></div>
-      {props.installPrompt ? <div className={styles.settingsRow}><span><strong>Instalar MAI</strong><small>Usar como aplicativo</small></span><button onClick={() => void props.install()}>Instalar</button></div> : null}
-    </section>
-    <section><h3>Google</h3>{props.googleConnected ? <><div className={styles.calendarPicker}>{props.calendars.map(calendar => <label key={calendar.id}><input type="checkbox" checked={props.calendarDraft.includes(calendar.id)} onChange={event => props.setCalendarDraft(event.target.checked ? [...props.calendarDraft, calendar.id] : props.calendarDraft.filter(id => id !== calendar.id))} /><i style={{ background: calendar.cor }} /><span>{calendar.nome}</span></label>)}</div><div className={styles.settingsButtons}><span className="mai-autosave-status">Calendários salvos automaticamente</span><button className={styles.dangerButton} onClick={() => void props.disconnectGoogle()}>Desconectar</button></div></> : <div className={styles.settingsRow}><span><strong>Agenda e Drive</strong><small>Reconecte sua conta Google</small></span><a className={styles.primaryButton} href="/api/google/connect">Reconectar</a></div>}</section>
-    <section><h3>Dados</h3><div className={styles.settingsButtons}><button onClick={props.exportData}>Exportar backup</button><label>Importar backup<input ref={props.importRef} hidden type="file" accept="application/json" onChange={event => void props.importData(event.target.files?.[0])} /></label><button onClick={() => void props.flushRemoteSync()}>Sincronizar agora</button></div></section>
-    <section><h3>Conta</h3><div className={styles.settingsRow}><span><strong>{props.syncStatus.message}</strong><small>As atualizações continuam usando o mesmo MAI e os mesmos dados.</small></span><button className={styles.dangerButton} onClick={props.logout}>Sair</button></div></section>
-  </section></div>
+  const scroller = useRef<HTMLDivElement | null>(null)
+  const [active, setActive] = useState('conta')
+  const name = String(props.profile?.name || props.state.configs.profileName || props.state.configs.userName || 'Meu perfil')
+  const email = props.profile?.email
+  const sections = [
+    { id: 'conta', label: 'Conta', icon: 'account_circle' },
+    { id: 'tema', label: 'Aparência', icon: 'palette' },
+    { id: 'notificacoes', label: 'Notificações', icon: 'notifications' },
+    { id: 'calendarios', label: 'Calendários', icon: 'calendar_month' },
+    { id: 'dados', label: 'Dados e backup', icon: 'cloud_upload' },
+    ...(props.installPrompt ? [{ id: 'app', label: 'Aplicativo', icon: 'install_mobile' }] : []),
+  ]
+
+  const go = (id: string) => {
+    setActive(id)
+    scroller.current?.querySelector<HTMLElement>(`[data-section="${id}"]`)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
+  const onScroll = () => {
+    const box = scroller.current
+    if (!box) return
+    const top = box.getBoundingClientRect().top + 24
+    let current = sections[0].id
+    box.querySelectorAll<HTMLElement>('[data-section]').forEach(node => { if (node.getBoundingClientRect().top <= top) current = node.dataset.section || current })
+    if (box.scrollTop + box.clientHeight >= box.scrollHeight - 4) current = sections[sections.length - 1].id
+    setActive(current)
+  }
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => { if (event.key === 'Escape') props.onClose() }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [props])
+
+  const notifications = Boolean(props.state.configs.notificationsEnabled)
+
+  return (
+    <div className={styles.layer} onMouseDown={props.onClose}>
+      <section className={styles.dialog} role="dialog" aria-modal="true" aria-label="Configurações" onMouseDown={event => event.stopPropagation()}>
+        <nav className={styles.nav} aria-label="Seções">
+          <h2>Configurações</h2>
+          {sections.map(item => (
+            <button key={item.id} type="button" data-active={active === item.id || undefined} onClick={() => go(item.id)}>
+              <Icon name={item.icon} size={20} filled={false} /><span>{item.label}</span>
+            </button>
+          ))}
+        </nav>
+        <div className={styles.content}>
+          <header className={styles.top}>
+            <h2>Configurações</h2>
+            <button type="button" className={styles.close} onClick={props.onClose} aria-label="Fechar"><Icon name="close" size={22} filled={false} /></button>
+          </header>
+          <div className={styles.scroll} ref={scroller} onScroll={onScroll}>
+            <section className={styles.section} data-section="conta">
+              <h3>Conta</h3>
+              <div className={styles.profile}>
+                <span className={styles.avatar}>{props.profile?.picture ? /* eslint-disable-next-line @next/next/no-img-element */ <img src={props.profile.picture} alt="" referrerPolicy="no-referrer" /> : name.trim().slice(0, 1).toLocaleUpperCase('pt-BR')}</span>
+                <div><strong>{name}</strong>{email ? <small>{email}</small> : null}</div>
+              </div>
+              <div className={styles.row}>
+                <span><strong>{props.syncStatus.message}</strong><small>Seus dados ficam sincronizados entre os aparelhos.</small></span>
+                <button type="button" className={styles.button} onClick={() => void props.flushRemoteSync()}>Sincronizar agora</button>
+              </div>
+              <div className={styles.row}>
+                <span><strong>Sair</strong><small>Encerra a sessão neste aparelho.</small></span>
+                <button type="button" className={`${styles.button} ${styles.danger}`} onClick={props.logout}>Sair</button>
+              </div>
+            </section>
+
+            <section className={styles.section} data-section="tema">
+              <h3>Aparência</h3>
+              <ThemePicker
+                mode={props.state.configs.theme}
+                theme={props.state.configs.accentColor}
+                onMode={mode => props.commit(current => ({ ...current, configs: { ...current.configs, theme: mode } }))}
+                onTheme={theme => props.commit(current => ({ ...current, configs: { ...current.configs, accentColor: theme } }))}
+              />
+            </section>
+
+            <section className={styles.section} data-section="notificacoes">
+              <h3>Notificações</h3>
+              <div className={styles.row}>
+                <span><strong>Lembretes</strong><small>Avisos dos itens com horário.</small></span>
+                <button type="button" role="switch" aria-checked={notifications} className={styles.switch} data-on={notifications || undefined} onClick={() => void props.requestNotifications()}><i /></button>
+              </div>
+            </section>
+
+            <section className={styles.section} data-section="calendarios">
+              <h3>Calendários</h3>
+              {props.googleConnected ? (
+                <>
+                  <div className={styles.calendars}>
+                    {props.calendars.map(calendar => (
+                      <label key={calendar.id}>
+                        <input type="checkbox" checked={props.calendarDraft.includes(calendar.id)} onChange={event => props.setCalendarDraft(event.target.checked ? [...props.calendarDraft, calendar.id] : props.calendarDraft.filter(id => id !== calendar.id))} />
+                        <i style={{ background: calendar.cor }} /><span>{calendar.nome}</span>
+                      </label>
+                    ))}
+                  </div>
+                  <div className={styles.row}>
+                    <span><strong>Google Agenda e Drive</strong><small>Calendários salvos automaticamente.</small></span>
+                    <button type="button" className={`${styles.button} ${styles.danger}`} onClick={() => void props.disconnectGoogle()}>Desconectar</button>
+                  </div>
+                </>
+              ) : (
+                <div className={styles.row}>
+                  <span><strong>Google Agenda e Drive</strong><small>Reconecte sua conta Google.</small></span>
+                  <a className={styles.button} href="/api/google/connect">Reconectar</a>
+                </div>
+              )}
+            </section>
+
+            <section className={styles.section} data-section="dados">
+              <h3>Dados e backup</h3>
+              <div className={styles.row}>
+                <span><strong>Exportar backup</strong><small>Baixa todos os seus dados em um arquivo.</small></span>
+                <button type="button" className={styles.button} onClick={props.exportData}>Exportar</button>
+              </div>
+              <div className={styles.row}>
+                <span><strong>Importar backup</strong><small>Restaura dados de um arquivo exportado.</small></span>
+                <label className={styles.button}>Importar<input ref={props.importRef} hidden type="file" accept="application/json" onChange={event => void props.importData(event.target.files?.[0])} /></label>
+              </div>
+            </section>
+
+            {props.installPrompt ? (
+              <section className={styles.section} data-section="app">
+                <h3>Aplicativo</h3>
+                <div className={styles.row}>
+                  <span><strong>Instalar MAI</strong><small>Usar como aplicativo no aparelho.</small></span>
+                  <button type="button" className={styles.button} onClick={() => void props.install()}>Instalar</button>
+                </div>
+              </section>
+            ) : null}
+            <div className={styles.end} />
+          </div>
+        </div>
+      </section>
+    </div>
+  )
 }

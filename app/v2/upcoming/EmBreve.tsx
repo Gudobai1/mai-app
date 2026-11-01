@@ -345,7 +345,7 @@ export function EmBreve({ state, today, commit, inspect, syncRange }: Props) {
   const priorityStyle = (entry: Entry) => (!entry.done && PRIORITY_COLOR[entry.priority] ? ({ '--check-color': PRIORITY_COLOR[entry.priority] } as CSSProperties) : undefined)
 
   const projectTag = (entry: Entry) => entry.project ? (
-    <span className={tasksStyles.metaProject}>
+    <span className={tasksStyles.metaProject} style={{ color: entry.project.color }}>
       {entry.project.image
         // eslint-disable-next-line @next/next/no-img-element
         ? <img src={entry.project.image} alt="" loading="lazy" />

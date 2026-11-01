@@ -113,7 +113,7 @@ export function ModernSidebar({ state, today, view, navigate, onSearch, onSettin
         <div className={styles.projectRow} style={depth ? { paddingLeft: 12 + depth * 18 } : undefined} data-active={current || undefined}>
           <button type="button" className={styles.projectButton} aria-current={current ? 'page' : undefined} onClick={() => navigate(`project:${id}`)}>
             {photo(project)}
-            <span className={styles.itemLabel}>{String(project.nome || 'Projeto')}</span>
+            <span className={styles.itemLabel} style={{ color: String(project.cor || '') || undefined }}>{String(project.nome || 'Projeto')}</span>
             {count ? <span className={styles.projectCount}>{count}</span> : null}
           </button>
           <button
@@ -180,16 +180,16 @@ export function ModernSidebar({ state, today, view, navigate, onSearch, onSettin
       </nav>
 
       <div className={styles.footer}>
-        <div className={styles.profileRow}>
+        <button type="button" className={styles.profileRow} onClick={onSettings} aria-label={`Configurações de ${profileName}`} title="Configurações">
           <span className={styles.avatar}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             {profile?.picture ? <img src={profile.picture} alt="" referrerPolicy="no-referrer" /> : profileInitial}
           </span>
           <span className={styles.profileName} title={profile?.email || profileName}>{profileName}</span>
-          <button type="button" className={styles.settingsButton} onClick={onSettings} aria-label="Configurações" title="Configurações">
+          <span className={styles.settingsButton} aria-hidden="true">
             <SidebarIcon name="settings" />
-          </button>
-        </div>
+          </span>
+        </button>
       </div>
     </aside>
   )
