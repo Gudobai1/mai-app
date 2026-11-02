@@ -14,7 +14,7 @@
 .ds-theme-light {
   /* Tipografia */
   --ds-font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-  --ds-icon-font: 'Material Symbols Rounded';
+  --ds-icon-font: 'Material Symbols Outlined';
   --ds-fs-xs: 11px;
   --ds-fs-sm: 13px;
   --ds-fs-md: 15px;

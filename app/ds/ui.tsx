@@ -38,12 +38,12 @@ export type IconProps = {
   name: string
   size?: number
   filled?: boolean
-  weight?: 400 | 500 | 600
+  weight?: 300 | 400 | 500 | 600
   className?: string
   style?: CSSProperties
 }
 
-export function Icon({ name, size = 22, filled = true, weight = 400, className, style }: IconProps) {
+export function Icon({ name, size = 22, filled = false, weight = 300, className, style }: IconProps) {
   return (
     <span
       aria-hidden="true"
@@ -127,7 +127,7 @@ export type IconButtonProps = Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'chi
   filled?: boolean
 }
 
-export function IconButton({ icon, label, variant = 'surface', size = 44, badge, filled = true, className, style, type = 'button', ...rest }: IconButtonProps) {
+export function IconButton({ icon, label, variant = 'surface', size = 44, badge, filled = false, className, style, type = 'button', ...rest }: IconButtonProps) {
   return (
     <button
       type={type}

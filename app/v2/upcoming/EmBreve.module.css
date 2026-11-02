@@ -53,7 +53,7 @@
 
 /* Compromissos (mesmo desenho da agenda de Hoje) */
 .event { display: flex; align-items: center; gap: 10px; min-width: 0; padding: 7px 4px; border-radius: 8px; transition: background 0.12s; }
-.event:hover { background: var(--ds-surface-hover); }
+.event:hover {  }
 .event[data-passed] { opacity: 0.5; }
 .eventDot { width: 8px; height: 8px; flex-shrink: 0; border-radius: 50%; background: var(--ev); }
 .eventMain { appearance: none; flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; border: 0; padding: 0; background: transparent; color: var(--ds-text); font: inherit; text-align: left; cursor: pointer; -webkit-touch-callout: none; user-select: none; }
@@ -262,7 +262,7 @@
 .weekCol .weekHead { border-left: 0; border-bottom: 1px solid var(--ds-line); }
 .weekItems { flex: 1; min-height: 0; overflow-y: auto; padding: 6px; display: flex; flex-direction: column; gap: 4px; scrollbar-width: thin; scrollbar-color: var(--ds-line-strong) transparent; }
 .weekEvent { appearance: none; display: flex; align-items: center; gap: 6px; min-width: 0; padding: 4px 6px; border: 0; border-radius: 7px; background: transparent; color: var(--ds-text-2); font: inherit; font-size: 11.5px; font-weight: var(--ds-fw-medium); text-align: left; cursor: pointer; }
-.weekEvent:hover { background: var(--ds-surface-hover); }
+.weekEvent:hover {  }
 .weekEvent i { width: 8px; height: 8px; flex-shrink: 0; border-radius: 50%; background: var(--ev); }
 .weekEvent span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .weekEvent[data-passed] { opacity: 0.55; }

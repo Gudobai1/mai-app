@@ -37,10 +37,8 @@
   /* Trocar de tela. */
   .mai-view-enter { animation: mai-view 260ms var(--mai-ease) both; }
 
-  /* Concluir: o círculo "estoura" e o visto aparece. */
-  [role="checkbox"][aria-checked="true"] { animation: mai-bounce 320ms var(--mai-ease-pop); }
-  [role="checkbox"][aria-checked="true"] svg, [role="checkbox"][aria-checked="true"] .material-symbols-rounded { animation: mai-tick 260ms var(--mai-ease-pop) 60ms both; }
-  [class*="streak"][data-on] { animation: mai-bounce 360ms var(--mai-ease-pop); }
+  /* Concluir: só o visto aparece, sem estouro. */
+  [role="checkbox"][aria-checked="true"] svg, [role="checkbox"][aria-checked="true"] .material-symbols-rounded { animation: mai-fade 140ms ease-out both; }
   [role="switch"][aria-checked="true"] { animation: none; }
 
   /* Trocar de tema: cores deslizam em vez de piscar. */
@@ -48,33 +46,48 @@
 }
 
 /* ------------------------------------------------------------------------
- * Concluir: reação ao passar o mouse e ao clicar (tarefas, finanças, subtarefas,
- * dias dos hábitos).
+ * Concluir (minimalista): o círculo só ganha cor ao passar o mouse; sem escala,
+ * anel ou estouro. Excluir/arquivar: o item esmaece ao sair.
  * ---------------------------------------------------------------------- */
-@keyframes mai-ring { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--mai-fx, var(--ds-accent)) 55%, transparent); } 100% { box-shadow: 0 0 0 11px color-mix(in srgb, var(--mai-fx, var(--ds-accent)) 0%, transparent); } }
-@keyframes mai-hint { from { opacity: 0; scale: 0.5; } to { opacity: 0.55; scale: 1; } }
+@keyframes mai-exit { from { opacity: 1; translate: 0 0; } to { opacity: 0; translate: 0 -4px; } }
 
 @media (prefers-reduced-motion: no-preference) {
-  /* Passar o mouse: o círculo cresce, ganha a cor do tema e mostra o visto "de prévia". */
   html button[role="checkbox"]:not([aria-checked="true"]):not(:disabled):hover,
   html span[role="checkbox"]:not([aria-checked="true"]):hover {
-    scale: 1.14;
     border-color: var(--ds-accent);
-    background-color: color-mix(in srgb, var(--ds-accent) 12%, transparent);
-    color: var(--ds-accent);
+    background-color: color-mix(in srgb, var(--ds-accent) 10%, transparent);
   }
-  html [role="checkbox"]:not([aria-checked="true"]):not(:disabled):hover svg,
-  html [role="checkbox"]:not([aria-checked="true"]):hover .material-symbols-rounded { animation: mai-hint 180ms var(--mai-ease-pop) both; }
+  html [role="checkbox"]:not(:disabled):active { scale: 0.92; }
+  html button[data-day]:not(:disabled):hover { border-color: var(--hc, var(--ds-accent)); }
+  html button[data-day]:not(:disabled):active { scale: 0.92; }
+  [role="listitem"] { transition: opacity 200ms ease; }
+  [data-exiting] { animation: mai-exit 170ms ease-in forwards !important; pointer-events: none; }
+}
 
-  /* Clicar: aperta, estoura e solta um anel de onda. */
-  html [role="checkbox"]:not(:disabled):active { scale: 0.82; }
-  [role="checkbox"][aria-checked="true"] { animation: mai-bounce 340ms var(--mai-ease-pop), mai-ring 520ms ease-out; }
+/* ------------------------------------------------------------------------
+ * Passar o mouse: sem fundo no cartão; só o nome do item ganha sublinhado.
+ * ---------------------------------------------------------------------- */
+html body :is([role="listitem"], .mai-v3-task-row, .mai-v3-appointment, .mai-v3-upcoming-item, .mai-finance-v4-row, .mai-notes-v4-row, [class*="eventRow"], [class*="noteRow"], [class*="taskCard"], [class*="contextRow"]):hover :is([class*="itle"], [class*="name" i]),
+html body :is([role="listitem"]):hover > button:not([role="checkbox"]):not([data-day]) > span:first-child {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1px;
+}
+html body [role="listitem"]:hover { background-color: transparent; }
 
-  /* Dias dos hábitos (Hoje e módulo). */
-  html button[data-day]:not(:disabled):hover {
-    scale: 1.12;
-    border-color: var(--hc, var(--ds-accent));
-  }
-  html button[data-day]:not(:disabled):active { scale: 0.85; }
-  button[data-day][data-on], button[data-day][data-part], button[data-day][data-level="full"], button[data-day][data-level="part"] { --mai-fx: var(--hc, var(--ds-accent)); animation: mai-bounce 360ms var(--mai-ease-pop), mai-ring 520ms ease-out; }
+/* ------------------------------------------------------------------------
+ * Ícones: contorno fino e reto (Material Symbols Outlined), em vez de preenchido.
+ * ---------------------------------------------------------------------- */
+.material-symbols-rounded {
+  font-family: 'Material Symbols Outlined';
+  font-weight: 300;
+  font-style: normal;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  white-space: nowrap;
+  direction: ltr;
+  -webkit-font-feature-settings: 'liga';
+  font-feature-settings: 'liga';
+  font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24;
 }
