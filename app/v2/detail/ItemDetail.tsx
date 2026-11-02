@@ -2,7 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type CSSProperties, type ReactNode, type RefObject } from 'react'
 import { createPortal } from 'react-dom'
-import { addDays } from '../../../lib/v2/planner'
+import { addDays, subtaskOrder } from '../../../lib/v2/planner'
 import type { MaiState } from '../../../lib/v2/state'
 import { Icon } from '../../ds'
 import type { InspectableItem } from '../ContextDrawer'
@@ -512,7 +512,7 @@ function TaskBody({ task, state, today, commit, register, close, openTask }: { t
   const subRepeatRef = useRef<HTMLButtonElement | null>(null)
   const subReminderRef = useRef<HTMLButtonElement | null>(null)
   const [showDone, setShowDone] = useState(true)
-  const sortedChildren = [...children].filter(row => showDone || !row.concluida).sort((a, b) => Number(Boolean(a.concluida)) - Number(Boolean(b.concluida)) || Number(a.ordem || 0) - Number(b.ordem || 0))
+  const sortedChildren = [...children].filter(row => showDone || !row.concluida).sort((a, b) => subtaskOrder(a, b))
 
   const crumbs: Row[] = []
   let parentId = String(task.parent_id || '')

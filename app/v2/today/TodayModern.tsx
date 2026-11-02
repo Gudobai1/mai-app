@@ -2,7 +2,7 @@
 
 import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { financeSummary } from '../../../lib/v2/finance-summary'
-import { addDays, eventColor, plannerItems, type PlannerItem } from '../../../lib/v2/planner'
+import { addDays, subtaskOrder, eventColor, plannerItems, type PlannerItem } from '../../../lib/v2/planner'
 import type { MaiState } from '../../../lib/v2/state'
 import { Button, Check, Icon } from '../../ds'
 import type { AppView, Row } from '../app-types'
@@ -667,7 +667,7 @@ export function TodayModern({ state, today, commit, navigate, inspect, options, 
       </div>
       {expanded && children.length ? (
         <div className={styles.subList} role="list" aria-label={`Subtarefas de ${title}`}>
-          {[...children].sort((a, b) => Number(Boolean(a.concluida)) - Number(Boolean(b.concluida)) || Number(a.ordem || 0) - Number(b.ordem || 0)).map(child => {
+          {[...children].sort((a, b) => subtaskOrder(a, b)).map(child => {
             const childId = String(child.id)
             const childDue = dateKey(child.data_vencimento)
             const childLate = Boolean(childDue) && childDue < today && !child.concluida

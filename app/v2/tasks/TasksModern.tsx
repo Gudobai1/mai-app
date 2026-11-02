@@ -1,7 +1,7 @@
 'use client'
 
 import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState, type DragEvent, type MouseEvent as ReactMouseEvent, type ReactNode } from 'react'
-import { addDays } from '../../../lib/v2/planner'
+import { addDays, subtaskOrder } from '../../../lib/v2/planner'
 import type { LegacyTask, MaiState } from '../../../lib/v2/state'
 import { Icon } from '../../ds'
 import type { AppView, Row, TaskModuleScope } from '../app-types'
@@ -540,7 +540,7 @@ export function TasksModern(props: Props) {
       </div>
       {expanded && children.length ? (
         <div className={styles.subList} role="list" aria-label={`Subtarefas de ${String(task.titulo || 'tarefa')}`}>
-          {[...children].sort((a, b) => Number(Boolean(a.concluida)) - Number(Boolean(b.concluida)) || Number(a.ordem || 0) - Number(b.ordem || 0)).map(child => {
+          {[...children].sort((a, b) => subtaskOrder(a, b)).map(child => {
             const childId = String(child.id)
             const childDue = dayOf(child)
             const childLate = Boolean(childDue) && childDue < today && !child.concluida

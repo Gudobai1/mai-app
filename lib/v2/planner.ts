@@ -190,3 +190,14 @@ export function plannerItems(state: MaiState, start: string, end: string): Plann
 
   return result.sort((a, b) => `${a.date} ${a.time || '99:99'} ${a.title}`.localeCompare(`${b.date} ${b.time || '99:99'} ${b.title}`, 'pt-BR'))
 }
+
+/** Ordem das subtarefas: abertas primeiro (na ordem do usuário); concluídas depois, a última concluída logo abaixo das abertas. */
+export function subtaskOrder(a: Record<string, any>, b: Record<string, any>) {
+  const doneA = Boolean(a.concluida)
+  const doneB = Boolean(b.concluida)
+  if (doneA !== doneB) return Number(doneA) - Number(doneB)
+  if (!doneA) return Number(a.ordem || 0) - Number(b.ordem || 0)
+  const at = Date.parse(String(a.concluida_em || '')) || 0
+  const bt = Date.parse(String(b.concluida_em || '')) || 0
+  return bt - at || Number(a.ordem || 0) - Number(b.ordem || 0)
+}
