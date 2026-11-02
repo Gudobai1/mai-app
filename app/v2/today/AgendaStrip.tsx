@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState, type CSSProperties, type HTMLAttributes } from 'react'
+import { useMemo, type CSSProperties, type HTMLAttributes } from 'react'
 import { eventColor, type PlannerItem } from '../../../lib/v2/planner'
 import { Icon } from '../../ds'
 import styles from './AgendaStrip.module.css'
@@ -48,7 +48,6 @@ export function AgendaStrip({ items, nowMinutes, onOpen, bind }: Props) {
     [items],
   )
 
-  const [folded, setFolded] = useState(false)
 
   /* Todos os compromissos no mesmo bloco "Eventos": barrinha na cor, título e quando. */
   const entries = [
@@ -63,14 +62,7 @@ export function AgendaStrip({ items, nowMinutes, onOpen, bind }: Props) {
   if (!entries.length) return null
   return (
     <div className={styles.events} role="group" aria-label="Eventos">
-      {folded ? (
-        <button type="button" className={styles.eventsHead} onClick={() => setFolded(false)} aria-expanded="false">
-          <strong>Eventos</strong><small>{entries.length}</small><Icon name="expand_more" size={18} filled={false} />
-        </button>
-      ) : (
-        <>
-          <button type="button" className={styles.fold} onClick={() => setFolded(true)} aria-label="Recolher eventos" aria-expanded="true"><Icon name="expand_less" size={18} filled={false} /></button>
-          <div role="list" className={styles.extList}>
+      <div role="list" className={styles.extList}>
             {entries.map(({ item, when, now }) => (
               <button key={item.id} type="button" role="listitem" className={styles.ext} data-now={now || undefined} style={{ '--ev': eventColor(item.raw) } as CSSProperties} onClick={() => onOpen(item)} {...bind(item)}>
                 <i aria-hidden="true" />
@@ -81,9 +73,7 @@ export function AgendaStrip({ items, nowMinutes, onOpen, bind }: Props) {
                 <small className={styles.extSource}>{sourceOf(item)}<b>#</b></small>
               </button>
             ))}
-          </div>
-        </>
-      )}
+      </div>
     </div>
   )
 }
