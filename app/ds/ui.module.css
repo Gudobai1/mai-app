@@ -279,3 +279,6 @@
 .progressPeach.progressPeach { background: var(--ds-peach-fg); }
 .progressLilac.progressLilac { background: var(--ds-lilac-fg); }
 .progressRose.progressRose { background: var(--ds-rose-fg); }
+
+/* Concluído: só o check cinza, sem círculo. */
+.checkOn.checkOn.checkOn { background: transparent; border-color: transparent; color: var(--ds-muted); }

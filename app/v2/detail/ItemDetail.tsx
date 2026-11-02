@@ -438,7 +438,7 @@ function Attachments({ files, onChange }: { files: Row[]; onChange: (files: Row[
 function Round({ checked, late, onToggle, label, tone }: { checked: boolean; late?: boolean; onToggle: () => void; label: string; tone?: 'success' }) {
   return (
     <button type="button" className={styles.round} data-checked={checked || undefined} data-late={late || undefined} data-tone={tone} onClick={onToggle} aria-pressed={checked} aria-label={label}>
-      {checked ? <Icon name="check" size={12} /> : null}
+      {checked ? <Icon name="check" size={18} /> : null}
     </button>
   )
 }
