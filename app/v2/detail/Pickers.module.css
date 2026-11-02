@@ -471,3 +471,28 @@
 .customOk:disabled { opacity: .45; cursor: default; }
 .layer[data-sheet] .customInput, .layer[data-sheet] .customSelect { height: 44px; font-size: 16px; }
 .layer[data-sheet] .customBack, .layer[data-sheet] .customOk { height: 44px; }
+
+/* Árvore de projetos */
+.tree { display: flex; flex-direction: column; gap: 2px; max-height: 340px; overflow-y: auto; }
+.layer[data-sheet] .tree { max-height: 52dvh; }
+.treeGroup { display: flex; flex-direction: column; gap: 2px; }
+.treeRow { display: flex; align-items: center; gap: 0; }
+.treeRow > .option { flex: 1; min-width: 0; }
+.treeChevron {
+  appearance: none;
+  flex: 0 0 28px;
+  width: 28px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--ds-muted);
+  cursor: pointer;
+}
+button.treeChevron:hover { color: var(--ds-text); background: var(--ds-surface-hover); }
+.treeChevron > span { transition: transform var(--ds-dur-fast, 120ms) var(--ds-ease, ease); }
+.treeChevron[data-open] > span { transform: rotate(90deg); }
+.layer[data-sheet] .treeChevron { height: 44px; flex-basis: 36px; width: 36px; }

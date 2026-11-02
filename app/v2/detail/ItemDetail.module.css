@@ -1381,7 +1381,7 @@
   box-sizing: border-box;
   overflow-y: auto;
   border-left: 1px solid var(--ds-line);
-  background: color-mix(in srgb, var(--ds-surface) 92%, #000);
+  background: transparent;
   display: flex;
   flex-direction: column;
 }
@@ -1514,3 +1514,25 @@
 }
 
 .composerGrow { flex: 1; }
+
+/* Subtarefas: contador ao lado do título, ocultar/mostrar concluídas à direita. */
+.subHead { display: flex; align-items: baseline; gap: 8px; }
+.subHead h3 { margin: 0; font-size: 15px; font-weight: var(--ds-fw-heavy); }
+.subCount { font-size: 12.5px; font-weight: var(--ds-fw-medium); color: var(--ds-muted); }
+.subHeadGrow { flex: 1; }
+
+/* Chips da subtarefa nova: texto normal, só o ícone tem cor. */
+.subChip.subChip { height: 30px; padding: 0 10px 0 8px; border: 1px solid var(--ds-line); background: transparent; color: var(--ds-text); font-weight: var(--ds-fw-medium); font-size: 12.5px; }
+.subChip.subChip:hover { border-color: var(--ds-line-strong); background: transparent; }
+.subChip.subChip > span:first-child { color: var(--chip-color, var(--ds-accent)); }
+.subChip.subChip[data-empty] { color: var(--ds-muted); }
+.subChip.subChip[data-empty] > span:first-child { color: var(--ds-muted) !important; }
+.subChip.subChip[data-late] { color: var(--ds-text); }
+
+/* Botões do cadastro: à esquerda, como no Adicionar tarefa. */
+.composerActions.composerActions { justify-content: flex-start; padding-top: 2px; }
+.composerAdd.composerAdd { background: transparent; color: var(--ds-accent); }
+.composerAdd.composerAdd:hover:not(:disabled) { background: var(--ds-accent-soft); }
+.composerCancel.composerCancel { color: var(--ds-muted); }
+.composerCancel.composerCancel:hover { color: var(--ds-text); }
+@media (max-width: 900px) { .composerActions.composerActions { justify-content: flex-start; } }

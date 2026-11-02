@@ -1,6 +1,6 @@
 'use client'
 
-import { Fragment, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Icon } from '../../ds'
 import { askConfirm } from '../shell/ConfirmDialog'
 import { FilePreviewOverlay } from '../FilePreviewOverlay'
@@ -20,43 +20,42 @@ const AUTHOR = 'M'
 
 /* ---------------------------------------------------------- Texto formatado */
 
-function inline(text: string, keyBase: string): ReactNode[] {
-  const out: ReactNode[] = []
-  const pattern = /(\*\*([^*]+)\*\*)|(_([^_]+)_)|(\[([^\]]+)\]\((https?:\/\/[^\s)]+)\))|(https?:\/\/[^\s<]+)/g
-  let last = 0
-  let match: RegExpExecArray | null
-  let index = 0
-  while ((match = pattern.exec(text))) {
-    if (match.index > last) out.push(text.slice(last, match.index))
-    const key = `${keyBase}-${index++}`
-    if (match[2]) out.push(<strong key={key}>{match[2]}</strong>)
-    else if (match[4]) out.push(<em key={key}>{match[4]}</em>)
-    else if (match[6]) out.push(<a key={key} href={match[7]} target="_blank" rel="noreferrer noopener">{match[6]}</a>)
-    else out.push(<a key={key} href={match[8]} target="_blank" rel="noreferrer noopener">{match[8]}</a>)
-    last = match.index + match[0].length
+const ALLOWED = new Set(['B', 'STRONG', 'I', 'EM', 'U', 'UL', 'OL', 'LI', 'A', 'BR', 'P', 'DIV'])
+
+/** Deixa só formatação simples (negrito, itálico, lista, link): nada de script nem estilo. */
+export function cleanHtml(html: string): string {
+  if (typeof DOMParser === 'undefined') return ''
+  const doc = new DOMParser().parseFromString(`<body>${html}</body>`, 'text/html')
+  const walk = (node: Node) => {
+    for (const child of Array.from(node.childNodes)) {
+      if (child.nodeType === 3) continue
+      if (child.nodeType !== 1) { child.remove(); continue }
+      const el = child as HTMLElement
+      if (['SCRIPT', 'STYLE', 'IFRAME', 'OBJECT'].includes(el.tagName)) { el.remove(); continue }
+      walk(el)
+      if (!ALLOWED.has(el.tagName)) {
+        while (el.firstChild) el.parentNode?.insertBefore(el.firstChild, el)
+        el.remove()
+        continue
+      }
+      const href = el.tagName === 'A' ? el.getAttribute('href') || '' : ''
+      for (const attr of Array.from(el.attributes)) el.removeAttribute(attr.name)
+      if (el.tagName === 'A') {
+        if (/^(https?:|mailto:)/i.test(href)) { el.setAttribute('href', href); el.setAttribute('target', '_blank'); el.setAttribute('rel', 'noreferrer noopener') }
+        else { while (el.firstChild) el.parentNode?.insertBefore(el.firstChild, el); el.remove() }
+      }
+    }
   }
-  if (last < text.length) out.push(text.slice(last))
-  return out
+  walk(doc.body)
+  return doc.body.innerHTML.trim()
 }
 
-/** Mostra o texto com **negrito**, _itálico_, listas com "- " e links. Nada de HTML cru. */
+const looksLikeHtml = (text: string) => /<(b|strong|i|em|u|ul|ol|li|a|br|p|div)[\s>/]/i.test(text)
+
+/** Mostra o comentário formatado. */
 export function RichText({ text }: { text: string }) {
-  const lines = text.split('\n')
-  const blocks: ReactNode[] = []
-  let list: string[] = []
-  const flush = (key: number) => {
-    if (!list.length) return
-    blocks.push(<ul key={`l${key}`}>{list.map((item, i) => <li key={i}>{inline(item, `l${key}-${i}`)}</li>)}</ul>)
-    list = []
-  }
-  lines.forEach((line, index) => {
-    const item = /^\s*[-•]\s+(.*)$/.exec(line)
-    if (item) { list.push(item[1]); return }
-    flush(index)
-    blocks.push(<p key={`p${index}`}>{line ? inline(line, `p${index}`) : <br />}</p>)
-  })
-  flush(lines.length)
-  return <div className={styles.rich}>{blocks.map((block, i) => <Fragment key={i}>{block}</Fragment>)}</div>
+  if (looksLikeHtml(text)) return <div className={styles.rich} dangerouslySetInnerHTML={{ __html: cleanHtml(text) }} />
+  return <div className={styles.rich}>{text.split('\n').map((line, index) => <p key={index}>{line || <br />}</p>)}</div>
 }
 
 /* ------------------------------------------------------------------ Seção */
@@ -78,43 +77,28 @@ function when(value: string) {
 
 export function CommentsSection({ comments, onChange }: { comments: Comment[]; onChange: (comments: Comment[]) => void }) {
   const [open, setOpen] = useState(false)
-  const [text, setText] = useState('')
+  const [hasText, setHasText] = useState(false)
   const [files, setFiles] = useState<Row[]>([])
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [preview, setPreview] = useState<Row | null>(null)
-  const area = useRef<HTMLTextAreaElement | null>(null)
+  const area = useRef<HTMLDivElement | null>(null)
   const input = useRef<HTMLInputElement | null>(null)
 
-  const canSend = Boolean(text.trim() || files.length) && !busy
+  useEffect(() => { if (open) area.current?.focus() }, [open])
 
-  function wrap(before: string, after = before, placeholder = 'texto') {
-    const el = area.current
-    if (!el) return
-    const { selectionStart: from, selectionEnd: to } = el
-    const picked = text.slice(from, to) || placeholder
-    const next = `${text.slice(0, from)}${before}${picked}${after}${text.slice(to)}`
-    setText(next)
-    requestAnimationFrame(() => { el.focus(); el.setSelectionRange(from + before.length, from + before.length + picked.length) })
-  }
+  const canSend = (hasText || files.length > 0) && !busy
 
-  function listItem() {
-    const el = area.current
-    if (!el) return
-    const from = text.lastIndexOf('\n', el.selectionStart - 1) + 1
-    setText(`${text.slice(0, from)}- ${text.slice(from)}`)
-    requestAnimationFrame(() => el.focus())
+  const format = (command: string, value?: string) => {
+    area.current?.focus()
+    document.execCommand(command, false, value)
+    setHasText(Boolean(area.current?.innerText.trim()))
   }
 
   function link() {
-    const el = area.current
-    if (!el) return
-    const { selectionStart: from, selectionEnd: to } = el
-    const picked = text.slice(from, to) || 'link'
-    const next = `${text.slice(0, from)}[${picked}](https://)${text.slice(to)}`
-    setText(next)
-    const start = from + picked.length + 3
-    requestAnimationFrame(() => { el.focus(); el.setSelectionRange(start, start + 8) })
+    const url = window.prompt('Endereço do link', 'https://')
+    if (!url || !/^https?:\/\//i.test(url.trim())) return
+    format('createLink', url.trim())
   }
 
   async function attach(file?: File) {
@@ -122,7 +106,6 @@ export function CommentsSection({ comments, onChange }: { comments: Comment[]; o
     setBusy(true)
     setError('')
     try {
-      setFiles(current => [...current])
       const saved = await uploadAttachment(file)
       setFiles(current => [...current, saved])
     } catch (uploadError: any) {
@@ -134,14 +117,14 @@ export function CommentsSection({ comments, onChange }: { comments: Comment[]; o
 
   function send() {
     if (!canSend) return
-    onChange([...comments, { id: `c-${crypto.randomUUID()}`, texto: text.trim(), anexos: files, criado_em: new Date().toISOString() }])
-    setText('')
+    onChange([...comments, { id: `c-${crypto.randomUUID()}`, texto: cleanHtml(area.current?.innerHTML || ''), anexos: files, criado_em: new Date().toISOString() }])
+    setHasText(false)
     setFiles([])
     setOpen(false)
   }
 
   function cancel() {
-    setText('')
+    setHasText(false)
     setFiles([])
     setError('')
     setOpen(false)
@@ -189,14 +172,20 @@ export function CommentsSection({ comments, onChange }: { comments: Comment[]; o
         <div className={styles.box} data-open={open || undefined}>
           {open ? (
             <>
-              <textarea
+              <div
                 ref={area}
-                autoFocus
+                contentEditable
+                suppressContentEditableWarning
+                role="textbox"
+                aria-multiline="true"
+                aria-label="Comentar"
+                data-placeholder="Comentar"
                 className={styles.area}
-                rows={2}
-                value={text}
-                placeholder="Comentar"
-                onChange={event => setText(event.target.value)}
+                onInput={event => setHasText(Boolean(event.currentTarget.innerText.trim()))}
+                onPaste={event => {
+                  event.preventDefault()
+                  document.execCommand('insertText', false, event.clipboardData.getData('text/plain'))
+                }}
                 onKeyDown={event => {
                   if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); cancel() }
                   if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) { event.preventDefault(); send() }
@@ -212,9 +201,9 @@ export function CommentsSection({ comments, onChange }: { comments: Comment[]; o
               {error ? <p className={styles.error}>{error}</p> : null}
               <div className={styles.toolbar}>
                 <div className={styles.tools}>
-                  {tool('Negrito', 'format_bold', () => wrap('**'))}
-                  {tool('Itálico', 'format_italic', () => wrap('_'))}
-                  {tool('Lista', 'format_list_bulleted', listItem)}
+                  {tool('Negrito', 'format_bold', () => format('bold'))}
+                  {tool('Itálico', 'format_italic', () => format('italic'))}
+                  {tool('Lista', 'format_list_bulleted', () => format('insertUnorderedList'))}
                   {tool('Link', 'link', link)}
                   {tool(busy ? 'Enviando…' : 'Anexar arquivo', 'attach_file', () => input.current?.click())}
                 </div>

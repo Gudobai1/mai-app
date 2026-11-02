@@ -258,8 +258,10 @@
 .kinds.kinds button { background: transparent; border-radius: 0; height: 34px; flex: 0 0 auto; box-shadow: none; }
 .kinds.kinds button[data-active] { background: transparent; box-shadow: inset 0 -2px 0 var(--ds-accent); color: var(--ds-accent); }
 .chip.chip { background: transparent; border: 1px solid var(--ds-line); border-radius: 6px; font-weight: var(--ds-fw-medium); }
-.chip.chip[data-set] { background: transparent; border-color: var(--chip-color, var(--ds-accent)); }
-.chip.chip[data-late] { background: transparent; border-color: var(--ds-danger); }
+/* Texto sempre normal; só o ícone leva a cor. */
+.chip.chip[data-set], .chip.chip[data-late] { background: transparent; border-color: var(--ds-line); color: var(--ds-text); }
+.chip.chip[data-set] > span:first-child { color: var(--chip-color, var(--ds-accent)); }
+.chip.chip[data-late] > span:first-child { color: var(--ds-danger); }
 .ghost.ghost, .primary.primary { height: 36px; border-radius: 6px; }
 .ghost.ghost { border: 1px solid var(--ds-line); color: var(--ds-text); }
 .ghost.ghost:hover { background: transparent; border-color: var(--ds-line-strong); }

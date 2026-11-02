@@ -54,6 +54,7 @@
 
 .rich { font-size: 14px; line-height: 1.5; color: var(--ds-text); overflow-wrap: anywhere; }
 .rich p { margin: 0; }
+.rich div { margin: 0; }
 .rich ul { margin: 2px 0; padding-left: 20px; }
 .rich a { color: var(--ds-accent); text-decoration: underline; text-underline-offset: 2px; }
 
@@ -109,19 +110,23 @@
   display: block;
   width: 100%;
   min-height: 56px;
-  max-height: 200px;
+  max-height: 220px;
+  overflow-y: auto;
   box-sizing: border-box;
   padding: 10px 12px;
   border: 0;
   outline: 0;
-  resize: none;
   background: transparent;
   color: var(--ds-text);
   font: inherit;
   font-size: 14px;
   line-height: 1.5;
+  overflow-wrap: anywhere;
 }
-.area::placeholder { color: var(--ds-muted); }
+.area:empty::before { content: attr(data-placeholder); color: var(--ds-muted); pointer-events: none; }
+.area ul { margin: 2px 0; padding-left: 20px; }
+.area a { color: var(--ds-accent); text-decoration: underline; }
+
 
 .pending { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 10px 8px; }
 .pendingFile {

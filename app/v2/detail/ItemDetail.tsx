@@ -16,7 +16,7 @@ import { askUnsaved } from '../shell/unsaved'
 import { uploadAttachment } from './upload'
 import { CommentsSection, type Comment } from './Comments'
 import { UnitField } from '../habits/UnitField'
-import { DatePicker, Floating, OptionList, ReminderPicker, RepeatPicker, TimePicker, repeatLabel, reminderLabel, type PickerOption } from './Pickers'
+import { DatePicker, Floating, OptionList, ProjectPicker, ReminderPicker, RepeatPicker, TimePicker, repeatLabel, reminderLabel, type PickerOption } from './Pickers'
 import { CategoryChooser } from './CategoryChooser'
 import { eventCategories, withEventCategory, type EventCategory } from '../../../lib/v2/event-categories'
 import styles from './ItemDetail.module.css'
@@ -195,13 +195,12 @@ type DetailProps = Props & { item: InspectableItem; register: (flush: () => void
 
 /* ------------------------------------------------------------ Peças comuns */
 
-function Header({ kind, crumbs }: { kind: string; crumbs?: ReactNode; onClose?: () => void }) {
+function Header({ kind, crumbs, hideKind }: { kind: string; crumbs?: ReactNode; onClose?: () => void; hideKind?: boolean }) {
   const { requestClose } = useContext(DetailCtx)
   return (
     <header className={styles.header}>
       <span className={styles.kind}>
-        <Icon name={KIND[kind]?.icon || 'info'} size={15} className={styles.kindIcon} />
-        <span>{KIND[kind]?.label}</span>
+        {hideKind ? null : <><Icon name={KIND[kind]?.icon || 'info'} size={15} className={styles.kindIcon} /><span>{KIND[kind]?.label}</span></>}
         {crumbs}
       </span>
       <button type="button" className={styles.iconButton} onClick={requestClose} aria-label="Fechar"><Icon name="close" size={18} filled={false} /></button>
@@ -453,23 +452,19 @@ function TaskDetail({ item, state, today, commit, register, close }: DetailProps
   return <TaskBody key={activeId} task={task} state={state} today={today} commit={commit} register={register} close={close} openTask={setActiveId} />
 }
 
-/** Projetos em árvore: projeto, subprojetos e, embaixo de cada um, as seções (colunas). */
-function projectTreeOptions(projects: Row[], imageOf: (project: Row) => string | undefined): PickerOption[] {
-  const ids = new Set(projects.map(project => String(project.id)))
-  const childrenOf = (parent: string) => projects.filter(project => String(project.parent_id || '') === parent)
-  const roots = projects.filter(project => !project.parent_id || !ids.has(String(project.parent_id)))
-  const out: PickerOption[] = [{ value: 'entrada', label: 'Entrada', icon: 'inbox' }]
-  const walk = (project: Row, depth: number, seen: Set<string>) => {
-    const id = String(project.id)
-    if (seen.has(id)) return
-    seen.add(id)
-    out.push({ value: `p:${id}`, label: String(project.nome || 'Projeto'), image: imageOf(project), color: String(project.cor || 'var(--ds-line-strong)'), depth })
-    for (const name of rows(project.secoes).map(String)) out.push({ value: `s:${id}:${name}`, label: name, icon: 'view_agenda', depth: depth + 1 })
-    for (const child of childrenOf(id)) walk(child, depth + 1, seen)
-  }
-  const seen = new Set<string>()
-  roots.forEach(root => walk(root, 0, seen))
-  return out
+function ProjectProp({ icon, display, projects, projectId, section, imageOf, onPick }: { icon: ReactNode; display: string; projects: Row[]; projectId: string; section: string; imageOf: (project: Row) => string | undefined; onPick: (projectId: string, section: string) => void }) {
+  const [open, setOpen] = useState(false)
+  const anchor = useRef<HTMLButtonElement | null>(null)
+  return (
+    <>
+      <Prop icon={icon} label="Projeto" display={display} onOpen={() => setOpen(true)} buttonRef={anchor} open={open} />
+      {open ? (
+        <Floating anchor={anchor} title="Projeto" width={280} onClose={() => setOpen(false)}>
+          <ProjectPicker projects={projects} projectId={projectId} section={section} imageOf={imageOf} onSelect={(id, name) => { setOpen(false); onPick(id, name) }} />
+        </Floating>
+      ) : null}
+    </>
+  )
 }
 
 function TaskBody({ task, state, today, commit, register, close, openTask }: { task: Row; state: MaiState; today: string; commit: Commit; register: DetailProps['register']; close: () => Promise<void>; openTask: (id: string) => void }) {
@@ -514,7 +509,7 @@ function TaskBody({ task, state, today, commit, register, close, openTask }: { t
   const subPriorityRef = useRef<HTMLButtonElement | null>(null)
   const subRepeatRef = useRef<HTMLButtonElement | null>(null)
   const subReminderRef = useRef<HTMLButtonElement | null>(null)
-  const [showDone, setShowDone] = useState(false)
+  const [showDone, setShowDone] = useState(true)
   const sortedChildren = [...children].filter(row => showDone || !row.concluida).sort((a, b) => Number(Boolean(a.concluida)) - Number(Boolean(b.concluida)) || Number(a.ordem || 0) - Number(b.ordem || 0))
 
   const crumbs: Row[] = []
@@ -561,18 +556,11 @@ function TaskBody({ task, state, today, commit, register, close, openTask }: { t
     : <span className={styles.projectDot} style={{ background: String(project?.cor || 'var(--ds-line-strong)') }} />
 
   const reminder = draft.lembretes[0] || ''
-  const treeOptions = projectTreeOptions(projects, row => row.imagem_url ? driveAssetUrl(row.imagem_url) : undefined)
-  const projectValue = draft.secao ? `s:${draft.projeto_id}:${draft.secao}` : draft.projeto_id === 'entrada' ? 'entrada' : `p:${draft.projeto_id}`
   const projectDisplay = `${String(project?.nome || 'Entrada')}${draft.secao ? ` › ${draft.secao}` : ''}`
-  const pickProject = (value: string) => {
-    const section = /^s:([^:]+):(.*)$/.exec(value)
-    if (section) update({ projeto_id: section[1], secao: section[2] }, true)
-    else if (value.startsWith('p:')) update({ projeto_id: value.slice(2), secao: '' }, true)
-    else update({ projeto_id: 'entrada', secao: '' }, true)
-  }
+  const pickProject = (projectId: string, secao: string) => update({ projeto_id: projectId, secao }, true)
   const propsList = (
     <>
-      <SelectProp icon={projectIcon} label="Projeto" value={projectValue} display={projectDisplay} onChange={pickProject} options={treeOptions} />
+      <ProjectProp icon={projectIcon} display={projectDisplay} projects={projects} projectId={draft.projeto_id} section={draft.secao} imageOf={row => row.imagem_url ? driveAssetUrl(row.imagem_url) : undefined} onPick={pickProject} />
       <PickerProp today={today} type="date" icon="calendar_today" color={draft._data ? (late ? 'var(--ds-danger)' : 'var(--ds-warn)') : 'var(--ds-muted)'} label="Data" value={draft._data} muted={!draft._data} display={friendlyDate(draft._data, today)} onChange={_data => update({ _data, _hora: _data ? draft._hora : '' }, true)} />
       <PickerProp type="time" icon="schedule" color="var(--ds-lilac-fg)" label="Horário" value={draft._hora} display={draft._hora || 'Sem horário'} muted={!draft._hora} onChange={_hora => update(_hora && !draft._data ? { _hora, _data: today } : { _hora }, true)} />
       <SelectProp icon="flag" color={priority.color} label="Prioridade" value={String(draft.prioridade)} onChange={value => update({ prioridade: Number(value) }, true)} options={PRIORITIES} display={priority.label} muted={Number(draft.prioridade) === 4} />
@@ -583,9 +571,9 @@ function TaskBody({ task, state, today, commit, register, close, openTask }: { t
 
   return (
     <>
-      <Header kind="task" onClose={() => void close()} crumbs={<>
+      <Header kind="task" hideKind onClose={() => void close()} crumbs={<>
+        <span className={styles.crumb}>{String(project?.nome || 'Entrada')}{draft.secao ? <><i>›</i>{draft.secao}</> : null}</span>
         {crumbs.map(crumb => <span key={String(crumb.id)} className={styles.crumb}><i>›</i><button type="button" onClick={() => openTask(String(crumb.id))}>{String(crumb.titulo || 'Tarefa')}</button></span>)}
-        {!crumbs.length ? <span className={styles.crumb}><i>›</i>{String(project?.nome || 'Entrada')}{draft.secao ? <><i>›</i>{draft.secao}</> : null}</span> : null}
       </>} />
       <div className={styles.taskMain}>
         <div className={styles.taskContent}>
@@ -600,7 +588,12 @@ function TaskBody({ task, state, today, commit, register, close, openTask }: { t
           {phone ? <PropVariantCtx.Provider value="icon"><div className={styles.iconProps}>{propsList}</div></PropVariantCtx.Provider> : null}
 
           <section className={styles.section}>
-            <div className={styles.sectionHead}><h3>Subtarefas</h3>{children.length ? <span>{doneChildren}/{children.length}</span> : null}</div>
+            <div className={styles.subHead}>
+              <h3>Subtarefas</h3>
+              {children.length ? <span className={styles.subCount}>{doneChildren}/{children.length}</span> : null}
+              <span className={styles.subHeadGrow} />
+              {doneChildren ? <button type="button" className={styles.subDoneToggle} onClick={() => setShowDone(value => !value)}>{showDone ? 'Ocultar concluídas' : `Mostrar concluídas (${doneChildren})`}</button> : null}
+            </div>
             <div className={styles.list}>
               {sortedChildren.map(child => <SubtaskCard key={String(child.id)} task={child} state={state} today={today} onToggle={() => toggle(String(child.id))} onOpen={() => void goTo(String(child.id))} />)}
               {composing ? (
@@ -617,19 +610,19 @@ function TaskBody({ task, state, today, commit, register, close, openTask }: { t
                     }}
                   />
                   <div className={styles.composerChips}>
-                    <button ref={subDateRef} type="button" className={styles.subChip} data-empty={!subDue || undefined} onClick={() => setSubPicker('date')}>
+                    <button ref={subDateRef} type="button" className={styles.subChip} style={{ '--chip-color': subDue && subDue < today ? 'var(--ds-danger)' : 'var(--ds-warn)' } as CSSProperties} data-empty={!subDue || undefined} onClick={() => setSubPicker('date')}>
                       <Icon name="calendar_today" size={14} />{subDue ? friendlyDate(subDue, today) : 'Data'}
                     </button>
-                    <button ref={subTimeRef} type="button" className={styles.subChip} data-empty={!subTime || undefined} onClick={() => setSubPicker('time')}>
+                    <button ref={subTimeRef} type="button" className={styles.subChip} style={{ '--chip-color': 'var(--ds-lilac-fg)' } as CSSProperties} data-empty={!subTime || undefined} onClick={() => setSubPicker('time')}>
                       <Icon name="schedule" size={14} />{subTime || 'Horário'}
                     </button>
-                    <button ref={subPriorityRef} type="button" className={styles.subChip} data-empty={subPriority === 4 || undefined} onClick={() => setSubPicker('priority')}>
-                      <Icon name={(PRIORITIES.find(option => Number(option.value) === subPriority) || PRIORITIES[3]).icon} size={14} style={{ color: (PRIORITIES.find(option => Number(option.value) === subPriority) || PRIORITIES[3]).color }} />{subPriority === 4 ? 'Prioridade' : (PRIORITIES.find(option => Number(option.value) === subPriority) || PRIORITIES[3]).label}
+                    <button ref={subPriorityRef} type="button" className={styles.subChip} style={{ '--chip-color': (PRIORITIES.find(option => Number(option.value) === subPriority) || PRIORITIES[3]).color } as CSSProperties} data-empty={subPriority === 4 || undefined} onClick={() => setSubPicker('priority')}>
+                      <Icon name={(PRIORITIES.find(option => Number(option.value) === subPriority) || PRIORITIES[3]).icon} size={14} />{subPriority === 4 ? 'Prioridade' : (PRIORITIES.find(option => Number(option.value) === subPriority) || PRIORITIES[3]).label}
                     </button>
-                    <button ref={subRepeatRef} type="button" className={styles.subChip} data-empty={!subRepeat || undefined} onClick={() => setSubPicker('repeat')}>
+                    <button ref={subRepeatRef} type="button" className={styles.subChip} style={{ '--chip-color': 'var(--ds-mint-fg)' } as CSSProperties} data-empty={!subRepeat || undefined} onClick={() => setSubPicker('repeat')}>
                       <Icon name="repeat" size={14} />{subRepeat ? repeatLabel(subRepeat) : 'Repetir'}
                     </button>
-                    <button ref={subReminderRef} type="button" className={styles.subChip} data-empty={!subReminder || undefined} onClick={() => setSubPicker('reminder')}>
+                    <button ref={subReminderRef} type="button" className={styles.subChip} style={{ '--chip-color': 'var(--ds-sky-fg)' } as CSSProperties} data-empty={!subReminder || undefined} onClick={() => setSubPicker('reminder')}>
                       <Icon name="notifications" size={14} />{subReminder ? reminderLabel(subReminder) : 'Lembrete'}
                     </button>
                   </div>
@@ -659,9 +652,8 @@ function TaskBody({ task, state, today, commit, register, close, openTask }: { t
                     </Floating>
                   ) : null}
                   <div className={styles.composerActions}>
-                    <span className={styles.composerGrow} />
-                    <button type="button" className={styles.composerCancel} onClick={() => { setComposing(false); setSubtask(''); setSubDue(''); setSubTime(''); setSubPriority(4); setSubRepeat(''); setSubReminder('') }}>Cancelar</button>
                     <button type="button" className={styles.composerAdd} disabled={!subtask.trim()} onClick={addSubtask}>Adicionar</button>
+                    <button type="button" className={styles.composerCancel} onClick={() => { setComposing(false); setSubtask(''); setSubDue(''); setSubTime(''); setSubPriority(4); setSubRepeat(''); setSubReminder('') }}>Cancelar</button>
                   </div>
                 </div>
               ) : (
@@ -669,7 +661,6 @@ function TaskBody({ task, state, today, commit, register, close, openTask }: { t
                   <button type="button" className={styles.subAdd} onClick={() => setComposing(true)}>
                     <Icon name="add" size={17} filled={false} />Adicionar subtarefa
                   </button>
-                  {doneChildren ? <button type="button" className={styles.subDoneToggle} onClick={() => setShowDone(value => !value)}>{showDone ? 'Ocultar concluídas' : `Mostrar concluídas (${doneChildren})`}</button> : null}
                 </div>
               )}
             </div>
