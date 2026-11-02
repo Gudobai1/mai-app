@@ -74,8 +74,10 @@ export function AgendaStrip({ items, nowMinutes, onOpen, bind }: Props) {
             {entries.map(({ item, when, now }) => (
               <button key={item.id} type="button" role="listitem" className={styles.ext} data-now={now || undefined} style={{ '--ev': eventColor(item.raw) } as CSSProperties} onClick={() => onOpen(item)} {...bind(item)}>
                 <i aria-hidden="true" />
-                <span className={styles.extTitle}>{item.title}{item.recurring ? <Icon name="repeat" size={12} /> : null}</span>
-                <small className={styles.extWhen}>{when}</small>
+                <span className={styles.extText}>
+                  <span className={styles.extTitle}>{item.title}{item.recurring ? <Icon name="repeat" size={12} /> : null}</span>
+                  <small className={styles.extWhen}>{when}</small>
+                </span>
                 <small className={styles.extSource}>{sourceOf(item)}</small>
               </button>
             ))}

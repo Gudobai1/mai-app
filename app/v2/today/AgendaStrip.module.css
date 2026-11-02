@@ -141,3 +141,15 @@
 .ext[data-now] .extWhen.extWhen { color: var(--ds-accent); }
 .extSource.extSource { margin-left: auto; padding-left: 12px; max-width: 40%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 @media (max-width: 900px) { .extSource.extSource { display: none; } }
+
+/* Sem fundo; bolinha na cor do evento; quando fica embaixo do título. */
+.events.events { padding: 0 40px 0 0; background: transparent; border-radius: 0; margin: 0 0 4px; }
+.extList { gap: 0; }
+.ext.ext { align-items: flex-start; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--ds-line); }
+.extList > .ext:last-child { border-bottom: 0; }
+.ext.ext i { width: 8px; height: 8px; margin-top: 6px; border-radius: 50%; }
+.extText { display: flex; flex-direction: column; gap: 3px; min-width: 0; flex: 1; }
+.extWhen.extWhen { display: block; font-size: 12px; }
+.extSource.extSource { align-self: center; }
+.fold { top: 6px; right: 0; }
+.eventsHead { padding: 8px 0; }
