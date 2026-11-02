@@ -22,7 +22,14 @@ button.mai-item-row-v2{
 }
 
 .mai-item-row-v2:hover{
-  background:var(--mai-item-hover,var(--v3-hover))!important;
+  background:transparent!important;
+}
+/* Passar o mouse: só o título ganha sublinhado (padrão do app). */
+.mai-item-row-v2:hover .mai-item-titleline-v2>strong,
+.mai-item-row-v2:hover .mai-item-titleline-v2 strong{
+  text-decoration:underline!important;
+  text-underline-offset:3px;
+  text-decoration-thickness:1px;
 }
 
 /* Hoje e listas semelhantes passam a ter somente indicador + conteúdo. */
