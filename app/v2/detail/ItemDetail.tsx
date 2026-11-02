@@ -13,6 +13,8 @@ import { financeCardPaymentState } from '../FinanceTransactionCard'
 import { resolveMaiIcon } from '../MaiIcons'
 import { askConfirm, notify } from '../shell/ConfirmDialog'
 import { askUnsaved } from '../shell/unsaved'
+import { uploadAttachment } from './upload'
+import { CommentsSection, type Comment } from './Comments'
 import { UnitField } from '../habits/UnitField'
 import { DatePicker, Floating, OptionList, TimePicker, type PickerOption } from './Pickers'
 import { CategoryChooser } from './CategoryChooser'
@@ -61,6 +63,14 @@ const REPEATS = [
   { value: 'anualmente', label: 'Todo ano' },
 ]
 
+const REMINDERS = [
+  { value: '', label: 'Nenhum' },
+  { value: '10m', label: '10 min antes' },
+  { value: '30m', label: '30 min antes' },
+  { value: '1h', label: '1 hora antes' },
+  { value: '1d', label: '1 dia antes' },
+]
+
 const KIND: Record<string, { label: string; icon: string }> = {
   task: { label: 'Tarefa', icon: 'checklist' },
   event: { label: 'Compromisso', icon: 'event' },
@@ -94,6 +104,22 @@ export function ItemDetail(props: Props) {
 
 type DetailCtxValue = { dirty: boolean; setDirty: (key: string, value: boolean) => void; requestClose: () => void; saveAndClose: () => void; saving: boolean }
 const DetailCtx = createContext<DetailCtxValue>({ dirty: false, setDirty: () => {}, requestClose: () => {}, saveAndClose: () => {}, saving: false })
+
+/** Como uma propriedade aparece: botão (padrão), linha da coluna lateral ou só o ícone (celular). */
+type PropVariant = 'chip' | 'row' | 'icon'
+const PropVariantCtx = createContext<PropVariant>('chip')
+
+function useIsPhone() {
+  const [phone, setPhone] = useState(() => typeof window !== 'undefined' && window.matchMedia('(max-width: 900px)').matches)
+  useEffect(() => {
+    const query = window.matchMedia('(max-width: 900px)')
+    const onChange = () => setPhone(query.matches)
+    onChange()
+    query.addEventListener('change', onChange)
+    return () => query.removeEventListener('change', onChange)
+  }, [])
+  return phone
+}
 
 function DetailShell(props: Props & { item: InspectableItem }) {
   const { item, onClose } = props
@@ -163,7 +189,7 @@ function DetailShell(props: Props & { item: InspectableItem }) {
   return createPortal(
     <DetailCtx.Provider value={{ dirty: dirtyKeys.size > 0, setDirty, requestClose: () => void requestClose(), saveAndClose: () => void saveAndClose(), saving }}>
     <div className={styles.layer} onClick={event => { if (event.target === event.currentTarget) void requestClose() }}>
-      <section className={styles.panel} role="dialog" aria-modal="true" aria-label={KIND[item.kind]?.label || 'Detalhes'}>
+      <section className={styles.panel} data-kind={item.kind} role="dialog" aria-modal="true" aria-label={KIND[item.kind]?.label || 'Detalhes'}>
         <div className={styles.handle} aria-hidden="true" />
         {body}
       </section>
@@ -268,13 +294,31 @@ type Option = PickerOption
  * rótulo e valor. Ao tocar, abre o seletor do próprio MAI.
  */
 function Prop({ icon, color, label, display, muted, onOpen, buttonRef, open }: { icon: ReactNode; color?: string; label: string; display: ReactNode; muted?: boolean; onOpen?: () => void; buttonRef?: RefObject<HTMLButtonElement | null>; open?: boolean }) {
+  const variant = useContext(PropVariantCtx)
+  const iconNode = typeof icon === 'string' ? <Icon name={icon} size={variant === 'icon' ? 20 : 17} /> : icon
+  const style = color ? ({ '--prop-color': color } as CSSProperties) : undefined
+  if (variant === 'icon') {
+    const text = typeof display === 'string' ? display : ''
+    return (
+      <button ref={buttonRef} type="button" className={styles.iconProp} data-muted={muted || undefined} data-open={open || undefined} style={style} onClick={onOpen} aria-haspopup="dialog" aria-expanded={open} aria-label={text ? `${label}: ${text}` : label} title={text ? `${label}: ${text}` : label}>
+        {iconNode}
+      </button>
+    )
+  }
+  if (variant === 'row') {
+    const inner = <>
+      <span className={styles.sideLabel}>{label}</span>
+      <span className={styles.sideValue} data-muted={muted || undefined} style={style}>{typeof icon === 'string' || color ? <span className={styles.sideIcon}>{iconNode}</span> : iconNode}<span className={styles.sideText}>{display}</span></span>
+    </>
+    if (!onOpen) return <div className={styles.sideRow}>{inner}</div>
+    return <button ref={buttonRef} type="button" className={`${styles.sideRow} ${styles.sideRowButton}`} data-open={open || undefined} onClick={onOpen} aria-haspopup="dialog" aria-expanded={open}>{inner}</button>
+  }
   const content = <>
-    <span className={styles.propIcon}>{typeof icon === 'string' ? <Icon name={icon} size={17} /> : icon}</span>
+    <span className={styles.propIcon}>{iconNode}</span>
     <span className={styles.propLabel}>{label}</span>
     <span className={styles.propValue}>{display}</span>
     {onOpen ? <Icon name="expand_more" size={18} filled={false} className={styles.propChevron} /> : null}
   </>
-  const style = color ? ({ '--prop-color': color } as CSSProperties) : undefined
   if (!onOpen) return <div className={styles.prop} data-muted={muted || undefined} style={style}>{content}</div>
   return (
     <button ref={buttonRef} type="button" className={`${styles.prop} ${styles.propButton}`} data-muted={muted || undefined} data-open={open || undefined} style={style} onClick={onOpen} aria-haspopup="dialog" aria-expanded={open}>
@@ -350,15 +394,7 @@ function Attachments({ files, onChange }: { files: Row[]; onChange: (files: Row[
     setBusy(true)
     setError('')
     try {
-      const dataUrl = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader()
-        reader.onload = () => resolve(String(reader.result || ''))
-        reader.onerror = reject
-        reader.readAsDataURL(file)
-      })
-      const response = await googleDriveRpc('salvarAnexoDrive', [dataUrl, file.name, file.type])
-      const saved = response?.item || response || {}
-      onChange([...files, { idDrive: saved.id, nome: saved.name || saved.nome || file.name, tipo: saved.tipo || saved.mimeType || file.type, tamanho: Number(saved.tamanho || saved.size || file.size || 0), url: saved.url || saved.webViewLink || '', criado_em: new Date().toISOString() }])
+      onChange([...files, await uploadAttachment(file)])
     } catch (uploadError: any) {
       setError(uploadError?.message || 'Não foi possível anexar o arquivo.')
     } finally {
@@ -436,9 +472,12 @@ function TaskBody({ task, state, today, commit, register, close, openTask }: { t
     secao: String(task.secao || ''),
     prioridade: Number(task.prioridade || 4),
     repeticao: String(task.repeticao || ''),
+    lembretes: (Array.isArray(task.lembretes) ? task.lembretes : []).map(String),
+    comentarios: rows(task.comentarios),
     anexos: rows(task.anexos),
   }, save, register)
 
+  const phone = useIsPhone()
   const projects = rows(state.projects).filter(project => project.ativo !== false)
   const project = projects.find(row => String(row.id) === draft.projeto_id)
   const sections = rows(project?.secoes).map(String)
@@ -453,7 +492,8 @@ function TaskBody({ task, state, today, commit, register, close, openTask }: { t
   const [subPicker, setSubPicker] = useState<'' | 'date' | 'priority'>('')
   const subDateRef = useRef<HTMLButtonElement | null>(null)
   const subPriorityRef = useRef<HTMLButtonElement | null>(null)
-  const sortedChildren = [...children].sort((a, b) => Number(Boolean(a.concluida)) - Number(Boolean(b.concluida)) || Number(a.ordem || 0) - Number(b.ordem || 0))
+  const [showDone, setShowDone] = useState(false)
+  const sortedChildren = [...children].filter(row => showDone || !row.concluida).sort((a, b) => Number(Boolean(a.concluida)) - Number(Boolean(b.concluida)) || Number(a.ordem || 0) - Number(b.ordem || 0))
 
   const crumbs: Row[] = []
   let parentId = String(task.parent_id || '')
@@ -495,82 +535,101 @@ function TaskBody({ task, state, today, commit, register, close, openTask }: { t
     ? <img className={styles.projectImg} src={driveAssetUrl(project.imagem_url)} alt="" />
     : <span className={styles.projectDot} style={{ background: String(project?.cor || 'var(--ds-line-strong)') }} />
 
+  const reminder = draft.lembretes[0] || ''
+  const propsList = (
+    <>
+      <SelectProp icon={projectIcon} label="Projeto" value={draft.projeto_id} onChange={projeto_id => update({ projeto_id, secao: '' }, true)} options={[{ value: 'entrada', label: 'Entrada', icon: 'inbox' }, ...projects.map(row => ({ value: String(row.id), label: String(row.nome || 'Projeto'), image: row.imagem_url ? driveAssetUrl(row.imagem_url) : undefined, color: String(row.cor || 'var(--ds-line-strong)') }))]} />
+      <PickerProp today={today} type="date" icon="calendar_today" color={draft._data ? (late ? 'var(--ds-danger)' : 'var(--ds-warn)') : 'var(--ds-muted)'} label="Data" value={draft._data} muted={!draft._data} display={friendlyDate(draft._data, today)} onChange={_data => update({ _data, _hora: _data ? draft._hora : '' }, true)} />
+      <PickerProp type="time" icon="schedule" color="var(--ds-lilac-fg)" label="Horário" value={draft._hora} display={draft._hora || 'Sem horário'} muted={!draft._hora} onChange={_hora => update(_hora && !draft._data ? { _hora, _data: today } : { _hora }, true)} />
+      {sections.length ? <SelectProp icon="view_agenda" color="var(--ds-text-2)" label="Seção" value={draft.secao} onChange={secao => update({ secao }, true)} options={[{ value: '', label: 'Sem seção' }, ...sections.map(name => ({ value: name, label: name }))]} /> : null}
+      <SelectProp icon="flag" color={priority.color} label="Prioridade" value={String(draft.prioridade)} onChange={value => update({ prioridade: Number(value) }, true)} options={PRIORITIES} display={priority.label} />
+      <SelectProp icon="repeat" color="var(--ds-mint-fg)" label="Repetir" value={draft.repeticao} onChange={repeticao => update({ repeticao }, true)} options={REPEATS.some(option => option.value === draft.repeticao) ? REPEATS : [...REPEATS, { value: draft.repeticao, label: 'Personalizado' }]} />
+      <SelectProp icon="notifications" color="var(--ds-sky-fg)" label="Lembrete" value={reminder} onChange={value => update({ lembretes: value ? [value] : [] }, true)} options={REMINDERS.some(option => option.value === reminder) ? REMINDERS : [...REMINDERS, { value: reminder, label: reminder }]} />
+    </>
+  )
+
   return (
     <>
       <Header kind="task" onClose={() => void close()} crumbs={<>
         {crumbs.map(crumb => <span key={String(crumb.id)} className={styles.crumb}><i>›</i><button type="button" onClick={() => openTask(String(crumb.id))}>{String(crumb.titulo || 'Tarefa')}</button></span>)}
         {!crumbs.length ? <span className={styles.crumb}><i>›</i>{String(project?.nome || 'Entrada')}{draft.secao ? <><i>›</i>{draft.secao}</> : null}</span> : null}
       </>} />
-      <div className={styles.scroll}>
-        <div className={styles.titleRow}>
-          <Round checked={Boolean(task.concluida)} late={late} onToggle={() => toggle(id)} label={task.concluida ? 'Reabrir tarefa' : 'Concluir tarefa'} />
-          <div className={styles.titleBody}>
-            <GrowText className={`${styles.title} ${task.concluida ? styles.titleDone : ''}`} value={draft.titulo} placeholder="Nome da tarefa" multiline={false} onChange={titulo => update({ titulo })} />
-            <GrowText className={styles.description} value={draft.descricao} placeholder="Adicionar descrição" onChange={descricao => update({ descricao })} />
+      <div className={styles.taskMain}>
+        <div className={styles.taskContent}>
+          <div className={styles.titleRow}>
+            <Round checked={Boolean(task.concluida)} late={late} onToggle={() => toggle(id)} label={task.concluida ? 'Reabrir tarefa' : 'Concluir tarefa'} />
+            <div className={styles.titleBody}>
+              <GrowText className={`${styles.title} ${task.concluida ? styles.titleDone : ''}`} value={draft.titulo} placeholder="Nome da tarefa" multiline={false} onChange={titulo => update({ titulo })} />
+              <GrowText className={styles.description} value={draft.descricao} placeholder="Adicionar descrição" onChange={descricao => update({ descricao })} />
+            </div>
+          </div>
+
+          {phone ? <PropVariantCtx.Provider value="icon"><div className={styles.iconProps}>{propsList}</div></PropVariantCtx.Provider> : null}
+
+          <section className={styles.section}>
+            <div className={styles.sectionHead}><h3>Subtarefas</h3>{children.length ? <span>{doneChildren}/{children.length}</span> : null}</div>
+            <div className={styles.list}>
+              {sortedChildren.map(child => <SubtaskCard key={String(child.id)} task={child} state={state} today={today} onToggle={() => toggle(String(child.id))} onOpen={() => void goTo(String(child.id))} />)}
+              {composing ? (
+                <div className={styles.composer}>
+                  <input
+                    autoFocus
+                    value={subtask}
+                    placeholder="Nome da subtarefa"
+                    enterKeyHint="send"
+                    onChange={event => setSubtask(event.target.value)}
+                    onKeyDown={event => {
+                      if (event.key === 'Enter') { event.preventDefault(); addSubtask() }
+                      if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); setComposing(false); setSubtask('') }
+                    }}
+                  />
+                  <div className={styles.composerChips}>
+                    <button ref={subDateRef} type="button" className={styles.subChip} data-empty={!subDue || undefined} onClick={() => setSubPicker('date')}>
+                      <Icon name="calendar_today" size={14} />{subDue ? friendlyDate(subDue, today) : 'Data'}
+                    </button>
+                    <button ref={subPriorityRef} type="button" className={styles.subChip} data-empty={subPriority === 4 || undefined} onClick={() => setSubPicker('priority')}>
+                      <Icon name={(PRIORITIES.find(option => Number(option.value) === subPriority) || PRIORITIES[3]).icon} size={14} style={{ color: (PRIORITIES.find(option => Number(option.value) === subPriority) || PRIORITIES[3]).color }} />{subPriority === 4 ? 'Prioridade' : (PRIORITIES.find(option => Number(option.value) === subPriority) || PRIORITIES[3]).label}
+                    </button>
+                  </div>
+                  {subPicker === 'date' ? (
+                    <Floating anchor={subDateRef} title="Data da subtarefa" width={300} onClose={() => setSubPicker('')}>
+                      <DatePicker value={subDue} today={today} onSelect={value => { setSubPicker(''); setSubDue(value || '') }} />
+                    </Floating>
+                  ) : null}
+                  {subPicker === 'priority' ? (
+                    <Floating anchor={subPriorityRef} title="Prioridade" onClose={() => setSubPicker('')}>
+                      <OptionList options={PRIORITIES} value={String(subPriority)} onSelect={value => { setSubPicker(''); setSubPriority(Number(value)) }} />
+                    </Floating>
+                  ) : null}
+                  <div className={styles.composerActions}>
+                    <span className={styles.composerHint}>Enter adiciona e continua</span>
+                    <button type="button" className={styles.composerCancel} onClick={() => { setComposing(false); setSubtask(''); setSubDue(''); setSubPriority(4) }}>Cancelar</button>
+                    <button type="button" className={styles.composerAdd} disabled={!subtask.trim()} onClick={addSubtask}>Adicionar</button>
+                  </div>
+                </div>
+              ) : (
+                <div className={styles.subAddRow}>
+                  <button type="button" className={styles.subAdd} onClick={() => setComposing(true)}>
+                    <Icon name="add" size={17} filled={false} />Adicionar subtarefa
+                  </button>
+                  {doneChildren ? <button type="button" className={styles.subDoneToggle} onClick={() => setShowDone(value => !value)}>{showDone ? 'Ocultar concluídas' : `Mostrar concluídas (${doneChildren})`}</button> : null}
+                </div>
+              )}
+            </div>
+          </section>
+
+          {draft.anexos.length ? <Attachments files={draft.anexos} onChange={anexos => update({ anexos }, true)} /> : null}
+
+          <div className={styles.commentsSlot}>
+            <CommentsSection comments={draft.comentarios as Comment[]} onChange={comentarios => update({ comentarios }, true)} />
           </div>
         </div>
 
-        <div className={styles.props}>
-          <PickerProp today={today} type="date" icon="calendar_today" color="var(--ds-accent)" label="Data" value={draft._data} display={<span className={late ? styles.late : undefined}>{friendlyDate(draft._data, today)}</span>} onChange={_data => update({ _data, _hora: _data ? draft._hora : '' }, true)} />
-          {draft._data ? <PickerProp type="time" icon="schedule" color="var(--ds-lilac-fg)" label="Horário" value={draft._hora} display={draft._hora || 'Sem horário'} muted={!draft._hora} onChange={_hora => update({ _hora }, true)} /> : null}
-          <SelectProp icon={projectIcon} label="Projeto" value={draft.projeto_id} onChange={projeto_id => update({ projeto_id, secao: '' }, true)} options={[{ value: 'entrada', label: 'Entrada', icon: 'inbox' }, ...projects.map(row => ({ value: String(row.id), label: String(row.nome || 'Projeto'), image: row.imagem_url ? driveAssetUrl(row.imagem_url) : undefined, color: String(row.cor || 'var(--ds-line-strong)') }))]} />
-          {sections.length ? <SelectProp icon="view_agenda" color="var(--ds-text-2)" label="Seção" value={draft.secao} onChange={secao => update({ secao }, true)} options={[{ value: '', label: 'Sem seção' }, ...sections.map(name => ({ value: name, label: name }))]} /> : null}
-          <SelectProp icon="flag" color={priority.color} label="Prioridade" value={String(draft.prioridade)} onChange={value => update({ prioridade: Number(value) }, true)} options={PRIORITIES} />
-          <SelectProp icon="repeat" color="var(--ds-mint-fg)" label="Repetir" value={draft.repeticao} onChange={repeticao => update({ repeticao }, true)} options={REPEATS.some(option => option.value === draft.repeticao) ? REPEATS : [...REPEATS, { value: draft.repeticao, label: 'Personalizado' }]} />
-        </div>
-
-        <section className={styles.section}>
-          <div className={styles.sectionHead}><h3>Subtarefas</h3>{children.length ? <span>{doneChildren} de {children.length}</span> : null}</div>
-          {children.length ? <div className={styles.bar}><span style={{ width: `${(doneChildren / children.length) * 100}%` }} /></div> : null}
-          <div className={styles.list}>
-            {sortedChildren.map(child => <SubtaskCard key={String(child.id)} task={child} state={state} today={today} onToggle={() => toggle(String(child.id))} onOpen={() => void goTo(String(child.id))} />)}
-            {composing ? (
-              <div className={styles.composer}>
-                <input
-                  autoFocus
-                  value={subtask}
-                  placeholder="Nome da subtarefa"
-                  enterKeyHint="send"
-                  onChange={event => setSubtask(event.target.value)}
-                  onKeyDown={event => {
-                    if (event.key === 'Enter') { event.preventDefault(); addSubtask() }
-                    if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); setComposing(false); setSubtask('') }
-                  }}
-                />
-                <div className={styles.composerChips}>
-                  <button ref={subDateRef} type="button" className={styles.subChip} data-empty={!subDue || undefined} onClick={() => setSubPicker('date')}>
-                    <Icon name="calendar_today" size={14} />{subDue ? friendlyDate(subDue, today) : 'Data'}
-                  </button>
-                  <button ref={subPriorityRef} type="button" className={styles.subChip} data-empty={subPriority === 4 || undefined} onClick={() => setSubPicker('priority')}>
-                    <Icon name={(PRIORITIES.find(option => Number(option.value) === subPriority) || PRIORITIES[3]).icon} size={14} style={{ color: (PRIORITIES.find(option => Number(option.value) === subPriority) || PRIORITIES[3]).color }} />{subPriority === 4 ? 'Prioridade' : (PRIORITIES.find(option => Number(option.value) === subPriority) || PRIORITIES[3]).label}
-                  </button>
-                </div>
-                {subPicker === 'date' ? (
-                  <Floating anchor={subDateRef} title="Data da subtarefa" width={300} onClose={() => setSubPicker('')}>
-                    <DatePicker value={subDue} today={today} onSelect={value => { setSubPicker(''); setSubDue(value || '') }} />
-                  </Floating>
-                ) : null}
-                {subPicker === 'priority' ? (
-                  <Floating anchor={subPriorityRef} title="Prioridade" onClose={() => setSubPicker('')}>
-                    <OptionList options={PRIORITIES} value={String(subPriority)} onSelect={value => { setSubPicker(''); setSubPriority(Number(value)) }} />
-                  </Floating>
-                ) : null}
-                <div className={styles.composerActions}>
-                  <span className={styles.composerHint}>Enter adiciona e continua</span>
-                  <button type="button" className={styles.composerCancel} onClick={() => { setComposing(false); setSubtask(''); setSubDue(''); setSubPriority(4) }}>Cancelar</button>
-                  <button type="button" className={styles.composerAdd} disabled={!subtask.trim()} onClick={addSubtask}>Adicionar</button>
-                </div>
-              </div>
-            ) : (
-              <button type="button" className={styles.addButton} onClick={() => setComposing(true)}>
-                <span className={styles.addIcon}><Icon name="add" size={18} /></span>
-                Adicionar subtarefa
-              </button>
-            )}
-          </div>
-        </section>
-
-        <Attachments files={draft.anexos} onChange={anexos => update({ anexos }, true)} />
+        {!phone ? (
+          <PropVariantCtx.Provider value="row">
+            <aside className={styles.taskSide} aria-label="Propriedades">{propsList}</aside>
+          </PropVariantCtx.Provider>
+        ) : null}
       </div>
       <Footer status={savedStatus} onDelete={() => void remove()} />
     </>
