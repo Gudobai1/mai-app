@@ -530,3 +530,5 @@ button.treeChevron:hover { color: var(--ds-text); background: var(--ds-surface-h
 
 /* Rolagem do horário: um número por vez, também no toque. */
 .wheelItem { scroll-snap-stop: always; }
+
+.wheelUnit { position: relative; z-index: 1; margin-left: 6px; font-size: 14px; font-weight: var(--ds-fw-medium); color: var(--ds-muted); }
