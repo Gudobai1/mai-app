@@ -211,7 +211,7 @@ export function Check({ checked, onCheckedChange, late, label, className, type =
       onClick={() => onCheckedChange?.(!checked)}
       {...rest}
     >
-      <Icon name="check" size={18} weight={600} />
+      <Icon name="check" size={13} weight={600} />
     </button>
   )
 }

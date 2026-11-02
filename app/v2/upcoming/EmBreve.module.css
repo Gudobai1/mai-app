@@ -280,5 +280,5 @@
 .groupHead { padding: 2px 2px; }
 .taskTight [class*='taskMeta']:empty { display: none; }
 
-/* Concluído: só o check cinza, sem círculo. */
-.chip[data-done] .chipCheck { background: transparent; border-color: transparent; color: var(--ds-muted); }
+/* Concluído: círculo cinza vazio com um check pequeno. */
+.chip[data-done] .chipCheck { background: transparent; border-color: var(--ds-muted); color: var(--ds-muted); }

@@ -2427,12 +2427,15 @@
 .list .card.card + .subList.subList .subRow.subRow:hover { background: transparent; }
 .list .card.card + .subList.subList .subTitle.subTitle { font-size: 14px; }
 
-/* Concluído: só o check cinza, sem círculo. */
+/* Concluído: círculo cinza vazio com um check pequeno. */
 .check.check.check[data-done],
 .subCheck.subCheck.subCheck[data-done],
 .list .subCheck.subCheck.subCheck[data-done],
 .page .subCheck.subCheck.subCheck[data-done] {
-  border-color: transparent;
+  border-color: var(--ds-muted);
   background: transparent;
   color: var(--ds-muted);
 }
+
+/* Foto e ícone do projeto: sempre redondos. */
+.folderImg.folderImg, .folderIcon.folderIcon { border-radius: 50%; }

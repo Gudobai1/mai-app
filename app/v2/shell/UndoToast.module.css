@@ -1,8 +1,8 @@
-.toast { position: fixed; left: 50%; bottom: 24px; translate: -50% 0; z-index: 400; display: flex; align-items: center; gap: 14px; padding: 10px 10px 10px 16px; border-radius: var(--ds-r-md); background: var(--ds-surface); color: var(--ds-text); border: 1px solid var(--ds-line); font-size: 13.5px; font-weight: var(--ds-fw-medium); box-shadow: var(--ds-shadow-float, 0 6px 24px rgb(0 0 0 / 0.14)); animation: toast-in 180ms ease-out both; max-width: calc(100vw - 32px); }
-@media (min-width: 901px) { .toast { left: calc(50% + 140px); max-width: calc(100vw - 320px); } }
+.toast { position: fixed; left: 50%; right: auto; transform: translateX(-50%); width: max-content; bottom: 24px; z-index: 400; display: flex; align-items: center; gap: 14px; padding: 10px 10px 10px 16px; border-radius: var(--ds-r-md); background: var(--ds-surface); color: var(--ds-text); border: 1px solid var(--ds-line); font-size: 13.5px; font-weight: var(--ds-fw-medium); box-shadow: var(--ds-shadow-float, 0 6px 24px rgb(0 0 0 / 0.14)); animation: toast-in 180ms ease-out both; max-width: calc(100vw - 32px); }
+
 .undo { appearance: none; border: 0; background: transparent; color: var(--ds-accent); font: inherit; font-weight: var(--ds-fw-bold); cursor: pointer; padding: 2px 4px; border-radius: 4px; }
 .undo:hover { text-decoration: underline; text-underline-offset: 3px; }
 .close { appearance: none; border: 0; background: transparent; color: inherit; opacity: 0.6; font-size: 18px; line-height: 1; cursor: pointer; padding: 0 4px; }
 .close:hover { opacity: 1; }
-@keyframes toast-in { from { opacity: 0; translate: 0 8px; } to { opacity: 1; translate: 0 0; } }
+@keyframes toast-in { from { opacity: 0; margin-bottom: -8px; } to { opacity: 1; margin-bottom: 0; } }
 @media (max-width: 900px) { .toast { bottom: calc(96px + env(safe-area-inset-bottom)); } }

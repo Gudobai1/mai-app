@@ -147,39 +147,57 @@ export function DatePicker({ value, today, onSelect, allowEmpty = true }: { valu
   )
 }
 
-const SUGGESTED_TIMES = ['08:00', '09:00', '12:00', '14:00', '18:00', '20:00']
+const WHEEL_ROW = 36
+const pad2 = (n: number) => String(n).padStart(2, '0')
+
+/** Uma coluna de rolagem (como no iPhone): o número do meio é o escolhido. */
+function Wheel({ count, value, onChange, label }: { count: number; value: number; onChange: (value: number) => void; label: string }) {
+  const ref = useRef<HTMLDivElement | null>(null)
+  const timer = useRef<number | undefined>(undefined)
+  useLayoutEffect(() => { if (ref.current) ref.current.scrollTop = value * WHEEL_ROW }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => () => window.clearTimeout(timer.current), [])
+  const settle = () => {
+    window.clearTimeout(timer.current)
+    timer.current = window.setTimeout(() => {
+      if (!ref.current) return
+      const next = Math.max(0, Math.min(count - 1, Math.round(ref.current.scrollTop / WHEEL_ROW)))
+      if (next !== value) onChange(next)
+    }, 90)
+  }
+  return (
+    <div ref={ref} className={styles.wheel} role="listbox" aria-label={label} onScroll={settle}>
+      {Array.from({ length: count }, (_, index) => (
+        <button
+          key={index}
+          type="button"
+          role="option"
+          aria-selected={index === value}
+          tabIndex={index === value ? 0 : -1}
+          className={styles.wheelItem}
+          data-selected={index === value || undefined}
+          onClick={() => { onChange(index); ref.current?.scrollTo({ top: index * WHEEL_ROW, behavior: 'smooth' }) }}
+        >{pad2(index)}</button>
+      ))}
+    </div>
+  )
+}
 
 export function TimePicker({ value, onSelect, allowEmpty = true, emptyLabel = 'Sem horário' }: { value: string; onSelect: (value: string) => void; allowEmpty?: boolean; emptyLabel?: string }) {
-  const [custom, setCustom] = useState(value || '')
-  const valid = /^\d{2}:\d{2}$/.test(custom)
+  const parsed = /^(\d{2}):(\d{2})$/.exec(value || '')
+  const [hour, setHour] = useState(parsed ? Number(parsed[1]) : 9)
+  const [minute, setMinute] = useState(parsed ? Number(parsed[2]) : 0)
   return (
     <div className={styles.time}>
-      {allowEmpty ? (
-        <button type="button" className={styles.timeNone} data-selected={!value || undefined} onClick={() => onSelect('')}>
-          <Icon name="schedule" size={18} className={styles.optionIcon} />
-          <span className={styles.optionText}>{emptyLabel}</span>
-          {!value ? <Icon name="check" size={18} className={styles.optionCheck} /> : null}
-        </button>
-      ) : null}
-      <div className={styles.timeGrid}>
-        {SUGGESTED_TIMES.map(time => (
-          <button key={time} type="button" className={styles.timeCell} data-selected={time === value || undefined} onClick={() => onSelect(time)}>{time}</button>
-        ))}
+      <div className={styles.wheels}>
+        <div className={styles.wheelBand} aria-hidden="true" />
+        <Wheel count={24} value={hour} onChange={setHour} label="Horas" />
+        <span className={styles.wheelColon} aria-hidden="true">:</span>
+        <Wheel count={60} value={minute} onChange={setMinute} label="Minutos" />
       </div>
-      <form
-        className={styles.timeCustom}
-        onSubmit={event => { event.preventDefault(); if (valid) onSelect(custom) }}
-      >
-        <input
-          type="time"
-          className={styles.timeInput}
-          value={custom}
-          step={300}
-          aria-label="Outro horário"
-          onChange={event => setCustom(event.target.value)}
-        />
-        <button type="submit" className={styles.timeOk} disabled={!valid}>Definir</button>
-      </form>
+      <div className={styles.timeActions}>
+        {allowEmpty ? <button type="button" className={styles.timeClear} onClick={() => onSelect('')}>{emptyLabel}</button> : <span />}
+        <button type="button" className={styles.timeOk} onClick={() => onSelect(`${pad2(hour)}:${pad2(minute)}`)}>Definir</button>
+      </div>
     </div>
   )
 }

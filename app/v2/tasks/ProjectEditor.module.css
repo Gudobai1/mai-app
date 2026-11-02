@@ -445,3 +445,7 @@
 .tabs.tabs button { background: transparent; box-shadow: none; border-radius: 0; }
 .tabs.tabs button[data-active] { background: transparent; box-shadow: inset 0 -2px 0 var(--ds-accent); color: var(--ds-accent); }
 .sectionRow.sectionRow { background: transparent; border-radius: 0; border-bottom: 1px solid var(--ds-line); }
+
+/* Foto do projeto: sempre redonda. */
+.avatar.avatar { border-radius: 50%; }
+@media (max-width: 900px) { .avatar.avatar { border-radius: 50%; } }

@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { createContext, useContext, useEffect, useRef, useState } from 'react'
 import { Icon } from '../../ds'
 import { askConfirm } from '../shell/ConfirmDialog'
 import { FilePreviewOverlay } from '../FilePreviewOverlay'
@@ -16,7 +16,19 @@ import styles from './Comments.module.css'
 type Row = Record<string, any>
 export type Comment = { id: string; texto: string; anexos: Row[]; criado_em: string }
 
-const AUTHOR = 'M'
+/** Quem comenta: foto e nome do perfil (vem de quem abriu o cartão). */
+export type Author = { name?: string; picture?: string } | null
+export const AuthorCtx = createContext<Author>(null)
+
+function Avatar() {
+  const author = useContext(AuthorCtx)
+  const initial = (author?.name || 'M').trim().charAt(0).toUpperCase() || 'M'
+  return (
+    <span className={styles.avatar} aria-hidden="true">
+      {author?.picture ? /* eslint-disable-next-line @next/next/no-img-element */ <img className={styles.avatarImg} src={author.picture} alt="" referrerPolicy="no-referrer" /> : initial}
+    </span>
+  )
+}
 
 /* ---------------------------------------------------------- Texto formatado */
 
@@ -75,17 +87,27 @@ function when(value: string) {
   return date.toLocaleString('pt-BR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }).replace(/\./g, '')
 }
 
-export function CommentsSection({ comments, onChange }: { comments: Comment[]; onChange: (comments: Comment[]) => void }) {
-  const [open, setOpen] = useState(false)
-  const [hasText, setHasText] = useState(false)
-  const [files, setFiles] = useState<Row[]>([])
+/** Caixa de escrita com formatação e anexos: serve para comentar e para editar. */
+function CommentEditor({ initialHtml = '', initialFiles = [], submitLabel, onSubmit, onCancel }: { initialHtml?: string; initialFiles?: Row[]; submitLabel: string; onSubmit: (html: string, files: Row[]) => void; onCancel: () => void }) {
+  const [hasText, setHasText] = useState(Boolean(initialHtml))
+  const [files, setFiles] = useState<Row[]>(initialFiles)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
-  const [preview, setPreview] = useState<Row | null>(null)
   const area = useRef<HTMLDivElement | null>(null)
   const input = useRef<HTMLInputElement | null>(null)
 
-  useEffect(() => { if (open) area.current?.focus() }, [open])
+  useEffect(() => {
+    const el = area.current
+    if (!el) return
+    if (initialHtml) el.innerHTML = looksLikeHtml(initialHtml) ? cleanHtml(initialHtml) : initialHtml.split('\n').map(line => `<div>${line.replace(/&/g, '&amp;').replace(/</g, '&lt;') || '<br>'}</div>`).join('')
+    el.focus()
+    const range = document.createRange()
+    range.selectNodeContents(el)
+    range.collapse(false)
+    const selection = window.getSelection()
+    selection?.removeAllRanges()
+    selection?.addRange(range)
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const canSend = (hasText || files.length > 0) && !busy
 
@@ -117,27 +139,69 @@ export function CommentsSection({ comments, onChange }: { comments: Comment[]; o
 
   function send() {
     if (!canSend) return
-    onChange([...comments, { id: `c-${crypto.randomUUID()}`, texto: cleanHtml(area.current?.innerHTML || ''), anexos: files, criado_em: new Date().toISOString() }])
-    setHasText(false)
-    setFiles([])
-    setOpen(false)
-  }
-
-  function cancel() {
-    setHasText(false)
-    setFiles([])
-    setError('')
-    setOpen(false)
-  }
-
-  async function removeComment(id: string) {
-    if (!(await askConfirm({ title: 'Excluir comentário?', message: 'O comentário será excluído quando você salvar a tarefa.' }))) return
-    onChange(comments.filter(comment => comment.id !== id))
+    onSubmit(cleanHtml(area.current?.innerHTML || ''), files)
   }
 
   const tool = (label: string, icon: string, onClick: () => void) => (
     <button type="button" className={styles.tool} aria-label={label} title={label} onMouseDown={event => event.preventDefault()} onClick={onClick}><Icon name={icon} size={18} filled={false} /></button>
   )
+
+  return (
+    <>
+      <div
+        ref={area}
+        contentEditable
+        suppressContentEditableWarning
+        role="textbox"
+        aria-multiline="true"
+        aria-label="Comentar"
+        data-placeholder="Comentar"
+        className={styles.area}
+        onInput={event => setHasText(Boolean(event.currentTarget.innerText.trim()))}
+        onPaste={event => {
+          event.preventDefault()
+          document.execCommand('insertText', false, event.clipboardData.getData('text/plain'))
+        }}
+        onKeyDown={event => {
+          if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); onCancel() }
+          if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) { event.preventDefault(); send() }
+        }}
+      />
+      {files.length ? (
+        <div className={styles.pending}>
+          {files.map((file, index) => (
+            <span key={index} className={styles.pendingFile}><Icon name={fileIcon(file)} size={15} />{fileName(file)}<button type="button" onClick={() => setFiles(current => current.filter((_, i) => i !== index))} aria-label={`Remover ${fileName(file)}`}><Icon name="close" size={14} filled={false} /></button></span>
+          ))}
+        </div>
+      ) : null}
+      {error ? <p className={styles.error}>{error}</p> : null}
+      <div className={styles.toolbar}>
+        <div className={styles.tools}>
+          {tool('Negrito', 'format_bold', () => format('bold'))}
+          {tool('Itálico', 'format_italic', () => format('italic'))}
+          {tool('Lista', 'format_list_bulleted', () => format('insertUnorderedList'))}
+          {tool('Link', 'link', link)}
+          {tool(busy ? 'Enviando…' : 'Anexar arquivo', 'attach_file', () => input.current?.click())}
+        </div>
+        <div className={styles.actions}>
+          <button type="button" className={styles.cancel} onClick={onCancel}>Cancelar</button>
+          <button type="button" className={styles.send} disabled={!canSend} onClick={send}>{submitLabel}</button>
+        </div>
+      </div>
+      <input ref={input} hidden type="file" disabled={busy} onChange={event => { void attach(event.target.files?.[0]); event.currentTarget.value = '' }} />
+    </>
+  )
+}
+
+export function CommentsSection({ comments, onChange }: { comments: Comment[]; onChange: (comments: Comment[]) => void }) {
+  const [open, setOpen] = useState(false)
+  const [editing, setEditing] = useState('')
+  const [preview, setPreview] = useState<Row | null>(null)
+
+  async function removeComment(id: string) {
+    if (!(await askConfirm({ title: 'Excluir comentário?', message: 'O comentário será excluído quando você salvar a tarefa.' }))) return
+    onChange(comments.filter(comment => comment.id !== id))
+  }
 
   return (
     <section className={styles.section} aria-label="Comentários">
@@ -147,79 +211,55 @@ export function CommentsSection({ comments, onChange }: { comments: Comment[]; o
         <ul className={styles.list}>
           {comments.map(comment => (
             <li key={comment.id} className={styles.comment}>
-              <span className={styles.avatar} aria-hidden="true">{AUTHOR}</span>
-              <div className={styles.bubble}>
-                <div className={styles.meta}>
-                  <span>{when(comment.criado_em)}</span>
-                  <button type="button" className={styles.remove} onClick={() => void removeComment(comment.id)} aria-label="Excluir comentário" title="Excluir comentário"><Icon name="delete" size={15} filled={false} /></button>
+              <Avatar />
+              {editing === comment.id ? (
+                <div className={styles.box} data-open>
+                  <CommentEditor
+                    initialHtml={comment.texto}
+                    initialFiles={comment.anexos || []}
+                    submitLabel="Salvar"
+                    onCancel={() => setEditing('')}
+                    onSubmit={(texto, anexos) => { onChange(comments.map(item => item.id === comment.id ? { ...item, texto, anexos, editado_em: new Date().toISOString() } : item)); setEditing('') }}
+                  />
                 </div>
-                {comment.texto ? <RichText text={comment.texto} /> : null}
-                {comment.anexos?.length ? (
-                  <div className={styles.files}>
-                    {comment.anexos.map((file, index) => (
-                      <button key={`${file.idDrive || fileName(file)}-${index}`} type="button" className={styles.file} onClick={() => setPreview(file)}><Icon name={fileIcon(file)} size={16} />{fileName(file)}</button>
-                    ))}
+              ) : (
+                <div className={styles.bubble}>
+                  <div className={styles.meta}>
+                    <span>{when(comment.criado_em)}{(comment as Row).editado_em ? ' · editado' : ''}</span>
+                    <span className={styles.metaActions}>
+                      <button type="button" className={styles.remove} onClick={() => { setOpen(false); setEditing(comment.id) }} aria-label="Editar comentário" title="Editar comentário"><Icon name="edit" size={15} filled={false} /></button>
+                      <button type="button" className={styles.remove} onClick={() => void removeComment(comment.id)} aria-label="Excluir comentário" title="Excluir comentário"><Icon name="delete" size={15} filled={false} /></button>
+                    </span>
                   </div>
-                ) : null}
-              </div>
+                  {comment.texto ? <RichText text={comment.texto} /> : null}
+                  {comment.anexos?.length ? (
+                    <div className={styles.files}>
+                      {comment.anexos.map((file, index) => (
+                        <button key={`${file.idDrive || fileName(file)}-${index}`} type="button" className={styles.file} onClick={() => setPreview(file)}><Icon name={fileIcon(file)} size={16} />{fileName(file)}</button>
+                      ))}
+                    </div>
+                  ) : null}
+                </div>
+              )}
             </li>
           ))}
         </ul>
       ) : null}
 
       <div className={styles.composerRow}>
-        <span className={styles.avatar} aria-hidden="true">{AUTHOR}</span>
+        <Avatar />
         <div className={styles.box} data-open={open || undefined}>
           {open ? (
-            <>
-              <div
-                ref={area}
-                contentEditable
-                suppressContentEditableWarning
-                role="textbox"
-                aria-multiline="true"
-                aria-label="Comentar"
-                data-placeholder="Comentar"
-                className={styles.area}
-                onInput={event => setHasText(Boolean(event.currentTarget.innerText.trim()))}
-                onPaste={event => {
-                  event.preventDefault()
-                  document.execCommand('insertText', false, event.clipboardData.getData('text/plain'))
-                }}
-                onKeyDown={event => {
-                  if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); cancel() }
-                  if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) { event.preventDefault(); send() }
-                }}
-              />
-              {files.length ? (
-                <div className={styles.pending}>
-                  {files.map((file, index) => (
-                    <span key={index} className={styles.pendingFile}><Icon name={fileIcon(file)} size={15} />{fileName(file)}<button type="button" onClick={() => setFiles(current => current.filter((_, i) => i !== index))} aria-label={`Remover ${fileName(file)}`}><Icon name="close" size={14} filled={false} /></button></span>
-                  ))}
-                </div>
-              ) : null}
-              {error ? <p className={styles.error}>{error}</p> : null}
-              <div className={styles.toolbar}>
-                <div className={styles.tools}>
-                  {tool('Negrito', 'format_bold', () => format('bold'))}
-                  {tool('Itálico', 'format_italic', () => format('italic'))}
-                  {tool('Lista', 'format_list_bulleted', () => format('insertUnorderedList'))}
-                  {tool('Link', 'link', link)}
-                  {tool(busy ? 'Enviando…' : 'Anexar arquivo', 'attach_file', () => input.current?.click())}
-                </div>
-                <div className={styles.actions}>
-                  <button type="button" className={styles.cancel} onClick={cancel}>Cancelar</button>
-                  <button type="button" className={styles.send} disabled={!canSend} onClick={send}>Comentar</button>
-                </div>
-              </div>
-            </>
+            <CommentEditor
+              submitLabel="Comentar"
+              onCancel={() => setOpen(false)}
+              onSubmit={(texto, anexos) => { onChange([...comments, { id: `c-${crypto.randomUUID()}`, texto, anexos, criado_em: new Date().toISOString() }]); setOpen(false) }}
+            />
           ) : (
             <div className={styles.closed}>
-              <button type="button" className={styles.placeholder} onClick={() => setOpen(true)}>Comentar</button>
-              <button type="button" className={styles.tool} aria-label="Anexar arquivo" title="Anexar arquivo" onClick={() => { setOpen(true); requestAnimationFrame(() => input.current?.click()) }}><Icon name="attach_file" size={18} filled={false} /></button>
+              <button type="button" className={styles.placeholder} onClick={() => { setEditing(''); setOpen(true) }}>Comentar</button>
             </div>
           )}
-          <input ref={input} hidden type="file" disabled={busy} onChange={event => { void attach(event.target.files?.[0]); event.currentTarget.value = '' }} />
         </div>
       </div>
       <FilePreviewOverlay file={preview} onClose={() => setPreview(null)} />

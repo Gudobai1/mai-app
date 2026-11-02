@@ -195,3 +195,9 @@
   .actions { justify-content: flex-end; }
   .cancel, .send { height: 40px; }
 }
+
+/* Foto do perfil no comentário; editar e excluir lado a lado */
+.avatar { overflow: hidden; }
+.avatarImg { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; display: block; }
+.metaActions { display: inline-flex; align-items: center; gap: 2px; }
+.remove[aria-label="Editar comentário"]:hover { color: var(--ds-text); }

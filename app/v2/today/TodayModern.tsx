@@ -12,6 +12,7 @@ import { driveAssetUrl } from '../DriveAsset'
 import { resolveMaiIcon } from '../MaiIcons'
 import { askConfirm } from '../shell/ConfirmDialog'
 import { QuickAdd } from '../shell/QuickAdd'
+import { useTaskQuick } from '../shell/TaskQuick'
 import { useQuickMenu, type QuickMenuConfig } from '../shell/QuickMenu'
 import { hiddenOccurrenceIds } from '../../../lib/v2/series'
 import { DotRing } from '../habits/DotRing'
@@ -483,39 +484,10 @@ export function TodayModern({ state, today, commit, navigate, inspect, options, 
     commit(current => ({ ...current, tasks: current.tasks.map(task => String(task.id) === id ? { ...task, ...patch } : task) }))
   }
 
+  const taskQuick = useTaskQuick({ state, today, commit, onOpen: inspectTask })
   function taskMenu(task: Row): QuickMenuConfig {
-    const id = String(task.id)
-    const due = dateKey(task.data_vencimento)
-    const time = timeKey(task.data_vencimento)
-    const priority = Number(task.prioridade || 4)
-    const title = String(task.titulo || 'Tarefa')
-    return {
-      title,
-      subtitle: `${projectName(task.projeto_id)}${task.secao ? ` · ${String(task.secao)}` : ''}`,
-      groups: [
-        { label: 'Data', inline: true, options: [
-          ...dateChoices.map(choice => ({ label: choice.label, icon: choice.icon, active: due === choice.value, onSelect: () => patchTask(id, { data_vencimento: `${choice.value}${time ? `T${time}` : ''}` }) })),
-          { label: 'Sem data', icon: 'event_busy', active: !due, onSelect: () => patchTask(id, { data_vencimento: '' }) },
-        ] },
-        { label: 'Prioridade', inline: true, options: [1, 2, 3, 4].map(level => ({
-          label: ['Alta', 'Média', 'Baixa', 'Nenhuma'][level - 1],
-          icon: 'flag',
-          color: PRIORITY_COLOR[level] || 'var(--ds-muted)',
-          active: priority === level,
-          onSelect: () => patchTask(id, { prioridade: level }),
-        })) },
-        { options: [
-          { label: task.concluida ? 'Reabrir tarefa' : 'Concluir', icon: task.concluida ? 'undo' : 'check_circle', onSelect: () => toggleTask(id) },
-          { label: 'Abrir detalhes', icon: 'open_in_full', onSelect: () => inspectTask(task) },
-          { label: 'Excluir', icon: 'delete', tone: 'danger', onSelect: async () => {
-            if (!(await askConfirm({ title: 'Excluir tarefa?', message: `“${title}” será excluída. Não dá para desfazer.` }))) return
-            commit(current => ({ ...current, tasks: current.tasks.filter(item => String(item.id) !== id && String(item.parent_id || '') !== id) }))
-          } },
-        ] },
-      ],
-    }
+    return taskQuick.menu(task)
   }
-
 
   function patchEvent(id: string, patch: (event: Row) => Row) {
     commit(current => ({ ...current, events: rows(current.events).map(event => String(event.id) === id ? patch(event) : event) }))
@@ -701,9 +673,9 @@ export function TodayModern({ state, today, commit, navigate, inspect, options, 
             const childLate = Boolean(childDue) && childDue < today && !child.concluida
             const childPriority = Number(child.prioridade || 4)
             return (
-              <div key={childId} role="listitem" className={styles.subRow} data-done={child.concluida || undefined} onClick={() => inspectTask(child)}>
+              <div key={childId} role="listitem" className={styles.subRow} data-done={child.concluida || undefined} onClick={() => inspectTask(child)} {...quick.bind(() => taskMenu(child))}>
                 <button type="button" className={styles.subCheck} data-done={child.concluida || undefined} data-late={childLate || undefined} style={!child.concluida && PRIORITY_COLOR[childPriority] ? ({ borderColor: PRIORITY_COLOR[childPriority] } as CSSProperties) : undefined} aria-label={child.concluida ? `Reabrir subtarefa ${String(child.titulo || '')}` : `Concluir subtarefa ${String(child.titulo || '')}`} onClick={event => { event.stopPropagation(); toggleTask(childId) }}>
-                  {child.concluida ? <Icon name="check" size={16} /> : null}
+                  {child.concluida ? <Icon name="check" size={11} /> : null}
                 </button>
                 <button type="button" className={styles.subTitle}>{String(child.titulo || 'Subtarefa')}</button>
                 {childDue ? <span className={styles.subMeta} data-late={childLate || undefined}>{naturalDate(childDue, today)}</span> : null}
@@ -1002,6 +974,7 @@ export function TodayModern({ state, today, commit, navigate, inspect, options, 
         {column('side')}
       </div>
       {quick.element}
+      {taskQuick.element}
     </div>
   )
 }
