@@ -1311,3 +1311,14 @@
 .prop.prop:hover, .actionRow.actionRow:hover, .pill.pill:hover, .attach.attach:hover { background: transparent; border-color: var(--ds-line-strong); }
 .actionRow.actionRow[data-on] { background: transparent; border-color: var(--ds-accent); color: var(--ds-accent); }
 .listRow.listRow, .files.files { background: transparent; border-radius: 0; border: 0; border-bottom: 1px solid var(--ds-line); }
+
+/* Subtarefas compactas dentro do cartão (data/prioridade só na criação). */
+.subCard.subCard { align-items: center; gap: 10px; padding: 7px 4px 7px 2px; border-radius: 0; background: transparent; border-bottom: 1px solid var(--ds-line); }
+.subCard.subCard:last-of-type { border-bottom: 0; }
+.subCard.subCard .round { width: 18px; height: 18px; margin: 0; }
+.subCard.subCard .subMain { flex: 1; flex-direction: row; align-items: baseline; gap: 10px; }
+.subCard.subCard .subTitle { flex: 0 1 auto; font-size: 14px; font-weight: var(--ds-fw-regular); }
+.subCard.subCard .subInfo { flex-shrink: 0; height: auto; padding: 0; background: transparent; font-size: 12px; color: var(--ds-muted); }
+.subCard.subCard .subInfo[data-late] { color: var(--ds-danger); }
+.composerChips { display: flex; flex-wrap: wrap; gap: 6px; }
+.composer.composer { border-radius: var(--ds-r-md); }
