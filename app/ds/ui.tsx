@@ -1,4 +1,5 @@
 import type { ButtonHTMLAttributes, CSSProperties, HTMLAttributes, ReactNode } from 'react'
+import { LUCIDE_ICONS } from './lucide'
 import styles from './ui.module.css'
 
 /**
@@ -44,6 +45,15 @@ export type IconProps = {
 }
 
 export function Icon({ name, size = 22, filled = false, weight = 300, className, style }: IconProps) {
+  const Lucide = LUCIDE_ICONS[name]
+  if (Lucide) {
+    const solid = filled && (name === 'star' || name === 'flag' || name === 'outlined_flag')
+    return (
+      <span aria-hidden="true" className={cx(styles.icon, className)} style={{ width: size, height: size, display: 'inline-grid', placeItems: 'center', ...style }}>
+        <Lucide size={size} strokeWidth={size <= 16 ? 2 : 1.75} fill={solid ? 'currentColor' : 'none'} />
+      </span>
+    )
+  }
   return (
     <span
       aria-hidden="true"
