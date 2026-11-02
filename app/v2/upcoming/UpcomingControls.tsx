@@ -20,10 +20,10 @@ export type UpcomingFilters = {
   hideLate: boolean
 }
 
-export type UpcomingDisplay = { group: 'kind' | 'project' | 'none'; sort: 'time' | 'priority' | 'name' }
+export type UpcomingDisplay = { group: 'kind' | 'project' | 'none'; sort: 'time' | 'priority' | 'name'; nextOnly: boolean }
 
 export const EMPTY_FILTERS: UpcomingFilters = { hiddenKinds: [], hiddenProjects: [], hiddenSources: [], hiddenPriorities: [], hiddenFinance: [], hideDone: false, hideLate: false }
-export const DEFAULT_DISPLAY: UpcomingDisplay = { group: 'kind', sort: 'time' }
+export const DEFAULT_DISPLAY: UpcomingDisplay = { group: 'kind', sort: 'time', nextOnly: false }
 
 export const KINDS: { id: Kind; label: string; icon: string }[] = [
   { id: 'event', label: 'Compromissos', icon: 'event' },
@@ -152,6 +152,13 @@ export function UpcomingControls({ filters, onChange, projects, sources, display
               {([['time', 'Horário'], ['priority', 'Prioridade'], ['name', 'Nome']] as [UpcomingDisplay['sort'], string][]).map(([id, label]) => (
                 <button key={id} type="button" role="menuitemradio" aria-checked={display.sort === id} className={styles.row} data-on={display.sort === id || undefined} onClick={() => onDisplay({ ...display, sort: id })}>
                   <span>{label}</span><span className={styles.tick}>{display.sort === id ? <Icon name="check" size={16} /> : null}</span>
+                </button>
+              ))}
+            </Section>
+            <Section title="Eventos repetidos">
+              {([[false, 'Todas as ocorrências'], [true, 'Somente a próxima']] as [boolean, string][]).map(([id, label]) => (
+                <button key={String(id)} type="button" role="menuitemradio" aria-checked={display.nextOnly === id} className={styles.row} data-on={display.nextOnly === id || undefined} onClick={() => onDisplay({ ...display, nextOnly: id })}>
+                  <span>{label}</span><span className={styles.tick}>{display.nextOnly === id ? <Icon name="check" size={16} /> : null}</span>
                 </button>
               ))}
             </Section>
