@@ -15,6 +15,7 @@ import { useQuickMenu, type QuickMenuConfig } from '../shell/QuickMenu'
 import tasksStyles from '../tasks/TasksModern.module.css'
 import todayStyles from '../today/TodayModern.module.css'
 import styles from './EmBreve.module.css'
+import { CategoryManager } from '../detail/CategoryManager'
 import { DEFAULT_DISPLAY, EMPTY_FILTERS, KINDS, UpcomingControls, normalizeFilters, type Kind, type UpcomingDisplay, type UpcomingFilters } from './UpcomingControls'
 
 /**
@@ -114,6 +115,7 @@ export function EmBreve({ state, today, commit, inspect, syncRange }: Props) {
   const mobile = useIsMobile()
   const quick = useQuickMenu()
   const saved = state.configs.upcomingView
+  const [manageCategories, setManageCategories] = useState(false)
   const [mode, setModeState] = useState<Mode>(saved === 'month' ? 'month' : saved === 'week' ? 'week' : 'list')
   const [selected, setSelected] = useState(today)
   const [anchor, setAnchor] = useState(weekStart(today))
@@ -833,6 +835,7 @@ export function EmBreve({ state, today, commit, inspect, syncRange }: Props) {
             onDisplay={setDisplay}
             projects={projectOptions}
             sources={sourceOptions}
+            onManageCategories={() => setManageCategories(true)}
           />
         </div>
       </header>
@@ -864,6 +867,7 @@ export function EmBreve({ state, today, commit, inspect, syncRange }: Props) {
       {mode === 'week' ? (mobile ? weekMobile : weekDesktop) : null}
       {mode === 'month' ? monthView : null}
       {quick.element}
+      {manageCategories ? <CategoryManager state={state} commit={commit} onClose={() => setManageCategories(false)} /> : null}
       {taskQuick.element}
     </div>
   )

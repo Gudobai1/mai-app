@@ -84,7 +84,7 @@ type FilterProps = {
   sources: Option[]
 }
 
-export function UpcomingControls({ filters, onChange, projects, sources, display, onDisplay }: FilterProps & { display: UpcomingDisplay; onDisplay: (next: UpcomingDisplay) => void }) {
+export function UpcomingControls({ filters, onChange, projects, sources, display, onDisplay, onManageCategories }: FilterProps & { display: UpcomingDisplay; onDisplay: (next: UpcomingDisplay) => void; onManageCategories?: () => void }) {
   const [open, setOpen] = useState<'' | 'filter' | 'display'>('')
   const filterRef = useRef<HTMLButtonElement | null>(null)
   const displayRef = useRef<HTMLButtonElement | null>(null)
@@ -125,7 +125,7 @@ export function UpcomingControls({ filters, onChange, projects, sources, display
               </Section>
             ) : null}
             {sources.length ? (
-              <Section title="Agendas e categorias" action={<button type="button" className={styles.link} onClick={() => setAll('hiddenSources', sources, filters.hiddenSources.length > 0)}>{filters.hiddenSources.length ? 'Mostrar todas' : 'Esconder todas'}</button>}>
+              <Section title="Agendas e categorias" action={<span style={{ display: 'inline-flex', gap: 10 }}>{onManageCategories ? <button type="button" className={styles.link} onClick={() => { setOpen(''); onManageCategories() }}>Gerenciar</button> : null}<button type="button" className={styles.link} onClick={() => setAll('hiddenSources', sources, filters.hiddenSources.length > 0)}>{filters.hiddenSources.length ? 'Mostrar todas' : 'Esconder todas'}</button></span>}>
                 {sources.map(item => <Row key={item.id} label={item.label} color={item.color} checked={!filters.hiddenSources.includes(item.id)} onToggle={() => toggle('hiddenSources', item.id)} />)}
               </Section>
             ) : null}

@@ -259,7 +259,7 @@ export function HabitsModern({ state, today, commit, createRequest }: Props) {
                           aria-label={`${String(habit.nome)} em ${longDate(day)}`}
                           title={level === 'fail' ? 'Falha' : level === 'part' ? `${progressOf(habit, day)}%` : !eligible(habit, day) ? 'Fora da frequência' : longDate(day)}
                         >
-                          <DotRing pct={level === 'full' ? 100 : progressOf(habit, day)} value={amountOf(habit, day)} unit={abbreviateUnit(habit.unidade)} fail={level === 'fail'} empty={!level} today={day === today} />
+                          <DotRing pct={level === 'full' ? 100 : progressOf(habit, day)} value={amountOf(habit, day)} unit={abbreviateUnit(habit.unidade)} plain={!(target(habit) > 1 || habit.unidade)} fail={level === 'fail'} empty={!level} today={day === today} />
                         </button>
                       )
                     })}

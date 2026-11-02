@@ -15,10 +15,12 @@ type Props = {
   empty?: boolean
   /** Destaca o dia de hoje. */
   today?: boolean
+  /** Hábito sem métrica: no lugar do número aparece um check. */
+  plain?: boolean
 }
 
 /** Anel: a borda é preenchida de acordo com a porcentagem e o centro mostra a quantidade. */
-export function DotRing({ pct, value, unit, label, fail, empty, today }: Props) {
+export function DotRing({ pct, value, unit, label, fail, empty, today, plain }: Props) {
   const ratio = fail ? 1 : Math.max(0.04, Math.min(1, pct / 100))
   const color = fail ? 'var(--ds-danger)' : 'var(--hc)'
   const shortUnit = String(unit || '').trim().slice(0, 4)
@@ -31,13 +33,15 @@ export function DotRing({ pct, value, unit, label, fail, empty, today }: Props) 
         <path d="M15.5 15.5 L24.5 24.5 M24.5 15.5 L15.5 24.5" stroke="var(--ds-danger)" strokeWidth={2} strokeLinecap="round" />
       ) : label ? (
         <text x="20" y="20" textAnchor="middle" dominantBaseline="central" fontSize={9.5} fontWeight={700} fill="var(--ds-text)">{label}</text>
+      ) : plain ? (
+        <path d="M13.5 20.5 L18 25 L26.5 15 " fill="none" stroke={color} strokeWidth={2.6} strokeLinecap="round" strokeLinejoin="round" />
       ) : shortUnit ? (
         <>
-          <text x="20" y="16" textAnchor="middle" dominantBaseline="central" fontSize={amount.length > 3 ? 8.5 : 11} fontWeight={700} fill="var(--ds-text)">{amount}</text>
-          <text x="20" y="26" textAnchor="middle" dominantBaseline="central" fontSize={7} fontWeight={600} fill="var(--ds-muted)">{shortUnit}</text>
+          <text x="20" y="16" textAnchor="middle" dominantBaseline="central" fontSize={amount.length > 3 ? 8.5 : 11} fontWeight={700} fill={color}>{amount}</text>
+          <text x="20" y="26" textAnchor="middle" dominantBaseline="central" fontSize={7} fontWeight={600} fill={color} opacity={0.85}>{shortUnit}</text>
         </>
       ) : (
-        <text x="20" y="20" textAnchor="middle" dominantBaseline="central" fontSize={amount.length > 3 ? 9 : 12} fontWeight={700} fill="var(--ds-text)">{amount}</text>
+        <text x="20" y="20" textAnchor="middle" dominantBaseline="central" fontSize={amount.length > 3 ? 9 : 12} fontWeight={700} fill={color}>{amount}</text>
       )}
     </svg>
   )

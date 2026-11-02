@@ -56,3 +56,6 @@
 }
 
 .color[data-active] { box-shadow: 0 0 0 2px var(--ds-surface), 0 0 0 4px var(--ds-text); }
+
+.manage { appearance: none; display: flex; align-items: center; gap: 8px; margin-top: 4px; padding: 10px 6px 6px; border: 0; border-top: 1px solid var(--ds-line); background: transparent; color: var(--ds-muted); font: inherit; font-size: 13px; font-weight: var(--ds-fw-medium); text-align: left; cursor: pointer; }
+.manage:hover { color: var(--ds-text); }

@@ -35,3 +35,22 @@ export function withEventCategory(state: MaiState, category: EventCategory): Mai
   const next = index >= 0 ? saved.map((item, position) => (position === index ? { nome, cor: category.cor } : item)) : [...saved, { nome, cor: category.cor }]
   return { ...state, configs: { ...state.configs, categoriasEvento: next } }
 }
+
+/** Renomeia e/ou troca a cor de uma categoria, atualizando também os compromissos que a usam. */
+export function updateEventCategory(state: MaiState, oldName: string, next: EventCategory): MaiState {
+  const nome = clean(next.nome)
+  if (!nome) return state
+  const base = withEventCategory(state, { nome: clean(oldName), cor: next.cor })
+  const saved = (stateRows(base.configs?.categoriasEvento) as Record<string, unknown>[]).map(item => ({ nome: clean(item?.nome), cor: clean(item?.cor) }))
+  const categoriasEvento = saved.map(item => (item.nome.toLowerCase() === clean(oldName).toLowerCase() ? { nome, cor: next.cor } : item))
+  const events = (stateRows(base.events) as Record<string, unknown>[]).map(event => clean(event?.categoria).toLowerCase() === clean(oldName).toLowerCase() ? { ...event, categoria: nome, categoria_cor: next.cor, cor: next.cor } : event)
+  return { ...base, events: events as MaiState['events'], configs: { ...base.configs, categoriasEvento } }
+}
+
+/** Remove a categoria da lista e tira ela dos compromissos (eles continuam existindo, sem categoria). */
+export function removeEventCategory(state: MaiState, name: string): MaiState {
+  const key = clean(name).toLowerCase()
+  const categoriasEvento = (stateRows(state.configs?.categoriasEvento) as Record<string, unknown>[]).filter(item => clean(item?.nome).toLowerCase() !== key)
+  const events = (stateRows(state.events) as Record<string, unknown>[]).map(event => clean(event?.categoria).toLowerCase() === key ? { ...event, categoria: '', categoria_cor: '', cor: '' } : event)
+  return { ...state, events: events as MaiState['events'], configs: { ...state.configs, categoriasEvento } }
+}
