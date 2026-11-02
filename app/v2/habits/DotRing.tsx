@@ -1,5 +1,5 @@
-const COUNT = 14
-const R = 16.5
+const R = 17
+const CIRC = 2 * Math.PI * R
 
 type Props = {
   /** Progresso de 0 a 100: define quantos pontos ficam preenchidos. */
@@ -17,18 +17,16 @@ type Props = {
   today?: boolean
 }
 
-/** Círculo de pontos na borda; os pontos preenchidos indicam o progresso e o centro mostra a quantidade. */
+/** Anel: a borda é preenchida de acordo com a porcentagem e o centro mostra a quantidade. */
 export function DotRing({ pct, value, unit, label, fail, empty, today }: Props) {
-  const filled = empty ? 0 : fail ? COUNT : Math.max(1, Math.round((Math.max(0, Math.min(100, pct)) / 100) * COUNT))
+  const ratio = fail ? 1 : Math.max(0.04, Math.min(1, pct / 100))
   const color = fail ? 'var(--ds-danger)' : 'var(--hc)'
   const shortUnit = String(unit || '').trim().slice(0, 4)
   const amount = String(value ?? '')
   return (
     <svg viewBox="0 0 40 40" aria-hidden="true" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', overflow: 'visible', pointerEvents: 'none' }}>
-      {Array.from({ length: COUNT }, (_, index) => {
-        const angle = (index / COUNT) * Math.PI * 2 - Math.PI / 2
-        return <circle key={index} cx={20 + R * Math.cos(angle)} cy={20 + R * Math.sin(angle)} r={2.1} fill={index < filled ? color : (today ? 'var(--ds-muted)' : 'var(--ds-line-strong)')} />
-      })}
+      <circle cx="20" cy="20" r={R} fill="none" stroke={today && empty ? 'var(--ds-muted)' : 'var(--ds-line)'} strokeWidth={3} opacity={today && empty ? 0.6 : 1} />
+      {!empty ? <circle cx="20" cy="20" r={R} fill="none" stroke={color} strokeWidth={3} strokeLinecap={ratio >= 1 ? 'butt' : 'round'} strokeDasharray={`${ratio * CIRC} ${CIRC}`} transform="rotate(-90 20 20)" /> : null}
       {empty ? null : fail ? (
         <path d="M15.5 15.5 L24.5 24.5 M24.5 15.5 L15.5 24.5" stroke="var(--ds-danger)" strokeWidth={2} strokeLinecap="round" />
       ) : label ? (
