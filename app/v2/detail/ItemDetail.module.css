@@ -1333,3 +1333,175 @@
 .footerSave:hover:not(:disabled) { filter: brightness(0.94); }
 .footerSave:disabled { opacity: 0.45; cursor: default; }
 .footerCancel:disabled, .delete:disabled { opacity: 0.5; cursor: default; }
+
+/* ===================================================== Cartão da tarefa (novo) */
+
+.panel[data-kind='task'] {
+  width: min(900px, 100%);
+  height: min(640px, calc(100dvh - 48px));
+  max-height: none;
+  background: var(--ds-bg);
+}
+
+.panel[data-kind='task'] > .header {
+  min-height: 48px;
+  padding: 0 14px 0 24px;
+  border-bottom: 1px solid var(--ds-line);
+  background: var(--ds-bg);
+}
+
+.panel[data-kind='task'] > .footer {
+  min-height: 56px;
+  padding: 10px 24px;
+  background: var(--ds-bg);
+}
+
+.taskMain {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+}
+
+.taskContent {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 16px 24px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.commentsSlot {
+  margin-top: auto;
+  padding-top: 12px;
+}
+
+/* Coluna de propriedades: só o corpo, entre as faixas de cima e de baixo. */
+.taskSide {
+  flex: 0 0 260px;
+  box-sizing: border-box;
+  overflow-y: auto;
+  border-left: 1px solid var(--ds-line);
+  background: var(--ds-surface-2);
+  display: flex;
+  flex-direction: column;
+}
+
+.sideRow {
+  appearance: none;
+  box-sizing: border-box;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+  padding: 10px 20px;
+  border: 0;
+  border-bottom: 1px solid var(--ds-line);
+  border-radius: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+}
+
+.sideRow:last-child { border-bottom: 0; }
+.sideRowButton { cursor: pointer; }
+.sideRowButton:hover .sideText,
+.sideRowButton[data-open] .sideText { text-decoration: underline; text-underline-offset: 3px; }
+
+.sideLabel {
+  font-size: 11.5px;
+  color: var(--ds-muted);
+}
+
+.sideValue {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  max-width: 100%;
+  font-size: 13.5px;
+  font-weight: var(--ds-fw-medium);
+  color: var(--prop-color, var(--ds-text));
+}
+
+.sideValue[data-muted] { color: var(--ds-muted); }
+.sideIcon { display: inline-grid; place-items: center; flex-shrink: 0; }
+.sideText { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sideValue > .projectDot, .sideValue > .projectImg { flex-shrink: 0; }
+
+/* Celular: propriedades viram uma fileira de ícones. */
+.iconProps {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: -10px;
+  flex-wrap: wrap;
+}
+
+.iconProp {
+  appearance: none;
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--prop-color, var(--ds-text-2));
+  cursor: pointer;
+}
+
+.iconProp[data-muted] { color: var(--ds-muted); }
+.iconProp:hover,
+.iconProp[data-open] { background: var(--ds-surface-hover); }
+
+/* Subtarefas discretas, no padrão do app. */
+.subAddRow { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 4px 0; }
+
+.subAdd {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--ds-muted);
+  font: inherit;
+  font-size: 14px;
+  font-weight: var(--ds-fw-medium);
+  cursor: pointer;
+}
+
+.subAdd:hover { color: var(--ds-accent); }
+
+.subDoneToggle {
+  appearance: none;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--ds-muted);
+  font: inherit;
+  font-size: 12.5px;
+  cursor: pointer;
+}
+
+.subDoneToggle:hover { color: var(--ds-text); }
+
+@media (max-width: 900px) {
+  .panel[data-kind='task'] {
+    width: 100%;
+    height: min(760px, calc(100dvh - 48px));
+  }
+
+  .panel[data-kind='task'] > .header { min-height: 48px; padding: 0 8px 0 20px; }
+  .panel[data-kind='task'] > .footer { padding: 10px 14px max(12px, env(safe-area-inset-bottom)) 20px; }
+  .taskContent { padding: 12px 20px 14px; gap: 16px; }
+  .taskSide { display: none; }
+  .commentsSlot { padding-bottom: 6px; }
+}
