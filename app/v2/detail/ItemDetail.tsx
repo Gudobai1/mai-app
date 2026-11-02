@@ -22,6 +22,7 @@ import { CommentsSection, type Comment } from './Comments'
 import { UnitField } from '../habits/UnitField'
 import { DatePicker, Floating, OptionList, ProjectPicker, ReminderPicker, RepeatPicker, TimePicker, repeatLabel, reminderLabel, type PickerOption } from './Pickers'
 import { CategoryChooser } from './CategoryChooser'
+import { CategoryManager } from './CategoryManager'
 import { eventCategories, withEventCategory, type EventCategory } from '../../../lib/v2/event-categories'
 import styles from './ItemDetail.module.css'
 
@@ -347,8 +348,9 @@ function SelectProp({ icon, color, label, value, options, onChange, display, mut
   )
 }
 
-function CategoryProp({ categories, value, display, onPick, onCreate }: { categories: EventCategory[]; value: string; display: ReactNode; onPick: (category: EventCategory | null) => void; onCreate: (category: EventCategory) => void }) {
+function CategoryProp({ categories, value, display, onPick, onCreate, state, commit }: { categories: EventCategory[]; value: string; display: ReactNode; onPick: (category: EventCategory | null) => void; onCreate: (category: EventCategory) => void; state: MaiState; commit: Commit }) {
   const [open, setOpen] = useState(false)
+  const [managing, setManaging] = useState(false)
   const anchor = useRef<HTMLButtonElement | null>(null)
   const current = categories.find(item => item.nome === value)
   return (
@@ -361,9 +363,11 @@ function CategoryProp({ categories, value, display, onPick, onCreate }: { catego
             value={value}
             onSelect={category => { setOpen(false); if ((category?.nome || '') !== value) onPick(category) }}
             onCreate={category => { onCreate(category); setOpen(false); onPick(category) }}
+            onManage={() => { setOpen(false); setManaging(true) }}
           />
         </Floating>
       ) : null}
+      {managing ? <CategoryManager state={state} commit={commit} onClose={() => setManaging(false)} /> : null}
     </>
   )
 }
@@ -780,7 +784,7 @@ function EventDetail({ item, state, today, commit, googleRpc, refreshEvents, reg
           {!draft.dia_inteiro ? <PickerProp type="time" icon="schedule" color="var(--ds-lilac-fg)" label="Fim" emptyLabel="Sem horário de fim" value={draft.hora_fim} display={draft.hora_fim || 'Sem fim'} muted={!draft.hora_fim} onChange={hora_fim => update({ hora_fim }, true)} /> : null}
           {google
             ? <Prop icon="calendar_month" color="var(--ds-sky-fg)" label="Calendário" display={calendarName} />
-            : <CategoryProp categories={eventCategories(state)} value={String(draft.categoria || '')} display={calendarName} onPick={category => update({ categoria: category?.nome || '', categoria_cor: category?.cor || '', cor: category?.cor || '' }, true)} onCreate={category => commit(current => withEventCategory(current, category))} />}
+            : <CategoryProp categories={eventCategories(state)} value={String(draft.categoria || '')} display={calendarName} onPick={category => update({ categoria: category?.nome || '', categoria_cor: category?.cor || '', cor: category?.cor || '' }, true)} onCreate={category => commit(current => withEventCategory(current, category))} state={state} commit={commit} />}
           {!google ? <SelectProp icon="repeat" color="var(--ds-mint-fg)" label="Repetir" value={draft.repeticao} onChange={repeticao => update({ repeticao }, true)} options={REPEATS.some(option => option.value === draft.repeticao) ? REPEATS : [...REPEATS, { value: draft.repeticao, label: 'Personalizado' }]} /> : null}
         </div>
 

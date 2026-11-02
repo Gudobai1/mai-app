@@ -8,11 +8,13 @@ import { OptionList } from './Pickers'
 import styles from './CategoryChooser.module.css'
 
 /** Conteúdo do seletor de categoria: escolher uma existente ou criar uma nova com cor. */
-export function CategoryChooser({ categories, value, onSelect, onCreate }: {
+export function CategoryChooser({ categories, value, onSelect, onCreate, onManage }: {
   categories: EventCategory[]
   value: string
   onSelect: (category: EventCategory | null) => void
   onCreate: (category: EventCategory) => void
+  /** Abre a janela para renomear, mudar a cor e excluir categorias. */
+  onManage?: () => void
 }) {
   const [name, setName] = useState('')
   const [color, setColor] = useState(EVENT_CATEGORY_COLORS[0])
@@ -43,6 +45,7 @@ export function CategoryChooser({ categories, value, onSelect, onCreate }: {
         </div>
         <ColorField value={color} onChange={setColor} />
       </div>
+      {onManage ? <button type="button" className={styles.manage} onClick={onManage}><Icon name="settings" size={16} filled={false} />Gerenciar categorias</button> : null}
     </div>
   )
 }

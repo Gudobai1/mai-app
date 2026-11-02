@@ -8,6 +8,7 @@ import type { Row } from '../app-types'
 import { driveAssetUrl } from '../DriveAsset'
 import { DatePicker, Floating, OptionList, ProjectPicker, ReminderPicker, RepeatPicker, TimePicker, repeatLabel as repeatText, reminderLabel, type PickerOption } from '../detail/Pickers'
 import { CategoryChooser } from '../detail/CategoryChooser'
+import { CategoryManager } from '../detail/CategoryManager'
 import { eventCategories, withEventCategory, type EventCategory } from '../../../lib/v2/event-categories'
 import { fold, parseNatural, replaceRange, type NlKind } from '../../../lib/v2/nlp'
 import styles from './QuickAdd.module.css'
@@ -88,7 +89,9 @@ export function QuickAdd({ kinds, initial, state, today, defaultProjectId, defau
   const [repeatS, setRepeatS] = useState('')
   const [taskTimeS, setTaskTimeS] = useState('')
   const [reminderS, setReminderS] = useState('')
-  const [allDay, setAllDay] = useState(false)
+  // Compromisso começa como dia inteiro; o horário é opcional.
+  const [manageCategories, setManageCategories] = useState(false)
+  const [allDayS, setAllDay] = useState(true)
   const [startS, setStartS] = useState('09:00')
   const [endS, setEndS] = useState('10:00')
   const [place, setPlace] = useState('')
@@ -128,6 +131,7 @@ export function QuickAdd({ kinds, initial, state, today, defaultProjectId, defau
   const date = dateBase || (kind === 'task' && taskTime ? today : '')
   const reminder = nl.reminder ?? reminderS
   const setReminder = (value: string) => { setReminderS(value); mute('reminder') }
+  const allDay = allDayS && !(kind === 'event' && nl.time !== undefined)
   const start = kind === 'event' ? (nl.time ?? startS) : startS
   const setStart = (value: string) => { setStartS(value); mute('time') }
   const end = kind === 'event' ? (nl.end ?? endS) : endS
@@ -337,15 +341,17 @@ export function QuickAdd({ kinds, initial, state, today, defaultProjectId, defau
                 <button type="button" className={styles.chip} data-set={category ? true : undefined} style={category ? ({ '--chip-color': category.cor } as CSSProperties) : undefined} onClick={open('category')}>
                   <Icon name="sell" size={16} filled={Boolean(category)} /><span>{category?.nome || 'Categoria'}</span>
                 </button>
-                <button type="button" className={styles.chip} data-set={allDay || undefined} onClick={() => setAllDay(value => !value)}>
+                <button type="button" className={styles.chip} data-set={allDay || undefined} onClick={() => setAllDay(!allDay)}>
                   <Icon name="wb_sunny" size={16} filled={false} />Dia inteiro
                 </button>
-                {!allDay ? (
+                {allDay ? (
+                  <button type="button" className={styles.chip} onClick={() => setAllDay(false)}><Icon name="schedule" size={16} filled={false} />Horário</button>
+                ) : (
                   <>
                     <button type="button" className={styles.chip} data-set onClick={open('start')}><Icon name="schedule" size={16} filled={false} />{start || 'Início'}</button>
                     <button type="button" className={styles.chip} data-set onClick={open('end')}><Icon name="arrow_right_alt" size={16} filled={false} />{end || 'Fim'}</button>
                   </>
-                ) : null}
+                )}
               </>
             )}
 
@@ -397,6 +403,7 @@ export function QuickAdd({ kinds, initial, state, today, defaultProjectId, defau
           <ProjectPicker projects={projects} projectId={projectId} section={section} imageOf={item => item.imagem_url ? driveAssetUrl(item.imagem_url) : undefined} onSelect={(id, name) => done(() => { setProjectId(id); setSection(name) })} />
         </Floating>
       ) : null}
+      {manageCategories ? <CategoryManager state={state} commit={commit} onClose={() => setManageCategories(false)} /> : null}
       {picker === 'category' ? (
         <Floating anchor={anchor} title="Categoria" width={270} onClose={() => setPicker('')}>
           <CategoryChooser
@@ -404,6 +411,7 @@ export function QuickAdd({ kinds, initial, state, today, defaultProjectId, defau
             value={category?.nome || ''}
             onSelect={value => done(() => setCategory(value))}
             onCreate={value => { commit(current => withEventCategory(current, value)); done(() => setCategory(value)) }}
+            onManage={() => { setPicker(''); setManageCategories(true) }}
           />
         </Floating>
       ) : null}
