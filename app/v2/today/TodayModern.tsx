@@ -756,7 +756,6 @@ export function TodayModern({ state, today, commit, navigate, inspect, options, 
     return Math.max(0, Math.min(100, Math.round((Number(entry.valor || 0) / Math.max(1, Number(habit.meta || 1))) * 100)))
   }
   const weekStart = addDays(day, -((new Date(`${day}T12:00:00`).getDay()) % 7))
-  const weekKeys = Array.from({ length: 7 }, (_, index) => addDays(weekStart, index))
   const streakOf = (habit: Row) => {
     let count = 0
     let cursor = day
@@ -845,18 +844,6 @@ export function TodayModern({ state, today, commit, navigate, inspect, options, 
         {!collapsed.has('habits') ? (
           habits.length ? (
             <div className={styles.habitList} role="list">
-              <div className={styles.habitHead} aria-hidden="true">
-                <span className={styles.habitHeadSpacer} />
-                <span className={styles.habitDots}>
-                  {weekKeys.map(key => (
-                    <span key={key} className={styles.habitHeadDay} data-today={key === day || undefined}>
-                      <small>{['D', 'S', 'T', 'Q', 'Q', 'S', 'S'][new Date(`${key}T12:00:00`).getDay()]}</small>
-                      <b>{Number(key.slice(8))}</b>
-                    </span>
-                  ))}
-                </span>
-                <span className={styles.habitHeadStreak} />
-              </div>
               {habits.map(item => {
                 const name = String(item.habit.nome || 'Hábito')
                 const color = String(item.habit.cor_hex || 'var(--ds-accent)')
@@ -871,7 +858,7 @@ export function TodayModern({ state, today, commit, navigate, inspect, options, 
                       })()}
                     </button>
                     <span className={styles.habitDots}>
-                      {weekKeys.map(key => (
+                      {[day].map(key => (
                         <button key={key} type="button" className={styles.habitDay} data-day="" style={{ ['--p' as string]: pctOn(item.habit, key) }} data-on={levelOn(item.habit, key) === 'full' || undefined} data-part={levelOn(item.habit, key) === 'part' || undefined} data-failed={failedEntry(entryByKey.get(`${item.habit.id}|${key}`)) || undefined} data-today={key === day || undefined} data-off={!habitEligible(item.habit, key) || undefined} disabled={key > today || !habitEligible(item.habit, key)} onClick={() => logHabitOn(item.habit, key)} aria-label={`${name} em ${naturalDate(key, today)}`}><DotRing pct={levelOn(item.habit, key) === 'full' ? 100 : Number(pctOn(item.habit, key))} value={Number(entryByKey.get(`${item.habit.id}|${key}`)?.valor || 0)} unit={abbreviateUnit(item.habit.unidade)} fail={Boolean(failedEntry(entryByKey.get(`${item.habit.id}|${key}`)))} empty={!levelOn(item.habit, key) && !failedEntry(entryByKey.get(`${item.habit.id}|${key}`))} today={key === day} /></button>
                       ))}
                     </span>
