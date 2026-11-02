@@ -203,8 +203,8 @@
 }
 
 .round[data-checked] {
-  border-color: var(--ds-accent);
-  background: var(--ds-accent);
+  border-color: var(--ds-muted);
+  background: var(--ds-muted);
 }
 
 .round[data-checked][data-tone='success'] {
@@ -1345,12 +1345,12 @@
 .panel[data-kind='task'] > .header {
   min-height: 48px;
   padding: 0 14px 0 24px;
-  border-bottom: 1px solid var(--ds-line);
 }
 
 .panel[data-kind='task'] > .footer {
   min-height: 56px;
   padding: 10px 24px;
+  border-top: 0;
 }
 
 .taskMain {
@@ -1364,7 +1364,7 @@
   min-width: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
-  padding: 16px 24px 16px;
+  padding: 12px 24px 16px;
   display: flex;
   flex-direction: column;
   gap: 18px;
@@ -1380,7 +1380,6 @@
   flex: 0 0 260px;
   box-sizing: border-box;
   overflow-y: auto;
-  border-left: 1px solid var(--ds-line);
   background: transparent;
   display: flex;
   flex-direction: column;
@@ -1536,3 +1535,13 @@
 .composerCancel.composerCancel { color: var(--ds-muted); }
 .composerCancel.composerCancel:hover { color: var(--ds-text); }
 @media (max-width: 900px) { .composerActions.composerActions { justify-content: flex-start; } }
+
+.crumbImg { width: 16px; height: 16px; border-radius: 4px; object-fit: cover; flex-shrink: 0; }
+.crumbIcon { flex-shrink: 0; }
+.crumb:has(.crumbImg), .crumb:has(.crumbIcon) { gap: 6px; }
+
+/* Adicionar da subtarefa: mesmo padrão do botão Salvar. */
+.composerAdd.composerAdd { height: 34px; padding: 0 18px; border: 1px solid var(--ds-accent); border-radius: var(--ds-r-md); background: var(--ds-accent); color: #fff; font-size: 13.5px; font-weight: var(--ds-fw-bold); }
+.composerAdd.composerAdd:hover:not(:disabled) { background: var(--ds-accent); filter: brightness(0.94); }
+.composerCancel.composerCancel { height: 34px; padding: 0 16px; border: 1px solid var(--ds-line); border-radius: var(--ds-r-md); color: var(--ds-text); font-size: 13.5px; font-weight: var(--ds-fw-medium); }
+.composerCancel.composerCancel:hover { background: var(--ds-surface-hover); color: var(--ds-text); }

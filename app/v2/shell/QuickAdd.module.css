@@ -281,3 +281,11 @@
 .inlinePanel .ghost.ghost:active { background: var(--ds-line); }
 .inlinePanel .primary.primary:active:not(:disabled) { background: color-mix(in srgb, var(--ds-accent) 22%, transparent); }
 .inlinePanel .primary.primary:disabled { opacity: 0.4; }
+
+/* Adicionar (dentro das listas): mesmo padrão do botão Salvar. */
+.inlinePanel .primary.primary { height: 34px; padding: 0 18px; border: 1px solid var(--ds-accent); border-radius: var(--ds-r-md); background: var(--ds-accent); color: #fff; font-size: 13.5px; font-weight: var(--ds-fw-bold); }
+.inlinePanel .primary.primary:hover:not(:disabled) { background: var(--ds-accent); filter: brightness(0.94); }
+.inlinePanel .primary.primary:disabled { opacity: 0.45; }
+.inlinePanel .ghost.ghost { height: 34px; padding: 0 16px; border: 1px solid var(--ds-line); border-radius: var(--ds-r-md); color: var(--ds-text); font-size: 13.5px; font-weight: var(--ds-fw-medium); }
+.inlinePanel .ghost.ghost:hover { background: var(--ds-surface-hover); color: var(--ds-text); }
+.inlinePanel .footer { gap: 8px; }
