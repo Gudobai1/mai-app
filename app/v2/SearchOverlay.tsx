@@ -9,7 +9,7 @@ import type { InspectableItem } from './ContextDrawer'
 import styles from './SearchOverlay.module.css'
 
 /*
- * Busca do MAI: uma janela no centro, aberta com "/" ou Ctrl K.
+ * Busca do MAI: uma janela no centro, aberta com Ctrl Espaço ou "/".
  * Entende a mesma linguagem de adicionar (hoje, esta semana, !alta, #Projeto):
  * o que for reconhecido vira filtro; o resto é a palavra procurada.
  */
@@ -30,7 +30,6 @@ const KINDS: Record<Kind, { label: string; plural: string; icon: string; color: 
   goal: { label: 'Meta', plural: 'Metas', icon: 'flag', color: 'var(--ds-warn)' },
   project: { label: 'Projeto', plural: 'Projetos', icon: 'folder', color: 'var(--ds-text-2)' },
 }
-const TABS: Tab[] = ['all', 'task', 'event', 'note', 'finance', 'habit', 'goal', 'project']
 const PRIORITY_COLOR: Record<number, string> = { 1: 'var(--ds-rose-fg)', 2: 'var(--ds-peach-fg)', 3: 'var(--ds-sky-fg)' }
 const PRIORITY_LABEL: Record<number, string> = { 1: 'Alta', 2: 'Média', 3: 'Baixa' }
 
@@ -90,7 +89,7 @@ type Props = {
 }
 
 export function SearchOverlay({ state, today, query, setQuery, onClose, inspect, openProject, commit }: Props) {
-  const [tab, setTab] = useState<Tab>('all')
+  const tab = 'all' as Tab
   const [active, setActive] = useState(0)
   const [muted, setMuted] = useState<Set<NlKind>>(new Set())
   const listRef = useRef<HTMLDivElement | null>(null)
@@ -178,12 +177,6 @@ export function SearchOverlay({ state, today, query, setQuery, onClose, inspect,
     return results.filter(result => { counts[result.kind] = (counts[result.kind] || 0) + 1; return counts[result.kind] <= 6 })
   }, [results, tab])
 
-  const counts = useMemo(() => {
-    const map: Record<string, number> = { all: results.length }
-    for (const result of results) map[result.kind] = (map[result.kind] || 0) + 1
-    return map
-  }, [results])
-
   const title = nl.title.trim()
   const canCreate = Boolean(title) && (tab === 'all' || tab === 'task')
   const total = visible.length + (canCreate ? 1 : 0)
@@ -218,12 +211,6 @@ export function SearchOverlay({ state, today, query, setQuery, onClose, inspect,
     if (event.key === 'Escape') { event.preventDefault(); close(); return }
     if (event.key === 'ArrowDown') { event.preventDefault(); setActive(index => (total ? (index + 1) % total : 0)); return }
     if (event.key === 'ArrowUp') { event.preventDefault(); setActive(index => (total ? (index - 1 + total) % total : 0)); return }
-    if (event.key === 'Tab') {
-      event.preventDefault()
-      const at = TABS.indexOf(tab)
-      setTab(TABS[(at + (event.shiftKey ? -1 : 1) + TABS.length) % TABS.length])
-      return
-    }
     if (event.key === 'Enter') {
       event.preventDefault()
       if (active < visible.length) open(visible[active])
@@ -252,7 +239,7 @@ export function SearchOverlay({ state, today, query, setQuery, onClose, inspect,
             className={styles.input}
             value={query}
             onChange={event => { setQuery(event.target.value); setMuted(new Set()) }}
-            placeholder="Buscar ou criar… ex.: reunião hoje !alta #Trabalho"
+            placeholder="Buscar ou criar…"
             aria-label="Buscar"
           />
           {nl.tokens.map(token => (
@@ -261,27 +248,11 @@ export function SearchOverlay({ state, today, query, setQuery, onClose, inspect,
               <button type="button" aria-label="Remover filtro" onClick={() => setMuted(current => new Set(current).add(token.kind))}>×</button>
             </span>
           ))}
-          <button type="button" className={styles.esc} onClick={close} aria-label="Fechar busca">Esc</button>
         </header>
-
-        <div className={styles.tabs} role="tablist">
-          {TABS.map(item => (
-            <button key={item} type="button" role="tab" aria-selected={tab === item} data-active={tab === item || undefined} onClick={() => { setTab(item); inputRef.current?.focus() }}>
-              {item === 'all' ? 'Tudo' : KINDS[item].plural}{counts[item] ? <small>{counts[item]}</small> : null}
-            </button>
-          ))}
-        </div>
 
         <div ref={listRef} className={styles.list}>
           {!words.length && !hasFilter ? (
-            <div className={styles.tips}>
-              <strong>Dicas</strong>
-              <p><code>reunião hoje</code> procura só o que é de hoje</p>
-              <p><code>!alta esta semana</code> prioridade alta, nesta semana</p>
-              <p><code>#Trabalho relatório</code> só dentro de um projeto</p>
-              <p><code>atrasadas</code> o que passou do prazo</p>
-              <p>Digite um nome e escolha “Criar tarefa” para adicionar na hora.</p>
-            </div>
+            <p className={styles.tips}>Digite para buscar. Use hoje, !alta, #Projeto para filtrar.</p>
           ) : null}
 
           {(words.length || hasFilter) && !visible.length && !canCreate ? <p className={styles.empty}>Nada encontrado.</p> : null}
@@ -290,14 +261,13 @@ export function SearchOverlay({ state, today, query, setQuery, onClose, inspect,
             const showHead = index === 0 || visible[index - 1].kind !== result.kind
             return (
               <div key={result.key}>
-                {showHead && tab === 'all' ? <div className={styles.group}>{KINDS[result.kind].plural}<small>{counts[result.kind]}</small></div> : null}
+                {showHead && tab === 'all' ? <div className={styles.group}>{KINDS[result.kind].plural}</div> : null}
                 <button type="button" className={styles.row} data-active={index === active || undefined} data-done={result.done || undefined} onMouseMove={() => setActive(index)} onClick={() => open(result)}>
                   <span className={styles.rowIcon} style={{ color: result.color }}><Icon name={result.icon} size={18} filled={false} /></span>
                   <span className={styles.rowText}>
                     <span className={styles.rowTitle}><Highlight text={result.title} words={words} /></span>
                     <span className={styles.rowMeta}>{result.meta}</span>
                   </span>
-                  <span className={styles.rowKind}>{KINDS[result.kind].label}</span>
                 </button>
               </div>
             )
@@ -311,13 +281,6 @@ export function SearchOverlay({ state, today, query, setQuery, onClose, inspect,
           ) : null}
         </div>
 
-        <footer className={styles.footer}>
-          <span><kbd>↑</kbd> <kbd>↓</kbd> navegar</span>
-          <span><kbd>Enter</kbd> abrir</span>
-          <span><kbd>Tab</kbd> tipo</span>
-          <span className={styles.footerGrow} />
-          <span>Abra com <kbd>/</kbd> ou <kbd>Ctrl K</kbd></span>
-        </footer>
       </section>
     </div>
   )
