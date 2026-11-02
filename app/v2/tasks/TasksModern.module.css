@@ -2461,3 +2461,8 @@
 .subCheck.subCheck.subCheck[data-late]:not([data-done]):hover { border-color: var(--ds-danger); color: var(--ds-danger); }
 .check.check.check:not([data-done]):not([data-selecting]):hover > *,
 .subCheck.subCheck.subCheck:not([data-done]):hover > * { opacity: 0.9; }
+
+/* Subtarefa: linha compacta. */
+.list .card.card[data-sub], .card.card[data-sub] { padding: 6px 6px 6px 0; gap: 10px; border-bottom: 0; min-height: 0; }
+.card.card[data-sub] .cardTitle { font-size: 14px; line-height: 1.35; }
+.card.card[data-sub] .check.check { width: 18px; height: 18px; margin-top: 1px; }
