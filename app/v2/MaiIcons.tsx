@@ -1,4 +1,5 @@
 import type { CSSProperties, ReactNode } from 'react'
+import { LUCIDE_ICONS } from '../ds/lucide'
 
 /**
  * Sistema único de ícones do MAI.
@@ -66,6 +67,9 @@ export function MaiIcon({ name, size = 18, className = '' }: { name: string; siz
     flex: '0 0 auto',
   } satisfies CSSProperties
 
+  const resolved = resolveMaiIcon(name)
+  const Lucide = LUCIDE_ICONS[resolved]
+  if (Lucide) return <span className={`mai-icon ${className}`.trim()} style={style} aria-hidden="true"><Lucide size={size} strokeWidth={size <= 16 ? 2 : 1.75} /></span>
   return <span className={`material-symbols-rounded mai-icon ${className}`.trim()} style={style} aria-hidden="true">{resolveMaiIcon(name)}</span>
 }
 
