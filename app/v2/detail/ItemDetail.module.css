@@ -1345,12 +1345,12 @@
 .panel[data-kind='task'] > .header {
   min-height: 48px;
   padding: 0 14px 0 24px;
+  border-bottom: 1px solid var(--ds-line);
 }
 
 .panel[data-kind='task'] > .footer {
   min-height: 56px;
   padding: 10px 24px;
-  border-top: 0;
 }
 
 .taskMain {
@@ -1380,6 +1380,7 @@
   flex: 0 0 260px;
   box-sizing: border-box;
   overflow-y: auto;
+  border-left: 1px solid var(--ds-line);
   background: transparent;
   display: flex;
   flex-direction: column;
