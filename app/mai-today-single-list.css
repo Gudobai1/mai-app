@@ -128,7 +128,7 @@
   overflow:auto;
   padding:10px;
   border:1px solid var(--v3-line);
-  border-radius:12px;
+  border-radius:8px;
   background:var(--v3-card);
   box-shadow:0 14px 38px rgba(0,0,0,.12);
 }

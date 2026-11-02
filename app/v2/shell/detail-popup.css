@@ -46,7 +46,7 @@ html body .mai-context-v3-drawer {
   flex-direction: column !important;
   overflow: hidden !important;
   border: 1px solid var(--ds-line) !important;
-  border-radius: 22px !important;
+  border-radius: 12px !important;
   background: var(--ds-surface) !important;
   color: var(--ds-text) !important;
   box-shadow: 0 30px 80px rgba(0, 0, 0, 0.35) !important;
@@ -110,7 +110,7 @@ html body .mai-v3-close {
   width: 36px !important;
   height: 36px !important;
   border: 0 !important;
-  border-radius: 10px !important;
+  border-radius: 6px !important;
   display: grid !important;
   place-items: center !important;
   background: var(--ds-surface-2) !important;
@@ -196,7 +196,7 @@ html body .mai-context-v3-tool-button {
   gap: 7px !important;
   padding: 0 12px 0 10px !important;
   border: 0 !important;
-  border-radius: 10px !important;
+  border-radius: 6px !important;
   background: var(--ds-surface-2) !important;
   color: var(--ds-text) !important;
   font-family: var(--ds-font) !important;
@@ -240,7 +240,7 @@ html body .mai-task-v4-popover,
 html body .mai-context-v3-popover {
   z-index: 5 !important;
   border: 1px solid var(--ds-line) !important;
-  border-radius: 14px !important;
+  border-radius: 8px !important;
   background: var(--ds-surface) !important;
   box-shadow: var(--ds-shadow-float, 0 18px 50px rgba(0, 0, 0, 0.3)) !important;
 }
@@ -281,7 +281,7 @@ html body .mai-context-v3-section > header small {
     max-height: calc(100dvh - 56px) !important;
     margin: auto 0 0 !important;
     border: 0 !important;
-    border-radius: 24px 24px 0 0 !important;
+    border-radius: 12px 24px 0 0 !important;
     box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.35) !important;
     padding-bottom: env(safe-area-inset-bottom) !important;
     animation: mai-sheet-in 240ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
@@ -331,7 +331,7 @@ html body .mai-context-v3-section > header small {
     flex-wrap: nowrap !important;
     gap: 0 !important;
     padding: 0 14px !important;
-    border-radius: 14px !important;
+    border-radius: 8px !important;
     background: var(--ds-surface-2) !important;
   }
 
@@ -439,7 +439,7 @@ html body .mai-context-v3-layer { background: rgba(0, 0, 0, 0.4) !important; bac
 html body .mai-v3-create-drawer,
 html body .mai-context-drawer,
 html body .mai-task-v4-drawer,
-html body .mai-context-v3-drawer { border-radius: 14px !important; background: var(--ds-bg) !important; box-shadow: 0 12px 40px rgba(0, 0, 0, 0.2) !important; }
+html body .mai-context-v3-drawer { border-radius: 8px !important; background: var(--ds-bg) !important; box-shadow: 0 12px 40px rgba(0, 0, 0, 0.2) !important; }
 
 html body .mai-task-v4-close,
 html body .mai-context-v3-close,
@@ -481,7 +481,7 @@ html body .mai-context-v3-section > header strong { font-weight: 700 !important;
   html body .mai-v3-create-drawer,
   html body .mai-context-drawer,
   html body .mai-task-v4-drawer,
-  html body .mai-context-v3-drawer { border-radius: 18px 18px 0 0 !important; }
+  html body .mai-context-v3-drawer { border-radius: 10px 18px 0 0 !important; }
 }
 
-html body .mai-global-search-panel { border-radius: 14px !important; background: var(--ds-bg) !important; box-shadow: 0 12px 40px rgba(0, 0, 0, 0.2) !important; }
+html body .mai-global-search-panel { border-radius: 8px !important; background: var(--ds-bg) !important; box-shadow: 0 12px 40px rgba(0, 0, 0, 0.2) !important; }

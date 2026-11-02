@@ -13,7 +13,7 @@
 .mai-notes-v4-tabs button:hover{background:var(--v3-hover,#f1f4ef);color:var(--v3-text,#303630)}
 .mai-notes-v4-tabs button[data-active="true"]{background:var(--v3-hover,#f1f4ef);color:var(--v3-text,#303630)}
 
-.mai-notes-v4-search{width:min(280px,42vw);height:34px;display:flex;align-items:center;gap:7px;padding:0 9px;border:0;border-radius:9px;background:var(--v3-soft,#f4f6f2);color:var(--v3-muted,#7f887d)}
+.mai-notes-v4-search{width:min(280px,42vw);height:34px;display:flex;align-items:center;gap:7px;padding:0 9px;border:0;border-radius:6px;background:var(--v3-soft,#f4f6f2);color:var(--v3-muted,#7f887d)}
 .mai-notes-v4-search>span{font-size:17px}
 .mai-notes-v4-search input{min-width:0;flex:1;border:0;outline:0;background:transparent;color:var(--v3-text,#303630);font-size:11px}
 .mai-notes-v4-search input::placeholder{color:var(--v3-faint,#aeb4ac)}
@@ -23,7 +23,7 @@
 
 /* Mesma anatomia dos itens do MAI: ícone, título e contexto. Sem preview do conteúdo. */
 .mai-notes-v4-list{min-width:0;display:grid;gap:1px}
-.mai-notes-v4-row{min-width:0;min-height:54px;display:grid;grid-template-columns:28px minmax(0,1fr) 30px;align-items:center;gap:8px;padding:5px 6px;border:0!important;border-radius:9px;background:transparent!important;box-shadow:none!important;cursor:pointer;transition:background .12s ease}
+.mai-notes-v4-row{min-width:0;min-height:54px;display:grid;grid-template-columns:28px minmax(0,1fr) 30px;align-items:center;gap:8px;padding:5px 6px;border:0!important;border-radius:6px;background:transparent!important;box-shadow:none!important;cursor:pointer;transition:background .12s ease}
 .mai-notes-v4-row:hover{background:var(--v3-hover,#f1f4ef)!important}
 .mai-notes-v4-row-icon{width:26px;height:26px;display:grid;place-items:center;color:var(--v3-muted,#7f887d)}
 .mai-notes-v4-row-icon .material-symbols-rounded{font-size:17px}
@@ -45,7 +45,7 @@
 .mai-notes-v4-drawer-head>div{min-width:0;display:grid;gap:1px}
 .mai-notes-v4-drawer-head small{color:var(--v3-faint,#aeb4ac);font-size:8.8px;font-weight:560;text-transform:capitalize}
 .mai-notes-v4-drawer-head strong{color:var(--v3-text,#303630);font-size:12px;font-weight:690}
-.mai-notes-v4-drawer-head>button{width:32px;height:32px;display:grid;place-items:center;padding:0;border:0;border-radius:9px;background:transparent;color:var(--v3-muted,#7f887d);cursor:pointer}
+.mai-notes-v4-drawer-head>button{width:32px;height:32px;display:grid;place-items:center;padding:0;border:0;border-radius:6px;background:transparent;color:var(--v3-muted,#7f887d);cursor:pointer}
 .mai-notes-v4-drawer-head>button:hover{background:var(--v3-hover,#f1f4ef);color:var(--v3-text,#303630)}
 .mai-notes-v4-drawer-head>button span{font-size:18px}
 
@@ -92,7 +92,7 @@
 
 .mai-notes-v4-drawer-footer{min-height:60px;display:flex;align-items:center;justify-content:space-between;gap:14px;padding:9px 14px;background:var(--v3-bg,#fff)}
 .mai-notes-v4-danger-actions,.mai-notes-v4-save-actions{display:flex;align-items:center;gap:5px}
-.mai-notes-v4-drawer-footer button{height:32px;display:flex;align-items:center;gap:4px;padding:0 10px;border:0;border-radius:9px;background:transparent;color:var(--v3-muted,#7f887d);font-size:9.8px;font-weight:620;cursor:pointer}
+.mai-notes-v4-drawer-footer button{height:32px;display:flex;align-items:center;gap:4px;padding:0 10px;border:0;border-radius:6px;background:transparent;color:var(--v3-muted,#7f887d);font-size:9.8px;font-weight:620;cursor:pointer}
 .mai-notes-v4-drawer-footer button:hover{background:var(--v3-hover,#f1f4ef);color:var(--v3-text,#303630)}
 .mai-notes-v4-drawer-footer button .material-symbols-rounded{font-size:15px}
 .mai-notes-v4-drawer-footer button[data-danger="true"]{color:#c85b52}

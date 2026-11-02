@@ -1,6 +1,6 @@
 /* Hoje — linguagem visual única para tarefas, compromissos e itens auxiliares */
 .mai-today-unified-list{display:grid;gap:2px}
-.mai-today-unified-row{width:100%;min-height:58px;display:grid;grid-template-columns:26px minmax(0,1fr) auto;align-items:center;gap:10px;padding:7px 4px;border:0!important;border-radius:11px;background:transparent!important;color:var(--v3-text);text-align:left}
+.mai-today-unified-row{width:100%;min-height:58px;display:grid;grid-template-columns:26px minmax(0,1fr) auto;align-items:center;gap:10px;padding:7px 4px;border:0!important;border-radius:6px;background:transparent!important;color:var(--v3-text);text-align:left}
 button.mai-today-unified-row{cursor:pointer}
 button.mai-today-unified-row:hover,.mai-today-unified-row:hover{background:var(--v3-hover)!important}
 .mai-today-unified-dot{width:19px;height:19px;border:1.7px solid var(--v3-line-strong);border-radius:50%;display:grid;place-items:center;background:transparent;color:#fff;font-size:9px;font-style:normal;flex:0 0 auto;padding:0}

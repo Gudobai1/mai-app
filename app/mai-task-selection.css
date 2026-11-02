@@ -21,7 +21,7 @@
   margin:0 0 12px;
   padding:8px 10px;
   border:1px solid var(--v3-line,#dde2dc);
-  border-radius:12px;
+  border-radius:8px;
   background:color-mix(in srgb,var(--v3-card,#fff) 94%,transparent);
   box-shadow:0 8px 28px rgba(23,31,24,.08);
   backdrop-filter:blur(14px);
@@ -266,7 +266,7 @@ body[data-mai-subtask-dragging="true"] .mai-context-v3-scroll{
   margin:0!important;
   padding:0 8px!important;
   border:1px solid color-mix(in srgb,var(--v3-accent,#60765a) 28%,var(--v3-line,#dde2dc))!important;
-  border-radius:10px!important;
+  border-radius:6px!important;
   background:var(--v3-card,#fff)!important;
   box-shadow:0 14px 34px rgba(23,31,24,.18)!important;
   opacity:.97!important;
@@ -315,7 +315,7 @@ body[data-mai-task-v4-subtask-dragging="true"] .mai-task-v4-scroll{
     gap:7px;
     margin:0;
     padding:9px;
-    border-radius:14px;
+    border-radius:8px;
     box-shadow:0 12px 36px rgba(23,31,24,.18);
   }
 

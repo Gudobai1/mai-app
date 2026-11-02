@@ -17,11 +17,11 @@
 .mai-app-topbar-context strong{font-size:13.5px;font-weight:690;color:var(--v3-text,#303630);letter-spacing:-.01em}
 .mai-app-topbar-context span{font-size:10.5px;color:var(--v3-muted,#8d958b);overflow:hidden;text-overflow:ellipsis}
 .mai-app-topbar-single-action{display:flex;justify-content:flex-end}
-.mai-app-topbar-menu-button{height:32px;display:inline-flex;align-items:center;gap:6px;padding:0 10px;border:0;border-radius:9px;background:transparent;color:var(--v3-muted,#7f887d);font:inherit;font-size:10.5px;font-weight:620;cursor:pointer}
+.mai-app-topbar-menu-button{height:32px;display:inline-flex;align-items:center;gap:6px;padding:0 10px;border:0;border-radius:6px;background:transparent;color:var(--v3-muted,#7f887d);font:inherit;font-size:10.5px;font-weight:620;cursor:pointer}
 .mai-app-topbar-menu-button:hover,.mai-app-topbar-menu-button[data-active="true"]{background:var(--v3-hover,#f1f4ef);color:var(--v3-text,#303630)}
 .mai-app-topbar-menu-button .material-symbols-rounded{font-size:18px}
 
-.mai-app-topbar-panel{position:absolute;right:0;top:49px;z-index:790;width:min(340px,calc(100vw - 28px));max-height:min(72vh,620px);overflow:auto;padding:8px;background:var(--v3-bg,#fff);border:1px solid var(--v3-line,#e7ebe5);border-radius:14px;box-shadow:0 18px 48px rgba(28,36,27,.15);display:grid;gap:2px}
+.mai-app-topbar-panel{position:absolute;right:0;top:49px;z-index:790;width:min(340px,calc(100vw - 28px));max-height:min(72vh,620px);overflow:auto;padding:8px;background:var(--v3-bg,#fff);border:1px solid var(--v3-line,#e7ebe5);border-radius:8px;box-shadow:0 18px 48px rgba(28,36,27,.15);display:grid;gap:2px}
 .mai-app-topbar-panel-section{padding:9px 8px;border-bottom:1px solid color-mix(in srgb,var(--v3-line,#e7ebe5) 62%,transparent)}
 .mai-app-topbar-panel-section:last-child{border-bottom:0}
 .mai-app-topbar-panel-section>strong{display:block;margin:0 0 7px;font-size:9.5px;font-weight:720;letter-spacing:.055em;text-transform:uppercase;color:var(--v3-muted,#8d958b)}

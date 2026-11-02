@@ -107,7 +107,7 @@ html[data-mai-theme="dark"] .mai-v3-area-tabs button[data-active="true"]{
 }
 .mai-v3-notes-search{
   border:0!important;
-  border-radius:11px!important;
+  border-radius:6px!important;
   background:var(--v3-sidebar)!important;
   margin-bottom:10px!important;
 }
@@ -161,7 +161,7 @@ html[data-mai-theme="dark"] .mai-v3-area-tabs button[data-active="true"]{
 }
 .mai-v3-health-summary span{color:var(--v3-muted)!important}
 .mai-v3-health-history article:hover,
-.mai-v3-health-rows>div:hover{background:var(--v3-hover)!important;border-radius:9px}
+.mai-v3-health-rows>div:hover{background:var(--v3-hover)!important;border-radius:6px}
 
 /* arquivos */
 .mai-v3-file-list>button{

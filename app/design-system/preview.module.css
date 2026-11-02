@@ -187,7 +187,7 @@
 .nextIcon {
   width: 42px;
   height: 42px;
-  border-radius: 14px;
+  border-radius: 8px;
   background: var(--ds-on-accent-soft);
   display: inline-flex;
   align-items: center;

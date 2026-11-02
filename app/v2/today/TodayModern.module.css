@@ -179,7 +179,7 @@
   appearance: none;
   height: 58px;
   border: 0;
-  border-radius: 14px;
+  border-radius: 8px;
   background: var(--ds-surface);
   box-shadow: none;
   display: flex;
@@ -303,7 +303,7 @@
 .nextIcon {
   width: 42px;
   height: 42px;
-  border-radius: 14px;
+  border-radius: 8px;
   flex-shrink: 0;
   display: grid;
   place-items: center;
@@ -630,7 +630,7 @@
 
   .day.day {
     height: 54px;
-    border-radius: 14px;
+    border-radius: 8px;
   }
 
   .subline {
@@ -705,7 +705,7 @@
   gap: 12px;
   padding: 0 14px;
   border: 0;
-  border-radius: 11px;
+  border-radius: 6px;
   background: var(--ds-surface);
   box-shadow: var(--ds-shadow-1);
   color: var(--ds-text);
@@ -916,7 +916,7 @@
   border: 0;
   background: transparent;
   cursor: pointer;
-  border-radius: 12px;
+  border-radius: 8px;
   line-height: 0;
   transition: transform var(--ds-dur-fast) var(--ds-ease);
 }
@@ -1301,7 +1301,7 @@
   align-items: center;
   gap: 10px;
   padding: 0 10px;
-  border-radius: 10px;
+  border-radius: 6px;
   background: color-mix(in srgb, var(--ds-surface) 70%, transparent);
 }
 
@@ -1550,7 +1550,7 @@
 
 .items .evRowNow.evRowNow,
 .items .evRowNow.evRowNow:hover {
-  border-radius: 12px;
+  border-radius: 8px;
   background: color-mix(in srgb, var(--ds-accent) 9%, transparent);
   box-shadow: none;
   border-bottom-color: transparent;
