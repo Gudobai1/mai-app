@@ -296,3 +296,30 @@
 /* Nome, descrição, opções e, no canto direito, Cancelar e Adicionar lado a lado. */
 .footer.footer, .inlinePanel .footer.footer { justify-content: flex-end; }
 .inlinePanel .primary.primary { order: 0; }
+
+/* Opções e botões na mesma linha: economiza espaço. */
+.footer.footer { align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px 12px; }
+.footer.footer .chips { flex: 1 1 280px; min-width: 0; margin-top: 0; }
+.footer.footer .actions { display: flex; gap: 8px; margin-left: auto; flex-shrink: 0; }
+.inlinePanel .footer.footer { justify-content: space-between; }
+.inlinePanel .footer.footer .chips { gap: 4px; }
+.inlinePanel .footer.footer .chip.chip { height: 30px; padding: 0 9px 0 7px; font-size: 12.5px; }
+.chip.chip > span:not(:first-child) { max-width: 130px; }
+@media (max-width: 900px) { .footer.footer .chips { flex-basis: 100%; } .footer.footer .actions { width: 100%; justify-content: flex-end; } }
+.panel.panel { width: min(680px, 100%); }
+@media (max-width: 900px) { .panel.panel { width: 100%; } }
+
+/* Linguagem natural: palavras reconhecidas ficam destacadas no nome. */
+.titleWrap { position: relative; }
+.titleMirror { position: absolute; inset: 0; padding: 4px 0; font-size: 18px; font-weight: var(--ds-fw-bold); letter-spacing: -0.01em; white-space: pre; overflow: hidden; color: transparent; pointer-events: none; }
+.titleMirror mark { color: transparent; background: color-mix(in srgb, var(--ds-accent) 20%, transparent); border-radius: 4px; box-shadow: 0 0 0 2px color-mix(in srgb, var(--ds-accent) 20%, transparent); }
+.titleWrap .title { position: relative; background: transparent; }
+@media (max-width: 900px) { .titleMirror { font-size: 16px; } }
+.suggest { position: absolute; left: 0; top: calc(100% + 4px); z-index: 5; min-width: 220px; max-width: 100%; display: flex; flex-direction: column; padding: 4px; border: 1px solid var(--ds-line); border-radius: 8px; background: var(--ds-bg); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18); }
+.suggest button { appearance: none; display: flex; align-items: center; gap: 8px; padding: 8px 10px; border: 0; border-radius: 6px; background: transparent; color: var(--ds-text); font: inherit; font-size: 13.5px; text-align: left; cursor: pointer; }
+.suggest button[data-active], .suggest button:hover { background: var(--ds-surface-2); }
+.chipX { display: inline-grid; place-items: center; width: 16px; height: 16px; margin-left: 2px; border-radius: 50%; color: var(--ds-muted); font-size: 14px; line-height: 1; }
+.chipX:hover { background: var(--ds-surface-2); color: var(--ds-text); }
+.titleWrap .title, .titleMirror { line-height: 1.3; box-sizing: border-box; font-family: inherit; }
+.titleWrap .title { height: auto; }
+.inlinePanel .titleMirror { font-size: 16px; }

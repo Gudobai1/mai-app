@@ -280,6 +280,7 @@ export function repeatLabel(value: string) {
   }
   if (value.startsWith('semanal:')) {
     const days = value.split(':')[1].split(',').map(Number).filter(day => day >= 0 && day <= 6)
+    if (days.length === 1) return `Toda ${['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'][days[0]]}`
     return days.length ? days.map(day => WEEK_NAMES[day]).join(', ') : 'Personalizado'
   }
   return value ? 'Personalizado' : 'Não repete'

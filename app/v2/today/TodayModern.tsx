@@ -401,7 +401,7 @@ export function TodayModern({ state, today, commit, navigate, inspect, options, 
     const done = !failed && value >= target
     const quantitative = target > 1 || Boolean(habit.unidade)
     return { habit, entry, target, value, failed, done, quantitative }
-  }).sort((a, b) => Number(a.done) - Number(b.done))
+  })
   const habitsDone = habits.filter(item => item.done).length
 
   /* Clique no círculo de um dia da semana: registra (ou desfaz) aquele dia. */
