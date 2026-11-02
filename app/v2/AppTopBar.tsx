@@ -137,6 +137,7 @@ export function AppTopBar({ state, today, view, taskScope, commit, onTaskScopeCh
     {view === 'tasks' ? <PanelSection title="Layout"><Choices value={layoutMode} onChange={value => patchControl({ layout:value })} items={[{value:'normal',label:'Normal'},{value:'kanban',label:'Kanban'}]}/></PanelSection> : null}
 
     {view === 'today' ? <>
+      <PanelSection title="Eventos repetidos"><Choices value={(configs.nextOnlyByModule as Record<string, boolean> | undefined)?.today ? 'next' : 'all'} onChange={value => patchConfig('nextOnlyByModule', { ...((configs.nextOnlyByModule as Record<string, boolean> | undefined) || {}), today: value === 'next' })} items={[{value:'all',label:'Todas as ocorrências'},{value:'next',label:'Somente a próxima'}]}/></PanelSection>
       <PanelSection title="Filtros">
         <SelectLine label="Projeto" value={String(todayFilters.project || 'all')} onChange={value => patchToday({ project:value })}>{projectOptions}</SelectLine>
         <SelectLine label="Prioridade" value={String(todayFilters.priority || 'all')} onChange={value => patchToday({ priority:value })}>{priorityOptions}</SelectLine>
@@ -176,6 +177,10 @@ export function AppTopBar({ state, today, view, taskScope, commit, onTaskScopeCh
       </PanelSection>
       <PanelSection title="Classificação"><Choices value={sortMode} onChange={value => patchControl({ sort:value })} items={[{value:'time',label:'Horário'},{value:'priority',label:'Prioridade'},{value:'project',label:'Projeto'},{value:'name',label:'Nome'}]}/></PanelSection>
       <PanelSection title="Visualização"><Choices value={configs.upcomingView === 'month' ? 'month' : 'list'} onChange={value => patchConfig('upcomingView', value)} items={[{value:'list',label:'Lista'},{value:'month',label:'Calendário'}]}/></PanelSection>
+    </> : null}
+
+    {view === 'agenda' ? <>
+      <PanelSection title="Eventos repetidos"><Choices value={(configs.nextOnlyByModule as Record<string, boolean> | undefined)?.agenda ? 'next' : 'all'} onChange={value => patchConfig('nextOnlyByModule', { ...((configs.nextOnlyByModule as Record<string, boolean> | undefined) || {}), agenda: value === 'next' })} items={[{value:'all',label:'Todas as ocorrências'},{value:'next',label:'Somente a próxima'}]}/></PanelSection>
     </> : null}
 
     {view === 'completed' ? <>

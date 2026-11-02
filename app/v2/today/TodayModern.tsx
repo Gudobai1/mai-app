@@ -13,6 +13,7 @@ import { resolveMaiIcon } from '../MaiIcons'
 import { askConfirm } from '../shell/ConfirmDialog'
 import { QuickAdd } from '../shell/QuickAdd'
 import { useQuickMenu, type QuickMenuConfig } from '../shell/QuickMenu'
+import { eventSeriesKey, nextOccurrenceIds } from '../../../lib/v2/series'
 import { AgendaStrip } from './AgendaStrip'
 import styles from './TodayModern.module.css'
 
@@ -304,7 +305,8 @@ export function TodayModern({ state, today, commit, navigate, inspect, options, 
   const plan = useMemo(() => plannerItems(state, day, day), [state, day])
   const events = useMemo(() => {
     const eventDone = (eventId: unknown) => rows(state.eventCompletions).some(entry => String(entry.evento_id || String(entry.chave || '').split('|')[0]) === String(eventId) && dateKey(entry.data || String(entry.chave || '').split('|')[1]) === day && entry.concluida !== false)
-    const planned = plan.filter(item => item.kind === 'event' && !item.completed)
+    const keepNext = (state.configs.nextOnlyByModule as Record<string, boolean> | undefined)?.today ? nextOccurrenceIds(state, today) : null
+    const planned = plan.filter(item => item.kind === 'event' && !item.completed && !(keepNext && eventSeriesKey(item) && !keepNext.has(item.id)))
     const spanning: PlannerItem[] = rows(state.events).filter(event => {
       const start = dateKey(event.data_inicio)
       const end = dateKey(event.data_fim || event.data_termino || event.end)
