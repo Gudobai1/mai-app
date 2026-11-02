@@ -163,8 +163,8 @@ export function HabitsModern({ state, today, commit, createRequest }: Props) {
 
   const toggleDay = (habit: Row, day: string) => {
     if (!eligible(habit, day) || day > today) return
-    if (entryOf(habit, day)) { clearEntry(habit, day); return }
     if (target(habit) > 1 || habit.unidade) { setValueFor({ habit, day }); return }
+    if (entryOf(habit, day)) { clearEntry(habit, day); return }
     writeEntry(habit, day, 1)
   }
 
@@ -304,7 +304,7 @@ export function HabitsModern({ state, today, commit, createRequest }: Props) {
         <ValueDialog
           habit={valueFor.habit}
           day={valueFor.day}
-          initial={amountOf(valueFor.habit, valueFor.day) || target(valueFor.habit)}
+          current={amountOf(valueFor.habit, valueFor.day)}
           hasEntry={Boolean(entryOf(valueFor.habit, valueFor.day))}
           onClear={() => { clearEntry(valueFor.habit, valueFor.day); setValueFor(null) }}
           onClose={() => setValueFor(null)}
@@ -362,16 +362,18 @@ function HabitComposer({ today, onCancel, onSave }: { today: string; onCancel: (
 
 /* --------------------------------------------------------------- Registro */
 
-function ValueDialog({ habit, day, initial, hasEntry, onClose, onSave, onFail, onClear }: { habit: Row; day: string; initial: number; hasEntry: boolean; onClose: () => void; onSave: (amount: number) => void; onFail: () => void; onClear: () => void }) {
+export function ValueDialog({ habit, day, current, hasEntry, onClose, onSave, onFail, onClear }: { habit: Row; day: string; current: number; hasEntry: boolean; onClose: () => void; onSave: (amount: number) => void; onFail: () => void; onClear: () => void }) {
   const goal = Math.max(1, Number(habit.meta || 1))
   const quantitative = goal > 1 || Boolean(habit.unidade)
-  const [value, setValue] = useState(String(initial))
+  // Pergunta quanto somar ao que já foi feito no dia.
+  const [value, setValue] = useState('1')
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => { if (event.key === 'Escape') onClose() }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [onClose])
-  const amount = Number(String(value).replace(',', '.'))
+  const add = Number(String(value).replace(',', '.'))
+  const amount = current + add
   return (
     <div className={styles.layer} onMouseDown={onClose}>
       <section className={`${styles.panel} ${styles.small}`} role="dialog" aria-modal="true" aria-label={`Registrar ${String(habit.nome)}`} onMouseDown={event => event.stopPropagation()}>
@@ -382,15 +384,15 @@ function ValueDialog({ habit, day, initial, hasEntry, onClose, onSave, onFail, o
         {quantitative ? (
           <div className={styles.valueBody}>
             <label className={styles.field}>
-              <span>Quantidade{habit.unidade ? ` (${String(habit.unidade)})` : ''}</span>
-              <input autoFocus type="number" step="0.1" min="0" value={value} onChange={event => setValue(event.target.value)} onKeyDown={event => { if (event.key === 'Enter' && Number.isFinite(amount) && amount >= 0) onSave(amount) }} />
+              <span>Quanto adicionar{habit.unidade ? ` (${String(habit.unidade)})` : ''}</span>
+              <input autoFocus type="number" step="0.1" value={value} onFocus={event => event.currentTarget.select()} onChange={event => setValue(event.target.value)} onKeyDown={event => { if (event.key === 'Enter' && Number.isFinite(add) && amount >= 0) onSave(amount) }} />
             </label>
-            <p className={styles.hint}>Meta do dia: <strong>{goal} {String(habit.unidade || '')}</strong></p>
+            <p className={styles.hint}>Já feito: <strong>{current} de {goal} {String(habit.unidade || '')}</strong>{Number.isFinite(add) && add !== 0 ? <> → ficará <strong>{Math.round(amount * 100) / 100}</strong></> : null}</p>
           </div>
         ) : null}
         <footer className={styles.panelFoot}>
           {quantitative
-            ? <button type="button" className={styles.textPrimary} disabled={!Number.isFinite(amount) || amount < 0} onClick={() => onSave(amount)}>Salvar</button>
+            ? <button type="button" className={styles.textPrimary} disabled={!Number.isFinite(add) || amount < 0} onClick={() => onSave(amount)}>Adicionar</button>
             : <button type="button" className={styles.textPrimary} onClick={() => onSave(goal)}>Concluir</button>}
           <button type="button" className={styles.textButton} onClick={onClose}>Cancelar</button>
           {hasEntry ? <button type="button" className={styles.textButton} onClick={onClear}>Limpar</button> : null}
