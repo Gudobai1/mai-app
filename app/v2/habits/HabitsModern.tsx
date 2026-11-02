@@ -395,17 +395,19 @@ export function ValueDialog({ habit, day, current, hasEntry, onClose, onSave, on
             <p className={styles.valueSummary}><strong>{Math.round(current * 100) / 100}</strong> de {goal} {String(habit.unidade || '')} hoje</p>
             <p className={styles.valueAsk}>Quanto adicionar?</p>
             <WheelPicker labels={options.map(item => String(item))} index={Math.max(0, index)} onChange={next => setValue(String(options[next]))} label="Quanto adicionar" unit={String(habit.unidade || '')} />
-            {remaining > 0 ? <button type="button" className={styles.complete} onClick={() => onSave(goal)}><Icon name="check" size={16} filled={false} />Completar meta (+{remaining} {String(habit.unidade || '')})</button> : <p className={styles.valueDone}>Meta do dia já atingida.</p>}
+            {remaining <= 0 ? <p className={styles.valueDone}>Meta do dia já atingida.</p> : null}
           </div>
         ) : null}
         <footer className={styles.panelFoot}>
-          <button type="button" className={styles.textDanger} onClick={onFail}>Marcar falha</button>
-          {hasEntry ? <button type="button" className={styles.textButton} onClick={onClear}>Limpar</button> : null}
-          <button type="button" className={`${styles.textButton} ${styles.footCancel}`} onClick={onClose}>Cancelar</button>
+          {quantitative && remaining > 0 ? <button type="button" className={styles.footComplete} onClick={() => onSave(goal)}><Icon name="check" size={16} filled={false} />Completar</button> : null}
           {quantitative
             ? <button type="button" className={styles.textPrimary} disabled={!Number.isFinite(add) || add <= 0} onClick={() => onSave(amount)}>Adicionar</button>
             : <button type="button" className={styles.textPrimary} onClick={() => onSave(goal)}>Concluir</button>}
         </footer>
+        <div className={styles.footLinks}>
+          <button type="button" onClick={onFail}>Marcar falha</button>
+          {hasEntry ? <button type="button" onClick={onClear}>Limpar registro</button> : null}
+        </div>
       </section>
     </div>
   )

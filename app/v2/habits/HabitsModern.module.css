@@ -215,3 +215,11 @@
 .panelFoot .footCancel { margin-left: auto; }
 .panelFoot .textPrimary { order: 0; margin-left: 0; }
 .panelFoot .textButton, .panelFoot .textDanger { order: 0; }
+
+/* Menos botões: Completar e Adicionar no rodapé; falha/limpar viram links discretos. */
+.panelFoot { justify-content: flex-end; padding: 6px 20px 8px; }
+.panelFoot .footComplete { appearance: none; display: inline-flex; align-items: center; gap: 6px; height: 38px; padding: 0 14px; border: 1px solid var(--ds-line-strong); border-radius: 8px; background: transparent; color: var(--ds-text); font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; margin-right: auto; }
+.panelFoot .footComplete:hover { background: var(--ds-surface-hover); }
+.footLinks { display: flex; justify-content: center; gap: 16px; padding: 0 20px 14px; }
+.footLinks button { appearance: none; border: 0; background: transparent; padding: 2px 0; color: var(--ds-muted); font: inherit; font-size: 12px; cursor: pointer; }
+.footLinks button:hover { color: var(--ds-text); text-decoration: underline; }
