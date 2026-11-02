@@ -489,6 +489,7 @@ export function TasksModern(props: Props) {
       <div
         role="listitem"
         className={styles.card}
+        data-sub={sub || undefined}
         data-selected={isSelected || undefined}
         data-done={done || undefined}
         data-drop={dropTarget === id ? 'true' : undefined}

@@ -2087,3 +2087,9 @@
 .itemCheck.itemCheck.itemCheck[aria-checked='false']:hover { border-color: var(--check-color, var(--ds-line-strong)); color: var(--check-color, var(--ds-muted)); }
 .itemCheck.itemCheck.itemCheck[aria-checked='false'][data-late]:hover { border-color: var(--ds-danger); color: var(--ds-danger); }
 .itemCheck.itemCheck.itemCheck[aria-checked='false']:hover > * { opacity: 0.9; }
+
+/* Subtarefa: linha compacta, sem o respiro das tarefas. */
+.page .items .item.item[data-sub], .items .item.item[data-sub] { min-height: 0; padding: 6px 0; border-bottom: 0; gap: 10px; align-items: flex-start; }
+.items .item.item[data-sub] .taskMain { gap: 1px; }
+.items .item.item[data-sub] .taskMeta:empty { display: none; }
+.items .item.item[data-sub] .taskTitle, .items .item.item[data-sub] .taskTitleBtn { font-size: 14px; line-height: 1.35; }

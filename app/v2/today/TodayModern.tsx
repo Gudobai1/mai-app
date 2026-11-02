@@ -650,7 +650,7 @@ export function TodayModern({ state, today, commit, navigate, inspect, options, 
     const projectLabel = `${projectName(task.projeto_id)}${task.secao ? ` / ${String(task.secao)}` : ''}`
     return (
       <Fragment key={taskId}>
-      <div role="listitem" className={`${styles.item} ${styles.itemWrap} ${styles.task} ${task.concluida ? styles.itemPassed : ''}`} {...quick.bind(() => taskMenu(task))}>
+      <div role="listitem" className={`${styles.item} ${styles.itemWrap} ${styles.task} ${task.concluida ? styles.itemPassed : ''}`} data-sub={sub || undefined} {...quick.bind(() => taskMenu(task))}>
         <Check className={styles.itemCheck} checked={Boolean(task.concluida)} late={late} data-priority={!task.concluida && PRIORITY_COLOR[priority] ? priority : undefined} style={!task.concluida && PRIORITY_COLOR[priority] ? ({ '--check-color': PRIORITY_COLOR[priority] } as CSSProperties) : undefined} label={`Concluir: ${title}`} onCheckedChange={() => toggleTask(String(task.id))} />
         <div className={styles.taskMain} onClick={() => inspectTask(task)}>
           <button type="button" className={styles.taskTitleBtn}>{title}</button>
