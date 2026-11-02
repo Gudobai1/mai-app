@@ -459,7 +459,7 @@ export function TasksModern(props: Props) {
     return next
   })
 
-  const renderTask = (task: LegacyTask, group: Group) => {
+  const renderTask = (task: LegacyTask, group: Group, sub = false): ReactNode => {
     const id = String(task.id)
     const due = dayOf(task)
     const time = timeOf(task)
@@ -471,7 +471,7 @@ export function TasksModern(props: Props) {
     const files = rows(task.anexos).length
     const isSelected = selected.has(id)
     const showDate = Boolean(due) && !(group.addDate && group.addDate === due)
-    const showProject = !isProjectLike && !group.projectId
+    const showProject = !sub && !isProjectLike && !group.projectId
     const bind = quick.bind(() => taskMenu(task), { onLongPress: () => toggleSelect(id) })
 
     const onClick = (event: ReactMouseEvent) => {
@@ -492,7 +492,7 @@ export function TasksModern(props: Props) {
         data-selected={isSelected || undefined}
         data-done={done || undefined}
         data-drop={dropTarget === id ? 'true' : undefined}
-        draggable={canDrag && !selecting && !done}
+        draggable={!sub && canDrag && !selecting && !done}
         onDragStart={event => { setDragId(id); event.dataTransfer.effectAllowed = 'move'; event.dataTransfer.setData('text/plain', id) }}
         onDragEnd={() => { setDragId(''); setDropTarget('') }}
         onDragOver={event => { if (dragId && dragId !== id) { event.preventDefault(); setDropTarget(id) } }}
@@ -542,23 +542,7 @@ export function TasksModern(props: Props) {
       </div>
       {expanded && children.length ? (
         <div className={styles.subList} role="list" aria-label={`Subtarefas de ${String(task.titulo || 'tarefa')}`}>
-          {[...children].sort(compareSubtasks).map(child => {
-            const childId = String(child.id)
-            const childDue = dayOf(child)
-            const childLate = Boolean(childDue) && childDue < today && !child.concluida
-            const childPriority = Number(child.prioridade || 4)
-            const grand = state.tasks.filter(item => String(item.parent_id || '') === childId)
-            return (
-              <div key={childId} role="listitem" className={styles.subRow} data-done={child.concluida || undefined} onClick={() => openTask(child)} {...quick.bind(() => taskMenu(child))}>
-                <button type="button" className={styles.subCheck} data-done={child.concluida || undefined} style={!child.concluida && PRIORITY_COLOR[childPriority] ? ({ borderColor: PRIORITY_COLOR[childPriority] } as React.CSSProperties) : undefined} onClick={event => { event.stopPropagation(); toggleTask(childId) }} aria-label={child.concluida ? `Reabrir ${String(child.titulo)}` : `Concluir ${String(child.titulo)}`}>
-                  <Icon name="check" size={11} />
-                </button>
-                <button type="button" className={styles.subTitle}>{String(child.titulo || 'Subtarefa')}</button>
-                {grand.length ? <span className={styles.subMeta}><Icon name="account_tree" size={12} />{grand.filter(item => item.concluida).length}/{grand.length}</span> : null}
-                {childDue ? <span className={styles.subMeta} data-late={childLate || undefined}>{naturalDate(childDue, today)}</span> : null}
-              </div>
-            )
-          })}
+          {[...children].sort(compareSubtasks).map(child => renderTask(child, group, true))}
           {subAddFor === id ? (
             <QuickAdd inline kinds={['task']} initial="task" parentId={id} state={state} today={today} defaultProjectId={String(task.projeto_id || 'entrada')} defaultSection={String(task.secao || '')} commit={commit} onFinance={() => undefined} onClose={() => setSubAddFor('')} />
           ) : (

@@ -15,6 +15,7 @@ import { askChoice, askConfirm, notify } from '../shell/ConfirmDialog'
 import { askUnsaved } from '../shell/unsaved'
 import { useQuickMenu } from '../shell/QuickMenu'
 import { compareSubtasks } from '../subtaskOrder'
+import { QuickAdd } from '../shell/QuickAdd'
 import { useTaskQuick } from '../shell/TaskQuick'
 import { uploadAttachment } from './upload'
 import { CommentsSection, type Comment } from './Comments'
@@ -446,9 +447,9 @@ function Attachments({ files, onChange }: { files: Row[]; onChange: (files: Row[
   )
 }
 
-function Round({ checked, late, onToggle, label, tone }: { checked: boolean; late?: boolean; onToggle: () => void; label: string; tone?: 'success' }) {
+function Round({ checked, late, onToggle, label, tone, color }: { checked: boolean; late?: boolean; onToggle: () => void; label: string; tone?: 'success'; color?: string }) {
   return (
-    <button type="button" className={styles.round} data-checked={checked || undefined} data-late={late || undefined} data-tone={tone} onClick={onToggle} aria-pressed={checked} aria-label={label}>
+    <button type="button" className={styles.round} data-checked={checked || undefined} data-late={late || undefined} data-tone={tone} data-priority={color && !checked ? '' : undefined} style={color && !checked ? ({ '--check-color': color } as CSSProperties) : undefined} onClick={onToggle} aria-pressed={checked} aria-label={label}>
       <Icon name="check" size={13} />
     </button>
   )
@@ -507,20 +508,7 @@ function TaskBody({ task, state, today, commit, register, close, openTask }: { t
   const children = state.tasks.filter(row => String(row.parent_id || '') === id) as Row[]
   const doneChildren = children.filter(row => row.concluida).length
   const late = Boolean(draft._data) && draft._data < today && !task.concluida
-  const [subtask, setSubtask] = useState('')
-  const [subDesc, setSubDesc] = useState('')
   const [composing, setComposing] = useState(false)
-  const [subDue, setSubDue] = useState('')
-  const [subPriority, setSubPriority] = useState(4)
-  const [subTime, setSubTime] = useState('')
-  const [subRepeat, setSubRepeat] = useState('')
-  const [subReminder, setSubReminder] = useState('')
-  const [subPicker, setSubPicker] = useState<'' | 'date' | 'time' | 'priority' | 'repeat' | 'reminder'>('')
-  const subDateRef = useRef<HTMLButtonElement | null>(null)
-  const subTimeRef = useRef<HTMLButtonElement | null>(null)
-  const subPriorityRef = useRef<HTMLButtonElement | null>(null)
-  const subRepeatRef = useRef<HTMLButtonElement | null>(null)
-  const subReminderRef = useRef<HTMLButtonElement | null>(null)
   const [showDone, setShowDone] = useState(true)
   const sortedChildren = [...children].filter(row => showDone || !row.concluida).sort(compareSubtasks)
 
@@ -546,18 +534,6 @@ function TaskBody({ task, state, today, commit, register, close, openTask }: { t
   const subTaskQuick = useTaskQuick({ state, today, commit, onOpen: row => void goTo(String(row.id)) })
   const toggle = (taskId: string) => commit(current => ({ ...current, tasks: current.tasks.map(row => String(row.id) === taskId ? { ...row, concluida: !row.concluida, concluida_em: !row.concluida ? new Date().toISOString() : '' } : row) }))
 
-  function addSubtask() {
-    const title = subtask.trim()
-    if (!title) return
-    commit(current => ({ ...current, tasks: [...current.tasks, { id: uid('t'), titulo: title, descricao: subDesc.trim(), data_vencimento: subDue ? `${subDue}${subTime ? `T${subTime}` : ''}` : '', prioridade: subPriority, concluida: false, projeto_id: draft.projeto_id || 'entrada', parent_id: id, secao: draft.secao || '', criado_em: new Date().toISOString(), ordem: Date.now(), anexos: [], subtarefas: [], lembretes: subReminder ? [subReminder] : [], etiquetas: [], repeticao: subRepeat, notas: [] }] }))
-    setSubtask('')
-    setSubDesc('')
-    setSubDue('')
-    setSubTime('')
-    setSubPriority(4)
-    setSubRepeat('')
-    setSubReminder('')
-  }
 
   async function remove() {
     const title = `“${draft.titulo || 'Tarefa'}”`
@@ -639,68 +615,7 @@ function TaskBody({ task, state, today, commit, register, close, openTask }: { t
             <div className={styles.list}>
               {sortedChildren.map(child => <SubtaskCard key={String(child.id)} task={child} state={state} today={today} bind={subQuick.bind(() => subTaskQuick.menu(child))} onToggle={() => toggle(String(child.id))} onOpen={() => void goTo(String(child.id))} />)}
               {composing ? (
-                <div className={styles.composer}>
-                  <input
-                    autoFocus
-                    value={subtask}
-                    placeholder="Nome da subtarefa"
-                    enterKeyHint="send"
-                    onChange={event => setSubtask(event.target.value)}
-                    onKeyDown={event => {
-                      if (event.key === 'Enter') { event.preventDefault(); addSubtask() }
-                      if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); setComposing(false); setSubtask(''); setSubDesc('') }
-                    }}
-                  />
-                  <textarea className={styles.composerDesc} rows={1} value={subDesc} placeholder="Descrição" onChange={event => setSubDesc(event.target.value)} />
-                  <div className={styles.composerBar}>
-                  <div className={styles.composerChips}>
-                    <button ref={subDateRef} type="button" className={styles.subChip} style={{ '--chip-color': subDue && subDue < today ? 'var(--ds-danger)' : 'var(--ds-warn)' } as CSSProperties} data-empty={!subDue || undefined} onClick={() => setSubPicker('date')}>
-                      <Icon name="calendar_today" size={14} />{subDue ? friendlyDate(subDue, today) : 'Data'}
-                    </button>
-                    <button ref={subTimeRef} type="button" className={styles.subChip} style={{ '--chip-color': 'var(--ds-lilac-fg)' } as CSSProperties} data-empty={!subTime || undefined} onClick={() => setSubPicker('time')}>
-                      <Icon name="schedule" size={14} />{subTime || 'Horário'}
-                    </button>
-                    <button ref={subPriorityRef} type="button" className={styles.subChip} style={{ '--chip-color': (PRIORITIES.find(option => Number(option.value) === subPriority) || PRIORITIES[3]).color } as CSSProperties} data-empty={subPriority === 4 || undefined} onClick={() => setSubPicker('priority')}>
-                      <Icon name={(PRIORITIES.find(option => Number(option.value) === subPriority) || PRIORITIES[3]).icon} size={14} />{subPriority === 4 ? 'Prioridade' : (PRIORITIES.find(option => Number(option.value) === subPriority) || PRIORITIES[3]).label}
-                    </button>
-                    <button ref={subRepeatRef} type="button" className={styles.subChip} style={{ '--chip-color': 'var(--ds-mint-fg)' } as CSSProperties} data-empty={!subRepeat || undefined} onClick={() => setSubPicker('repeat')}>
-                      <Icon name="repeat" size={14} />{subRepeat ? repeatLabel(subRepeat) : 'Repetir'}
-                    </button>
-                    <button ref={subReminderRef} type="button" className={styles.subChip} style={{ '--chip-color': 'var(--ds-sky-fg)' } as CSSProperties} data-empty={!subReminder || undefined} onClick={() => setSubPicker('reminder')}>
-                      <Icon name="notifications" size={14} />{subReminder ? reminderLabel(subReminder) : 'Lembrete'}
-                    </button>
-                  </div>
-                  {subPicker === 'date' ? (
-                    <Floating anchor={subDateRef} title="Data da subtarefa" width={300} onClose={() => setSubPicker('')}>
-                      <DatePicker value={subDue} today={today} onSelect={value => { setSubPicker(''); setSubDue(value || ''); if (!value) setSubTime('') }} />
-                    </Floating>
-                  ) : null}
-                  {subPicker === 'time' ? (
-                    <Floating anchor={subTimeRef} title="Horário da subtarefa" width={260} onClose={() => setSubPicker('')}>
-                      <TimePicker value={subTime} onSelect={value => { setSubPicker(''); setSubTime(value); if (value && !subDue) setSubDue(today) }} />
-                    </Floating>
-                  ) : null}
-                  {subPicker === 'priority' ? (
-                    <Floating anchor={subPriorityRef} title="Prioridade" onClose={() => setSubPicker('')}>
-                      <OptionList options={PRIORITIES} value={String(subPriority)} onSelect={value => { setSubPicker(''); setSubPriority(Number(value)) }} />
-                    </Floating>
-                  ) : null}
-                  {subPicker === 'repeat' ? (
-                    <Floating anchor={subRepeatRef} title="Repetir" width={280} onClose={() => setSubPicker('')}>
-                      <RepeatPicker value={subRepeat} onSelect={value => { setSubPicker(''); setSubRepeat(value) }} />
-                    </Floating>
-                  ) : null}
-                  {subPicker === 'reminder' ? (
-                    <Floating anchor={subReminderRef} title="Lembrete" width={280} onClose={() => setSubPicker('')}>
-                      <ReminderPicker value={subReminder} onSelect={value => { setSubPicker(''); setSubReminder(value) }} />
-                    </Floating>
-                  ) : null}
-                  <div className={styles.composerActions}>
-                    <button type="button" className={styles.composerAdd} disabled={!subtask.trim()} onClick={addSubtask}>Adicionar</button>
-                    <button type="button" className={styles.composerCancel} onClick={() => { setComposing(false); setSubtask(''); setSubDesc(''); setSubDue(''); setSubTime(''); setSubPriority(4); setSubRepeat(''); setSubReminder('') }}>Cancelar</button>
-                  </div>
-                  </div>
-                </div>
+                <QuickAdd inline kinds={['task']} initial="task" parentId={id} state={state} today={today} defaultProjectId={String(draft.projeto_id || 'entrada')} defaultSection={String(draft.secao || '')} commit={commit} onFinance={() => undefined} onClose={() => setComposing(false)} />
               ) : (
                 <div className={styles.subAddRow}>
                   <button type="button" className={styles.subAdd} onClick={() => setComposing(true)}>
@@ -739,13 +654,16 @@ function SubtaskCard({ task, state, today, bind, onToggle, onOpen }: { task: Row
   const done = Boolean(task.concluida)
   const late = Boolean(due) && due < today && !done
   const children = state.tasks.filter(row => String(row.parent_id || '') === id) as Row[]
-  const info = [due ? `${friendlyDate(due, today)}${time ? ` · ${time}` : ''}` : '', children.length ? `${children.filter(row => row.concluida).length}/${children.length}` : ''].filter(Boolean).join(' · ')
+  const priorityColor = ({ 1: 'var(--ds-rose-fg)', 2: 'var(--ds-peach-fg)', 3: 'var(--ds-sky-fg)' } as Record<number, string>)[Number(task.prioridade || 4)]
+  const desc = String(task.descricao || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()
+  const info = [due ? `${friendlyDate(due, today)}${time ? ` · ${time}` : ''}` : '', task.repeticao ? repeatLabel(String(task.repeticao)) : '', children.length ? `${children.filter(row => row.concluida).length}/${children.length}` : ''].filter(Boolean).join(' · ')
 
   return (
     <div className={styles.subCard} data-done={done || undefined} {...bind}>
-      <Round checked={done} late={late} onToggle={onToggle} label={`${done ? 'Reabrir' : 'Concluir'} ${String(task.titulo || 'subtarefa')}`} />
+      <Round checked={done} late={late} color={priorityColor} onToggle={onToggle} label={`${done ? 'Reabrir' : 'Concluir'} ${String(task.titulo || 'subtarefa')}`} />
       <button type="button" className={styles.subMain} onClick={onOpen}>
         <span className={styles.subTitle}>{String(task.titulo || 'Subtarefa')}</span>
+        {desc ? <span className={styles.subDescLine}>{desc}</span> : null}
         {info ? <span className={styles.subInfo} data-late={late || undefined}>{info}</span> : null}
       </button>
     </div>

@@ -1567,3 +1567,11 @@
 .round.round.round:not([data-checked]):hover { color: var(--ds-muted); }
 .round.round.round[data-late]:not([data-checked]):hover { color: var(--ds-danger); }
 .round.round.round:not([data-checked]):hover > * { opacity: 0.9; }
+
+/* Subtarefa no cartão: prioridade na cor do círculo e descrição, como na tarefa. */
+.round.round.round[data-priority]:not([data-late]) { border-color: var(--check-color); background: color-mix(in srgb, var(--check-color) 14%, transparent); }
+.round.round.round[data-priority]:not([data-late]):hover { color: var(--check-color); }
+.subCard.subCard .subDescLine { display: block; width: 100%; font-size: 12.5px; color: var(--ds-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.subCard.subCard .subMain { flex-direction: column; align-items: flex-start; gap: 2px; }
+.subCard.subCard .subTitle { flex: 0 1 auto; max-width: 100%; }
+.subCard.subCard .subInfo { margin-top: 1px; font-weight: var(--ds-fw-medium); }
