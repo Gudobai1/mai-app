@@ -9,7 +9,7 @@
   width:min(470px,calc(100vw - 28px))!important;
   max-width:calc(100vw - 28px)!important;
   height:auto!important;
-  border-radius:20px!important;
+  border-radius:12px!important;
 }
 
 .mai-task-v4-top,
@@ -274,7 +274,7 @@
     width:calc(100vw - 16px)!important;
     max-width:calc(100vw - 16px)!important;
     height:auto!important;
-    border-radius:16px!important;
+    border-radius:10px!important;
   }
 
   .mai-task-v4-scroll,

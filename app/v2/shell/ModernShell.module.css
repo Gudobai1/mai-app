@@ -32,7 +32,7 @@
   gap: 10px;
   padding: 0 12px;
   border: 0;
-  border-radius: 10px;
+  border-radius: 6px;
   background: transparent;
   color: var(--ds-muted);
   font: inherit;
@@ -91,7 +91,7 @@
   gap: 12px;
   padding: 0 12px;
   border: 0;
-  border-radius: 9px;
+  border-radius: 6px;
   background: transparent;
   color: var(--ds-text);
   font: inherit;
@@ -158,7 +158,7 @@
 .projectRow {
   display: flex;
   align-items: center;
-  border-radius: 9px;
+  border-radius: 6px;
   padding-right: 4px;
 }
 
@@ -240,7 +240,7 @@
   gap: 12px;
   padding: 0 12px;
   border: 0;
-  border-radius: 9px;
+  border-radius: 6px;
   background: transparent;
   color: var(--ds-muted);
   font: inherit;
@@ -288,7 +288,7 @@
   place-items: center;
   padding: 0;
   border: 0;
-  border-radius: 10px;
+  border-radius: 6px;
   background: transparent;
   color: var(--ds-muted);
   cursor: pointer;
@@ -355,7 +355,7 @@
     align-items: center;
     padding: 0 6px;
     box-sizing: border-box;
-    border-radius: 24px;
+    border-radius: 12px;
     background: var(--ds-surface);
     box-shadow: var(--ds-shadow-float);
     font-family: var(--ds-font);
@@ -372,7 +372,7 @@
     gap: 3px;
     padding: 0;
     border: 0;
-    border-radius: 16px;
+    border-radius: 10px;
     background: transparent;
     color: var(--ds-muted);
     font: inherit;
@@ -391,7 +391,7 @@
     justify-self: center;
     width: 56px;
     height: 56px;
-    border-radius: 18px;
+    border-radius: 10px;
     background: var(--ds-accent);
     color: var(--ds-on-accent);
     transition: transform var(--ds-dur-fast) var(--ds-ease);
@@ -427,7 +427,7 @@
     overflow-y: auto;
     box-sizing: border-box;
     padding: 10px var(--ds-s-4) calc(var(--ds-s-5) + env(safe-area-inset-bottom));
-    border-radius: 26px 26px 0 0;
+    border-radius: 12px 26px 0 0;
     background: var(--ds-bg);
     box-shadow: var(--ds-shadow-modal);
     display: flex;
@@ -547,7 +547,7 @@
 }
 
 /* Nome + engrenagem: um único botão. */
-button.profileRow.profileRow { appearance: none; width: 100%; box-sizing: border-box; min-height: 48px; border: 0; border-radius: 10px; background: transparent; color: var(--ds-text); font: inherit; text-align: left; cursor: pointer; transition: background-color var(--ds-dur-fast) var(--ds-ease); }
+button.profileRow.profileRow { appearance: none; width: 100%; box-sizing: border-box; min-height: 48px; border: 0; border-radius: 6px; background: transparent; color: var(--ds-text); font: inherit; text-align: left; cursor: pointer; transition: background-color var(--ds-dur-fast) var(--ds-ease); }
 button.profileRow.profileRow:hover { background: var(--ds-surface-hover); }
 button.profileRow.profileRow:focus-visible { outline: 2px solid var(--ds-accent); outline-offset: 2px; }
 button.profileRow.profileRow:hover .settingsButton { color: var(--ds-text); }

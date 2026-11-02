@@ -46,7 +46,7 @@
 .mai-upcoming-calendar-main{
   min-width:0;
   border:1px solid color-mix(in srgb,var(--v3-line,#e7ebe5) 88%,transparent);
-  border-radius:14px;
+  border-radius:8px;
   overflow:hidden;
   background:var(--v3-bg,#fff);
 }
@@ -308,7 +308,7 @@
   }
 
   .mai-upcoming-calendar-main{
-    border-radius:12px;
+    border-radius:8px;
   }
 
   .mai-upcoming-calendar-toolbar{

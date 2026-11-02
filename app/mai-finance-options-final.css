@@ -121,7 +121,7 @@ html body .mai-app-topbar .mai-app-topbar-panel[data-view="finance"] .mai-app-to
   margin:0!important;
   padding:7px 8px!important;
   border:0!important;
-  border-radius:10px!important;
+  border-radius:6px!important;
   background:transparent!important;
   box-shadow:none!important;
 }
@@ -159,7 +159,7 @@ html body .mai-app-topbar .mai-app-topbar-panel[data-view="finance"] .mai-app-to
   place-items:center!important;
   overflow:hidden!important;
   border:0!important;
-  border-radius:11px!important;
+  border-radius:6px!important;
   background:color-mix(in srgb,var(--finance-entity-color,var(--v3-accent)) 12%,var(--v3-soft))!important;
   color:var(--finance-entity-color,var(--v3-accent))!important;
   box-shadow:none!important;
@@ -346,7 +346,7 @@ html body .mai-app-topbar .mai-app-topbar-panel[data-view="finance"] .mai-app-to
   margin:0!important;
   padding:0!important;
   border:0!important;
-  border-radius:10px!important;
+  border-radius:6px!important;
   background:transparent!important;
   box-shadow:none!important;
 }
@@ -373,7 +373,7 @@ html body .mai-app-topbar .mai-app-topbar-panel[data-view="finance"] .mai-app-to
   overflow:hidden!important;
   font-size:0!important;
 }
-.mai-v3-workspace .mai-v4-finance > .mai-finance-v4-period > .mai-finance-v4-month > button:first-child{border-radius:10px 0 0 10px!important}
+.mai-v3-workspace .mai-v4-finance > .mai-finance-v4-period > .mai-finance-v4-month > button:first-child{border-radius:6px 0 0 10px!important}
 .mai-v3-workspace .mai-v4-finance > .mai-finance-v4-period > .mai-finance-v4-month > button:last-child{border-radius:0 10px 10px 0!important}
 
 .mai-v3-workspace .mai-v4-finance > .mai-finance-v4-period > .mai-finance-v4-month > button:first-child::before,

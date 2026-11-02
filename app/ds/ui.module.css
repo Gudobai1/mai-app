@@ -110,7 +110,7 @@
 .iconButton.iconButton:active { transform: scale(0.94); }
 .iconButtonSurface.iconButtonSurface { background: var(--ds-surface); color: var(--ds-text); }
 .iconButtonSurface.iconButtonSurface:hover { background: var(--ds-surface-hover); }
-.iconButtonPrimary.iconButtonPrimary { background: var(--ds-accent); color: var(--ds-on-accent); border-radius: 18px; }
+.iconButtonPrimary.iconButtonPrimary { background: var(--ds-accent); color: var(--ds-on-accent); border-radius: 10px; }
 .iconButtonGhost.iconButtonGhost { background: transparent; color: var(--ds-muted); }
 .iconButtonGhost.iconButtonGhost:hover { background: var(--ds-surface-hover); color: var(--ds-text); }
 .badgeDot.badgeDot {

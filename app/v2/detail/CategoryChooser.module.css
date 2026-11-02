@@ -20,7 +20,7 @@
   padding: 0 10px;
   box-sizing: border-box;
   border: 0;
-  border-radius: 10px;
+  border-radius: 6px;
   outline: none;
   background: var(--ds-surface-2);
   color: var(--ds-text);
@@ -36,7 +36,7 @@
   display: grid;
   place-items: center;
   border: 0;
-  border-radius: 10px;
+  border-radius: 6px;
   background: var(--ds-accent);
   color: var(--ds-on-accent);
   cursor: pointer;

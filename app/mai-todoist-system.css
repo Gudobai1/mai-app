@@ -371,7 +371,7 @@
 .mai-v3-file-list>button>span:last-child>strong{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .mai-v3-file-list>button>span:last-child>small{text-align:right;white-space:nowrap}
 .mai-v3-file-grid{gap:6px!important}
-.mai-v3-file-grid>button{border:0!important;box-shadow:none!important;background:transparent!important;border-radius:9px!important}
+.mai-v3-file-grid>button{border:0!important;box-shadow:none!important;background:transparent!important;border-radius:6px!important}
 .mai-v3-file-grid>button:hover{background:var(--mai-item-hover)!important}
 
 /* Projetos na coluna de Tarefas. */

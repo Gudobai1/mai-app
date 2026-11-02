@@ -116,7 +116,7 @@
 
 /* Paleta fechada para qualquer seletor de cor existente */
 .mai-preset-layer { position:fixed; inset:0; z-index:1800; }
-.mai-preset-popover { position:fixed; width:255px; padding:8px; border:1px solid #dde2dc; border-radius:12px; background:#fff; color:#202321; box-shadow:0 16px 45px rgba(0,0,0,.18); }
+.mai-preset-popover { position:fixed; width:255px; padding:8px; border:1px solid #dde2dc; border-radius:8px; background:#fff; color:#202321; box-shadow:0 16px 45px rgba(0,0,0,.18); }
 :root[data-mai-theme="dark"] .mai-preset-popover { background:#1d211d; color:#e5e9e3; border-color:#303630; }
 .mai-preset-popover header { display:flex; align-items:center; justify-content:space-between; min-height:30px; padding:0 3px 5px; }
 .mai-preset-popover header strong { font-size:11px; }
@@ -129,13 +129,13 @@
 
 /* Paleta do aplicativo nas configurações */
 .mai-app-palettes { display:flex; flex-wrap:wrap; gap:7px; }
-.mai-app-palettes button { width:34px; height:34px; padding:4px; border:1px solid var(--line); border-radius:10px; background:var(--bg-card); }
+.mai-app-palettes button { width:34px; height:34px; padding:4px; border:1px solid var(--line); border-radius:6px; background:var(--bg-card); }
 .mai-app-palettes button i { display:block; width:100%; height:100%; border-radius:7px; }
 .mai-app-palettes button[data-active="true"] { border-color:var(--accent); box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 16%,transparent); }
 
 /* Personalização do Hoje */
 .mai-today-config { display:grid; gap:6px; }
-.mai-today-config > div { min-height:42px; display:grid; grid-template-columns:minmax(0,1fr) 95px auto; align-items:center; gap:8px; padding:0 8px; border:1px solid var(--line); border-radius:9px; }
+.mai-today-config > div { min-height:42px; display:grid; grid-template-columns:minmax(0,1fr) 95px auto; align-items:center; gap:8px; padding:0 8px; border:1px solid var(--line); border-radius:6px; }
 .mai-today-config strong { font-size:10px; }
 .mai-today-config select { min-height:30px; border:1px solid var(--line); border-radius:7px; background:var(--bg-card); font-size:9px; }
 .mai-today-config span { display:flex; gap:3px; }
