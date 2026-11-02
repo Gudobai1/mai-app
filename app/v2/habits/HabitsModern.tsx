@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import type { MaiState } from '../../../lib/v2/state'
 import { Icon } from '../../ds'
+import { DotRing } from './DotRing'
 import type { Row } from '../app-types'
 import type { InspectableItem } from '../ContextDrawer'
 import { DEFAULT_COLOR } from '../../../lib/v2/palette'
@@ -35,7 +36,6 @@ const diffDays = (start: string, end: string) => Math.round((new Date(`${end}T12
 const percent = (value: number, total: number) => (total > 0 ? Math.max(0, Math.min(100, Math.round((value / total) * 100))) : 0)
 const failed = (entry?: Row) => entry?.falhou === true || String(entry?.status || '').toLowerCase() === 'falha'
 const longDate = (key: string) => new Date(`${key}T12:00:00`).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' }).replace('.', '')
-const ICONS = ['star', 'favorite', 'fitness_center', 'local_drink', 'menu_book', 'self_improvement', 'directions_run', 'bedtime', 'palette', 'code', 'attach_money', 'psychology', 'restaurant', 'cleaning_services', 'directions_bike', 'air', 'spa', 'bolt', 'school', 'monitor_heart']
 const WEEKDAYS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
 const INITIALS = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S']
 
@@ -71,7 +71,7 @@ function frequencyLabel(habit: Row) {
 }
 
 function blankHabit(today: string): Row {
-  return { id: uid('hab'), nome: '', descricao: '', meta: 1, unidade: '', hora: '', cor_hex: DEFAULT_COLOR, icone: 'star', dias_semana: [0, 1, 2, 3, 4, 5, 6], repeticao: 'diariamente', data_inicio: today, ocultar_agenda: false, ativo: true, criado_em: new Date().toISOString(), anexos: [], _persisted: false }
+  return { id: uid('hab'), nome: '', descricao: '', meta: 1, unidade: '', hora: '', cor_hex: DEFAULT_COLOR, dias_semana: [0, 1, 2, 3, 4, 5, 6], repeticao: 'diariamente', data_inicio: today, ocultar_agenda: false, ativo: true, criado_em: new Date().toISOString(), anexos: [], _persisted: false }
 }
 
 function cleanHabit(snapshot: Row, today: string): Row {
@@ -233,7 +233,7 @@ export function HabitsModern({ state, today, commit, createRequest }: Props) {
               return (
                 <div key={String(habit.id)} role="listitem" className={styles.row} style={{ '--hc': color } as CSSProperties}>
                   <button type="button" className={styles.body} onClick={() => setDetailId(String(habit.id))}>
-                    <span className={styles.title}><Icon name={String(habit.icone || 'star')} size={17} filled={false} className={styles.habitIcon} />{String(habit.nome)}</span>
+                    <span className={styles.title}>{String(habit.nome)}</span>
                     <span className={styles.desc}>{detailText || frequencyLabel(habit)}</span>
                   </button>
                   <div className={styles.dots}>
@@ -257,6 +257,7 @@ export function HabitsModern({ state, today, commit, createRequest }: Props) {
                           title={level === 'fail' ? 'Falha' : level === 'part' ? `${progressOf(habit, day)}%` : !eligible(habit, day) ? 'Fora da frequência' : longDate(day)}
                         >
                           {level === 'fail' ? <Icon name="close" size={12} weight={600} /> : null}
+                          {level === 'part' ? <DotRing pct={progressOf(habit, day)} /> : null}
                         </button>
                       )
                     })}
@@ -493,6 +494,7 @@ function HabitDetail({ habit, today, stats, levelOf, progressOf, entries, onTogg
                 const level = levelOf(habit, day)
                 return (
                   <button key={day} type="button" className={styles.dot} data-day="" data-level={level || undefined} data-today={day === today || undefined} data-off={!eligible(habit, day) || undefined} disabled={!eligible(habit, day) || day > today} style={level === 'part' ? ({ '--p': progressOf(habit, day) } as CSSProperties) : undefined} onClick={() => onToggle(day)} aria-label={longDate(day)}>
+                    {level === 'part' ? <DotRing pct={progressOf(habit, day)} label={String(index + 1)} /> : null}
                     <span className={styles.dayNumber}>{index + 1}</span>
                   </button>
                 )
@@ -540,13 +542,6 @@ function HabitDetail({ habit, today, stats, levelOf, progressOf, entries, onTogg
             </div>
 
             <FrequencyEditor draft={draft} setDraft={setDraft} today={today} />
-
-            <div className={styles.field}>
-              <span>Ícone</span>
-              <div className={styles.iconGrid}>
-                {ICONS.map(icon => <button key={icon} type="button" data-active={draft.icone === icon || undefined} onClick={() => setDraft({ ...draft, icone: icon })} aria-label={icon}><Icon name={icon} size={20} filled={false} /></button>)}
-              </div>
-            </div>
 
             <ItemAttachments attachments={rows(draft.anexos)} onChange={anexos => setDraft({ ...draft, anexos })} />
 

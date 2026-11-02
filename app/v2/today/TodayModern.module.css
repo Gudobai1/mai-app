@@ -2043,7 +2043,17 @@
 .habitDay.habitDay:disabled { cursor: default; }
 .habitDay.habitDay[data-off] { opacity: 0.35; border-style: dashed; }
 .habitDay.habitDay[data-today]:not([data-on]):not([data-part]) { border-color: var(--ds-muted); border-width: 2.5px; }
-.habitDay.habitDay[data-part] { border: 0; background: conic-gradient(var(--hc) calc(var(--p) * 1%), var(--ds-line) 0); }
+.habitDay.habitDay[data-part] { border: 0; background: transparent; }
 .habitDay.habitDay[data-on] { border-color: var(--hc); background: var(--hc); }
 .habitDay.habitDay[data-failed] { border-color: var(--ds-danger); }
 @media (max-width: 560px) { .habitDots.habitDots { gap: 4px; } .habitDay.habitDay { width: 26px; height: 26px; } }
+
+.habitHead { display: flex; align-items: center; gap: 12px; padding: 0 0 6px; border-bottom: 1px solid var(--ds-line); }
+.habitHeadSpacer { flex: 1; min-width: 0; }
+.habitHeadStreak { min-width: 40px; }
+.habitHeadDay { display: grid; justify-items: center; width: 30px; line-height: 1.1; color: var(--ds-muted); }
+.habitHeadDay small { font-size: 11px; font-weight: 600; }
+.habitHeadDay b { font-size: 12px; font-weight: 600; }
+.habitHeadDay[data-today] { color: var(--ds-text); }
+.habitHeadDay[data-today] b { font-weight: 800; }
+@media (max-width: 560px) { .habitHeadDay { width: 26px; } .habitHeadStreak { min-width: 34px; } }

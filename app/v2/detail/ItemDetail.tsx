@@ -708,7 +708,7 @@ function HabitDetail({ item, state, today, commit, register, close }: DetailProp
       <Header kind="habit" onClose={() => void close()} crumbs={<span className={styles.crumb}><i>·</i>{friendlyDate(day, today)}</span>} />
       <div className={styles.scroll}>
         <div className={styles.titleRow}>
-          <span className={styles.tile} data-tone={done ? 'success' : failed ? 'danger' : undefined}><Icon name={done ? 'check' : failed ? 'close' : resolveMaiIcon(String(habit.icone || 'repeat'))} size={18} /></span>
+          <span className={styles.tile} data-tone={done ? 'success' : failed ? 'danger' : undefined}><Icon name={done ? 'check' : failed ? 'close' : 'repeat'} size={18} /></span>
           <div className={styles.titleBody}>
             <GrowText className={styles.title} value={draft.nome} placeholder="Nome do hábito" multiline={false} onChange={nome => update({ nome })} />
             <GrowText className={styles.description} value={draft.descricao} placeholder="Adicionar descrição" onChange={descricao => update({ descricao })} />
