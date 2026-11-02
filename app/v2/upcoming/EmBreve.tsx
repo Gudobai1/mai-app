@@ -7,12 +7,12 @@ import { Icon } from '../../ds'
 import type { Row } from '../app-types'
 import type { InspectableItem } from '../ContextDrawer'
 import { driveAssetUrl } from '../DriveAsset'
-import { Floating } from '../detail/Pickers'
 import { financeCardPaymentState } from '../FinanceTransactionCard'
 import { askConfirm } from '../shell/ConfirmDialog'
 import { useQuickMenu, type QuickMenuConfig } from '../shell/QuickMenu'
 import tasksStyles from '../tasks/TasksModern.module.css'
 import styles from './EmBreve.module.css'
+import { DEFAULT_DISPLAY, EMPTY_FILTERS, KINDS, UpcomingControls, normalizeFilters, type Kind, type UpcomingDisplay, type UpcomingFilters } from './UpcomingControls'
 
 /**
  * Em breve = agenda do MAI: compromissos, tarefas, hábitos e lançamentos
@@ -21,7 +21,6 @@ import styles from './EmBreve.module.css'
  */
 
 type Mode = 'list' | 'week' | 'month'
-type Kind = 'event' | 'task' | 'habit' | 'finance'
 
 type Entry = {
   id: string
@@ -37,6 +36,8 @@ type Entry = {
   late: boolean
   priority: number
   project: { name: string; color: string; image: string } | null
+  projectId: string
+  financeType: string
   recurring: boolean
   subtitle: string
   amount: string
@@ -46,12 +47,6 @@ type Entry = {
 const rows = (value: unknown): Row[] => (Array.isArray(value) ? (value as Row[]) : [])
 const PRIORITY_COLOR: Record<number, string> = { 1: 'var(--ds-rose-fg)', 2: 'var(--ds-peach-fg)', 3: 'var(--ds-sky-fg)' }
 const WEEKDAY = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
-const KINDS: { id: Kind; label: string; icon: string }[] = [
-  { id: 'event', label: 'Compromissos', icon: 'event' },
-  { id: 'task', label: 'Tarefas', icon: 'task_alt' },
-  { id: 'habit', label: 'Hábitos', icon: 'autorenew' },
-  { id: 'finance', label: 'Finanças', icon: 'payments' },
-]
 const HOUR = 52
 const MAX_HORIZON = 730
 
@@ -123,18 +118,21 @@ export function EmBreve({ state, today, commit, inspect, syncRange }: Props) {
   const [miniMonth, setMiniMonth] = useState(monthStart(today))
   const [horizon, setHorizon] = useState(28)
   const [lateOpen, setLateOpen] = useState(false)
-  const [filterOpen, setFilterOpen] = useState(false)
   const [scrollTo, setScrollTo] = useState({ day: today, n: 0 })
-  const filterRef = useRef<HTMLButtonElement | null>(null)
   const stripRef = useRef<HTMLDivElement | null>(null)
   const sentinelRef = useRef<HTMLDivElement | null>(null)
   const weekBodyRef = useRef<HTMLDivElement | null>(null)
   const lockUntil = useRef(0)
 
-  const show = (state.configs.upcomingShow || {}) as Record<string, boolean>
-  const visible = (kind: Kind) => show[kind] !== false
-  const hiddenKinds = KINDS.filter(kind => !visible(kind.id)).length
-  const patchShow = (kind: Kind, value: boolean) => commit(current => ({ ...current, configs: { ...current.configs, upcomingShow: { ...((current.configs.upcomingShow || {}) as Record<string, boolean>), [kind]: value } } }))
+  const legacyShow = (state.configs.upcomingShow || {}) as Record<string, boolean>
+  const filters: UpcomingFilters = state.configs.upcomingFilters
+    ? normalizeFilters(state.configs.upcomingFilters)
+    : { ...EMPTY_FILTERS, hiddenKinds: KINDS.filter(kind => legacyShow[kind.id] === false).map(kind => kind.id) }
+  const filtersKey = JSON.stringify(filters)
+  const display: UpcomingDisplay = { ...DEFAULT_DISPLAY, ...((state.configs.upcomingDisplay || {}) as Partial<UpcomingDisplay>) }
+  const visible = (kind: Kind) => !filters.hiddenKinds.includes(kind)
+  const setFilters = (next: UpcomingFilters) => commit(current => ({ ...current, configs: { ...current.configs, upcomingFilters: next } }))
+  const setDisplay = (next: UpcomingDisplay) => commit(current => ({ ...current, configs: { ...current.configs, upcomingDisplay: next } }))
 
   const setMode = (next: Mode) => {
     setModeState(next)
@@ -177,15 +175,15 @@ export function EmBreve({ state, today, commit, inspect, syncRange }: Props) {
   }
 
   const toEntry = (item: PlannerItem): Entry => {
-    const base = { id: item.id, day: item.date, color: item.color, done: item.completed, recurring: item.recurring, planner: item, subtitle: item.subtitle, amount: '', late: false, priority: 4, project: null as Entry['project'], end: '', source: '', allDay: false }
+    const base = { id: item.id, day: item.date, color: item.color, done: item.completed, recurring: item.recurring, planner: item, subtitle: item.subtitle, amount: '', late: false, priority: 4, project: null as Entry['project'], projectId: '', financeType: '', end: '', source: '', allDay: false }
     if (item.kind === 'task') {
-      return { ...base, kind: 'task', time: item.time, title: item.title, late: item.date < today && !item.completed, priority: Number(item.raw.prioridade || 4), project: projectOf(item.raw.projeto_id) }
+      return { ...base, kind: 'task', time: item.time, title: item.title, late: item.date < today && !item.completed, priority: Number(item.raw.prioridade || 4) >= 1 && Number(item.raw.prioridade || 4) <= 3 ? Number(item.raw.prioridade) : 4, project: projectOf(item.raw.projeto_id), projectId: String(item.raw.projeto_id || 'entrada') }
     }
     if (item.kind === 'habit') return { ...base, kind: 'habit', time: item.time, title: item.title }
     if (item.kind === 'finance') {
       const payment = financeCardPaymentState(item.raw)
       const income = item.raw.tipo === 'receita'
-      return { ...base, kind: 'finance', time: '', title: item.title, done: payment.status === 'pago', source: String(item.raw.categoria || (income ? 'Receita' : 'Despesa')), amount: `${income ? '+' : ''}${money(payment.status === 'parcial' ? payment.remaining : payment.total)}`, color: income ? 'var(--ds-mint-fg)' : 'var(--ds-rose-fg)', priority: income ? 1 : 0 }
+      return { ...base, kind: 'finance', financeType: income ? 'receita' : 'despesa', time: '', title: item.title, done: payment.status === 'pago', source: String(item.raw.categoria || (income ? 'Receita' : 'Despesa')), amount: `${income ? '+' : ''}${money(payment.status === 'parcial' ? payment.remaining : payment.total)}`, color: income ? 'var(--ds-mint-fg)' : 'var(--ds-rose-fg)', priority: income ? 1 : 0 }
     }
     const google = item.raw.tipo === 'google' || item.raw.tipo === 'gcalendar'
     return {
@@ -195,15 +193,29 @@ export function EmBreve({ state, today, commit, inspect, syncRange }: Props) {
     }
   }
 
+  const passes = (entry: Entry) => {
+    if (entry.kind === 'task' && (filters.hiddenProjects.includes(entry.projectId) || filters.hiddenPriorities.includes(entry.priority))) return false
+    if (entry.kind === 'event' && filters.hiddenSources.includes(entry.source)) return false
+    if (entry.kind === 'finance' && filters.hiddenFinance.includes(entry.financeType)) return false
+    if (filters.hideDone && entry.done && entry.kind !== 'event') return false
+    return true
+  }
+
   const entries = useMemo(() => {
     const rank = (entry: Entry) => (entry.kind === 'event' ? (entry.allDay ? 0 : 1) : entry.kind === 'task' ? 2 : entry.kind === 'habit' ? 3 : 4)
     return plannerItems(state, range.start, range.end)
       .filter(item => (item.kind === 'event' || item.kind === 'task' || item.kind === 'habit' || item.kind === 'finance') && visible(item.kind))
       .filter(item => !(item.kind === 'task' && item.raw.parent_id))
       .map(toEntry)
-      .sort((a, b) => a.day.localeCompare(b.day) || rank(a) - rank(b) || (a.time || '99:99').localeCompare(b.time || '99:99') || a.priority - b.priority || a.title.localeCompare(b.title, 'pt-BR'))
+      .filter(passes)
+      .sort((a, b) => {
+        const byTime = (a.time || '99:99').localeCompare(b.time || '99:99')
+        const byName = a.title.localeCompare(b.title, 'pt-BR')
+        const inner = display.sort === 'priority' ? a.priority - b.priority || byTime || byName : display.sort === 'name' ? byName : byTime || a.priority - b.priority || byName
+        return a.day.localeCompare(b.day) || rank(a) - rank(b) || inner
+      })
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state, range.start, range.end, show.event, show.task, show.habit, show.finance, today, projects])
+  }, [state, range.start, range.end, filtersKey, display.sort, today, projects])
 
   const byDay = useMemo(() => {
     const map = new Map<string, Entry[]>()
@@ -212,13 +224,14 @@ export function EmBreve({ state, today, commit, inspect, syncRange }: Props) {
   }, [entries])
 
   const overdue = useMemo(() => {
-    if (!visible('task')) return []
+    if (!visible('task') || filters.hideLate) return []
     return rows(state.tasks)
       .filter(task => !task.concluida && !task.parent_id && !task.ocultar_agenda && ymd(task.data_vencimento) && ymd(task.data_vencimento) < today)
       .sort((a, b) => ymd(a.data_vencimento).localeCompare(ymd(b.data_vencimento)))
       .map(task => toEntry({ id: `task:${task.id}:${ymd(task.data_vencimento)}`, sourceId: String(task.id), kind: 'task', date: ymd(task.data_vencimento), time: String(task.data_vencimento).includes('T') ? String(task.data_vencimento).slice(11, 16) : '', title: String(task.titulo || 'Tarefa'), subtitle: '', color: '', completed: false, recurring: Boolean(task.repeticao), raw: task }))
+      .filter(passes)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state.tasks, today, show.task, projects])
+  }, [state.tasks, today, filtersKey, projects])
 
   const nowMinutes = (() => { const now = new Date(); return now.getHours() * 60 + now.getMinutes() })()
   const passed = (entry: Entry) => {
@@ -401,55 +414,51 @@ export function EmBreve({ state, today, commit, inspect, syncRange }: Props) {
     </div>
   )
 
-  const renderAllDay = (entry: Entry) => (
-    <button key={entry.id} type="button" className={styles.allDay} style={{ '--ev': entry.color } as CSSProperties} onClick={() => open(entry)} {...quick.bind(() => menuFor(entry))}>
-      <span className={styles.allDayStack}>
-        <span className={styles.allDayTag}>{entry.planner.subtitle === 'Em andamento' ? 'Contínuo' : 'Dia todo'}</span>
-        <small>{entry.source}</small>
-      </span>
-      <strong>{entry.title}</strong>
-    </button>
-  )
-
+  /* Compromisso: bolinha na cor, título, quando embaixo e a agenda à direita. */
   const renderEvent = (entry: Entry) => {
-    const range = entry.end ? `${entry.time} – ${entry.end}` : ''
-    const external = false
+    const when = entry.allDay ? (entry.planner.subtitle === 'Em andamento' ? 'Em andamento' : 'Dia todo') : entry.end ? `${entry.time} – ${entry.end}` : entry.time
     return (
-      <button key={entry.id} type="button" className={styles.event} data-external={external || undefined} data-passed={passed(entry) || undefined} style={{ '--ev': entry.color } as CSSProperties} onClick={() => open(entry)} {...quick.bind(() => menuFor(entry))}>
+      <div key={entry.id} role="listitem" className={styles.event} data-passed={passed(entry) || undefined} style={{ '--ev': entry.color } as CSSProperties} {...quick.bind(() => menuFor(entry))}>
         <span className={styles.eventDot} aria-hidden="true" />
-        <span className={styles.eventTime}><b>{range || entry.time || 'Dia todo'}</b><small>{entry.source}</small></span>
-        <strong>{entry.title}</strong>
-        {entry.recurring ? <Icon name="repeat" size={12} /> : null}
-      </button>
+        <button type="button" className={styles.eventMain} onClick={() => open(entry)}>
+          <span className={styles.eventTitle}>{entry.title}{entry.recurring ? <Icon name="repeat" size={12} /> : null}</span>
+          <span className={styles.eventWhen}><Icon name={entry.allDay ? 'calendar_today' : 'schedule'} size={13} filled={false} />{when}</span>
+        </button>
+        <span className={styles.eventSource}>{entry.source}<b>#</b></span>
+      </div>
     )
   }
 
-  const group = (label: string, children: ReactNode, key: string) => (
+  const group = (label: string, children: ReactNode, key: string, color?: string) => (
     <div key={key} className={styles.group}>
-      <h4>{label}</h4>
+      <h4>{color ? <i style={{ background: color }} /> : null}{label}</h4>
       <div className={styles.groupBody} role="list">{children}</div>
     </div>
   )
 
   /** Compromissos primeiro (mesmo com horário), depois tarefas, hábitos e finanças. */
   const sections = (items: Entry[]) => {
-    const allDay = items.filter(entry => entry.kind === 'event' && entry.allDay)
-    const events = items.filter(entry => entry.kind === 'event' && !entry.allDay)
+    const events = items.filter(entry => entry.kind === 'event')
     const tasks = items.filter(entry => entry.kind === 'task')
     const habits = items.filter(entry => entry.kind === 'habit')
     const finance = items.filter(entry => entry.kind === 'finance')
+    if (display.group === 'none') {
+      return (
+        <div className={styles.groupBody} role="list">
+          {events.map(renderEvent)}
+          {tasks.map(entry => renderTask(entry, false))}
+          {habits.map(renderHabit)}
+          {finance.map(renderFinance)}
+        </div>
+      )
+    }
+    const taskGroups = display.group === 'project'
+      ? [...new Map(tasks.map(entry => [entry.projectId, entry])).values()].map(first => ({ key: `p:${first.projectId}`, label: first.project?.name || 'Projeto', color: first.project?.color, items: tasks.filter(entry => entry.projectId === first.projectId) }))
+      : tasks.length ? [{ key: 'tasks', label: 'Tarefas', color: undefined as string | undefined, items: tasks }] : []
     return (
       <>
-        {allDay.length || events.length ? (
-          <div className={styles.group}>
-            <h4>Compromissos</h4>
-            <div className={styles.groupBody} role="list">
-              {allDay.map(renderAllDay)}
-              {events.map(renderEvent)}
-            </div>
-          </div>
-        ) : null}
-        {tasks.length ? group('Tarefas', tasks.map(entry => renderTask(entry)), 'tasks') : null}
+        {events.length ? group('Compromissos', events.map(renderEvent), 'events') : null}
+        {taskGroups.map(item => group(item.label, item.items.map(entry => renderTask(entry)), item.key, item.color))}
         {habits.length ? group('Hábitos', habits.map(renderHabit), 'habits') : null}
         {finance.length ? group('Finanças', finance.map(renderFinance), 'finance') : null}
       </>
@@ -793,40 +802,55 @@ export function EmBreve({ state, today, commit, inspect, syncRange }: Props) {
     </div>
   )
 
+  /* Opções dos filtros: projetos e agendas/categorias que existem. */
+  const projectOptions = [
+    { id: 'entrada', label: 'Entrada', color: 'var(--ds-accent)' },
+    ...rows(state.projects).filter(project => project.ativo !== false).map(project => ({ id: String(project.id), label: String(project.nome || 'Projeto'), color: String(project.cor || 'var(--ds-accent)') })),
+  ]
+  const sourceOptions = (() => {
+    const map = new Map<string, { id: string; label: string; color: string }>()
+    for (const event of rows(state.events)) {
+      const google = event.tipo === 'google' || event.tipo === 'gcalendar'
+      const name = String(event.calendario_nome || (google ? 'Google Agenda' : event.categoria || 'MAI'))
+      if (!map.has(name)) map.set(name, { id: name, label: name, color: eventColor(event) })
+    }
+    return [...map.values()].sort((a, b) => a.label.localeCompare(b.label, 'pt-BR'))
+  })()
+
   /* ------------------------------------------------------------ Tela */
   return (
     <div className={styles.page} data-mode={mode}>
-      <header className={styles.header}>
-        <div className={styles.headText}>
-          <span>{subtitle}</span>
-          <h1>Em breve</h1>
-        </div>
-        <div className={styles.segmented} role="tablist" aria-label="Visualização">
-          {([['list', 'Lista'], ['week', 'Semana'], ['month', 'Mês']] as [Mode, string][]).map(([id, label]) => (
-            <button key={id} type="button" role="tab" aria-selected={mode === id} data-active={mode === id || undefined} onClick={() => setMode(id)}>{label}</button>
+      <header className={styles.bar}>
+        <div className={styles.views} role="tablist" aria-label="Visualização">
+          {([['list', 'Lista', 'format_list_bulleted'], ['week', 'Semana', 'view_week'], ['month', 'Mês', 'calendar_month']] as [Mode, string, string][]).map(([id, label, icon]) => (
+            <button key={id} type="button" role="tab" aria-selected={mode === id} data-active={mode === id || undefined} onClick={() => setMode(id)}>
+              <Icon name={icon} size={18} filled={false} /><span>{label}</span>
+            </button>
           ))}
+        </div>
+        <div className={styles.barRight}>
+          <UpcomingControls
+            filters={filters}
+            onChange={setFilters}
+            display={display}
+            onDisplay={setDisplay}
+            projects={projectOptions}
+            sources={sourceOptions}
+          />
+        </div>
+      </header>
+
+      <div className={styles.titleRow}>
+        <div className={styles.headText}>
+          <h1>{mode === 'list' ? 'Em breve' : subtitle}</h1>
+          <span>{mode === 'list' ? subtitle : 'Em breve'}</span>
         </div>
         <div className={styles.nav}>
           {mode !== 'list' ? <button type="button" className={styles.navStep} data-hide-mobile={mode === 'month' || undefined} aria-label="Anterior" onClick={() => step(-1)}><Icon name="chevron_left" size={20} filled={false} /></button> : null}
           <button type="button" className={styles.todayButton} onClick={goToday}>Hoje</button>
           {mode !== 'list' ? <button type="button" className={styles.navStep} data-hide-mobile={mode === 'month' || undefined} aria-label="Próximo" onClick={() => step(1)}><Icon name="chevron_right" size={20} filled={false} /></button> : null}
-          <button ref={filterRef} type="button" className={styles.filterButton} data-active={hiddenKinds > 0 || undefined} onClick={() => setFilterOpen(true)} aria-label="O que mostrar"><Icon name="tune" size={20} filled={false} /></button>
         </div>
-      </header>
-
-      {filterOpen ? (
-        <Floating anchor={filterRef} title="Mostrar na agenda" width={300} onClose={() => setFilterOpen(false)}>
-          <div className={styles.filterList}>
-            {KINDS.map(kind => (
-              <div key={kind.id} className={styles.filterRow}>
-                <Icon name={kind.icon} size={20} filled={false} />
-                <span>{kind.label}</span>
-                <button type="button" role="switch" aria-checked={visible(kind.id)} aria-label={kind.label} className={styles.switch} data-on={visible(kind.id) || undefined} onClick={() => patchShow(kind.id, !visible(kind.id))}><i /></button>
-              </div>
-            ))}
-          </div>
-        </Floating>
-      ) : null}
+      </div>
 
       {mode === 'list' && mobile ? strip : null}
       {overduePanel}
