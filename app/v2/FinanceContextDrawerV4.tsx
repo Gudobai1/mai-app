@@ -7,7 +7,9 @@ import { CreateCalendarPicker, CreateNumberEditor, CreateOptionList, CreateTool,
 import { FinanceTransactionExtraTools } from './FinanceTransactionExtraTools'
 import { ItemAttachments } from './ItemAttachments'
 import { MaiIcon } from './MaiIcons'
-import { useAutosaveDraft } from './useAutosaveDraft'
+import { useManualDraft } from './useManualDraft'
+import { DraftButtons } from './shell/DraftFooter'
+import { askConfirm } from './shell/ConfirmDialog'
 
 type Row = Record<string, any>
 type Commit = (change: (current: MaiState) => MaiState) => void
@@ -146,7 +148,9 @@ export function FinanceContextDrawerV4({ item, state, today, commit, onClose }: 
     })
   }
 
-  useAutosaveDraft({ value: draft, identity: `finance-context:${String(draft?.id || '')}`, enabled: Boolean(draft), save: persistDraft, delay: 220 })
+  const { dirty, saveNow, requestClose } = useManualDraft({ value: draft, identity: `finance-context:${String(draft?.id || '')}`, enabled: Boolean(draft), save: persistDraft, what: 'lançamento' })
+  const closeDraft = () => void requestClose(onClose)
+  const saveDraft = async () => { await saveNow(); onClose() }
 
   if (!item || item.kind !== 'finance' || !draft) return null
   const activeDraft = draft
@@ -214,15 +218,15 @@ export function FinanceContextDrawerV4({ item, state, today, commit, onClose }: 
     setDraft({ ...generated[0], _persisted: true })
   }
 
-  function removeDraft() {
-    if (!confirm('Excluir este lançamento?')) return
+  async function removeDraft() {
+    if (!(await askConfirm({ title: 'Excluir lançamento?', message: 'O lançamento será excluído. Não dá para desfazer.' }))) return
     commit(current => ({ ...current, finance: { ...current.finance, transactions: rows(current.finance.transactions).filter(row => String(row.id) !== String(activeDraft.id)), fixed: rows(current.finance.fixed).filter(row => String(row.id) !== String(activeDraft.id)), fixedOccurrences: rows(current.finance.fixedOccurrences).filter(row => String(row.fixo_id) !== String(activeDraft.id)) } }))
     onClose()
   }
 
-  return <div className="mai-v3-create-layer" onMouseDown={onClose}>
+  return <div className="mai-v3-create-layer" onMouseDown={closeDraft}>
     <form className="mai-v3-create-drawer mai-finance-v4-drawer mai-finance-v4-drawer-transaction" onSubmit={event => event.preventDefault()} onMouseDown={event => event.stopPropagation()}>
-      <header className="mai-v3-drawer-header"><div><small>Salvamento automático</small><strong>Editar lançamento</strong></div><button type="button" className="mai-v3-close" onClick={onClose}>×</button></header>
+      <header className="mai-v3-drawer-header"><div><small>Editar</small><strong>Editar lançamento</strong></div><button type="button" className="mai-v3-close" onClick={closeDraft}>×</button></header>
       <div className="mai-v3-drawer-body mai-create-unified-body" onMouseDown={() => openTool && setOpenTool('')}>
         <input className="mai-v3-title-input" autoFocus value={activeDraft.titulo || ''} placeholder="Nome do lançamento" onMouseDown={event => event.stopPropagation()} onChange={event => setDraft({ ...activeDraft, titulo: event.target.value })}/>
         <textarea className="mai-v3-description-input mai-create-unified-description" rows={2} value={activeDraft.observacao || ''} placeholder="Descrição" onMouseDown={event => event.stopPropagation()} onChange={event => setDraft({ ...activeDraft, observacao: event.target.value })}/>
@@ -237,7 +241,7 @@ export function FinanceContextDrawerV4({ item, state, today, commit, onClose }: 
         </div>
         <ItemAttachments attachments={rows(activeDraft.anexos)} onChange={anexos => setDraft({ ...activeDraft, anexos })}/>
       </div>
-      <footer className="mai-v3-drawer-footer"><div><button type="button" className="mai-finance-v4-delete" onClick={removeDraft}><MaiIcon name="delete" size={18}/>Excluir</button></div><span className="mai-autosave-status">Alterações salvas automaticamente</span></footer>
+      <footer className="mai-v3-drawer-footer"><div><button type="button" className="mai-finance-v4-delete" onClick={removeDraft}><MaiIcon name="delete" size={18}/>Excluir</button></div><DraftButtons dirty={dirty} onSave={() => void saveDraft()} onCancel={closeDraft} /></footer>
     </form>
   </div>
 }

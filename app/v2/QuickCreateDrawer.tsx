@@ -5,7 +5,8 @@ import type { MaiState } from '../../lib/v2/state'
 import type { Row } from './app-types'
 import { ItemAttachments } from './ItemAttachments'
 import styles from './unified.module.css'
-import { useAutosaveDraft } from './useAutosaveDraft'
+import { useManualDraft } from './useManualDraft'
+import { DraftFooter } from './shell/DraftFooter'
 
 const rows = (value: unknown): Row[] => Array.isArray(value) ? value as Row[] : []
 const dateOnly = (value: unknown) => String(value || '').slice(0, 10)
@@ -180,7 +181,9 @@ export function QuickCreateDrawer({ kind, allowKindSwitch = false, state, today,
     if (snapshot._persisted === false) setDraft(current => current && String(current._id) === id ? { ...current, _persisted: true } : current)
   }
 
-  useAutosaveDraft({ value: draft, identity: `${currentKind}:${String(draft._id)}`, enabled: Boolean(draft), save: persistDraft })
+  const { dirty, saveNow, requestClose } = useManualDraft({ value: draft, identity: `${currentKind}:${String(draft._id)}`, enabled: Boolean(draft), save: persistDraft, what: currentKind === 'task' ? 'tarefa' : 'compromisso' })
+  const closeGuarded = () => void requestClose(onClose)
+  const saveAndClose = async () => { await saveNow(); onClose() }
 
   function switchKind(next: 'task' | 'event') {
     if (next === currentKind) return
@@ -195,11 +198,11 @@ export function QuickCreateDrawer({ kind, allowKindSwitch = false, state, today,
     setOpenTool('')
   }
 
-  return <div className="mai-v3-create-layer" onMouseDown={onClose}>
+  return <div className="mai-v3-create-layer" onMouseDown={closeGuarded}>
     <form className="mai-v3-create-drawer" onSubmit={event => event.preventDefault()} onMouseDown={event => event.stopPropagation()}>
       <header className="mai-v3-drawer-header">
         <div>{allowKindSwitch ? <div className="mai-v3-kind-switch"><button type="button" data-active={currentKind === 'task'} onClick={() => switchKind('task')}>Tarefa</button><button type="button" data-active={currentKind === 'event'} onClick={() => switchKind('event')}>Compromisso</button></div> : <strong>{currentKind === 'task' ? 'Nova tarefa' : 'Novo compromisso'}</strong>}</div>
-        <button type="button" className="mai-v3-close" onClick={onClose}>×</button>
+        <button type="button" className="mai-v3-close" onClick={closeGuarded}>×</button>
       </header>
 
       <div className="mai-v3-drawer-body mai-create-unified-body" onMouseDown={() => openTool && setOpenTool('')}>
@@ -228,7 +231,7 @@ export function QuickCreateDrawer({ kind, allowKindSwitch = false, state, today,
         <ItemAttachments attachments={rows(draft.anexos)} onChange={anexos => setDraft(current => ({ ...current, anexos }))}/>
       </div>
 
-      <footer className="mai-v3-drawer-footer"><span/><span className="mai-autosave-status">Alterações salvas automaticamente</span></footer>
+      <DraftFooter className="mai-v3-drawer-footer" dirty={dirty} canSave={Boolean(String(draft.titulo || '').trim())} saveLabel="Criar" onSave={() => void saveAndClose()} onCancel={closeGuarded} />
     </form>
   </div>
 }

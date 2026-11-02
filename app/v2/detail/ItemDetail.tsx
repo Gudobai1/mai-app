@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState, type CSSProperties, type ReactNode, type RefObject } from 'react'
+import { createContext, useCallback, useContext, useEffect, useRef, useState, type CSSProperties, type ReactNode, type RefObject } from 'react'
 import { createPortal } from 'react-dom'
 import { addDays } from '../../../lib/v2/planner'
 import type { MaiState } from '../../../lib/v2/state'
@@ -12,6 +12,7 @@ import { FinanceContextDrawerV4 } from '../FinanceContextDrawerV4'
 import { financeCardPaymentState } from '../FinanceTransactionCard'
 import { resolveMaiIcon } from '../MaiIcons'
 import { askConfirm, notify } from '../shell/ConfirmDialog'
+import { askUnsaved } from '../shell/unsaved'
 import { UnitField } from '../habits/UnitField'
 import { DatePicker, Floating, OptionList, TimePicker, type PickerOption } from './Pickers'
 import { CategoryChooser } from './CategoryChooser'
@@ -91,20 +92,49 @@ export function ItemDetail(props: Props) {
   return <DetailShell key={`${item.kind}:${item.sourceId}`} {...props} item={item} />
 }
 
+type DetailCtxValue = { dirty: boolean; setDirty: (key: string, value: boolean) => void; requestClose: () => void; saveAndClose: () => void; saving: boolean }
+const DetailCtx = createContext<DetailCtxValue>({ dirty: false, setDirty: () => {}, requestClose: () => {}, saveAndClose: () => {}, saving: false })
+
 function DetailShell(props: Props & { item: InspectableItem }) {
   const { item, onClose } = props
   const flushers = useRef(new Set<() => void | Promise<void>>())
-  const [closing, setClosing] = useState(false)
+  const [dirtyKeys, setDirtyKeys] = useState<Set<string>>(new Set())
+  const [saving, setSaving] = useState(false)
+  const dirtyRef = useRef(false)
+  dirtyRef.current = dirtyKeys.size > 0
 
-  const close = useCallback(async () => {
-    if (closing) return
-    setClosing(true)
+  const setDirty = useCallback((key: string, value: boolean) => {
+    setDirtyKeys(current => {
+      if (current.has(key) === value) return current
+      const next = new Set(current)
+      if (value) next.add(key)
+      else next.delete(key)
+      return next
+    })
+  }, [])
+
+  const saveAndClose = useCallback(async () => {
+    if (saving) return
+    setSaving(true)
     for (const flush of flushers.current) await flush()
     onClose()
-  }, [closing, onClose])
+  }, [saving, onClose])
+
+  /** Fechar (X, Esc, fora, Cancelar): avisa se há alterações não salvas. */
+  const requestClose = useCallback(async () => {
+    if (saving) return
+    if (dirtyRef.current) {
+      const answer = await askUnsaved()
+      if (answer === 'stay') return
+      if (answer === 'save') { await saveAndClose(); return }
+    }
+    onClose()
+  }, [saving, saveAndClose, onClose])
+
+  const close = useCallback(async () => { onClose() }, [onClose])
 
   useEffect(() => {
-    const onKey = (event: KeyboardEvent) => { if (event.key === 'Escape') void close() }
+    const onKey = (event: KeyboardEvent) => { if (event.key === 'Escape' && !document.querySelector('[role="alertdialog"]')) void requestClose() }
     window.addEventListener('keydown', onKey)
     const previous = document.body.style.overflow
     document.body.style.overflow = 'hidden'
@@ -112,7 +142,7 @@ function DetailShell(props: Props & { item: InspectableItem }) {
       window.removeEventListener('keydown', onKey)
       document.body.style.overflow = previous
     }
-  }, [close])
+  }, [requestClose])
 
   const register = useCallback((flush: () => void | Promise<void>) => {
     flushers.current.add(flush)
@@ -131,12 +161,14 @@ function DetailShell(props: Props & { item: InspectableItem }) {
 
   // Fora da casca do app, para nenhuma regra antiga de CSS alcançar o popup.
   return createPortal(
-    <div className={styles.layer} onClick={event => { if (event.target === event.currentTarget) void close() }}>
+    <DetailCtx.Provider value={{ dirty: dirtyKeys.size > 0, setDirty, requestClose: () => void requestClose(), saveAndClose: () => void saveAndClose(), saving }}>
+    <div className={styles.layer} onClick={event => { if (event.target === event.currentTarget) void requestClose() }}>
       <section className={styles.panel} role="dialog" aria-modal="true" aria-label={KIND[item.kind]?.label || 'Detalhes'}>
         <div className={styles.handle} aria-hidden="true" />
         {body}
       </section>
-    </div>,
+    </div>
+    </DetailCtx.Provider>,
     document.body,
   )
 }
@@ -145,7 +177,8 @@ type DetailProps = Props & { item: InspectableItem; register: (flush: () => void
 
 /* ------------------------------------------------------------ Peças comuns */
 
-function Header({ kind, crumbs, onClose }: { kind: string; crumbs?: ReactNode; onClose: () => void }) {
+function Header({ kind, crumbs }: { kind: string; crumbs?: ReactNode; onClose?: () => void }) {
+  const { requestClose } = useContext(DetailCtx)
   return (
     <header className={styles.header}>
       <span className={styles.kind}>
@@ -153,21 +186,24 @@ function Header({ kind, crumbs, onClose }: { kind: string; crumbs?: ReactNode; o
         <span>{KIND[kind]?.label}</span>
         {crumbs}
       </span>
-      <button type="button" className={styles.iconButton} onClick={onClose} aria-label="Fechar"><Icon name="close" size={18} filled={false} /></button>
+      <button type="button" className={styles.iconButton} onClick={requestClose} aria-label="Fechar"><Icon name="close" size={18} filled={false} /></button>
     </header>
   )
 }
 
-function Footer({ status, onDelete, deleteLabel = 'Excluir' }: { status: ReactNode; onDelete?: () => void; deleteLabel?: string }) {
+function Footer({ status, onDelete, deleteLabel = 'Excluir' }: { status?: ReactNode; onDelete?: () => void; deleteLabel?: string }) {
+  const { dirty, requestClose, saveAndClose, saving } = useContext(DetailCtx)
   return (
     <footer className={styles.footer}>
-      <span className={styles.status}>{status}</span>
-      {onDelete ? <button type="button" className={styles.delete} onClick={onDelete}><Icon name="delete" size={17} filled={false} />{deleteLabel}</button> : null}
+      {onDelete ? <button type="button" className={styles.delete} onClick={onDelete} disabled={saving}><Icon name="delete" size={17} filled={false} />{deleteLabel}</button> : null}
+      <span className={styles.status} data-dirty={dirty || undefined}>{dirty ? 'Alterações não salvas' : status}</span>
+      <button type="button" className={styles.footerCancel} onClick={requestClose} disabled={saving}>Cancelar</button>
+      <button type="button" className={styles.footerSave} onClick={saveAndClose} disabled={!dirty || saving}>{saving ? 'Salvando…' : 'Salvar'}</button>
     </footer>
   )
 }
 
-const savedStatus = <><Icon name="cloud_done" size={15} className={styles.okIcon} />Salvo automaticamente</>
+const savedStatus = null
 
 /** Campo de texto que cresce com o conteúdo. */
 function GrowText({ value, onChange, placeholder, className, multiline = true }: { value: string; onChange: (value: string) => void; placeholder: string; className: string; multiline?: boolean }) {
@@ -191,35 +227,38 @@ function GrowText({ value, onChange, placeholder, className, multiline = true }:
   )
 }
 
-/** Rascunho local com gravação automática (texto espera um instante). */
-function useAutosave(initial: Row, save: (draft: Row) => void, register: DetailProps['register'], delay = 350) {
+/** Rascunho local: nada é gravado até o botão Salvar (ou "Salvar" no aviso ao fechar). */
+function useDraft(initial: Row, save: (draft: Row) => void, register: DetailProps['register'], _delay = 0) {
+  void _delay
+  const ctx = useContext(DetailCtx)
   const [draft, setDraft] = useState<Row>(initial)
-  const pending = useRef<Row | null>(null)
-  const timer = useRef<number | null>(null)
+  const initialSnapshot = useRef(JSON.stringify(initial))
+  const draftRef = useRef(draft)
+  draftRef.current = draft
   const saveRef = useRef(save)
   saveRef.current = save
+  const key = useRef(`d-${Math.random().toString(36).slice(2)}`)
+  const dirty = JSON.stringify(draft) !== initialSnapshot.current
+  const dirtyRef = useRef(dirty)
+  dirtyRef.current = dirty
 
   const flush = useCallback(() => {
-    if (timer.current) window.clearTimeout(timer.current)
-    timer.current = null
-    if (pending.current) { saveRef.current(pending.current); pending.current = null }
+    if (!dirtyRef.current) return
+    saveRef.current(draftRef.current)
+    initialSnapshot.current = JSON.stringify(draftRef.current)
   }, [])
 
+  const setShellDirty = ctx.setDirty
   useEffect(() => register(flush), [register, flush])
-  useEffect(() => () => flush(), [flush])
+  useEffect(() => { setShellDirty(key.current, dirty) }, [dirty, setShellDirty])
+  useEffect(() => { const id = key.current; return () => setShellDirty(id, false) }, [setShellDirty])
 
-  const update = useCallback((patch: Row, immediate = false) => {
-    setDraft(current => {
-      const next = { ...current, ...patch }
-      pending.current = next
-      return next
-    })
-    if (timer.current) window.clearTimeout(timer.current)
-    if (immediate) window.setTimeout(flush, 0)
-    else timer.current = window.setTimeout(flush, delay)
-  }, [delay, flush])
+  const update = useCallback((patch: Row, _immediate = false) => {
+    void _immediate
+    setDraft(current => ({ ...current, ...patch }))
+  }, [])
 
-  return { draft, update, setDraft }
+  return { draft, update, setDraft, dirty, save: flush }
 }
 
 type Option = PickerOption
@@ -388,7 +427,7 @@ function TaskBody({ task, state, today, commit, register, close, openTask }: { t
     const { _data, _hora, ...clean } = draft
     commit(current => ({ ...current, tasks: current.tasks.map(row => String(row.id) === id ? { ...row, ...clean, titulo: String(clean.titulo || '').trim() || 'Tarefa', data_vencimento: due } : row) }))
   }, [commit, id])
-  const { draft, update } = useAutosave({
+  const { draft, update, dirty, save: saveDraft } = useDraft({
     titulo: String(task.titulo || ''),
     descricao: String(task.descricao || ''),
     _data: dateKey(task.data_vencimento),
@@ -423,6 +462,15 @@ function TaskBody({ task, state, today, commit, register, close, openTask }: { t
     if (!parent) break
     crumbs.unshift(parent)
     parentId = String(parent.parent_id || '')
+  }
+
+  async function goTo(taskId: string) {
+    if (dirty) {
+      const answer = await askUnsaved('tarefa')
+      if (answer === 'stay') return
+      if (answer === 'save') saveDraft()
+    }
+    openTask(taskId)
   }
 
   const toggle = (taskId: string) => commit(current => ({ ...current, tasks: current.tasks.map(row => String(row.id) === taskId ? { ...row, concluida: !row.concluida, concluida_em: !row.concluida ? new Date().toISOString() : '' } : row) }))
@@ -475,7 +523,7 @@ function TaskBody({ task, state, today, commit, register, close, openTask }: { t
           <div className={styles.sectionHead}><h3>Subtarefas</h3>{children.length ? <span>{doneChildren} de {children.length}</span> : null}</div>
           {children.length ? <div className={styles.bar}><span style={{ width: `${(doneChildren / children.length) * 100}%` }} /></div> : null}
           <div className={styles.list}>
-            {sortedChildren.map(child => <SubtaskCard key={String(child.id)} task={child} state={state} today={today} onToggle={() => toggle(String(child.id))} onOpen={() => openTask(String(child.id))} />)}
+            {sortedChildren.map(child => <SubtaskCard key={String(child.id)} task={child} state={state} today={today} onToggle={() => toggle(String(child.id))} onOpen={() => void goTo(String(child.id))} />)}
             {composing ? (
               <div className={styles.composer}>
                 <input
@@ -565,7 +613,7 @@ function EventDetail({ item, state, today, commit, googleRpc, refreshEvents, reg
     commit(current => ({ ...current, events: rows(current.events).map(row => String(row.id) === item.sourceId ? { ...row, ...draft, titulo: String(draft.titulo || '').trim() || 'Compromisso' } : row) }))
   }, [commit, google, item.sourceId])
 
-  const { draft, update: rawUpdate } = useAutosave({
+  const { draft, update: rawUpdate } = useDraft({
     titulo: String(source.titulo || item.title || ''),
     descricao: String(source.descricao || ''),
     data_inicio: dateKey(source.data_inicio) || day,
@@ -659,7 +707,7 @@ function HabitDetail({ item, state, today, commit, register, close }: DetailProp
   const save = useCallback((draft: Row) => {
     commit(current => ({ ...current, habits: rows(current.habits).map(row => String(row.id) === item.sourceId ? { ...row, ...draft, nome: String(draft.nome || '').trim() || 'Hábito', meta: Math.max(1, Number(draft.meta || 1)) } : row) }))
   }, [commit, item.sourceId])
-  const { draft, update } = useAutosave({ nome: String(habit.nome || ''), descricao: String(habit.descricao || ''), meta: Number(habit.meta || 1), unidade: String(habit.unidade || '') }, save, register)
+  const { draft, update } = useDraft({ nome: String(habit.nome || ''), descricao: String(habit.descricao || ''), meta: Number(habit.meta || 1), unidade: String(habit.unidade || '') }, save, register)
 
   const target = Math.max(1, Number(draft.meta || 1))
   const quantitative = target > 1 || Boolean(draft.unidade)
@@ -742,7 +790,7 @@ function FinanceDetail({ item, state, today, commit, register, close }: DetailPr
   const save = useCallback((draft: Row) => {
     commit(current => ({ ...current, finance: { ...current.finance, transactions: rows(current.finance.transactions).map(row => String(row.id) === item.sourceId ? { ...row, ...draft, valor: Math.max(0, Number(draft.valor || 0)) } : row) } }))
   }, [commit, item.sourceId])
-  const { draft, update } = useAutosave({
+  const { draft, update } = useDraft({
     [titleField]: String(tx[titleField] || ''),
     observacao: String(tx.observacao || ''),
     data: dateKey(tx.data),
@@ -835,7 +883,7 @@ function GoalDetail({ item, state, today, commit, register, close }: DetailProps
   const save = useCallback((draft: Row) => {
     commit(current => ({ ...current, goals: rows(current.goals).map(row => String(row.id) === item.sourceId ? { ...row, ...draft, progresso_atual: Math.max(0, Number(draft.progresso_atual || 0)), progresso_total: Math.max(1, Number(draft.progresso_total || 100)) } : row) }))
   }, [commit, item.sourceId])
-  const { draft, update } = useAutosave({
+  const { draft, update } = useDraft({
     titulo: String(goal.titulo || ''),
     descricao: String(goal.descricao || ''),
     prazo: dateKey(goal.prazo || goal.data || goal.data_limite || goal.deadline),
@@ -892,7 +940,7 @@ function NoteDetail({ item, state, today, commit, register, close }: DetailProps
   const save = useCallback((draft: Row) => {
     commit(current => ({ ...current, notes: rows(current.notes).map(row => String(row.id) === item.sourceId ? { ...row, ...draft, updated_at: new Date().toISOString() } : row) }))
   }, [commit, item.sourceId])
-  const { draft, update } = useAutosave({ titulo: String(note.titulo || ''), conteudo: String(note.conteudo || '') }, save, register, 500)
+  const { draft, update } = useDraft({ titulo: String(note.titulo || ''), conteudo: String(note.conteudo || '') }, save, register, 500)
   const editor = useRef<HTMLDivElement | null>(null)
   useEffect(() => { if (editor.current) editor.current.innerHTML = String(note.conteudo || '') }, []) // eslint-disable-line react-hooks/exhaustive-deps
 

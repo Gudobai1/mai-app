@@ -14,7 +14,8 @@ import { Floating } from '../detail/Pickers'
 import { ItemAttachments } from '../ItemAttachments'
 import { askConfirm } from '../shell/ConfirmDialog'
 import quick from '../shell/QuickAdd.module.css'
-import { useAutosaveDraft } from '../useAutosaveDraft'
+import { useManualDraft } from '../useManualDraft'
+import { DraftButtons } from '../shell/DraftFooter'
 import styles from './HabitsModern.module.css'
 
 /*
@@ -418,22 +419,27 @@ function HabitDetail({ habit, today, stats, levelOf, progressOf, entries, onTogg
   const [draft, setDraft] = useState<Row>(() => ({ ...habit, _persisted: true }))
   const color = String(habit.cor_hex || DEFAULT_COLOR)
 
-  useEffect(() => {
-    const onKey = (event: KeyboardEvent) => { if (event.key === 'Escape') onClose() }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [onClose])
-
-  useAutosaveDraft({
+  const { dirty, saveNow, requestClose } = useManualDraft({
     value: tab === 'edit' ? draft : null,
     identity: String(habit.id),
     enabled: tab === 'edit',
+    what: 'hábito',
     save: snapshot => {
       if (!String(snapshot.nome || '').trim()) return
       const next = cleanHabit(snapshot, today)
       commit(current => ({ ...current, habits: rows(current.habits).map(item => String(item.id) === String(next.id) ? next : item) }))
     },
   })
+  const closePanel = () => void requestClose(onClose)
+  const savePanel = async () => { await saveNow(); onClose() }
+  const closeRef = useRef(closePanel)
+  closeRef.current = closePanel
+
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => { if (event.key === 'Escape' && !document.querySelector('[role="alertdialog"]')) closeRef.current() }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
 
   const remove = async () => {
     if (!(await askConfirm({ title: 'Excluir hábito?', message: 'Todos os registros deste hábito também serão removidos.', confirmLabel: 'Excluir', tone: 'danger' }))) return
@@ -465,14 +471,14 @@ function HabitDetail({ habit, today, stats, levelOf, progressOf, entries, onTogg
 
 
   return (
-    <div className={styles.layer} onMouseDown={onClose}>
+    <div className={styles.layer} onMouseDown={closePanel}>
       <section className={styles.panel} role="dialog" aria-modal="true" aria-label={String(habit.nome)} onMouseDown={event => event.stopPropagation()} style={{ '--hc': color } as CSSProperties}>
         <header className={styles.panelHead}>
           <div><strong style={{ color }}>{String(habit.nome)}</strong><small>{frequencyLabel(habit)} · meta {Number(habit.meta || 1)} {String(habit.unidade || '')}{habit.hora ? ` · ${String(habit.hora)}` : ''}</small></div>
-          <button type="button" className={styles.close} onClick={onClose} aria-label="Fechar"><Icon name="close" size={20} filled={false} /></button>
+          <button type="button" className={styles.close} onClick={closePanel} aria-label="Fechar"><Icon name="close" size={20} filled={false} /></button>
         </header>
         <div className={styles.panelTabs} role="tablist">
-          <button type="button" role="tab" data-active={tab === 'summary' || undefined} aria-selected={tab === 'summary'} onClick={() => setTab('summary')}>Resumo</button>
+          <button type="button" role="tab" data-active={tab === 'summary' || undefined} aria-selected={tab === 'summary'} onClick={() => void requestClose(() => setTab('summary'))}>Resumo</button>
           <button type="button" role="tab" data-active={tab === 'edit' || undefined} aria-selected={tab === 'edit'} onClick={() => { setDraft({ ...habit, _persisted: true }); setTab('edit') }}>Editar</button>
         </div>
 
@@ -553,7 +559,8 @@ function HabitDetail({ habit, today, stats, levelOf, progressOf, entries, onTogg
 
             <footer className={styles.editFoot}>
               <button type="button" className={styles.textDanger} onClick={remove}>Excluir hábito</button>
-              <span className={styles.saved}>Alterações salvas automaticamente</span>
+              <span style={{ flex: 1 }} />
+              <DraftButtons dirty={dirty} canSave={Boolean(String(draft.nome || '').trim())} onSave={() => void savePanel()} onCancel={closePanel} />
             </footer>
           </div>
         )}
@@ -569,16 +576,19 @@ function QuickEdit({ habit, today, commit }: { habit: Row; today: string; commit
   const [draft, setDraft] = useState<Row>(habit)
   const anchor = useRef<HTMLButtonElement | null>(null)
 
-  useAutosaveDraft({
+  const { dirty, saveNow, requestClose } = useManualDraft({
     value: open ? draft : null,
     identity: String(habit.id),
     enabled: open,
+    what: 'hábito',
     save: snapshot => {
       if (!String(snapshot.nome || '').trim()) return
       const next = cleanHabit({ ...snapshot, _persisted: true }, today)
       commit(current => ({ ...current, habits: rows(current.habits).map(item => String(item.id) === String(next.id) ? next : item) }))
     },
   })
+  const closeQuick = () => void requestClose(() => setOpen(false))
+  const saveQuick = async () => { await saveNow(); setOpen(false) }
 
   return (
     <>
@@ -586,15 +596,18 @@ function QuickEdit({ habit, today, commit }: { habit: Row; today: string; commit
         <Icon name="edit" size={17} filled={false} />
       </button>
       {open ? (
-        <Floating anchor={anchor} title="Edição rápida" width={290} onClose={() => setOpen(false)}>
+        <Floating anchor={anchor} title="Edição rápida" width={290} onClose={closeQuick}>
           <div className={styles.quick}>
-            <label className={styles.field}><span>Nome</span><input autoFocus value={String(draft.nome || '')} onChange={event => setDraft({ ...draft, nome: event.target.value })} onKeyDown={event => { if (event.key === 'Enter') setOpen(false) }} /></label>
+            <label className={styles.field}><span>Nome</span><input autoFocus value={String(draft.nome || '')} onChange={event => setDraft({ ...draft, nome: event.target.value })} onKeyDown={event => { if (event.key === 'Enter') void saveQuick() }} /></label>
             <div className={styles.fieldRow}>
               <label className={styles.field}><span>Meta</span><input type="number" min="1" step="0.1" value={Number(draft.meta || 1)} onChange={event => setDraft({ ...draft, meta: Number(event.target.value) })} /></label>
               <label className={styles.field}><span>Unidade</span><UnitField value={String(draft.unidade || '')} onChange={unidade => setDraft({ ...draft, unidade })} /></label>
             </div>
             <ColorField value={draft.cor_hex} onChange={color => setDraft({ ...draft, cor_hex: color })} />
             <FrequencyEditor draft={draft} setDraft={setDraft} today={today} />
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'flex-end' }}>
+              <DraftButtons dirty={dirty} canSave={Boolean(String(draft.nome || '').trim())} onSave={() => void saveQuick()} onCancel={closeQuick} />
+            </div>
           </div>
         </Floating>
       ) : null}

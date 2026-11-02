@@ -4,7 +4,9 @@ import { useEffect, useRef, useState } from 'react'
 import type { MaiState } from '../../lib/v2/state'
 import type { InspectableItem } from './ContextDrawer'
 import { FilePreviewOverlay } from './FilePreviewOverlay'
-import { useAutosaveDraft } from './useAutosaveDraft'
+import { useManualDraft } from './useManualDraft'
+import { DraftButtons } from './shell/DraftFooter'
+import { askConfirm } from './shell/ConfirmDialog'
 
 type Row = Record<string, any>
 type Commit = (change: (current: MaiState) => MaiState) => void
@@ -87,17 +89,19 @@ export function NotesV4({ state, commit, createRequest, googleRpc = defaultGoogl
     if (snapshot._persisted === false) setDraft(current => current && String(current.id) === String(next.id) ? { ...current, _persisted: true } : current)
   }
 
-  useAutosaveDraft({ value: draft, identity: String(draft?.id || ''), enabled: Boolean(draft), save: persistDraft, delay: 220 })
+  const { dirty, saveNow, requestClose } = useManualDraft({ value: draft, identity: String(draft?.id || ''), enabled: Boolean(draft), save: persistDraft, what: 'nota' })
+  const closeDraft = () => void requestClose(() => setDraft(null))
+  const saveDraft = async () => { await saveNow(); setDraft(null) }
 
-  function quickAction(note: Row, kind: NoteAction) {
-    if (kind === 'delete' && !confirm('Excluir definitivamente esta nota e seus vínculos?')) return
+  async function quickAction(note: Row, kind: NoteAction) {
+    if (kind === 'delete' && !(await askConfirm({ title: 'Excluir nota?', message: 'A nota e seus vínculos serão excluídos definitivamente. Não dá para desfazer.' }))) return
     commit(current => ({ ...current, notes: kind === 'delete' ? rows(current.notes).filter(item => String(item.id) !== String(note.id)) : rows(current.notes).map(item => String(item.id) === String(note.id) ? { ...item, fixado: kind === 'pin' ? !item.fixado : item.fixado, arquivado: kind === 'archive' ? true : kind === 'restore' ? false : item.arquivado, ativo: kind === 'trash' ? false : kind === 'restore' ? true : item.ativo, data: new Date().toISOString() } : item) }))
     if (draft && String(draft.id) === String(note.id)) setDraft(null)
   }
 
-  function draftAction(kind: Exclude<NoteAction, 'pin'>) {
+  async function draftAction(kind: Exclude<NoteAction, 'pin'>) {
     if (!draft?.id) return
-    if (kind === 'delete') { if (!confirm('Excluir definitivamente esta nota e seus vínculos?')) return; commit(current => ({ ...current, notes: rows(current.notes).filter(item => String(item.id) !== String(draft.id)) })); setDraft(null); return }
+    if (kind === 'delete') { if (!(await askConfirm({ title: 'Excluir nota?', message: `“${String(draft.titulo || 'Sem título')}” será excluída definitivamente. Não dá para desfazer.` }))) return; commit(current => ({ ...current, notes: rows(current.notes).filter(item => String(item.id) !== String(draft.id)) })); setDraft(null); return }
     const next = normalized({ ...draft, arquivado: kind === 'archive' ? true : kind === 'restore' ? false : draft.arquivado, ativo: kind === 'trash' ? false : kind === 'restore' ? true : draft.ativo })
     commit(current => ({ ...current, notes: rows(current.notes).map(item => String(item.id) === String(next.id) ? next : item) }))
     setDraft(null)
@@ -124,7 +128,7 @@ export function NotesV4({ state, commit, createRequest, googleRpc = defaultGoogl
   async function removeAttachment(index: number) {
     if (!draft) return
     const file = rows(draft.anexos)[index]
-    if (file?.idDrive && confirm('Também mover este arquivo para a lixeira do Google Drive?')) await googleRpc('trashDriveItem', [file.idDrive]).catch(() => null)
+    if (file?.idDrive && await askConfirm({ title: 'Mover arquivo para a lixeira?', message: 'O arquivo também será movido para a lixeira do Google Drive.', confirmLabel: 'Mover', tone: 'default' })) await googleRpc('trashDriveItem', [file.idDrive]).catch(() => null)
     setDraft({ ...draft, anexos: rows(draft.anexos).filter((_, position) => position !== index) })
   }
 
@@ -139,12 +143,12 @@ export function NotesV4({ state, commit, createRequest, googleRpc = defaultGoogl
       <div className="mai-v3-note-list mai-notes-v4-list" data-tab={tab}>{visible.map(note => { const attachments = rows(note.anexos).length; return <article className="mai-notes-v4-row mai-item-row-v2" key={String(note.id)} draggable={tab === 'active'} onDragStart={event => event.dataTransfer.setData('text/note', String(note.id))} onDragOver={event => { if (tab === 'active') event.preventDefault() }} onDrop={event => { event.preventDefault(); reorder(event.dataTransfer.getData('text/note'), String(note.id)) }} onClick={() => setDraft({ ...note, anexos: rows(note.anexos), _persisted: true })}><span className="mai-notes-v4-row-icon" aria-hidden="true"><span className="material-symbols-rounded">notes</span></span><span className="mai-item-copy-v2 mai-notes-v4-row-copy"><span className="mai-item-titleline-v2"><strong>{note.titulo || 'Sem título'}</strong></span><span className="mai-item-subline-v2 mai-notes-v4-row-context"><span>{contextLabel(note)}</span><span>·</span><span>{formatDate(note.data)}</span>{attachments ? <><span>·</span><span className="mai-notes-v4-attachment-context"><span className="material-symbols-rounded">attach_file</span>{attachments} {attachments === 1 ? 'anexo' : 'anexos'}</span></> : null}</span></span>{tab !== 'trash' ? <button type="button" className="mai-notes-v4-row-action" title={note.fixado ? 'Desfixar' : 'Fixar'} aria-label={note.fixado ? 'Desfixar nota' : 'Fixar nota'} onClick={event => { event.stopPropagation(); quickAction(note, 'pin') }}><span className="material-symbols-rounded">{note.fixado ? 'keep_off' : 'keep'}</span></button> : null}</article> })}</div>
       {!visible.length ? <div className="mai-v3-empty-line mai-notes-v4-empty">{query ? 'Nenhuma nota encontrada.' : tab === 'active' ? 'Nenhuma nota criada.' : tab === 'archive' ? 'Nenhuma nota arquivada.' : 'A lixeira está vazia.'}</div> : null}
 
-      {draft ? <div className="mai-v3-create-layer mai-notes-v4-layer" onMouseDown={() => setDraft(null)}><form className="mai-notes-v4-drawer" onSubmit={event => event.preventDefault()} onMouseDown={event => event.stopPropagation()}>
-        <header className="mai-notes-v4-drawer-head"><div><small>{draft._persisted ? formatDate(draft.data) : 'Nova nota'}</small><strong>{draft._persisted ? 'Editar nota' : 'Nova nota'}</strong></div><button type="button" aria-label="Fechar" onClick={() => setDraft(null)}><span className="material-symbols-rounded">close</span></button></header>
+      {draft ? <div className="mai-v3-create-layer mai-notes-v4-layer" onMouseDown={closeDraft}><form className="mai-notes-v4-drawer" onSubmit={event => event.preventDefault()} onMouseDown={event => event.stopPropagation()}>
+        <header className="mai-notes-v4-drawer-head"><div><small>{draft._persisted ? formatDate(draft.data) : 'Nova nota'}</small><strong>{draft._persisted ? 'Editar nota' : 'Nova nota'}</strong></div><button type="button" aria-label="Fechar" onClick={closeDraft}><span className="material-symbols-rounded">close</span></button></header>
         <div className="mai-notes-v4-drawer-body"><div className="mai-notes-v4-note-options"><button type="button" data-active={draft.fixado === true} onClick={() => setDraft({ ...draft, fixado: !draft.fixado })}><span className="material-symbols-rounded">keep</span><span>{draft.fixado ? 'Fixada' : 'Fixar'}</span></button><label><span className="material-symbols-rounded">view_agenda</span><select value={draft.tamanho || 'normal'} onChange={event => setDraft({ ...draft, tamanho: event.target.value })}><option value="normal">Normal</option><option value="largo">Larga</option><option value="grande">Grande</option></select></label></div><input className="mai-notes-v4-title" autoFocus value={draft.titulo || ''} onChange={event => setDraft({ ...draft, titulo: event.target.value })} placeholder="Título da nota" /><RichNoteEditor value={String(draft.conteudo || '')} onChange={value => setDraft({ ...draft, conteudo: value })} />
           <section className="mai-notes-v4-attachments"><header><div><strong>Anexos</strong><span>{rows(draft.anexos).length ? `${rows(draft.anexos).length} ${rows(draft.anexos).length === 1 ? 'arquivo' : 'arquivos'}` : 'Google Drive'}</span></div><label><span className="material-symbols-rounded">attach_file_add</span><span>{uploading ? 'Enviando…' : 'Adicionar'}</span><input hidden type="file" disabled={uploading} onChange={event => void upload(event.target.files?.[0])} /></label></header><div>{rows(draft.anexos).map((file, index) => <article key={`${file.idDrive || file.nome}-${index}`}><span className="material-symbols-rounded">description</span><button type="button" className="mai-note-attachment-open" title={`Visualizar ${file.nome || 'arquivo'}`} onClick={() => setPreview(file)}><span>{file.nome || 'Arquivo'}</span></button><button type="button" aria-label={`Remover ${file.nome || 'arquivo'}`} onClick={() => void removeAttachment(index)}><span className="material-symbols-rounded">close</span></button></article>)}</div></section>
         </div>
-        <footer className="mai-notes-v4-drawer-footer"><div className="mai-notes-v4-danger-actions">{draft._persisted && tab === 'active' ? <button type="button" onClick={() => draftAction('archive')}><span className="material-symbols-rounded">archive</span>Arquivar</button> : null}{draft._persisted && tab === 'archive' ? <button type="button" onClick={() => draftAction('restore')}><span className="material-symbols-rounded">unarchive</span>Desarquivar</button> : null}{draft._persisted && tab !== 'trash' ? <button type="button" data-danger="true" onClick={() => draftAction('trash')}><span className="material-symbols-rounded">delete</span>Lixeira</button> : null}{draft._persisted && tab === 'trash' ? <><button type="button" onClick={() => draftAction('restore')}><span className="material-symbols-rounded">restore_from_trash</span>Restaurar</button><button type="button" data-danger="true" onClick={() => draftAction('delete')}><span className="material-symbols-rounded">delete_forever</span>Excluir</button></> : null}</div><span className="mai-autosave-status">Alterações salvas automaticamente</span></footer>
+        <footer className="mai-notes-v4-drawer-footer"><div className="mai-notes-v4-danger-actions">{draft._persisted && tab === 'active' ? <button type="button" onClick={() => draftAction('archive')}><span className="material-symbols-rounded">archive</span>Arquivar</button> : null}{draft._persisted && tab === 'archive' ? <button type="button" onClick={() => draftAction('restore')}><span className="material-symbols-rounded">unarchive</span>Desarquivar</button> : null}{draft._persisted && tab !== 'trash' ? <button type="button" data-danger="true" onClick={() => draftAction('trash')}><span className="material-symbols-rounded">delete</span>Lixeira</button> : null}{draft._persisted && tab === 'trash' ? <><button type="button" onClick={() => draftAction('restore')}><span className="material-symbols-rounded">restore_from_trash</span>Restaurar</button><button type="button" data-danger="true" onClick={() => draftAction('delete')}><span className="material-symbols-rounded">delete_forever</span>Excluir</button></> : null}</div><DraftButtons dirty={dirty} canSave={Boolean(String(draft.titulo || '').trim() || cleanText(draft.conteudo) || rows(draft.anexos).length)} onSave={() => void saveDraft()} onCancel={closeDraft} /></footer>
       </form></div> : null}
     </div>
     <FilePreviewOverlay file={preview} onClose={() => setPreview(null)} />
