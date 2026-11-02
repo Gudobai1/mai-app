@@ -146,7 +146,7 @@ export function ModernSidebar({ state, today, view, navigate, onSearch, onSettin
       <button type="button" className={styles.search} onClick={onSearch}>
         <SidebarIcon name="search" size={20} />
         <span>Buscar</span>
-        <span className={styles.kbd}>Ctrl K</span>
+        <span className={styles.kbd}>Ctrl Espaço</span>
       </button>
 
       <nav className={styles.nav} aria-label="Áreas">
