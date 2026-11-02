@@ -92,7 +92,6 @@ function dayHeading(day: string, today: string) {
 
 function useIsMobile() {
   const [mobile, setMobile] = useState(false)
-  const [manageCategories, setManageCategories] = useState(false)
   useEffect(() => {
     const query = window.matchMedia('(max-width: 900px)')
     const sync = () => setMobile(query.matches)
@@ -116,6 +115,7 @@ export function EmBreve({ state, today, commit, inspect, syncRange }: Props) {
   const mobile = useIsMobile()
   const quick = useQuickMenu()
   const saved = state.configs.upcomingView
+  const [manageCategories, setManageCategories] = useState(false)
   const [mode, setModeState] = useState<Mode>(saved === 'month' ? 'month' : saved === 'week' ? 'week' : 'list')
   const [selected, setSelected] = useState(today)
   const [anchor, setAnchor] = useState(weekStart(today))
