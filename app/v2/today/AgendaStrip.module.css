@@ -153,3 +153,16 @@
 .extSource.extSource { align-self: center; }
 .fold { top: 6px; right: 0; }
 .eventsHead { padding: 8px 0; }
+
+/* Mesmo desenho dos compromissos do Em breve */
+.events.events { padding: 0 36px 0 0; }
+.extList { gap: 0; }
+.ext.ext { align-items: center; gap: 10px; padding: 7px 4px; border-bottom: 0; border-radius: 8px; transition: background 0.12s; }
+.ext.ext:hover { background: var(--ds-surface-hover); }
+.ext:hover .extTitle { text-decoration: none; }
+.ext.ext i { margin-top: 0; }
+.extTitle { font-size: 14px; font-weight: var(--ds-fw-medium); }
+.extText { gap: 2px; }
+.extWhen.extWhen { display: inline-flex; align-items: center; gap: 4px; color: var(--ds-muted); font-weight: var(--ds-fw-regular, 400); }
+.ext[data-now] .extWhen.extWhen { color: var(--ds-accent); }
+.extSource.extSource b { margin-left: 4px; color: var(--ev); font-weight: var(--ds-fw-medium); }

@@ -144,7 +144,7 @@
 .cellMore { font-size: 11px; font-weight: var(--ds-fw-bold); color: var(--ds-muted); padding-left: 2px; }
 .cellMeta { display: flex; gap: 8px; font-size: 10.5px; font-weight: var(--ds-fw-bold); color: var(--ds-muted); }
 .cellMeta span { display: inline-flex; align-items: center; gap: 3px; }
-.monthSide { position: sticky; top: 16px; max-height: calc(100dvh - 40px); overflow-y: auto; }
+.monthSide { position: sticky; top: 16px; max-height: calc(100dvh - 40px); overflow-y: auto; border: 1px solid var(--ds-line); border-radius: 10px; padding: 12px 14px; box-sizing: border-box; }
 .monthSide .day { margin-top: 0; }
 .monthTitle { display: flex; align-items: center; justify-content: space-between; }
 .monthTitle strong { font-size: 16px; font-weight: var(--ds-fw-heavy); }
@@ -241,3 +241,9 @@
 .groupHead i { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
 .groupCount { font-size: 11px; font-weight: var(--ds-fw-bold); }
 .groupHead > :last-child { margin-left: auto; }
+
+/* Tarefas compactas (visual de Hoje, sem espalhar o projeto) */
+.taskTight.taskTight { align-items: flex-start; padding: 9px 4px; gap: 10px; min-height: 0; }
+.taskTight.taskTight [class*='itemCheck'] { margin-top: 1px; }
+.taskTight [class*='taskMeta'] { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; }
+.projInline.projInline { margin-left: 0; max-width: 100%; display: inline-flex !important; }
