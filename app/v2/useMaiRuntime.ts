@@ -3,6 +3,8 @@
 import { isDarkMode, normalizeMode, normalizeTheme } from './theme'
 import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { describeChange, type ChangeInfo } from '../../lib/v2/changes'
+import { animateExit, trackItems } from '../../lib/v2/exit'
 import { addDays, plannerItems } from '../../lib/v2/planner'
 import { dateKey, emptyState, flushRemoteSync, hydrateRemoteState, loadState, type MaiState, normalizeState, persistState, subscribeSyncStatus, type SyncStatus } from '../../lib/v2/state'
 import { drivePreviewUrl, uploadDataUrlToDrive } from './DriveAsset'
@@ -71,6 +73,16 @@ function extensionFromMime(mime: string) {
 export function useMaiRuntime() {
   const router = useRouter()
   const [state, setState] = useState<MaiState>(() => emptyState())
+  const stateRef = useRef<MaiState>(state)
+  stateRef.current = state
+  const [toast, setToast] = useState<{ id: number; text: string } | null>(null)
+  const toastId = useRef(0)
+  useEffect(() => trackItems(), [])
+  useEffect(() => {
+    if (!toast) return
+    const timer = window.setTimeout(() => setToast(null), 6000)
+    return () => window.clearTimeout(timer)
+  }, [toast])
   const [ready, setReady] = useState(false)
   const [today, setToday] = useState('')
   const [googleConnected, setGoogleConnected] = useState<boolean | null>(null)
@@ -182,16 +194,30 @@ export function useMaiRuntime() {
   }, [notificationPermission, ready, state, today])
 
   function commit(change: (current: MaiState) => MaiState) {
-    setUndoCount(count => Math.min(50, count + 1))
-    setState(current => {
-      history.current = [...history.current.slice(-49), current]
-      return persistState(change(current))
+    const apply = () => {
+      setUndoCount(count => Math.min(50, count + 1))
+      setState(current => {
+        history.current = [...history.current.slice(-49), current]
+        return persistState(change(current))
+      })
+    }
+    // Excluir/arquivar/concluir: o item sai com uma animação curta e aparece o botão "Desfazer".
+    let info: ChangeInfo | null = null
+    try { info = describeChange(stateRef.current, change(stateRef.current)) } catch { info = null }
+    if (!info) return apply()
+    const found = info
+    const run = found.kind === 'complete' ? Promise.resolve() : animateExit(found.titles)
+    void run.then(() => {
+      apply()
+      toastId.current += 1
+      setToast({ id: toastId.current, text: found.text })
     })
   }
 
   function undo() {
     const previous = history.current.pop()
     if (!previous) return
+    setToast(null)
     setUndoCount(history.current.length)
     setState(persistState(previous))
   }
@@ -303,7 +329,7 @@ export function useMaiRuntime() {
   }
 
   return {
-    state, setState, ready, today, googleConnected, calendars, calendarDraft, setCalendarDraft, calendarBusy,
+    toast, dismissToast: () => setToast(null), state, setState, ready, today, googleConnected, calendars, calendarDraft, setCalendarDraft, calendarBusy,
     syncStatus, undoCount, installPrompt, importRef, commit, undo, googleRpc, syncCalendar, openGoogle,
     saveCalendars, disconnectGoogle, requestNotifications, install, exportData, importData, logout, flushRemoteSync,
   }

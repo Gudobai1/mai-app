@@ -34,7 +34,7 @@ html[data-mai-theme="dark"] .mai-v3-shell [class*="calendarPicker"]{color:var(--
 .mai-v4-task-date-group>header h2{margin:0;font-size:14px;font-weight:720;letter-spacing:-.015em;color:var(--v3-text)}
 .mai-v4-task-date-group>header span{font-size:9.5px;color:var(--v3-faint)}
 .mai-v4-task-date-view .mai-v3-task-row{border-top:0!important}
-.mai-v4-task-date-view .mai-v3-task-row:hover{background:var(--v3-hover)!important}
+.mai-v4-task-date-view .mai-v3-task-row:hover{}
 .mai-v4-task-date-view .mai-v3-completed-wrap{margin-top:22px}
 
 /* Classificação por projeto é agrupamento visual, não apenas ordenação. */

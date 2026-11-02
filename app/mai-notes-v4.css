@@ -24,7 +24,7 @@
 /* Mesma anatomia dos itens do MAI: ícone, título e contexto. Sem preview do conteúdo. */
 .mai-notes-v4-list{min-width:0;display:grid;gap:1px}
 .mai-notes-v4-row{min-width:0;min-height:54px;display:grid;grid-template-columns:28px minmax(0,1fr) 30px;align-items:center;gap:8px;padding:5px 6px;border:0!important;border-radius:6px;background:transparent!important;box-shadow:none!important;cursor:pointer;transition:background .12s ease}
-.mai-notes-v4-row:hover{background:var(--v3-hover,#f1f4ef)!important}
+.mai-notes-v4-row:hover{}
 .mai-notes-v4-row-icon{width:26px;height:26px;display:grid;place-items:center;color:var(--v3-muted,#7f887d)}
 .mai-notes-v4-row-icon .material-symbols-rounded{font-size:17px}
 .mai-notes-v4-row-copy{min-width:0;display:grid;gap:3px}

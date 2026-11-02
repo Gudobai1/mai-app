@@ -65,7 +65,7 @@ html body .mai-app-topbar .mai-app-topbar-panel[data-view="finance"] .mai-app-to
 .mai-v3-workspace .mai-v4-finance > .mai-finance-v4-tabs > button > .material-symbols-rounded{display:none!important}
 .mai-v3-workspace .mai-v4-finance > .mai-finance-v4-tabs > button::before{
   flex:0 0 auto;
-  font-family:"Material Symbols Rounded";
+  font-family:"Material Symbols Outlined";
   font-size:15px;
   line-height:1;
   font-weight:normal;
@@ -139,7 +139,7 @@ html body .mai-app-topbar .mai-app-topbar-panel[data-view="finance"] .mai-app-to
 }
 
 .mai-v3-workspace .mai-v4-finance .mai-finance-v4-account-list > article:hover,
-.mai-v3-workspace .mai-v4-finance .mai-finance-v4-card-list > article:hover{background:var(--v3-hover)!important}
+.mai-v3-workspace .mai-v4-finance .mai-finance-v4-card-list > article:hover{}
 
 .mai-v3-workspace .mai-v4-finance .mai-finance-v4-account-list > article > .mai-finance-entity-icon,
 .mai-v3-workspace .mai-v4-finance .mai-finance-v4-card-list > article > .mai-finance-entity-icon{
@@ -378,7 +378,7 @@ html body .mai-app-topbar .mai-app-topbar-panel[data-view="finance"] .mai-app-to
 
 .mai-v3-workspace .mai-v4-finance > .mai-finance-v4-period > .mai-finance-v4-month > button:first-child::before,
 .mai-v3-workspace .mai-v4-finance > .mai-finance-v4-period > .mai-finance-v4-month > button:last-child::before{
-  font-family:"Material Symbols Rounded"!important;
+  font-family:"Material Symbols Outlined"!important;
   font-weight:normal!important;
   font-style:normal!important;
   line-height:1!important;

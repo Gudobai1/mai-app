@@ -721,7 +721,7 @@
 }
 
 .item.item:hover {
-  background: var(--ds-surface-hover);
+  background: transparent;
 }
 
 .item.item:focus-visible,
@@ -1427,7 +1427,7 @@
 }
 
 .items .item.item:hover {
-  background: color-mix(in srgb, var(--ds-surface) 55%, transparent);
+  background: transparent;
 }
 
 .items .item.item:last-child {

@@ -23,7 +23,7 @@
 .mai-v3-subtask-list{display:grid}
 .mai-v3-subtask-row{min-height:45px;width:100%;border:0;border-top:1px solid #f1f3ef;background:transparent;display:grid;grid-template-columns:24px minmax(0,1fr) 18px;align-items:center;gap:8px;text-align:left;padding:0 3px;color:#4f574d}
 .mai-v3-subtask-row:first-child{border-top:0}
-.mai-v3-subtask-row:hover{background:#f8f9f7;border-radius:6px}
+.mai-v3-subtask-row:hover{border-radius:6px}
 .mai-v3-subtask-row>i{width:17px;height:17px;border:1.5px solid #b8beb7;border-radius:50%;display:grid;place-items:center;font-style:normal;font-size:9px;color:#fff}
 .mai-v3-subtask-row>i[data-completed="true"]{background:var(--ds-accent)!important;border-color:var(--ds-accent)!important}
 .mai-v3-subtask-row>span{min-width:0}

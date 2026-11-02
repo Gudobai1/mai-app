@@ -159,7 +159,7 @@ html[data-mai-theme="dark"] .mai-v4-project-item[data-active="true"]{color:color
 /* Sem linhas entre itens */
 .mai-v3-task-row,.mai-v3-appointment,.mai-v3-upcoming-item,.mai-v3-habit-today,.mai-v3-goal-row,.mai-v3-finance-rows>button,.mai-v3-account-list>article,.mai-v3-card-list>article,.mai-v3-report-list>article,.mai-v3-month-list section,.mai-v3-simple-list>article{border-top:0!important;border-right:0!important;border-bottom:0!important;border-left:0!important}
 .mai-v3-task-row,.mai-v3-appointment,.mai-v3-upcoming-item,.mai-v3-finance-rows>button{border-radius:6px!important}
-.mai-v3-task-row:hover,.mai-v3-appointment:hover,.mai-v3-upcoming-item:hover,.mai-v3-finance-rows>button:hover{background:var(--v3-hover)!important}
+.mai-v3-task-row:hover,.mai-v3-appointment:hover,.mai-v3-upcoming-item:hover,.mai-v3-finance-rows>button:hover{}
 .mai-v3-today-section,.mai-v3-simple-section{border:0!important}
 .mai-v3-inbox-projects{border:0!important}
 .mai-v3-month-list{border-color:transparent!important}

@@ -49,7 +49,7 @@
 .mai-finance-v4-row-action>span{display:none!important}
 .mai-finance-v4-row-action:hover{background:var(--v3-hover)!important;color:var(--v3-text)!important}
 .mai-finance-v4-quick-action{width:30px!important;height:30px!important;min-width:30px!important;min-height:30px!important;display:grid!important;place-items:center!important;justify-self:end!important;padding:0!important;border:0!important;border-radius:8px!important;background:transparent!important;color:var(--v3-muted)!important;font-size:0!important;cursor:pointer!important}
-.mai-finance-v4-quick-action::before{content:'add';font-family:'Material Symbols Rounded';font-size:18px;font-weight:400;line-height:1}
+.mai-finance-v4-quick-action::before{content:'add';font-family:'Material Symbols Outlined';font-size:18px;font-weight:400;line-height:1}
 .mai-finance-v4-quick-action:hover{background:var(--v3-hover)!important;color:var(--v3-text)!important}
 
 @media(max-width:720px){

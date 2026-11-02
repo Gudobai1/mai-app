@@ -359,7 +359,7 @@
   text-decoration: none;
 }
 
-.eventRow:hover { background: #fbfcfa; }
+.eventRow:hover {  }
 .eventTime { color: #686e67; font-size: 11px; }
 .eventBody { display: flex; min-width: 0; flex-direction: column; }
 .eventBody strong { overflow: hidden; font-size: 14px; font-weight: 480; text-overflow: ellipsis; white-space: nowrap; }
@@ -632,7 +632,7 @@
   cursor: pointer;
   text-align: left;
 }
-.contextRow:hover { background: #fbfcfa; }
+.contextRow:hover {  }
 .contextRow > span:first-child { display: grid; width: 18px; height: 18px; place-items: center; border: 1px solid #9aa297; border-radius: 6px; color: var(--accent); font-size: 10px; }
 .contextRow > span:nth-child(2) { display: flex; min-width: 0; flex-direction: column; }
 .contextRow strong { overflow: hidden; font-size: 14px; font-weight: 480; text-overflow: ellipsis; white-space: nowrap; }
@@ -722,7 +722,7 @@
   cursor: pointer;
   text-align: left;
 }
-.noteRow:hover, .simpleRow:hover { background: #fbfcfa; }
+.noteRow:hover, .simpleRow:hover {  }
 .noteRow > span:first-child { color: var(--accent); font-size: 10px; }
 .noteRow > span:nth-child(2), .simpleRow > span { display: flex; min-width: 0; flex-direction: column; }
 .noteRow strong, .simpleRow strong { overflow: hidden; font-size: 13px; font-weight: 540; text-overflow: ellipsis; white-space: nowrap; }

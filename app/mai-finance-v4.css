@@ -20,7 +20,7 @@
 .mai-finance-v4-section-head>button{min-height:32px;display:inline-flex;align-items:center;gap:5px;padding:0 9px;border:0;border-radius:8px;background:transparent;color:var(--v3-muted);font-size:10px;font-weight:620;cursor:pointer}
 .mai-finance-v4-section-head>button:hover{background:var(--v3-hover);color:var(--v3-text)}.mai-finance-v4-section-head>button .material-symbols-rounded{font-size:16px}
 .mai-finance-v4-row{min-height:51px;display:grid;grid-template-columns:26px minmax(0,1fr) auto;align-items:center;gap:6px;padding:4px 5px;border:0!important;border-radius:6px;background:transparent!important;box-shadow:none!important}
-.mai-finance-v4-row:hover{background:var(--v3-hover)!important}
+.mai-finance-v4-row:hover{}
 .mai-finance-v4-status{width:22px;height:22px;display:grid;place-items:center;padding:0;border:1.5px solid var(--v3-faint,#abb2a9);border-radius:50%;background:transparent;color:#fff;font-size:10px;font-weight:700;cursor:pointer}
 .mai-finance-v4-status[data-paid="true"]{border-color:var(--mai-success,#5d8a68);background:var(--mai-success,#5d8a68)}
 .mai-finance-v4-status[data-partial="true"]{border-color:#b18a43;color:#b18a43}

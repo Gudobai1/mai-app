@@ -2,7 +2,7 @@
 
 import { DragEvent, FormEvent, useEffect, useMemo, useState } from 'react'
 import { addDays, PlannerItem, plannerItems } from '../../lib/v2/planner'
-import { nextOccurrenceIds, onlyNextOccurrences } from '../../lib/v2/series'
+import { hiddenOccurrenceIds } from '../../lib/v2/series'
 import { MaiState, nextRepeat } from '../../lib/v2/state'
 import styles from './mai-v2.module.css'
 import type { SecondaryView } from './app-types'
@@ -65,7 +65,9 @@ export function AgendaView({ state, today, connected, commit, googleRpc, refresh
   const nextOnlyAgenda = Boolean((state.configs.nextOnlyByModule as Record<string, boolean> | undefined)?.agenda)
   const allItems = useMemo(() => {
     const items = plannerItems(state, range.start, range.end)
-    return nextOnlyAgenda ? onlyNextOccurrences(items, nextOccurrenceIds(state, today)) : items
+    if (!nextOnlyAgenda) return items
+    const hidden = hiddenOccurrenceIds(state, today)
+    return items.filter(item => !hidden.has(item.id))
   }, [state, range.start, range.end, nextOnlyAgenda, today])
   const visible = allItems.filter(item => filters[item.kind])
 
