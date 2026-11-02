@@ -652,6 +652,7 @@ function TaskBody({ task, state, today, commit, register, close, openTask }: { t
                     }}
                   />
                   <textarea className={styles.composerDesc} rows={1} value={subDesc} placeholder="Descrição" onChange={event => setSubDesc(event.target.value)} />
+                  <div className={styles.composerBar}>
                   <div className={styles.composerChips}>
                     <button ref={subDateRef} type="button" className={styles.subChip} style={{ '--chip-color': subDue && subDue < today ? 'var(--ds-danger)' : 'var(--ds-warn)' } as CSSProperties} data-empty={!subDue || undefined} onClick={() => setSubPicker('date')}>
                       <Icon name="calendar_today" size={14} />{subDue ? friendlyDate(subDue, today) : 'Data'}
@@ -697,6 +698,7 @@ function TaskBody({ task, state, today, commit, register, close, openTask }: { t
                   <div className={styles.composerActions}>
                     <button type="button" className={styles.composerAdd} disabled={!subtask.trim()} onClick={addSubtask}>Adicionar</button>
                     <button type="button" className={styles.composerCancel} onClick={() => { setComposing(false); setSubtask(''); setSubDesc(''); setSubDue(''); setSubTime(''); setSubPriority(4); setSubRepeat(''); setSubReminder('') }}>Cancelar</button>
+                  </div>
                   </div>
                 </div>
               ) : (

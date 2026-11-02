@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState, type CSSProperties, type MouseEvent as ReactMouseEvent } from 'react'
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, type MouseEvent as ReactMouseEvent } from 'react'
 import { createPortal } from 'react-dom'
 import type { MaiState } from '../../../lib/v2/state'
 import { Icon } from '../../ds'
@@ -9,6 +9,7 @@ import { driveAssetUrl } from '../DriveAsset'
 import { DatePicker, Floating, OptionList, ProjectPicker, ReminderPicker, RepeatPicker, TimePicker, repeatLabel as repeatText, reminderLabel, type PickerOption } from '../detail/Pickers'
 import { CategoryChooser } from '../detail/CategoryChooser'
 import { eventCategories, withEventCategory, type EventCategory } from '../../../lib/v2/event-categories'
+import { fold, parseNatural, replaceRange, type NlKind } from '../../../lib/v2/nlp'
 import styles from './QuickAdd.module.css'
 
 /**
@@ -80,19 +81,19 @@ export function QuickAdd({ kinds, initial, state, today, defaultProjectId, defau
   const [kind, setKind] = useState<QuickAddKind>(initial)
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
-  const [date, setDate] = useState(defaultDate ?? '')
-  const [priority, setPriority] = useState(4)
-  const [projectId, setProjectId] = useState(defaultProjectId || 'entrada')
-  const [section, setSection] = useState(defaultSection || '')
-  const [repeat, setRepeat] = useState('')
-  const [taskTime, setTaskTime] = useState('')
-  const [reminder, setReminder] = useState('')
+  const [dateS, setDateS] = useState(defaultDate ?? '')
+  const [priorityS, setPriorityS] = useState(4)
+  const [projectS, setProjectS] = useState(defaultProjectId || 'entrada')
+  const [sectionS, setSectionS] = useState(defaultSection || '')
+  const [repeatS, setRepeatS] = useState('')
+  const [taskTimeS, setTaskTimeS] = useState('')
+  const [reminderS, setReminderS] = useState('')
   const [allDay, setAllDay] = useState(false)
-  const [start, setStart] = useState('09:00')
-  const [end, setEnd] = useState('10:00')
+  const [startS, setStartS] = useState('09:00')
+  const [endS, setEndS] = useState('10:00')
   const [place, setPlace] = useState('')
   const [category, setCategory] = useState<EventCategory | null>(null)
-  const [amount, setAmount] = useState('')
+  const [amountS, setAmountS] = useState('')
   const [finType, setFinType] = useState<'despesa' | 'receita'>('despesa')
   const [accountId, setAccountId] = useState('')
   const [picker, setPicker] = useState<Picker>('')
@@ -101,7 +102,85 @@ export function QuickAdd({ kinds, initial, state, today, defaultProjectId, defau
 
   const projects = rows(state.projects).filter(item => item.ativo !== false)
   const accounts = rows((state.finance as Row | undefined)?.accounts)
+
+  // Linguagem natural: o que for digitado no nome vira data, horário, prioridade etc.
+  const [muted, setMuted] = useState<Set<NlKind>>(new Set())
+  const [caret, setCaret] = useState(0)
+  const [suggestIndex, setSuggestIndex] = useState(0)
+  const nl = useMemo(() => parseNatural(title, { today, projects, ignore: muted, kinds: kind === 'task' ? ['date', 'time', 'priority', 'repeat', 'reminder', 'project'] : kind === 'event' ? ['date', 'time', 'end', 'repeat'] : ['date', 'amount'] }), [title, today, projects, muted, kind]) // eslint-disable-line react-hooks/exhaustive-deps
+  const mute = (which: NlKind) => setMuted(current => (current.has(which) ? current : new Set(current).add(which)))
+  const fromNl = (which: NlKind) => nl.tokens.some(token => token.kind === which)
+  /** O ×: desfaz o que foi entendido (a palavra volta ao nome). */
+  const undoNl = (which: NlKind) => (event: ReactMouseEvent) => { event.stopPropagation(); mute(which) }
+
+  const dateBase = nl.date ?? dateS
+  const setDate = (value: string) => { setDateS(value); mute('date') }
+  const priority = nl.priority ?? priorityS
+  const setPriority = (value: number) => { setPriorityS(value); mute('priority') }
+  const projectId = nl.projectId ?? projectS
+  const section = nl.projectId ? (nl.section || '') : sectionS
+  const setProjectId = (value: string) => { setProjectS(value); mute('project') }
+  const setSection = (value: string) => { setSectionS(value) }
+  const repeat = nl.repeat ?? repeatS
+  const setRepeat = (value: string) => { setRepeatS(value); mute('repeat') }
+  const taskTime = kind === 'task' ? (nl.time ?? taskTimeS) : taskTimeS
+  const setTaskTime = (value: string) => { setTaskTimeS(value); mute('time') }
+  const date = dateBase || (kind === 'task' && taskTime ? today : '')
+  const reminder = nl.reminder ?? reminderS
+  const setReminder = (value: string) => { setReminderS(value); mute('reminder') }
+  const start = kind === 'event' ? (nl.time ?? startS) : startS
+  const setStart = (value: string) => { setStartS(value); mute('time') }
+  const end = kind === 'event' ? (nl.end ?? endS) : endS
+  const setEnd = (value: string) => { setEndS(value); mute('end') }
+  const amount = nl.amount !== undefined ? String(nl.amount).replace('.', ',') : amountS
+  const setAmount = (value: string) => { setAmountS(value); mute('amount') }
+  const cleanTitle = nl.title.trim() || title.trim()
   const project = projects.find(item => String(item.id) === projectId)
+
+  // Sugestões ao digitar #, ! ou @.
+  const word = useMemo(() => {
+    const upto = title.slice(0, caret)
+    const startAt = Math.max(upto.lastIndexOf(' '), upto.lastIndexOf('\n')) + 1
+    const text = upto.slice(startAt)
+    return /^[#!@]/.test(text) ? { start: startAt, end: caret, text } : null
+  }, [title, caret])
+  const suggestions = useMemo(() => {
+    if (!word || kind === 'finance') return []
+    const query = fold(word.text.slice(1))
+    if (word.text.startsWith('#') && kind === 'task') {
+      const list: Array<{ label: string; insert: string; icon: string }> = []
+      for (const item of projects) {
+        const name = String(item.nome || '')
+        const parent = projects.find(other => String(other.id) === String(item.parent_id || ''))
+        const path = parent ? `${String(parent.nome)}/${name}` : name
+        if (!query || fold(path).includes(query)) list.push({ label: path, insert: `#${path}`, icon: 'folder' })
+        for (const sec of Array.isArray(item.secoes) ? item.secoes.map(String) : []) {
+          if (query && !fold(`${path}/${sec}`).includes(query)) continue
+          list.push({ label: `${path}/${sec}`, insert: `#${path}/${sec}`, icon: 'view_agenda' })
+        }
+      }
+      return list.slice(0, 6)
+    }
+    if (word.text.startsWith('!') && kind === 'task') return ['alta', 'média', 'baixa'].filter(item => !query || fold(item).startsWith(query)).map(item => ({ label: item, insert: `!${item}`, icon: 'flag' }))
+    if (word.text.startsWith('@') && kind === 'task') return ['10min', '30min', '1h', '1d'].filter(item => !query || item.startsWith(query)).map(item => ({ label: `${item} antes`, insert: `@${item}`, icon: 'notifications' }))
+    return []
+  }, [word, projects, kind])
+  const applySuggestion = (index: number) => {
+    const item = suggestions[index]
+    if (!word || !item) return
+    const next = replaceRange(title, word.start, word.end, `${item.insert} `)
+    setTitle(next)
+    setCaret(word.start + item.insert.length + 1)
+    setSuggestIndex(0)
+  }
+  const titleKeys = (event: ReactKeyboardEvent<HTMLInputElement>) => {
+    if (suggestions.length) {
+      if (event.key === 'ArrowDown') { event.preventDefault(); setSuggestIndex(index => (index + 1) % suggestions.length); return }
+      if (event.key === 'ArrowUp') { event.preventDefault(); setSuggestIndex(index => (index - 1 + suggestions.length) % suggestions.length); return }
+      if (event.key === 'Enter' || event.key === 'Tab') { event.preventDefault(); applySuggestion(suggestIndex); return }
+    }
+    if (event.key === 'Enter') { event.preventDefault(); submit() }
+  }
 
   // Evento sem data usa o dia de hoje; tarefa pode ficar sem data.
   const eventDate = date || today
@@ -121,7 +200,7 @@ export function QuickAdd({ kinds, initial, state, today, defaultProjectId, defau
   }
 
   const submit = () => {
-    const name = title.trim()
+    const name = cleanTitle
     if (!name) return
     if (kind === 'finance') {
       const value = Math.abs(Number(String(amount).replace(',', '.')) || 0)
@@ -170,15 +249,40 @@ export function QuickAdd({ kinds, initial, state, today, defaultProjectId, defau
         ) : null}
 
         <div className={styles.fields}>
-          <input
-            autoFocus
-            className={styles.title}
-            value={title}
-            placeholder={kind === 'task' ? (parentId ? 'Nome da subtarefa' : 'Nome da tarefa') : kind === 'finance' ? 'Nome do lançamento' : 'Nome do compromisso'}
-            enterKeyHint="done"
-            onChange={event => setTitle(event.target.value)}
-            onKeyDown={event => { if (event.key === 'Enter') { event.preventDefault(); submit() } }}
-          />
+          <div className={styles.titleWrap}>
+            <div className={styles.titleMirror} aria-hidden="true">
+              {(() => {
+                const parts: Array<string | { text: string }> = []
+                let cursor = 0
+                for (const token of nl.tokens) {
+                  parts.push(title.slice(cursor, token.start))
+                  parts.push({ text: title.slice(token.start, token.end) })
+                  cursor = token.end
+                }
+                parts.push(title.slice(cursor))
+                return parts.map((part, index) => typeof part === 'string' ? <span key={index}>{part}</span> : <mark key={index}>{part.text}</mark>)
+              })()}
+            </div>
+            <input
+              autoFocus
+              className={styles.title}
+              value={title}
+              placeholder={kind === 'task' ? (parentId ? 'Nome da subtarefa' : 'Nome da tarefa') : kind === 'finance' ? 'Nome do lançamento' : 'Nome do compromisso'}
+              enterKeyHint="done"
+              onChange={event => { setTitle(event.target.value); setCaret(event.target.selectionStart ?? event.target.value.length); setSuggestIndex(0) }}
+              onSelect={event => setCaret(event.currentTarget.selectionStart ?? 0)}
+              onKeyDown={titleKeys}
+            />
+            {suggestions.length ? (
+              <div className={styles.suggest} role="listbox">
+                {suggestions.map((item, index) => (
+                  <button key={item.insert} type="button" role="option" aria-selected={index === suggestIndex} data-active={index === suggestIndex || undefined} onMouseDown={event => event.preventDefault()} onClick={() => applySuggestion(index)}>
+                    <Icon name={item.icon} size={16} filled={false} />{item.label}
+                  </button>
+                ))}
+              </div>
+            ) : null}
+          </div>
           <textarea className={styles.description} value={description} rows={inline ? 1 : 2} placeholder="Descrição" onChange={event => setDescription(event.target.value)} />
           {kind === 'finance' ? (
             <label className={styles.place}>
@@ -187,9 +291,18 @@ export function QuickAdd({ kinds, initial, state, today, defaultProjectId, defau
             </label>
           ) : null}
 
+          {kind === 'event' ? (
+            <label className={styles.place}>
+              <Icon name="location_on" size={16} filled={false} />
+              <input value={place} placeholder="Local" onChange={event => setPlace(event.target.value)} />
+            </label>
+          ) : null}
+        </div>
+
+        <div className={styles.footer}>
           <div className={styles.chips}>
             <button type="button" className={styles.chip} data-set={date || undefined} data-late={(kind === 'task' && date && date < today) || undefined} style={{ '--chip-color': 'var(--ds-warn)' } as CSSProperties} onClick={open('date')}>
-              <Icon name="event" size={16} filled={false} />{naturalDate(kind === 'event' ? eventDate : kind === 'finance' ? (date || today) : date, today)}
+              <Icon name="event" size={16} filled={false} />{naturalDate(kind === 'event' ? eventDate : kind === 'finance' ? (date || today) : date, today)}{fromNl('date') ? <span className={styles.chipX} role="button" aria-label="Desfazer" title="Desfazer" onClick={undoNl('date')}>×</span> : null}
             </button>
 
             {kind === 'finance' ? (
@@ -206,17 +319,17 @@ export function QuickAdd({ kinds, initial, state, today, defaultProjectId, defau
             ) : kind === 'task' ? (
               <>
                 <button type="button" className={styles.chip} data-set={taskTime || undefined} style={{ '--chip-color': 'var(--ds-lilac-fg)' } as CSSProperties} onClick={open('time')}>
-                  <Icon name="schedule" size={16} filled={false} />{taskTime || 'Horário'}
+                  <Icon name="schedule" size={16} filled={false} />{taskTime || 'Horário'}{fromNl('time') ? <span className={styles.chipX} role="button" aria-label="Desfazer" title="Desfazer" onClick={undoNl('time')}>×</span> : null}
                 </button>
                 <button type="button" className={styles.chip} data-set={priority < 4 || undefined} style={PRIORITY_COLOR[priority] ? ({ '--chip-color': PRIORITY_COLOR[priority] } as CSSProperties) : undefined} onClick={open('priority')}>
-                  <Icon name="flag" size={16} filled={priority < 4} />{priority < 4 ? PRIORITIES[priority - 1].label : 'Prioridade'}
+                  <Icon name="flag" size={16} filled={priority < 4} />{priority < 4 ? PRIORITIES[priority - 1].label : 'Prioridade'}{fromNl('priority') ? <span className={styles.chipX} role="button" aria-label="Desfazer" title="Desfazer" onClick={undoNl('priority')}>×</span> : null}
                 </button>
                 <button type="button" className={styles.chip} data-set={reminder || undefined} style={{ '--chip-color': 'var(--ds-sky-fg)' } as CSSProperties} onClick={open('reminder')}>
-                  <Icon name="notifications" size={16} filled={false} />{reminder ? reminderLabel(reminder) : 'Lembrete'}
+                  <Icon name="notifications" size={16} filled={false} />{reminder ? reminderLabel(reminder) : 'Lembrete'}{fromNl('reminder') ? <span className={styles.chipX} role="button" aria-label="Desfazer" title="Desfazer" onClick={undoNl('reminder')}>×</span> : null}
                 </button>
                 <button type="button" className={styles.chip} data-set={projectId !== 'entrada' || undefined} style={{ '--chip-color': String(project?.cor || 'var(--ds-text-2)') } as CSSProperties} onClick={open('project')}>
                   {project?.imagem_url ? <img className={styles.chipImg} src={driveAssetUrl(project.imagem_url)} alt="" /> : <Icon name={projectId === 'entrada' ? 'inbox' : String(project?.icone || 'folder')} size={16} filled={false} />}
-                  <span>{projectId === 'entrada' ? 'Entrada' : String(project?.nome || 'Projeto')}{section ? ` › ${section}` : ''}</span>
+                  <span>{projectId === 'entrada' ? 'Entrada' : String(project?.nome || 'Projeto')}{section ? ` › ${section}` : ''}</span>{fromNl('project') ? <span className={styles.chipX} role="button" aria-label="Desfazer" title="Desfazer" onClick={undoNl('project')}>×</span> : null}
                 </button>
               </>
             ) : (
@@ -238,22 +351,14 @@ export function QuickAdd({ kinds, initial, state, today, defaultProjectId, defau
 
             {kind === 'finance' ? null : (
               <button type="button" className={styles.chip} data-set={repeat || undefined} style={{ '--chip-color': 'var(--ds-mint-fg)' } as CSSProperties} onClick={open('repeat')}>
-                <Icon name="repeat" size={16} filled={false} />{repeatLabel}
+                <Icon name="repeat" size={16} filled={false} />{repeatLabel}{fromNl('repeat') ? <span className={styles.chipX} role="button" aria-label="Desfazer" title="Desfazer" onClick={undoNl('repeat')}>×</span> : null}
               </button>
             )}
           </div>
-
-          {kind === 'event' ? (
-            <label className={styles.place}>
-              <Icon name="location_on" size={16} filled={false} />
-              <input value={place} placeholder="Local" onChange={event => setPlace(event.target.value)} />
-            </label>
-          ) : null}
-        </div>
-
-        <div className={styles.footer}>
+          <div className={styles.actions}>
           <button type="button" className={styles.ghost} onClick={onClose}>Cancelar</button>
-          <button type="button" className={styles.primary} disabled={!title.trim()} onClick={submit}>{kind === 'task' ? (parentId ? 'Adicionar subtarefa' : 'Adicionar tarefa') : kind === 'finance' ? 'Adicionar lançamento' : 'Adicionar compromisso'}</button>
+          <button type="button" className={styles.primary} disabled={!cleanTitle} onClick={submit}>{kind === 'task' ? (parentId ? 'Adicionar subtarefa' : 'Adicionar tarefa') : kind === 'finance' ? 'Adicionar lançamento' : 'Adicionar compromisso'}</button>
+          </div>
         </div>
       </div>
 

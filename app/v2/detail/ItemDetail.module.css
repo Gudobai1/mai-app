@@ -1334,8 +1334,8 @@
 /* ===================================================== Cartão da tarefa (novo) */
 
 .panel[data-kind='task'] {
-  width: min(900px, 100%);
-  height: min(640px, calc(100dvh - 48px));
+  width: min(1120px, 100%);
+  height: min(800px, calc(100dvh - 48px));
   max-height: none;
 }
 
@@ -1557,3 +1557,8 @@
 .round.round.round:hover { color: var(--ds-muted); }
 .round.round.round:hover > * { opacity: 0.6; transform: none; }
 .round.round.round[data-checked] > * { opacity: 1; transform: none; }
+
+/* Subtarefa: opções e botões na mesma linha. */
+.composerBar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px 12px; }
+.composerBar .composerChips { flex: 1 1 260px; min-width: 0; }
+.composerBar .composerActions.composerActions.composerActions { flex: 0 0 auto; margin-left: auto; }
