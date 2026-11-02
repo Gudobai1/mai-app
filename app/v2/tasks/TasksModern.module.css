@@ -1375,7 +1375,7 @@
   animation: subIn 160ms ease-out both;
 }
 
-.subRow {
+.subRow { cursor: pointer;
   min-height: 36px;
   display: flex;
   align-items: center;
@@ -2389,7 +2389,7 @@
 .expand.expand > span:last-child, .expand.expand[data-open] > span:last-child { transform: none; }
 .cardMeta { align-items: center; gap: 12px; min-height: 28px; }
 .subList { margin: 0 0 4px 36px; padding: 0; gap: 0; }
-.subRow { min-height: 0; padding: 8px 0; gap: 10px; border-bottom: 1px solid var(--ds-line); background: transparent; border-radius: 0; }
+.subRow { cursor: pointer; min-height: 0; padding: 8px 0; gap: 10px; border-bottom: 1px solid var(--ds-line); background: transparent; border-radius: 0; }
 
 /* ===== Datas: futuro verde, hoje amarelo, vencido vermelho (padrão do app) ===== */
 .cardMeta > span[data-future] { color: var(--ds-success); }
@@ -2426,3 +2426,13 @@
 .list .card.card + .subList.subList .subRow.subRow { padding: 5px 0; min-height: 0; border-bottom: 0; background: transparent; gap: 10px; }
 .list .card.card + .subList.subList .subRow.subRow:hover { background: transparent; }
 .list .card.card + .subList.subList .subTitle.subTitle { font-size: 14px; }
+
+/* Concluído: só o check cinza, sem círculo. */
+.check.check.check[data-done],
+.subCheck.subCheck.subCheck[data-done],
+.list .subCheck.subCheck.subCheck[data-done],
+.page .subCheck.subCheck.subCheck[data-done] {
+  border-color: transparent;
+  background: transparent;
+  color: var(--ds-muted);
+}

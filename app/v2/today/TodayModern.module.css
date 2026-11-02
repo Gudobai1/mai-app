@@ -1295,7 +1295,7 @@
   animation: subIn 160ms ease-out both;
 }
 
-.subRow {
+.subRow { cursor: pointer;
   min-height: 36px;
   display: flex;
   align-items: center;
@@ -2062,3 +2062,13 @@
 .page .items .item.item:has(+ .subList) { border-bottom: 0; padding-bottom: 4px; }
 .page .items .item.item + .subList.subList { margin: 0; padding: 0 0 8px 34px; gap: 0; border-bottom: 1px solid var(--ds-line); animation: none; }
 .page .items .item.item + .subList.subList .subRow.subRow { padding: 5px 0; min-height: 0; border-bottom: 0; background: transparent; }
+
+/* Concluído: só o check cinza, sem círculo. */
+.check.check.check[data-done],
+.subCheck.subCheck.subCheck[data-done],
+.list .subCheck.subCheck.subCheck[data-done],
+.page .subCheck.subCheck.subCheck[data-done] {
+  border-color: transparent;
+  background: transparent;
+  color: var(--ds-muted);
+}

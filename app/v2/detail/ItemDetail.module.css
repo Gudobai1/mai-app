@@ -202,14 +202,11 @@
   border-color: var(--ds-danger);
 }
 
-.round[data-checked] {
-  border-color: var(--ds-muted);
-  background: var(--ds-muted);
-}
-
+.round[data-checked],
 .round[data-checked][data-tone='success'] {
-  border-color: var(--ds-success);
-  background: var(--ds-success);
+  border-color: transparent;
+  background: transparent;
+  color: var(--ds-muted);
 }
 
 .listRow .round {

@@ -279,3 +279,6 @@
 .taskTight [class*='itemCheck'] { transform-origin: center; }
 .groupHead { padding: 2px 2px; }
 .taskTight [class*='taskMeta']:empty { display: none; }
+
+/* Concluído: só o check cinza, sem círculo. */
+.chip[data-done] .chipCheck { background: transparent; border-color: transparent; color: var(--ds-muted); }

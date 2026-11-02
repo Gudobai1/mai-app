@@ -701,11 +701,11 @@ export function TodayModern({ state, today, commit, navigate, inspect, options, 
             const childLate = Boolean(childDue) && childDue < today && !child.concluida
             const childPriority = Number(child.prioridade || 4)
             return (
-              <div key={childId} role="listitem" className={styles.subRow} data-done={child.concluida || undefined}>
-                <button type="button" className={styles.subCheck} data-done={child.concluida || undefined} data-late={childLate || undefined} style={!child.concluida && PRIORITY_COLOR[childPriority] ? ({ borderColor: PRIORITY_COLOR[childPriority] } as CSSProperties) : undefined} aria-label={child.concluida ? `Reabrir subtarefa ${String(child.titulo || '')}` : `Concluir subtarefa ${String(child.titulo || '')}`} onClick={() => toggleTask(childId)}>
-                  {child.concluida ? <Icon name="check" size={11} /> : null}
+              <div key={childId} role="listitem" className={styles.subRow} data-done={child.concluida || undefined} onClick={() => inspectTask(child)}>
+                <button type="button" className={styles.subCheck} data-done={child.concluida || undefined} data-late={childLate || undefined} style={!child.concluida && PRIORITY_COLOR[childPriority] ? ({ borderColor: PRIORITY_COLOR[childPriority] } as CSSProperties) : undefined} aria-label={child.concluida ? `Reabrir subtarefa ${String(child.titulo || '')}` : `Concluir subtarefa ${String(child.titulo || '')}`} onClick={event => { event.stopPropagation(); toggleTask(childId) }}>
+                  {child.concluida ? <Icon name="check" size={16} /> : null}
                 </button>
-                <button type="button" className={styles.subTitle} onClick={() => inspectTask(child)}>{String(child.titulo || 'Subtarefa')}</button>
+                <button type="button" className={styles.subTitle}>{String(child.titulo || 'Subtarefa')}</button>
                 {childDue ? <span className={styles.subMeta} data-late={childLate || undefined}>{naturalDate(childDue, today)}</span> : null}
               </div>
             )
