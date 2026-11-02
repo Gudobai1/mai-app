@@ -150,8 +150,9 @@
 
 .error { margin: 0; padding: 0 12px 8px; color: var(--ds-danger); font-size: 12.5px; }
 
-.toolbar { display: flex; align-items: center; gap: 2px; padding: 4px 6px 6px; }
-.grow { flex: 1; }
+.toolbar { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 4px 6px 6px; }
+.tools { display: flex; align-items: center; gap: 2px; }
+.actions { display: flex; align-items: center; gap: 6px; }
 
 .tool {
   appearance: none;
@@ -179,14 +180,13 @@
 }
 .cancel { border: 1px solid var(--ds-line); background: transparent; color: var(--ds-text); font-weight: var(--ds-fw-medium); }
 .cancel:hover { background: var(--ds-surface-hover); }
-.send { margin-left: 6px; border: 1px solid var(--ds-accent); background: var(--ds-accent); color: #fff; font-weight: var(--ds-fw-bold); }
+.send { border: 1px solid var(--ds-accent); background: var(--ds-accent); color: #fff; font-weight: var(--ds-fw-bold); }
 .send:disabled { opacity: 0.45; cursor: default; }
 
 @media (max-width: 900px) {
   .area { font-size: 16px; }
-  .toolbar { flex-wrap: wrap; row-gap: 4px; }
+  .toolbar { flex-direction: column; align-items: stretch; gap: 4px; }
   .tool { width: 40px; height: 40px; }
-  .grow { display: none; }
-  .cancel, .send { margin-left: auto; }
+  .actions { justify-content: flex-end; }
   .cancel, .send { height: 40px; }
 }

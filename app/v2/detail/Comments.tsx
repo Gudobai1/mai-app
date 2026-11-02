@@ -2,6 +2,7 @@
 
 import { Fragment, useRef, useState, type ReactNode } from 'react'
 import { Icon } from '../../ds'
+import { askConfirm } from '../shell/ConfirmDialog'
 import { FilePreviewOverlay } from '../FilePreviewOverlay'
 import { uploadAttachment } from './upload'
 import styles from './Comments.module.css'
@@ -146,7 +147,8 @@ export function CommentsSection({ comments, onChange }: { comments: Comment[]; o
     setOpen(false)
   }
 
-  function removeComment(id: string) {
+  async function removeComment(id: string) {
+    if (!(await askConfirm({ title: 'Excluir comentário?', message: 'O comentário será excluído quando você salvar a tarefa.' }))) return
     onChange(comments.filter(comment => comment.id !== id))
   }
 
@@ -166,7 +168,7 @@ export function CommentsSection({ comments, onChange }: { comments: Comment[]; o
               <div className={styles.bubble}>
                 <div className={styles.meta}>
                   <span>{when(comment.criado_em)}</span>
-                  <button type="button" className={styles.remove} onClick={() => removeComment(comment.id)} aria-label="Excluir comentário" title="Excluir comentário"><Icon name="delete" size={15} filled={false} /></button>
+                  <button type="button" className={styles.remove} onClick={() => void removeComment(comment.id)} aria-label="Excluir comentário" title="Excluir comentário"><Icon name="delete" size={15} filled={false} /></button>
                 </div>
                 {comment.texto ? <RichText text={comment.texto} /> : null}
                 {comment.anexos?.length ? (
@@ -209,14 +211,17 @@ export function CommentsSection({ comments, onChange }: { comments: Comment[]; o
               ) : null}
               {error ? <p className={styles.error}>{error}</p> : null}
               <div className={styles.toolbar}>
-                {tool('Negrito', 'format_bold', () => wrap('**'))}
-                {tool('Itálico', 'format_italic', () => wrap('_'))}
-                {tool('Lista', 'format_list_bulleted', listItem)}
-                {tool('Link', 'link', link)}
-                {tool(busy ? 'Enviando…' : 'Anexar arquivo', 'attach_file', () => input.current?.click())}
-                <span className={styles.grow} />
-                <button type="button" className={styles.cancel} onClick={cancel}>Cancelar</button>
-                <button type="button" className={styles.send} disabled={!canSend} onClick={send}>Comentar</button>
+                <div className={styles.tools}>
+                  {tool('Negrito', 'format_bold', () => wrap('**'))}
+                  {tool('Itálico', 'format_italic', () => wrap('_'))}
+                  {tool('Lista', 'format_list_bulleted', listItem)}
+                  {tool('Link', 'link', link)}
+                  {tool(busy ? 'Enviando…' : 'Anexar arquivo', 'attach_file', () => input.current?.click())}
+                </div>
+                <div className={styles.actions}>
+                  <button type="button" className={styles.cancel} onClick={cancel}>Cancelar</button>
+                  <button type="button" className={styles.send} disabled={!canSend} onClick={send}>Comentar</button>
+                </div>
               </div>
             </>
           ) : (

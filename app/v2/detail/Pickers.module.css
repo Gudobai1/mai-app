@@ -398,3 +398,76 @@
 .layer.layer { background: rgba(0, 0, 0, 0.35); backdrop-filter: none; -webkit-backdrop-filter: none; }
 .quickChip.quickChip { background: transparent; border: 1px solid var(--ds-line); border-radius: 6px; }
 .quickChip.quickChip:hover { background: transparent; border-color: var(--ds-line-strong); }
+
+/* ------------------------------------------------ Personalizado (repetir e lembrete) */
+
+.custom { display: flex; flex-direction: column; gap: 12px; padding: 4px 2px 2px; }
+
+.segment {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2px;
+  padding: 2px;
+  border-radius: 8px;
+  background: var(--ds-surface-2);
+}
+.segment button {
+  appearance: none;
+  height: 32px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--ds-muted);
+  font: inherit;
+  font-size: 13px;
+  font-weight: var(--ds-fw-medium);
+  cursor: pointer;
+}
+.segment button[data-active] { background: var(--ds-surface); color: var(--ds-text); box-shadow: 0 0 0 1px var(--ds-line); }
+
+.customRow { display: flex; align-items: center; gap: 8px; }
+.customInput, .customSelect {
+  height: 38px;
+  box-sizing: border-box;
+  padding: 0 10px;
+  border: 1px solid var(--ds-line);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--ds-text);
+  font: inherit;
+  font-size: 14px;
+}
+.customInput { width: 76px; font-variant-numeric: tabular-nums; }
+.customSelect { flex: 1; min-width: 0; }
+.customInput:focus-visible, .customSelect:focus-visible { outline: 2px solid var(--ds-accent); outline-offset: 1px; }
+.customHint { color: var(--ds-muted); font-size: 14px; }
+
+.weekdays { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+.weekdays button {
+  appearance: none;
+  height: 36px;
+  border: 1px solid var(--ds-line);
+  border-radius: 50%;
+  background: transparent;
+  color: var(--ds-text);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+.weekdays button[data-active] { background: var(--ds-accent); border-color: var(--ds-accent); color: var(--ds-on-accent); }
+
+.customActions { display: flex; justify-content: flex-end; gap: 6px; }
+.customBack, .customOk {
+  appearance: none;
+  height: 34px;
+  padding: 0 14px;
+  border-radius: 6px;
+  font: inherit;
+  font-size: 13.5px;
+  cursor: pointer;
+}
+.customBack { border: 1px solid var(--ds-line); background: transparent; color: var(--ds-text); }
+.customOk { border: 1px solid var(--ds-accent); background: var(--ds-accent); color: var(--ds-on-accent); font-weight: var(--ds-fw-bold); }
+.customOk:disabled { opacity: .45; cursor: default; }
+.layer[data-sheet] .customInput, .layer[data-sheet] .customSelect { height: 44px; font-size: 16px; }
+.layer[data-sheet] .customBack, .layer[data-sheet] .customOk { height: 44px; }
