@@ -9,7 +9,7 @@ import type { InspectableItem } from './ContextDrawer'
 import styles from './SearchOverlay.module.css'
 
 /*
- * Busca do MAI: uma janela no centro, aberta com "/" ou Ctrl K.
+ * Busca do MAI: uma janela no centro, aberta com Ctrl Espaço ou "/".
  * Entende a mesma linguagem de adicionar (hoje, esta semana, !alta, #Projeto):
  * o que for reconhecido vira filtro; o resto é a palavra procurada.
  */
@@ -316,7 +316,7 @@ export function SearchOverlay({ state, today, query, setQuery, onClose, inspect,
           <span><kbd>Enter</kbd> abrir</span>
           <span><kbd>Tab</kbd> tipo</span>
           <span className={styles.footerGrow} />
-          <span>Abra com <kbd>/</kbd> ou <kbd>Ctrl K</kbd></span>
+          <span>Abra com <kbd>/</kbd> ou <kbd>Ctrl Espaço</kbd></span>
         </footer>
       </section>
     </div>
