@@ -2453,3 +2453,11 @@
 /* Adicionar subtarefa ao fim da lista aberta. */
 .subAddBtn.subAddBtn { appearance: none; display: inline-flex; align-items: center; gap: 6px; align-self: flex-start; margin: 2px 0 4px; padding: 4px 6px; border: 0; border-radius: 6px; background: transparent; color: var(--ds-muted); font: inherit; font-size: 13px; font-weight: var(--ds-fw-medium); cursor: pointer; }
 .subAddBtn.subAddBtn:hover { background: var(--ds-surface-hover); color: var(--ds-text); }
+
+/* Hover: só o check aparece, na cor do próprio círculo (prioridade, atraso ou cinza). Sem mudar borda nem fundo. */
+.check.check.check:not([data-done]):not([data-selecting]):hover,
+.subCheck.subCheck.subCheck:not([data-done]):hover { border-color: var(--check-color, var(--ds-line-strong)); color: var(--check-color, var(--ds-muted)); }
+.check.check.check[data-late]:not([data-done]):not([data-selecting]):hover,
+.subCheck.subCheck.subCheck[data-late]:not([data-done]):hover { border-color: var(--ds-danger); color: var(--ds-danger); }
+.check.check.check:not([data-done]):not([data-selecting]):hover > *,
+.subCheck.subCheck.subCheck:not([data-done]):hover > * { opacity: 0.9; }

@@ -206,6 +206,7 @@ export function Check({ checked, onCheckedChange, late, label, className, type =
       type={type}
       role="checkbox"
       aria-checked={checked}
+      data-late={late && !checked ? '' : undefined}
       aria-label={label}
       className={cx(styles.check, late && !checked && styles.checkLate, checked && styles.checkOn, className)}
       onClick={() => onCheckedChange?.(!checked)}
