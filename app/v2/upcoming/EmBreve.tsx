@@ -122,6 +122,7 @@ export function EmBreve({ state, today, commit, inspect, syncRange }: Props) {
   const [scrollTo, setScrollTo] = useState({ day: today, n: 0 })
   const stripRef = useRef<HTMLDivElement | null>(null)
   const sentinelRef = useRef<HTMLDivElement | null>(null)
+  const pageRef = useRef<HTMLDivElement | null>(null)
   const weekBodyRef = useRef<HTMLDivElement | null>(null)
   const lockUntil = useRef(0)
 
@@ -381,9 +382,9 @@ export function EmBreve({ state, today, commit, inspect, syncRange }: Props) {
           <div className={todayStyles.taskMeta}>
             {when ? <span className={`${todayStyles.dateTag} ${entry.late ? todayStyles.dateLate : entry.day === today ? todayStyles.dateToday : ''}`}><Icon name={withDate ? 'calendar_today' : 'schedule'} size={14} filled={false} />{when}</span> : null}
             {entry.recurring ? <span className={todayStyles.dateTag}><Icon name="repeat" size={14} filled={false} />Repete</span> : null}
-            {entry.project ? <span className={`${todayStyles.projLabel} ${styles.projInline}`} style={{ color: entry.project.color }}>{entry.project.name}<b>#</b></span> : null}
           </div>
         </div>
+        {entry.project ? <span className={`${todayStyles.projLabel} ${styles.projRight}`} style={{ color: entry.project.color }}>{entry.project.name}<b>#</b></span> : null}
       </div>
     )
   }
@@ -685,61 +686,25 @@ export function EmBreve({ state, today, commit, inspect, syncRange }: Props) {
   )
 
   const weekDesktop = (
-    <div className={styles.weekGrid}>
-      <div className={styles.weekHeadRow}>
-        <span className={styles.gutter} />
-        {weekDays.map(day => (
-          <button key={day} type="button" className={styles.weekHead} data-today={day === today || undefined} data-selected={selected === day || undefined} onClick={() => setSelected(day)}>
-            <span>{WEEKDAY[dayDate(day).getDay()]}</span>
-            <b>{Number(day.slice(8))}</b>
-          </button>
-        ))}
-      </div>
-      <div className={styles.weekTop}>
-        <span className={styles.gutter}><small>Dia todo</small></span>
-        {weekDays.map(day => {
-          const items = byDay.get(day) || []
-          const top = items.filter(entry => entry.allDay || entry.kind !== 'event')
-          return (
-            <div key={day} className={styles.weekTopCell} data-today={day === today || undefined}>
-              {top.filter(entry => entry.kind === 'event').map(entry => (
-                <button key={entry.id} type="button" className={styles.weekAllDay} style={{ '--ev': entry.color } as CSSProperties} onClick={() => open(entry)} {...quick.bind(() => menuFor(entry))}>{entry.title}</button>
-              ))}
-              {top.filter(entry => entry.kind !== 'event').map(chip)}
+    <div className={styles.weekCols}>
+      {weekDays.map(day => {
+        const items = byDay.get(day) || []
+        return (
+          <section key={day} className={styles.weekCol} data-today={day === today || undefined} data-selected={selected === day || undefined}>
+            <button type="button" className={styles.weekHead} data-today={day === today || undefined} data-selected={selected === day || undefined} onClick={() => setSelected(day)}>
+              <span>{WEEKDAY[dayDate(day).getDay()]}</span>
+              <b>{Number(day.slice(8))}</b>
+            </button>
+            <div className={styles.weekItems}>
+              {items.map(entry => entry.kind === 'event' ? (
+                <button key={entry.id} type="button" className={styles.weekEvent} data-passed={passed(entry) || undefined} style={{ '--ev': entry.color } as CSSProperties} onClick={() => open(entry)} {...quick.bind(() => menuFor(entry))}>
+                  <i /><span>{entry.title}</span>
+                </button>
+              ) : chip(entry))}
             </div>
-          )
-        })}
-      </div>
-      <div className={styles.weekScroll} ref={weekBodyRef}>
-        <div className={styles.weekBodyGrid} style={{ height: HOUR * 24 }}>
-          <div className={styles.hours}>
-            {Array.from({ length: 24 }, (_, hour) => <span key={hour} style={{ top: hour * HOUR }}>{hour ? `${String(hour).padStart(2, '0')}:00` : ''}</span>)}
-          </div>
-          {weekDays.map(day => (
-            <div key={day} className={styles.dayCol} data-today={day === today || undefined} onClick={() => setSelected(day)}>
-              {place(byDay.get(day) || []).map(item => {
-                const length = item.end - item.start
-                return (
-                  <button
-                    key={item.entry.id}
-                    type="button"
-                    className={styles.block}
-                    data-passed={passed(item.entry) || undefined}
-                    data-short={length <= 40 || undefined}
-                    style={{ '--ev': item.entry.color, top: (item.start / 60) * HOUR, height: Math.max(22, (length / 60) * HOUR - 2), left: `calc(${(item.lane / item.lanes) * 100}% + 2px)`, width: `calc(${100 / item.lanes}% - 4px)` } as CSSProperties}
-                    onClick={event => { event.stopPropagation(); open(item.entry) }}
-                    {...quick.bind(() => menuFor(item.entry))}
-                  >
-                    <strong>{item.entry.title}</strong>
-                    <span>{item.entry.time}{item.entry.end ? ` – ${item.entry.end}` : ''}</span>
-                  </button>
-                )
-              })}
-              {day === today ? <i className={styles.nowLine} style={{ top: (nowMinutes / 60) * HOUR }} /> : null}
-            </div>
-          ))}
-        </div>
-      </div>
+          </section>
+        )
+      })}
     </div>
   )
 
@@ -835,9 +800,31 @@ export function EmBreve({ state, today, commit, inspect, syncRange }: Props) {
     return [...map.values()].sort((a, b) => a.label.localeCompare(b.label, 'pt-BR'))
   })()
 
+  // Semana e Mês: a página ocupa exatamente a tela, sem rolagem; só as listas rolam por dentro.
+  useLayoutEffect(() => {
+    const page = pageRef.current
+    if (!page) return
+    if (mode === 'list' || mobile) { page.style.removeProperty('height'); return }
+    const html = document.documentElement
+    const body = document.body
+    const before = [html.style.overflow, body.style.overflow]
+    html.style.overflow = 'hidden'
+    body.style.overflow = 'hidden'
+    window.scrollTo(0, 0)
+    const fit = () => { page.style.height = `${Math.max(360, window.innerHeight - page.getBoundingClientRect().top - 16)}px` }
+    fit()
+    window.addEventListener('resize', fit)
+    return () => {
+      window.removeEventListener('resize', fit)
+      html.style.overflow = before[0]
+      body.style.overflow = before[1]
+      page.style.removeProperty('height')
+    }
+  }, [mode, mobile])
+
   /* ------------------------------------------------------------ Tela */
   return (
-    <div className={styles.page} data-mode={mode}>
+    <div ref={pageRef} className={styles.page} data-mode={mode}>
       <header className={styles.bar}>
         <div className={styles.views} role="tablist" aria-label="Visualização">
           {([['list', 'Lista', 'format_list_bulleted'], ['week', 'Semana', 'view_week'], ['month', 'Mês', 'calendar_month']] as [Mode, string, string][]).map(([id, label, icon]) => (

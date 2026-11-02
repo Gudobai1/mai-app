@@ -209,7 +209,7 @@
 
 /* Página fixa no desktop: só a lista, a semana e o mês rolam por dentro. */
 @media (min-width: 901px) {
-  .page[data-mode='week'], .page[data-mode='month'] { position: sticky; top: 0; height: calc(100dvh - 48px); padding: 0; overflow: hidden; }
+  .page[data-mode='week'], .page[data-mode='month'] { padding: 0; overflow: hidden; box-sizing: border-box; }
   .weekGrid { flex: 1; min-height: 0; }
   .weekScroll { flex: 1; max-height: none; min-height: 0; }
   .monthWrap { flex: 1; min-height: 0; align-items: stretch; }
@@ -247,3 +247,23 @@
 .taskTight.taskTight [class*='itemCheck'] { margin-top: 1px; }
 .taskTight [class*='taskMeta'] { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; }
 .projInline.projInline { margin-left: 0; max-width: 100%; display: inline-flex !important; }
+
+.projRight.projRight { margin-left: auto; align-self: center; max-width: 40%; }
+.taskTight [class*='taskMain'] { flex: 1; min-width: 0; }
+
+/* Semana: colunas por dia, sem horários */
+.weekCols { flex: 1; min-height: 0; display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); border: 1px solid var(--ds-line); border-radius: 10px; overflow: hidden; }
+.weekCol { min-width: 0; min-height: 0; display: flex; flex-direction: column; border-left: 1px solid var(--ds-line); }
+.weekCol:first-child { border-left: 0; }
+.weekCol .weekHead { border-left: 0; border-bottom: 1px solid var(--ds-line); }
+.weekItems { flex: 1; min-height: 0; overflow-y: auto; padding: 6px; display: flex; flex-direction: column; gap: 4px; scrollbar-width: thin; scrollbar-color: var(--ds-line-strong) transparent; }
+.weekEvent { appearance: none; display: flex; align-items: center; gap: 6px; min-width: 0; padding: 4px 6px; border: 0; border-radius: 7px; background: transparent; color: var(--ds-text-2); font: inherit; font-size: 11.5px; font-weight: var(--ds-fw-medium); text-align: left; cursor: pointer; }
+.weekEvent:hover { background: var(--ds-surface-hover); }
+.weekEvent i { width: 8px; height: 8px; flex-shrink: 0; border-radius: 50%; background: var(--ev); }
+.weekEvent span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.weekEvent[data-passed] { opacity: 0.55; }
+.weekCol[data-today] { background: color-mix(in srgb, var(--ds-accent) 5%, transparent); }
+.cell { min-height: 0; }
+.taskTight.taskTight { flex-wrap: nowrap; padding-right: 6px; }
+.projRight.projRight { align-self: flex-start; margin-top: 2px; flex-shrink: 0; }
+.projRight.projRight { margin-right: 14px; }
