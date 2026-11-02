@@ -191,6 +191,11 @@ function Wheel({ count, value, onChange, label, labels }: { count: number; value
   const timer = useRef<number | undefined>(undefined)
   useLayoutEffect(() => { if (ref.current) ref.current.scrollTop = value * WHEEL_ROW }, []) // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => () => window.clearTimeout(timer.current), [])
+  // Mudança de fora (ex.: botão Completar): leva a coluna até o valor.
+  useEffect(() => {
+    const el = ref.current
+    if (el && Math.abs(el.scrollTop - value * WHEEL_ROW) > 2) el.scrollTo({ top: value * WHEEL_ROW, behavior: 'smooth' })
+  }, [value])
   // Mouse: cada rolada anda um número só.
   const current = useRef(value)
   current.current = value

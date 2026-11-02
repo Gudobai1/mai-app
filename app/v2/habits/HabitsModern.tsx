@@ -375,7 +375,9 @@ export function ValueDialog({ habit, day, current, hasEntry, onClose, onSave, on
   }, [onClose])
   const add = Number(String(value).replace(',', '.'))
   const amount = current + add
-  const options = Array.from({ length: Math.round((Math.max(goal * 2, 10)) / step) }, (_, i) => Math.round((i + 1) * step * 100) / 100)
+  const remaining = Math.max(0, Math.round((goal - current) * 100) / 100)
+  const baseOptions = Array.from({ length: Math.round((Math.max(goal * 2, 10)) / step) }, (_, i) => Math.round((i + 1) * step * 100) / 100)
+  const options = remaining > 0 && !baseOptions.includes(remaining) ? [...baseOptions, remaining].sort((a, b) => a - b) : baseOptions
   const index = options.findIndex(item => item === add)
   return (
     <div className={styles.layer} onMouseDown={onClose}>
@@ -386,17 +388,23 @@ export function ValueDialog({ habit, day, current, hasEntry, onClose, onSave, on
         </header>
         {quantitative ? (
           <div className={styles.valueBody}>
-            <p className={styles.valueSummary}>Já feito <strong>{Math.round(current * 100) / 100}</strong> de {goal} {String(habit.unidade || '')}{Number.isFinite(add) && add > 0 ? <> · ficará <strong>{Math.round(amount * 100) / 100}</strong></> : null}</p>
+            <div className={styles.valueProgress} aria-hidden="true">
+              <i style={{ width: `${Math.min(100, (current / goal) * 100)}%` }} />
+              <b style={{ left: `${Math.min(100, (current / goal) * 100)}%`, width: `${Math.max(0, Math.min(100 - Math.min(100, (current / goal) * 100), (Number.isFinite(add) ? add : 0) / goal * 100))}%` }} />
+            </div>
+            <p className={styles.valueSummary}><strong>{Math.round(current * 100) / 100}</strong> de {goal} {String(habit.unidade || '')} hoje</p>
+            <p className={styles.valueAsk}>Quanto adicionar?</p>
             <WheelPicker labels={options.map(item => String(item))} index={Math.max(0, index)} onChange={next => setValue(String(options[next]))} label="Quanto adicionar" unit={String(habit.unidade || '')} />
+            {remaining > 0 ? <button type="button" className={styles.complete} onClick={() => onSave(goal)}><Icon name="check" size={16} filled={false} />Completar meta (+{remaining} {String(habit.unidade || '')})</button> : <p className={styles.valueDone}>Meta do dia já atingida.</p>}
           </div>
         ) : null}
         <footer className={styles.panelFoot}>
+          <button type="button" className={styles.textDanger} onClick={onFail}>Marcar falha</button>
+          {hasEntry ? <button type="button" className={styles.textButton} onClick={onClear}>Limpar</button> : null}
+          <button type="button" className={`${styles.textButton} ${styles.footCancel}`} onClick={onClose}>Cancelar</button>
           {quantitative
             ? <button type="button" className={styles.textPrimary} disabled={!Number.isFinite(add) || add <= 0} onClick={() => onSave(amount)}>Adicionar</button>
             : <button type="button" className={styles.textPrimary} onClick={() => onSave(goal)}>Concluir</button>}
-          <button type="button" className={styles.textButton} onClick={onClose}>Cancelar</button>
-          {hasEntry ? <button type="button" className={styles.textButton} onClick={onClear}>Limpar</button> : null}
-          <button type="button" className={styles.textDanger} onClick={onFail}>Marcar falha</button>
         </footer>
       </section>
     </div>
