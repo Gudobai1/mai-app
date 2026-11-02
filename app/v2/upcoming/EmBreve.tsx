@@ -130,10 +130,10 @@ export function EmBreve({ state, today, commit, inspect, syncRange }: Props) {
     ? normalizeFilters(state.configs.upcomingFilters)
     : { ...EMPTY_FILTERS, hiddenKinds: KINDS.filter(kind => legacyShow[kind.id] === false).map(kind => kind.id) }
   const filtersKey = JSON.stringify(filters)
-  const display: UpcomingDisplay = { ...DEFAULT_DISPLAY, ...((state.configs.upcomingDisplay || {}) as Partial<UpcomingDisplay>) }
+  const display: UpcomingDisplay = { ...DEFAULT_DISPLAY, ...((state.configs.upcomingGrouping || {}) as Partial<UpcomingDisplay>) }
   const visible = (kind: Kind) => !filters.hiddenKinds.includes(kind)
   const setFilters = (next: UpcomingFilters) => commit(current => ({ ...current, configs: { ...current.configs, upcomingFilters: next } }))
-  const setDisplay = (next: UpcomingDisplay) => commit(current => ({ ...current, configs: { ...current.configs, upcomingDisplay: next } }))
+  const setDisplay = (next: UpcomingDisplay) => commit(current => ({ ...current, configs: { ...current.configs, upcomingGrouping: next } }))
 
   const setMode = (next: Mode) => {
     setModeState(next)
@@ -373,7 +373,7 @@ export function EmBreve({ state, today, commit, inspect, syncRange }: Props) {
     const description = String(task.descricao || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()
     const when = withDate ? `${naturalDate(entry.day, today)}${entry.time ? ` · ${entry.time}` : ''}` : entry.time
     return (
-      <div key={entry.id} role="listitem" className={`${todayStyles.item} ${todayStyles.itemWrap} ${todayStyles.task} ${entry.done ? todayStyles.itemPassed : ''}`} {...quick.bind(() => menuFor(entry))}>
+      <div key={entry.id} role="listitem" className={`${todayStyles.item} ${todayStyles.itemWrap} ${todayStyles.task} ${styles.taskTight} ${entry.done ? todayStyles.itemPassed : ''}`} {...quick.bind(() => menuFor(entry))}>
         <Check className={todayStyles.itemCheck} checked={entry.done} late={entry.late} data-priority={!entry.done && PRIORITY_COLOR[entry.priority] ? entry.priority : undefined} style={priorityStyle(entry)} label={`Concluir: ${entry.title}`} onCheckedChange={() => toggleTask(entry)} />
         <div className={todayStyles.taskMain} onClick={() => open(entry)}>
           <button type="button" className={todayStyles.taskTitleBtn}>{entry.title}</button>
@@ -381,7 +381,7 @@ export function EmBreve({ state, today, commit, inspect, syncRange }: Props) {
           <div className={todayStyles.taskMeta}>
             {when ? <span className={`${todayStyles.dateTag} ${entry.late ? todayStyles.dateLate : entry.day === today ? todayStyles.dateToday : ''}`}><Icon name={withDate ? 'calendar_today' : 'schedule'} size={14} filled={false} />{when}</span> : null}
             {entry.recurring ? <span className={todayStyles.dateTag}><Icon name="repeat" size={14} filled={false} />Repete</span> : null}
-            {entry.project ? <span className={todayStyles.projLabel} style={{ color: entry.project.color }}>{entry.project.name}<b>#</b></span> : null}
+            {entry.project ? <span className={`${todayStyles.projLabel} ${styles.projInline}`} style={{ color: entry.project.color }}>{entry.project.name}<b>#</b></span> : null}
           </div>
         </div>
       </div>

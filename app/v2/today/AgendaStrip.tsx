@@ -76,9 +76,9 @@ export function AgendaStrip({ items, nowMinutes, onOpen, bind }: Props) {
                 <i aria-hidden="true" />
                 <span className={styles.extText}>
                   <span className={styles.extTitle}>{item.title}{item.recurring ? <Icon name="repeat" size={12} /> : null}</span>
-                  <small className={styles.extWhen}>{when}</small>
+                  <small className={styles.extWhen}><Icon name={when === 'Dia todo' || when === 'Em andamento' ? 'calendar_today' : 'schedule'} size={13} filled={false} />{when}</small>
                 </span>
-                <small className={styles.extSource}>{sourceOf(item)}</small>
+                <small className={styles.extSource}>{sourceOf(item)}<b>#</b></small>
               </button>
             ))}
           </div>
