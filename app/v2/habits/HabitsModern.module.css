@@ -4,16 +4,16 @@
 .bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 6px 0 10px; border-bottom: 1px solid var(--ds-line); }
 .tabs { display: flex; gap: 2px; overflow-x: auto; scrollbar-width: none; }
 .tabs::-webkit-scrollbar { display: none; }
-.tab { display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 10px; border: 0; border-radius: 8px; background: transparent; color: var(--ds-muted); font: inherit; font-size: 14px; font-weight: var(--ds-fw-medium, 500); cursor: pointer; white-space: nowrap; }
+.tab { display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 10px; border: 0; border-radius: 6px; background: transparent; color: var(--ds-muted); font: inherit; font-size: 14px; font-weight: var(--ds-fw-medium, 500); cursor: pointer; white-space: nowrap; }
 .tab:hover { background: var(--ds-surface-hover); color: var(--ds-text); }
 .tab[data-active] { color: var(--ds-accent); }
 .tab small { font-size: 12px; color: var(--ds-muted); }
 .tab[data-active] small { color: var(--ds-accent); }
 
 .weekNav { display: flex; align-items: center; gap: 2px; }
-.navButton { display: grid; place-items: center; width: 32px; height: 32px; border: 0; border-radius: 8px; background: transparent; color: var(--ds-muted); cursor: pointer; }
+.navButton { display: grid; place-items: center; width: 32px; height: 32px; border: 0; border-radius: 6px; background: transparent; color: var(--ds-muted); cursor: pointer; }
 .navButton:hover { background: var(--ds-surface-hover); color: var(--ds-text); }
-.weekLabel { height: 32px; padding: 0 8px; border: 0; background: transparent; color: var(--ds-text); font: inherit; font-size: 13px; font-weight: var(--ds-fw-medium, 500); cursor: pointer; border-radius: 8px; }
+.weekLabel { height: 32px; padding: 0 8px; border: 0; background: transparent; color: var(--ds-text); font: inherit; font-size: 13px; font-weight: var(--ds-fw-medium, 500); cursor: pointer; border-radius: 6px; }
 .weekLabel:hover { background: var(--ds-surface-hover); }
 
 .block { padding-top: 14px; }
@@ -54,7 +54,7 @@
 
 .composerFields { display: flex; gap: 8px; flex-wrap: wrap; padding: 4px 0; }
 .composerFields label { display: grid; gap: 2px; font-size: 11px; color: var(--ds-muted); }
-.composerFields input, .field input { box-sizing: border-box; height: 34px; padding: 0 10px; border: 1px solid var(--ds-line); border-radius: 8px; background: transparent; color: var(--ds-text); font: inherit; font-size: 14px; }
+.composerFields input, .field input { box-sizing: border-box; height: 34px; padding: 0 10px; border: 1px solid var(--ds-line); border-radius: 6px; background: transparent; color: var(--ds-text); font: inherit; font-size: 14px; }
 .composerFields input { width: 120px; }
 .composerFields input:focus, .field input:focus { outline: 0; border-color: var(--ds-accent); }
 .swatch { width: 12px; height: 12px; border-radius: 50%; display: inline-block; margin-right: 6px; }
@@ -64,13 +64,13 @@
 
 /* janelas centrais */
 .layer { position: fixed; inset: 0; z-index: 400; display: grid; place-items: center; padding: 16px; background: rgba(0, 0, 0, 0.5); }
-.panel { display: flex; flex-direction: column; width: min(640px, 100%); max-height: min(86vh, 800px); border: 1px solid var(--ds-line); border-radius: 8px; background: var(--ds-bg); color: var(--ds-text); box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3); overflow: hidden; }
+.panel { display: flex; flex-direction: column; width: min(640px, 100%); max-height: min(86vh, 800px); border: 1px solid var(--ds-line); border-radius: 6px; background: var(--ds-bg); color: var(--ds-text); box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3); overflow: hidden; }
 .small { width: min(380px, 100%); }
 .panelHead { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 16px 20px 12px; }
 .panelHead div { display: grid; gap: 2px; min-width: 0; }
 .panelHead strong { font-size: 18px; font-weight: 700; }
 .panelHead small { color: var(--ds-muted); font-size: 13px; }
-.close { display: grid; place-items: center; width: 32px; height: 32px; border: 0; border-radius: 8px; background: transparent; color: var(--ds-muted); cursor: pointer; }
+.close { display: grid; place-items: center; width: 32px; height: 32px; border: 0; border-radius: 6px; background: transparent; color: var(--ds-muted); cursor: pointer; }
 .close:hover { background: var(--ds-surface-hover); color: var(--ds-text); }
 .panelTabs { display: flex; gap: 4px; padding: 0 16px; border-bottom: 1px solid var(--ds-line); }
 .panelTabs button { height: 36px; padding: 0 10px; border: 0; border-bottom: 2px solid transparent; background: transparent; color: var(--ds-muted); font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; }
@@ -84,7 +84,7 @@
 .field > span { font-weight: 600; }
 .fieldRow { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; }
 
-.textPrimary, .textButton, .textDanger { height: 34px; padding: 0 12px; border: 0; border-radius: 8px; background: transparent; font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; }
+.textPrimary, .textButton, .textDanger { height: 34px; padding: 0 12px; border: 0; border-radius: 6px; background: transparent; font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; }
 .textPrimary { color: var(--ds-accent); }
 .textButton { color: var(--ds-muted); }
 .textDanger { margin-left: auto; color: var(--ds-danger); }
@@ -113,7 +113,7 @@
 .bars strong { text-align: right; color: var(--ds-text); font-weight: 600; }
 
 .monthHead { display: flex; align-items: center; justify-content: space-between; }
-.monthHead input { height: 30px; border: 1px solid var(--ds-line); border-radius: 8px; background: transparent; color: var(--ds-text); font: inherit; font-size: 13px; padding: 0 6px; }
+.monthHead input { height: 30px; border: 1px solid var(--ds-line); border-radius: 6px; background: transparent; color: var(--ds-text); font: inherit; font-size: 13px; padding: 0 6px; }
 .month { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; text-align: center; }
 .month small { color: var(--ds-muted); font-size: 11px; font-weight: 600; }
 .monthCell { aspect-ratio: 1; max-height: 36px; padding: 0; border: 1px solid var(--ds-line); border-radius: 8px; background: transparent; color: var(--ds-text); font: inherit; font-size: 12px; cursor: pointer; }
@@ -125,7 +125,7 @@
 .history strong { color: var(--ds-text); font-weight: 600; }
 
 .modes { display: flex; gap: 6px; flex-wrap: wrap; }
-.modes button, .weekdays button { height: 32px; padding: 0 12px; border: 1px solid var(--ds-line); border-radius: 8px; background: transparent; color: var(--ds-text); font: inherit; font-size: 13px; cursor: pointer; }
+.modes button, .weekdays button { height: 32px; padding: 0 12px; border: 1px solid var(--ds-line); border-radius: 6px; background: transparent; color: var(--ds-text); font: inherit; font-size: 13px; cursor: pointer; }
 .modes button[data-active], .weekdays button[data-active] { border-color: var(--ds-accent); color: var(--ds-accent); }
 .weekdays { display: flex; gap: 6px; margin-top: 6px; }
 .weekdays button { width: 34px; padding: 0; border-radius: 50%; }
@@ -143,7 +143,7 @@
   .month .dot { width: 100%; height: auto; aspect-ratio: 1; }
   .headStreak { display: none; }
   .layer { align-items: end; padding: 0; }
-  .panel { width: 100%; max-height: 92vh; border-radius: 10px 16px 0 0; }
+  .panel { width: 100%; max-height: 92vh; border-radius: 8px 16px 0 0; }
   .small { width: 100%; }
 }
 .panelBody > * { flex-shrink: 0; }
@@ -164,7 +164,7 @@
 .monthHead strong { font-size: 15px; }
 .monthHead strong::first-letter { text-transform: uppercase; }
 .monthHead small { font-size: 12px; color: var(--ds-muted); }
-.quickButton { display: grid; place-items: center; width: 32px; height: 32px; border: 0; border-radius: 8px; background: transparent; color: var(--ds-muted); cursor: pointer; opacity: 0; transition: opacity .12s; }
+.quickButton { display: grid; place-items: center; width: 32px; height: 32px; border: 0; border-radius: 6px; background: transparent; color: var(--ds-muted); cursor: pointer; opacity: 0; transition: opacity .12s; }
 .row:hover .quickButton, .quickButton:focus-visible { opacity: 1; }
 .quickButton:hover { background: var(--ds-surface-hover); color: var(--ds-text); }
 @media (hover: none) { .quickButton { opacity: 1; } }
@@ -173,13 +173,13 @@
 .habitIcon { display: inline-block; margin-right: 6px; vertical-align: -3px; color: var(--ds-muted); }
 .title { display: flex; align-items: center; }
 .iconGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(38px, 1fr)); gap: 6px; }
-.iconGrid button { display: grid; place-items: center; height: 38px; border: 1px solid var(--ds-line); border-radius: 8px; background: transparent; color: var(--ds-muted); cursor: pointer; }
+.iconGrid button { display: grid; place-items: center; height: 38px; border: 1px solid var(--ds-line); border-radius: 6px; background: transparent; color: var(--ds-muted); cursor: pointer; }
 .iconGrid button:hover { background: var(--ds-surface-hover); color: var(--ds-text); }
 .iconGrid button[data-active] { border-color: var(--hc, var(--ds-accent)); color: var(--hc, var(--ds-accent)); }
 .wideField { flex-basis: 100%; }
 .composerFields .wideField input { width: 100%; box-sizing: border-box; }
 
 .presets { display: flex; gap: 4px; margin-top: 4px; }
-.presets button { height: 28px; padding: 0 8px; border: 0; border-radius: 6px; background: transparent; color: var(--ds-muted); font: inherit; font-size: 12px; font-weight: 600; cursor: pointer; }
+.presets button { height: 28px; padding: 0 8px; border: 0; border-radius: 4px; background: transparent; color: var(--ds-muted); font: inherit; font-size: 12px; font-weight: 600; cursor: pointer; }
 .presets button:hover { background: var(--ds-surface-hover); color: var(--ds-text); }
 .weekdays button[aria-pressed="true"] { background: var(--ds-accent-soft); }

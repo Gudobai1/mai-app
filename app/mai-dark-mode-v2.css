@@ -152,7 +152,7 @@ html[data-mai-theme="dark"] .mai-upcoming-calendar-chip{
 
 html[data-mai-theme="dark"] .mai-upcoming-month-agenda-list>section[data-selected="true"]>header{
   background:var(--v3-accent-soft)!important;
-  border-radius:8px;
+  border-radius:6px;
 }
 
 html[data-mai-theme="dark"] .mai-v3-shell :is([class*="modalCard"],[class*="settingsCard"],[class*="calendarPicker"]){

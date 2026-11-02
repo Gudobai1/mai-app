@@ -99,47 +99,47 @@
 .mai-context-drawer > header { min-height:58px; display:flex; align-items:center; justify-content:space-between; gap:12px; padding:11px 14px; border-bottom:1px solid var(--line,#e6e9e4); position:sticky; top:0; background:var(--bg-card,#fff); z-index:2; }
 .mai-context-drawer > header span { display:block; color:var(--muted,#687069); font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; }
 .mai-context-drawer > header strong { display:block; margin-top:2px; font-size:13px; max-width:310px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.mai-context-drawer > header button { width:30px; height:30px; border:0; border-radius:8px; background:transparent; font-size:20px; }
+.mai-context-drawer > header button { width:30px; height:30px; border:0; border-radius:6px; background:transparent; font-size:20px; }
 .mai-context-drawer > header button:hover { background:var(--bg-hover,#eef1ec); }
 .mai-context-drawer form { padding:15px; display:grid; gap:12px; }
 .mai-context-drawer label { display:grid; gap:5px; }
 .mai-context-drawer label > span { color:var(--muted,#687069); font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; }
-.mai-context-drawer input,.mai-context-drawer select,.mai-context-drawer textarea { width:100%; min-height:36px; padding:7px 9px; border:1px solid var(--line,#e6e9e4); border-radius:8px; background:var(--bg-primary,#fff); color:inherit; font:inherit; outline:0; }
+.mai-context-drawer input,.mai-context-drawer select,.mai-context-drawer textarea { width:100%; min-height:36px; padding:7px 9px; border:1px solid var(--line,#e6e9e4); border-radius:6px; background:var(--bg-primary,#fff); color:inherit; font:inherit; outline:0; }
 .mai-context-drawer textarea { resize:vertical; line-height:1.5; }
 .mai-context-grid { display:grid; grid-template-columns:1fr 1fr; gap:9px; }
 .mai-context-drawer footer { position:sticky; bottom:-15px; display:flex; justify-content:space-between; align-items:center; gap:8px; margin:8px -15px -15px; padding:11px 14px; border-top:1px solid var(--line,#e6e9e4); background:var(--bg-card,#fff); }
 .mai-context-drawer footer div { display:flex; gap:6px; }
-.mai-context-drawer footer button { min-height:34px; padding:0 11px; border:1px solid var(--line,#e6e9e4); border-radius:8px; background:var(--bg-card,#fff); }
+.mai-context-drawer footer button { min-height:34px; padding:0 11px; border:1px solid var(--line,#e6e9e4); border-radius:6px; background:var(--bg-card,#fff); }
 .mai-context-drawer footer div button:last-child { border-color:var(--accent,#60765a); background:var(--accent,#60765a); color:#fff; font-weight:650; }
 .mai-context-delete { color:var(--danger,#c84c40) !important; }
-.mai-context-error { margin:0; padding:8px; border-radius:8px; background:color-mix(in srgb,var(--danger,#c84c40) 8%,transparent); color:var(--danger,#c84c40); font-size:10px; }
+.mai-context-error { margin:0; padding:8px; border-radius:6px; background:color-mix(in srgb,var(--danger,#c84c40) 8%,transparent); color:var(--danger,#c84c40); font-size:10px; }
 
 /* Paleta fechada para qualquer seletor de cor existente */
 .mai-preset-layer { position:fixed; inset:0; z-index:1800; }
-.mai-preset-popover { position:fixed; width:255px; padding:8px; border:1px solid #dde2dc; border-radius:8px; background:#fff; color:#202321; box-shadow:0 16px 45px rgba(0,0,0,.18); }
+.mai-preset-popover { position:fixed; width:255px; padding:8px; border:1px solid #dde2dc; border-radius:6px; background:#fff; color:#202321; box-shadow:0 16px 45px rgba(0,0,0,.18); }
 :root[data-mai-theme="dark"] .mai-preset-popover { background:#1d211d; color:#e5e9e3; border-color:#303630; }
 .mai-preset-popover header { display:flex; align-items:center; justify-content:space-between; min-height:30px; padding:0 3px 5px; }
 .mai-preset-popover header strong { font-size:11px; }
-.mai-preset-popover header button { width:26px; height:26px; border:0; border-radius:7px; background:transparent; color:inherit; }
+.mai-preset-popover header button { width:26px; height:26px; border:0; border-radius:5px; background:transparent; color:inherit; }
 .mai-preset-popover > div { display:grid; grid-template-columns:1fr 1fr; gap:4px; }
-.mai-preset-popover > div button { min-height:36px; display:flex; align-items:center; gap:7px; padding:0 7px; border:1px solid transparent; border-radius:8px; background:transparent; color:inherit; font:inherit; font-size:9px; text-align:left; }
+.mai-preset-popover > div button { min-height:36px; display:flex; align-items:center; gap:7px; padding:0 7px; border:1px solid transparent; border-radius:6px; background:transparent; color:inherit; font:inherit; font-size:9px; text-align:left; }
 .mai-preset-popover > div button:hover,.mai-preset-popover > div button[data-active="true"] { border-color:#d9ded8; background:#f3f5f2; }
 :root[data-mai-theme="dark"] .mai-preset-popover > div button:hover,:root[data-mai-theme="dark"] .mai-preset-popover > div button[data-active="true"] { border-color:#384038; background:#262c26; }
 .mai-preset-popover i { width:18px; height:18px; border-radius:50%; box-shadow:inset 0 0 0 1px rgba(0,0,0,.08); }
 
 /* Paleta do aplicativo nas configurações */
 .mai-app-palettes { display:flex; flex-wrap:wrap; gap:7px; }
-.mai-app-palettes button { width:34px; height:34px; padding:4px; border:1px solid var(--line); border-radius:6px; background:var(--bg-card); }
-.mai-app-palettes button i { display:block; width:100%; height:100%; border-radius:7px; }
+.mai-app-palettes button { width:34px; height:34px; padding:4px; border:1px solid var(--line); border-radius:4px; background:var(--bg-card); }
+.mai-app-palettes button i { display:block; width:100%; height:100%; border-radius:5px; }
 .mai-app-palettes button[data-active="true"] { border-color:var(--accent); box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 16%,transparent); }
 
 /* Personalização do Hoje */
 .mai-today-config { display:grid; gap:6px; }
-.mai-today-config > div { min-height:42px; display:grid; grid-template-columns:minmax(0,1fr) 95px auto; align-items:center; gap:8px; padding:0 8px; border:1px solid var(--line); border-radius:6px; }
+.mai-today-config > div { min-height:42px; display:grid; grid-template-columns:minmax(0,1fr) 95px auto; align-items:center; gap:8px; padding:0 8px; border:1px solid var(--line); border-radius:4px; }
 .mai-today-config strong { font-size:10px; }
-.mai-today-config select { min-height:30px; border:1px solid var(--line); border-radius:7px; background:var(--bg-card); font-size:9px; }
+.mai-today-config select { min-height:30px; border:1px solid var(--line); border-radius:5px; background:var(--bg-card); font-size:9px; }
 .mai-today-config span { display:flex; gap:3px; }
-.mai-today-config span button { width:28px; height:28px; border:1px solid var(--line); border-radius:7px; background:var(--bg-card); }
+.mai-today-config span button { width:28px; height:28px; border:1px solid var(--line); border-radius:5px; background:var(--bg-card); }
 
 @media (max-width:850px) {
   [class*="todayLayout"] { grid-template-columns:1fr !important; }

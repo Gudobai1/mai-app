@@ -39,10 +39,10 @@
   --ds-s-10: 40px;
 
   /* Cantos */
-  --ds-r-sm: 6px;
-  --ds-r-md: 8px;
-  --ds-r-lg: 10px;
-  --ds-r-xl: 12px;
+  --ds-r-sm: 4px;
+  --ds-r-md: 6px;
+  --ds-r-lg: 8px;
+  --ds-r-xl: 10px;
   --ds-r-full: 999px;
 
   /* Superfícies e texto */
@@ -57,9 +57,9 @@
   --ds-line-strong: #DDDDDD;
 
   /* Destaque */
-  --ds-accent: #DC4C3E;
-  --ds-accent-strong: #B83C30;
-  --ds-accent-soft: #FCE9E6;
+  --ds-accent: #DE4C4A;
+  --ds-accent-strong: #BE3F3D;
+  --ds-accent-soft: #FBEAE9;
   --ds-on-accent: #FFFFFF;
   --ds-on-accent-soft: rgba(255, 255, 255, 0.2);
 
@@ -113,9 +113,9 @@ html[data-mai-theme="dark"],
   --ds-line: #333333;
   --ds-line-strong: #3F3F3F;
 
-  --ds-accent: #E8685B;
-  --ds-accent-strong: #FF8A7E;
-  --ds-accent-soft: #3A1F1C;
+  --ds-accent: #DE4C4A;
+  --ds-accent-strong: #F06F6D;
+  --ds-accent-soft: #472525;
   --ds-on-accent: #FFFFFF;
   --ds-on-accent-soft: rgba(255, 255, 255, 0.2);
 

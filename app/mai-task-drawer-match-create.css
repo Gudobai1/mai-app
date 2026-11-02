@@ -7,7 +7,7 @@
   width:min(470px,calc(100vw - 28px))!important;
   max-width:calc(100vw - 28px)!important;
   height:auto!important;
-  border-radius:12px!important;
+  border-radius:10px!important;
 }
 
 .mai-task-v4-scroll{
@@ -79,7 +79,7 @@
   gap:9px!important;
   padding:0 6px!important;
   border:0!important;
-  border-radius:8px!important;
+  border-radius:6px!important;
   background:transparent!important;
   box-shadow:none!important;
   color:var(--v3-muted)!important;
@@ -193,7 +193,7 @@
     width:calc(100vw - 16px)!important;
     max-width:calc(100vw - 16px)!important;
     height:auto!important;
-    border-radius:10px!important;
+    border-radius:8px!important;
   }
 
   .mai-task-v4-scroll{

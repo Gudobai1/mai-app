@@ -179,7 +179,7 @@
   appearance: none;
   height: 58px;
   border: 0;
-  border-radius: 8px;
+  border-radius: 6px;
   background: var(--ds-surface);
   box-shadow: none;
   display: flex;
@@ -303,7 +303,7 @@
 .nextIcon {
   width: 42px;
   height: 42px;
-  border-radius: 8px;
+  border-radius: 6px;
   flex-shrink: 0;
   display: grid;
   place-items: center;
@@ -630,7 +630,7 @@
 
   .day.day {
     height: 54px;
-    border-radius: 8px;
+    border-radius: 6px;
   }
 
   .subline {
@@ -705,7 +705,7 @@
   gap: 12px;
   padding: 0 14px;
   border: 0;
-  border-radius: 6px;
+  border-radius: 4px;
   background: var(--ds-surface);
   box-shadow: var(--ds-shadow-1);
   color: var(--ds-text);
@@ -916,7 +916,7 @@
   border: 0;
   background: transparent;
   cursor: pointer;
-  border-radius: 8px;
+  border-radius: 6px;
   line-height: 0;
   transition: transform var(--ds-dur-fast) var(--ds-ease);
 }
@@ -1207,7 +1207,7 @@
   width: 22px;
   height: 22px;
   flex-shrink: 0;
-  border-radius: 7px;
+  border-radius: 5px;
 }
 
 .projectHeadImg {
@@ -1259,7 +1259,7 @@
   gap: 2px;
   padding: 0 4px 0 8px;
   border: 0;
-  border-radius: 8px;
+  border-radius: 6px;
   background: var(--ds-surface-2);
   color: var(--ds-text-2);
   font: inherit;
@@ -1301,7 +1301,7 @@
   align-items: center;
   gap: 10px;
   padding: 0 10px;
-  border-radius: 6px;
+  border-radius: 4px;
   background: color-mix(in srgb, var(--ds-surface) 70%, transparent);
 }
 
@@ -1550,7 +1550,7 @@
 
 .items .evRowNow.evRowNow,
 .items .evRowNow.evRowNow:hover {
-  border-radius: 8px;
+  border-radius: 6px;
   background: color-mix(in srgb, var(--ds-accent) 9%, transparent);
   box-shadow: none;
   border-bottom-color: transparent;
@@ -1615,7 +1615,7 @@
   place-items: center;
   padding: 0;
   border: 0;
-  border-radius: 8px;
+  border-radius: 6px;
   background: transparent;
   color: var(--ds-muted);
   cursor: pointer;
@@ -1656,7 +1656,7 @@
 .projectHeadDot {
   width: 24px;
   height: 24px;
-  border-radius: 7px;
+  border-radius: 5px;
   object-fit: cover;
   flex-shrink: 0;
   display: grid;
@@ -1867,7 +1867,7 @@
   gap: 4px;
   padding: 0 6px 0 8px;
   border: 0;
-  border-radius: 8px;
+  border-radius: 6px;
   background: var(--ds-surface-hover);
   color: var(--ds-text);
   font: inherit;
