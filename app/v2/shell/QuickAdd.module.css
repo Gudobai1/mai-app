@@ -311,9 +311,9 @@
 
 /* Linguagem natural: palavras reconhecidas ficam destacadas no nome. */
 .titleWrap { position: relative; }
-.titleMirror { position: absolute; inset: 0; padding: 4px 0; font-size: 18px; font-weight: var(--ds-fw-bold); letter-spacing: -0.01em; white-space: pre; overflow: hidden; color: transparent; pointer-events: none; }
-.titleMirror mark { color: transparent; background: color-mix(in srgb, var(--ds-accent) 20%, transparent); border-radius: 4px; box-shadow: 0 0 0 2px color-mix(in srgb, var(--ds-accent) 20%, transparent); }
-.titleWrap .title { position: relative; background: transparent; }
+.titleMirror { position: absolute; inset: 0; z-index: 1; padding: 4px 0; font-size: 18px; font-weight: var(--ds-fw-bold); letter-spacing: -0.01em; white-space: pre; overflow: hidden; color: transparent; pointer-events: none; }
+.titleMirror mark { color: transparent; background: color-mix(in srgb, var(--ds-accent) 30%, transparent); border-radius: 4px; box-shadow: 0 0 0 2px color-mix(in srgb, var(--ds-accent) 30%, transparent); }
+.titleWrap .title { position: relative; z-index: 0; background: transparent; }
 @media (max-width: 900px) { .titleMirror { font-size: 16px; } }
 .suggest { position: absolute; left: 0; top: calc(100% + 4px); z-index: 5; min-width: 220px; max-width: 100%; display: flex; flex-direction: column; padding: 4px; border: 1px solid var(--ds-line); border-radius: 8px; background: var(--ds-bg); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18); }
 .suggest button { appearance: none; display: flex; align-items: center; gap: 8px; padding: 8px 10px; border: 0; border-radius: 6px; background: transparent; color: var(--ds-text); font: inherit; font-size: 13.5px; text-align: left; cursor: pointer; }

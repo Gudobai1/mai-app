@@ -638,7 +638,7 @@ export function TodayModern({ state, today, commit, navigate, inspect, options, 
 
   const renderTask = (task: Row, sub = false): ReactNode => {
     const due = dateKey(task.data_vencimento)
-    const late = due < today
+    const late = Boolean(due) && due < today && !task.concluida
     const time = timeKey(task.data_vencimento)
     const priority = Number(task.prioridade || 4)
     const title = String(task.titulo || 'Tarefa')
