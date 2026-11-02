@@ -190,3 +190,36 @@
 .navStep:hover, .todayButton:hover { background: var(--ds-surface-hover); }
 .headText h1 { font-size: 26px; font-weight: var(--ds-fw-bold); }
 @media (max-width: 720px) { .navStep[data-hide-mobile] { display: none; } .views button span { display: none; } }
+
+/* Hábito (igual à linha de Hoje) */
+.habitRow { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--ds-line); -webkit-touch-callout: none; user-select: none; }
+.habitBody { appearance: none; flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; padding: 0; border: 0; background: transparent; color: var(--ds-text); font: inherit; text-align: left; cursor: pointer; }
+.habitTitle { font-size: 14px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.habitDesc { font-size: 12.5px; color: var(--ds-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.habitDay.habitDay { --p: 0; appearance: none; position: relative; width: 30px; height: 30px; padding: 0; box-sizing: border-box; flex-shrink: 0; border: 2px solid var(--ds-line); border-radius: 50%; background: transparent; cursor: pointer; }
+.habitDay.habitDay:disabled { cursor: default; opacity: 0.6; border-style: dashed; }
+.habitDay.habitDay[data-today]:not([data-on]):not([data-part]) { border-color: var(--ds-muted); border-width: 2.5px; }
+.habitDay.habitDay[data-part] { border: 0; background: conic-gradient(var(--hc) calc(var(--p) * 1%), var(--ds-line) 0); }
+.habitDay.habitDay[data-on] { border-color: var(--hc); background: var(--hc); }
+.habitDay.habitDay[data-failed] { border-color: var(--ds-danger); }
+
+/* Dia selecionado: só o círculo na data */
+.cell[data-selected] { box-shadow: none; }
+.cell[data-selected] > b { background: var(--ds-accent); color: #fff; font-weight: var(--ds-fw-heavy); }
+.cell[data-today]:not([data-selected]) > b { background: transparent; color: var(--ds-accent); font-weight: var(--ds-fw-heavy); }
+
+/* Página fixa no desktop: só a lista, a semana e o mês rolam por dentro. */
+@media (min-width: 901px) {
+  .page { position: sticky; top: 0; height: calc(100dvh - 48px); padding: 0; overflow: hidden; }
+  .listLayout { flex: 1; min-height: 0; align-items: stretch; }
+  .listMain { overflow-y: auto; min-height: 0; padding-right: 8px; padding-bottom: 48px; scrollbar-width: thin; }
+  .daySlot { scroll-margin-top: 0; }
+  .mini { position: static; align-self: start; }
+  .weekGrid { flex: 1; min-height: 0; }
+  .weekScroll { flex: 1; max-height: none; min-height: 0; }
+  .monthWrap { flex: 1; min-height: 0; align-items: stretch; }
+  .month { min-height: 0; grid-template-rows: 30px repeat(var(--rows), minmax(0, 1fr)); height: 100%; }
+  .monthWrap > :last-child { overflow-y: auto; min-height: 0; }
+}
+.habitRow { padding-right: 4px; }
+.monthWrap > :last-child { padding-right: 6px; }
