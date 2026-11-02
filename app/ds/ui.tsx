@@ -38,7 +38,7 @@ export type IconProps = {
   name: string
   size?: number
   filled?: boolean
-  weight?: 400 | 500 | 600
+  weight?: 300 | 400 | 500 | 600
   className?: string
   style?: CSSProperties
 }
