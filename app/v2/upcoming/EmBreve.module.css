@@ -209,7 +209,11 @@
 
 /* Página fixa no desktop: só a lista, a semana e o mês rolam por dentro. */
 @media (min-width: 901px) {
-  .page[data-mode='week'], .page[data-mode='month'] { padding: 0; overflow: hidden; box-sizing: border-box; }
+  .page { padding: 0; overflow: hidden; box-sizing: border-box; }
+  .listLayout { flex: 1; min-height: 0; align-items: stretch; }
+  .listMain { overflow-y: auto; min-height: 0; padding-right: 10px; padding-bottom: 32px; scrollbar-width: thin; }
+  .daySlot { scroll-margin-top: 0; }
+  .mini { position: static; align-self: start; }
   .weekGrid { flex: 1; min-height: 0; }
   .weekScroll { flex: 1; max-height: none; min-height: 0; }
   .monthWrap { flex: 1; min-height: 0; align-items: stretch; }
@@ -267,3 +271,11 @@
 .taskTight.taskTight { flex-wrap: nowrap; padding-right: 6px; }
 .projRight.projRight { align-self: flex-start; margin-top: 2px; flex-shrink: 0; }
 .projRight.projRight { margin-right: 14px; }
+
+/* Tarefas mais baixas em todo o módulo */
+.taskTight.taskTight { padding: 5px 4px; gap: 9px; }
+.taskTight [class*='taskTitleBtn'] { font-size: 14px; line-height: 1.25; }
+.taskTight [class*='taskMeta'] { gap: 2px 8px; margin-top: 0; }
+.taskTight [class*='itemCheck'] { transform-origin: center; }
+.groupHead { padding: 2px 2px; }
+.taskTight [class*='taskMeta']:empty { display: none; }

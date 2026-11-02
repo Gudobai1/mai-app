@@ -123,6 +123,7 @@ export function EmBreve({ state, today, commit, inspect, syncRange }: Props) {
   const stripRef = useRef<HTMLDivElement | null>(null)
   const sentinelRef = useRef<HTMLDivElement | null>(null)
   const pageRef = useRef<HTMLDivElement | null>(null)
+  const listRef = useRef<HTMLDivElement | null>(null)
   const weekBodyRef = useRef<HTMLDivElement | null>(null)
   const lockUntil = useRef(0)
 
@@ -203,11 +204,25 @@ export function EmBreve({ state, today, commit, inspect, syncRange }: Props) {
     return true
   }
 
+  // "Somente a próxima": cada evento repetido aparece só na primeira ocorrência de hoje em diante.
+  const nextIds = useMemo(() => {
+    if (!display.nextOnly) return null
+    const seen = new Set<string>()
+    const ids = new Set<string>()
+    for (const item of plannerItems(state, today, addDays(today, 400)).filter(item => item.kind === 'event' && item.recurring).sort((a, b) => a.date.localeCompare(b.date))) {
+      if (seen.has(item.sourceId)) continue
+      seen.add(item.sourceId)
+      ids.add(item.id)
+    }
+    return ids
+  }, [state.events, today, display.nextOnly])  // eslint-disable-line react-hooks/exhaustive-deps
+
   const entries = useMemo(() => {
     const rank = (entry: Entry) => (entry.kind === 'event' ? (entry.allDay ? 0 : 1) : entry.kind === 'task' ? 2 : entry.kind === 'habit' ? 3 : 4)
     return plannerItems(state, range.start, range.end)
       .filter(item => (item.kind === 'event' || item.kind === 'task' || item.kind === 'habit' || item.kind === 'finance') && visible(item.kind))
       .filter(item => !(item.kind === 'task' && item.raw.parent_id))
+      .filter(item => !(nextIds && item.kind === 'event' && item.recurring && !nextIds.has(item.id)))
       .map(toEntry)
       .filter(passes)
       .sort((a, b) => {
@@ -217,7 +232,7 @@ export function EmBreve({ state, today, commit, inspect, syncRange }: Props) {
         return a.day.localeCompare(b.day) || rank(a) - rank(b) || inner
       })
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state, range.start, range.end, filtersKey, display.sort, today, projects])
+  }, [state, range.start, range.end, filtersKey, display.sort, today, projects, nextIds])
 
   const byDay = useMemo(() => {
     const map = new Map<string, Entry[]>()
@@ -556,7 +571,7 @@ export function EmBreve({ state, today, commit, inspect, syncRange }: Props) {
     if (mode !== 'list' || !sentinelRef.current) return
     const observer = new IntersectionObserver(items => {
       if (items.some(item => item.isIntersecting)) setHorizon(value => Math.min(MAX_HORIZON, value + 14))
-    }, { rootMargin: '0px 0px 400px 0px' })
+    }, { root: mobile ? null : listRef.current, rootMargin: '0px 0px 400px 0px' })
     observer.observe(sentinelRef.current)
     return () => observer.disconnect()
   }, [mode, horizon])
@@ -569,7 +584,7 @@ export function EmBreve({ state, today, commit, inspect, syncRange }: Props) {
       if (Date.now() < lockUntil.current) return
       const hit = items.filter(item => item.isIntersecting).sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)[0]
       if (hit) setSelected(String((hit.target as HTMLElement).dataset.daySection))
-    }, { rootMargin: '-130px 0px -70% 0px' })
+    }, { root: mobile ? null : listRef.current, rootMargin: mobile ? '-130px 0px -70% 0px' : '0px 0px -70% 0px' })
     sections.forEach(section => observer.observe(section))
     return () => observer.disconnect()
   }, [mode, listDays.join(',')])  // eslint-disable-line react-hooks/exhaustive-deps
@@ -804,7 +819,7 @@ export function EmBreve({ state, today, commit, inspect, syncRange }: Props) {
   useLayoutEffect(() => {
     const page = pageRef.current
     if (!page) return
-    if (mode === 'list' || mobile) { page.style.removeProperty('height'); return }
+    if (mobile) { page.style.removeProperty('height'); return }
     const html = document.documentElement
     const body = document.body
     const before = [html.style.overflow, body.style.overflow]
@@ -862,7 +877,7 @@ export function EmBreve({ state, today, commit, inspect, syncRange }: Props) {
 
       {mode === 'list' ? (
         <div className={styles.listLayout}>
-          <div className={styles.listMain}>
+          <div ref={listRef} className={styles.listMain}>
             {listDays.map(day => <div key={day} data-day-section={day} className={styles.daySlot}>{dayBlock(day, byDay.get(day) || [])}</div>)}
             <div ref={sentinelRef} className={styles.sentinel} aria-hidden="true" />
           </div>
