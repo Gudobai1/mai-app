@@ -49,68 +49,39 @@ export function AgendaStrip({ items, nowMinutes, onOpen, bind }: Props) {
   )
 
   const [folded, setFolded] = useState(false)
-  const external: { item: PlannerItem; when: string }[] = []
 
-  const row = (item: PlannerItem, when: string, icon: string, now: boolean) => {
-    if (isGoogle(item)) { external.push({ item, when }); return null }
-    return (
-      <div
-        key={item.id}
-        role="listitem"
-        className={styles.row}
-        data-now={now || undefined}
-        style={{ '--ev': eventColor(item.raw) } as CSSProperties}
-        {...bind(item)}
-      >
-        <span className={styles.dot} aria-hidden="true" />
-        <button type="button" className={styles.body} onClick={() => onOpen(item)}>
-          <span className={styles.title}>
-            {item.title}
-            {item.recurring ? <Icon name="repeat" size={12} /> : null}
-          </span>
-          <span className={styles.when}><Icon name={icon} size={13} filled={false} />{when}</span>
-        </button>
-        <span className={styles.source}>{sourceOf(item)}<b>#</b></span>
-      </div>
-    )
-  }
-
-  const internal = [
-    ...allDay.map(item => row(item, item.subtitle === 'Em andamento' ? 'Em andamento' : 'Dia todo', item.subtitle === 'Em andamento' ? 'schedule' : 'calendar_today', false)),
-    ...timed.map(({ item, start, end, hasEnd }) => row(
+  /* Todos os compromissos no mesmo bloco "Eventos": barrinha na cor, título e quando. */
+  const entries = [
+    ...allDay.map(item => ({ item, when: item.subtitle === 'Em andamento' ? 'Em andamento' : 'Dia todo', now: false })),
+    ...timed.map(({ item, start, end, hasEnd }) => ({
       item,
-      `${hm(start)}${hasEnd ? ` – ${hm(end)}` : ''}`,
-      'schedule',
-      nowMinutes !== null && nowMinutes >= start && nowMinutes < end,
-    )),
+      when: `${hm(start)}${hasEnd ? ` – ${hm(end)}` : ''}`,
+      now: nowMinutes !== null && nowMinutes >= start && nowMinutes < end,
+    })),
   ]
 
-  /* Agendas externas: bloco "Eventos" como no Todoist — barrinha na cor e o título. */
-  const block = external.length ? (
+  if (!entries.length) return null
+  return (
     <div className={styles.events} role="group" aria-label="Eventos">
       {folded ? (
         <button type="button" className={styles.eventsHead} onClick={() => setFolded(false)} aria-expanded="false">
-          <strong>Eventos</strong><small>{external.length}</small><Icon name="expand_more" size={18} filled={false} />
+          <strong>Eventos</strong><small>{entries.length}</small><Icon name="expand_more" size={18} filled={false} />
         </button>
       ) : (
         <>
           <button type="button" className={styles.fold} onClick={() => setFolded(true)} aria-label="Recolher eventos" aria-expanded="true"><Icon name="expand_less" size={18} filled={false} /></button>
-          {external.map(({ item, when }) => (
-            <button key={item.id} type="button" role="listitem" className={styles.ext} style={{ '--ev': eventColor(item.raw) } as CSSProperties} onClick={() => onOpen(item)} {...bind(item)}>
-              <i aria-hidden="true" />
-              <span className={styles.extTitle}>{item.title}</span>
-              {when && when !== 'Dia todo' ? <small>{when}</small> : null}
-            </button>
-          ))}
+          <div role="list" className={styles.extList}>
+            {entries.map(({ item, when, now }) => (
+              <button key={item.id} type="button" role="listitem" className={styles.ext} data-now={now || undefined} style={{ '--ev': eventColor(item.raw) } as CSSProperties} onClick={() => onOpen(item)} {...bind(item)}>
+                <i aria-hidden="true" />
+                <span className={styles.extTitle}>{item.title}{item.recurring ? <Icon name="repeat" size={12} /> : null}</span>
+                <small className={styles.extWhen}>{when}</small>
+                <small className={styles.extSource}>{sourceOf(item)}</small>
+              </button>
+            ))}
+          </div>
         </>
       )}
-    </div>
-  ) : null
-
-  return (
-    <div className={styles.list} role="list">
-      {block}
-      {internal}
     </div>
   )
 }

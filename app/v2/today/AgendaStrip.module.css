@@ -133,3 +133,11 @@
 .eventsHead { appearance: none; display: flex; align-items: center; gap: 8px; width: 100%; padding: 0; border: 0; background: transparent; color: var(--ds-text); font: inherit; font-size: 14px; cursor: pointer; }
 .eventsHead small { color: var(--ds-muted); }
 .eventsHead svg, .eventsHead > :last-child { margin-left: auto; color: var(--ds-muted); }
+
+.extList { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.ext { width: 100%; }
+.ext .extTitle { display: inline-flex; align-items: center; gap: 6px; flex: 0 1 auto; }
+.extWhen.extWhen { color: var(--ds-warn); font-weight: var(--ds-fw-medium); }
+.ext[data-now] .extWhen.extWhen { color: var(--ds-accent); }
+.extSource.extSource { margin-left: auto; padding-left: 12px; max-width: 40%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@media (max-width: 900px) { .extSource.extSource { display: none; } }

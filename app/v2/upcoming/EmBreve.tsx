@@ -413,11 +413,11 @@ export function EmBreve({ state, today, commit, inspect, syncRange }: Props) {
 
   const renderEvent = (entry: Entry) => {
     const range = entry.end ? `${entry.time} – ${entry.end}` : ''
-    const external = entry.planner?.raw?.tipo === 'google' || entry.planner?.raw?.tipo === 'gcalendar'
+    const external = true
     return (
       <button key={entry.id} type="button" className={styles.event} data-external={external || undefined} data-passed={passed(entry) || undefined} style={{ '--ev': entry.color } as CSSProperties} onClick={() => open(entry)} {...quick.bind(() => menuFor(entry))}>
         {external ? <i className={styles.extBar} aria-hidden="true" /> : <span className={styles.eventDot} aria-hidden="true" />}
-        <span className={styles.eventTime}><b>{range || entry.time}</b><small>{entry.source}</small></span>
+        <span className={styles.eventTime}><b>{range || entry.time || 'Dia todo'}</b><small>{entry.source}</small></span>
         <strong>{entry.title}</strong>
         {entry.recurring ? <Icon name="repeat" size={12} /> : null}
       </button>
