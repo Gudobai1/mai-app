@@ -160,6 +160,13 @@ export function parseNatural(text: string, options: NlOptions): NlResult {
     })
   }
 
+  // p1 p2 p3 p4 também definem a prioridade (p1 = alta)
+  if (kinds.has('priority') && !result.priority) {
+    scan(folded, `${B}p([1-4])${E}`, (match, start, end) => {
+      if (add('priority', start, end, match[1])) { result.priority = Number(match[1]); return true }
+    })
+  }
+
   // ---- Lembrete: @30min @1h @2d
   if (kinds.has('reminder')) {
     scan(folded, `${B}@(\\d{1,3})\\s*(minutos?|min|m|horas?|h|dias?|d)${E}`, (match, start, end) => {
