@@ -229,8 +229,7 @@ export function UnifiedAppUx() {
     const onKey = (event: KeyboardEvent) => {
       const target = event.target as HTMLElement | null
       const editing = target?.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target?.tagName || '')
-      if ((event.ctrlKey || event.metaKey) && (event.code === 'Space' || event.key.toLowerCase() === 'k')) { event.preventDefault(); setSearchOpen(true) }
-      if (!event.ctrlKey && !event.metaKey && !event.altKey && event.key === '/' && !editing) { event.preventDefault(); setSearchOpen(true) }
+      if ((event.ctrlKey || event.metaKey) && (event.code === 'Space')) { event.preventDefault(); setSearchOpen(true) }
       if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'z' && !editing) { event.preventDefault(); runtime.undo() }
       if (!event.ctrlKey && !event.metaKey && !event.altKey && event.key.toLowerCase() === 'q' && !editing && view !== 'completed') { event.preventDefault(); contextualAdd() }
       if (event.key === 'Escape') { setSearchOpen(false); setSettingsOpen(false); setProjectDialog(null); setSelected(null); setCreating(null); setQuickAdd(null) }
