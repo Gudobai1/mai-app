@@ -10,7 +10,7 @@ import type { Row } from '../app-types'
 import type { InspectableItem } from '../ContextDrawer'
 import { DEFAULT_COLOR } from '../../../lib/v2/palette'
 import { ColorField } from '../detail/ColorField'
-import { Floating } from '../detail/Pickers'
+import { Floating, WheelPicker } from '../detail/Pickers'
 import { ItemAttachments } from '../ItemAttachments'
 import { askConfirm } from '../shell/ConfirmDialog'
 import quick from '../shell/QuickAdd.module.css'
@@ -365,8 +365,9 @@ function HabitComposer({ today, onCancel, onSave }: { today: string; onCancel: (
 export function ValueDialog({ habit, day, current, hasEntry, onClose, onSave, onFail, onClear }: { habit: Row; day: string; current: number; hasEntry: boolean; onClose: () => void; onSave: (amount: number) => void; onFail: () => void; onClear: () => void }) {
   const goal = Math.max(1, Number(habit.meta || 1))
   const quantitative = goal > 1 || Boolean(habit.unidade)
-  // Pergunta quanto somar ao que já foi feito no dia.
-  const [value, setValue] = useState('1')
+  // Pergunta quanto somar ao que já foi feito no dia, numa rolagem estilo iPhone.
+  const step = goal <= 5 ? 0.5 : goal <= 50 ? 1 : goal <= 250 ? 5 : 10
+  const [value, setValue] = useState(String(step <= 1 ? 1 : step))
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => { if (event.key === 'Escape') onClose() }
     window.addEventListener('keydown', onKey)
@@ -374,6 +375,8 @@ export function ValueDialog({ habit, day, current, hasEntry, onClose, onSave, on
   }, [onClose])
   const add = Number(String(value).replace(',', '.'))
   const amount = current + add
+  const options = Array.from({ length: Math.round((Math.max(goal * 2, 10)) / step) }, (_, i) => Math.round((i + 1) * step * 100) / 100)
+  const index = options.findIndex(item => item === add)
   return (
     <div className={styles.layer} onMouseDown={onClose}>
       <section className={`${styles.panel} ${styles.small}`} role="dialog" aria-modal="true" aria-label={`Registrar ${String(habit.nome)}`} onMouseDown={event => event.stopPropagation()}>
@@ -383,28 +386,13 @@ export function ValueDialog({ habit, day, current, hasEntry, onClose, onSave, on
         </header>
         {quantitative ? (
           <div className={styles.valueBody}>
-            <div className={styles.valueProgress} aria-hidden="true">
-              <i style={{ width: `${Math.min(100, (current / goal) * 100)}%` }} />
-              <b style={{ left: `${Math.min(100, (current / goal) * 100)}%`, width: `${Math.max(0, Math.min(100 - Math.min(100, (current / goal) * 100), (Number.isFinite(add) ? add : 0) / goal * 100))}%` }} />
-            </div>
-            <p className={styles.valueSummary}><strong>{Math.round(current * 100) / 100}</strong>{Number.isFinite(add) && add !== 0 ? <> → <strong>{Math.round(amount * 100) / 100}</strong></> : null} de {goal} {String(habit.unidade || '')}</p>
-            <div className={styles.stepper}>
-              <button type="button" onClick={() => setValue(String(Math.round(((Number.isFinite(add) ? add : 0) - 1) * 100) / 100))} aria-label="Diminuir"><Icon name="remove" size={20} filled={false} /></button>
-              <label>
-                <input autoFocus type="number" step="any" inputMode="decimal" aria-label={`Quanto adicionar${habit.unidade ? ` (${String(habit.unidade)})` : ''}`} value={value} onFocus={event => event.currentTarget.select()} onChange={event => setValue(event.target.value)} onKeyDown={event => { if (event.key === 'Enter' && Number.isFinite(add) && add !== 0 && amount >= 0) onSave(amount) }} />
-                <span>{String(habit.unidade || 'a adicionar')}</span>
-              </label>
-              <button type="button" onClick={() => setValue(String(Math.round(((Number.isFinite(add) ? add : 0) + 1) * 100) / 100))} aria-label="Aumentar"><Icon name="add" size={20} filled={false} /></button>
-            </div>
-            <div className={styles.quickAmounts}>
-              {[1, 2, 5].filter(step => step < goal).map(step => <button key={step} type="button" data-active={add === step || undefined} onClick={() => setValue(String(step))}>+{step}</button>)}
-              {goal - current > 0 ? <button type="button" data-active={add === goal - current || undefined} onClick={() => setValue(String(Math.round((goal - current) * 100) / 100))}>Completar (+{Math.round((goal - current) * 100) / 100})</button> : null}
-            </div>
+            <p className={styles.valueSummary}>Já feito <strong>{Math.round(current * 100) / 100}</strong> de {goal} {String(habit.unidade || '')}{Number.isFinite(add) && add > 0 ? <> · ficará <strong>{Math.round(amount * 100) / 100}</strong></> : null}</p>
+            <WheelPicker labels={options.map(item => String(item))} index={Math.max(0, index)} onChange={next => setValue(String(options[next]))} label="Quanto adicionar" unit={String(habit.unidade || '')} />
           </div>
         ) : null}
         <footer className={styles.panelFoot}>
           {quantitative
-            ? <button type="button" className={styles.textPrimary} disabled={!Number.isFinite(add) || add === 0 || amount < 0} onClick={() => onSave(amount)}>{add < 0 ? 'Remover' : 'Adicionar'}</button>
+            ? <button type="button" className={styles.textPrimary} disabled={!Number.isFinite(add) || add <= 0} onClick={() => onSave(amount)}>Adicionar</button>
             : <button type="button" className={styles.textPrimary} onClick={() => onSave(goal)}>Concluir</button>}
           <button type="button" className={styles.textButton} onClick={onClose}>Cancelar</button>
           {hasEntry ? <button type="button" className={styles.textButton} onClick={onClear}>Limpar</button> : null}

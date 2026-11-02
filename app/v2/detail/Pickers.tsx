@@ -186,7 +186,7 @@ const WHEEL_ROW = 36
 const pad2 = (n: number) => String(n).padStart(2, '0')
 
 /** Uma coluna de rolagem (como no iPhone): o número do meio é o escolhido. */
-function Wheel({ count, value, onChange, label }: { count: number; value: number; onChange: (value: number) => void; label: string }) {
+function Wheel({ count, value, onChange, label, labels }: { count: number; value: number; onChange: (value: number) => void; label: string; labels?: string[] }) {
   const ref = useRef<HTMLDivElement | null>(null)
   const timer = useRef<number | undefined>(undefined)
   useLayoutEffect(() => { if (ref.current) ref.current.scrollTop = value * WHEEL_ROW }, []) // eslint-disable-line react-hooks/exhaustive-deps
@@ -234,8 +234,19 @@ function Wheel({ count, value, onChange, label }: { count: number; value: number
           className={styles.wheelItem}
           data-selected={index === value || undefined}
           onClick={() => { onChange(index); ref.current?.scrollTo({ top: index * WHEEL_ROW, behavior: 'smooth' }) }}
-        >{pad2(index)}</button>
+        >{labels ? labels[index] : pad2(index)}</button>
       ))}
+    </div>
+  )
+}
+
+/** Rolagem estilo iPhone para escolher um valor de uma lista (sem botões Definir). */
+export function WheelPicker({ labels, index, onChange, label, unit }: { labels: string[]; index: number; onChange: (index: number) => void; label: string; unit?: string }) {
+  return (
+    <div className={styles.wheels}>
+      <div className={styles.wheelBand} aria-hidden="true" />
+      <Wheel count={labels.length} value={index} onChange={onChange} label={label} labels={labels} />
+      {unit ? <span className={styles.wheelUnit}>{unit}</span> : null}
     </div>
   )
 }
