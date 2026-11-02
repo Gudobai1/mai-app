@@ -18,11 +18,23 @@ export type ConfirmOptions = {
   cancelLabel?: string | null
   tone?: 'danger' | 'default'
   icon?: string
+  /** Terceira opção (ex.: Descartar), entre cancelar e confirmar. */
+  extraLabel?: string
 }
 
-type Request = ConfirmOptions & { resolve: (value: boolean) => void }
+type Answer = boolean | 'extra'
+type Request = ConfirmOptions & { resolve: (value: Answer) => void }
 
 let show: ((request: Request) => void) | null = null
+
+/** Três saídas: 'confirm', 'extra' (ex.: descartar) ou 'cancel' (continuar editando). */
+export async function askChoice(options: ConfirmOptions): Promise<'confirm' | 'extra' | 'cancel'> {
+  const answer = await new Promise<Answer>(resolve => {
+    if (!show) { resolve(window.confirm(options.title)); return }
+    show({ ...options, resolve })
+  })
+  return answer === 'extra' ? 'extra' : answer ? 'confirm' : 'cancel'
+}
 
 export function askConfirm(options: ConfirmOptions): Promise<boolean> {
   return new Promise(resolve => {
@@ -31,7 +43,7 @@ export function askConfirm(options: ConfirmOptions): Promise<boolean> {
       resolve(options.cancelLabel === null ? true : window.confirm(options.title))
       return
     }
-    show({ ...options, resolve })
+    show({ ...options, resolve: value => resolve(value === true) })
   })
 }
 
@@ -61,7 +73,7 @@ export function ConfirmHost() {
     return () => window.removeEventListener('keydown', onKey, true)
   }, [request]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  function finish(value: boolean) {
+  function finish(value: Answer) {
     if (!request) return
     request.resolve(value)
     setRequest(null)
@@ -79,6 +91,7 @@ export function ConfirmHost() {
         {request.message ? <p id="mai-confirm-message" className={styles.message}>{request.message}</p> : null}
         <div className={styles.buttons}>
           {request.cancelLabel === null ? null : <button type="button" className={styles.cancel} onClick={() => finish(false)}>{request.cancelLabel || 'Cancelar'}</button>}
+          {request.extraLabel ? <button type="button" className={styles.cancel} data-extra="" onClick={() => finish('extra')}>{request.extraLabel}</button> : null}
           <button ref={confirmRef} type="button" className={styles.confirm} data-danger={danger || undefined} onClick={() => finish(true)}>{request.confirmLabel || (danger ? 'Excluir' : 'Confirmar')}</button>
         </div>
       </div>

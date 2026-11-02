@@ -1322,3 +1322,14 @@
 .subCard.subCard .subInfo[data-late] { color: var(--ds-danger); }
 .composerChips { display: flex; flex-wrap: wrap; gap: 6px; }
 .composer.composer { border-radius: var(--ds-r-md); }
+
+/* Rodapé com Excluir / Cancelar / Salvar */
+.footer { gap: 8px; }
+.footer .status { flex: 1; text-align: right; }
+.footer .status[data-dirty] { color: var(--ds-warn); font-weight: var(--ds-fw-medium); }
+.footerCancel, .footerSave { appearance: none; height: 34px; padding: 0 16px; border-radius: var(--ds-r-md); font: inherit; font-size: 13.5px; font-weight: var(--ds-fw-medium); cursor: pointer; border: 1px solid var(--ds-line); background: transparent; color: var(--ds-text); }
+.footerCancel:hover { background: var(--ds-surface-hover); }
+.footerSave { background: var(--ds-accent); border-color: var(--ds-accent); color: #fff; font-weight: var(--ds-fw-bold); }
+.footerSave:hover:not(:disabled) { filter: brightness(0.94); }
+.footerSave:disabled { opacity: 0.45; cursor: default; }
+.footerCancel:disabled, .delete:disabled { opacity: 0.5; cursor: default; }
