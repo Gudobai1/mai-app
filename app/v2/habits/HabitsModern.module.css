@@ -22,7 +22,7 @@
 .headTitle { grid-column: 1; font-size: 16px; font-weight: 700; }
 .headCount { display: none; }
 .headDays { display: flex; gap: 8px; }
-.headDays span { display: grid; justify-items: center; width: 40px; line-height: 1.1; color: var(--ds-muted); }
+.headDays span { display: grid; justify-items: center; width: 44px; line-height: 1.1; color: var(--ds-muted); }
 .headDays small { font-size: 11px; font-weight: 600; }
 .headDays b { font-size: 12px; font-weight: 600; }
 .headDays span[data-today] { color: var(--ds-text); }
@@ -36,10 +36,10 @@
 /* círculo de hoje (concluir rápido) */
 .ring, .dot { --p: 0; box-sizing: border-box; display: grid; place-items: center; padding: 0; border-radius: 50%; cursor: pointer; color: #fff; background: transparent; }
 .ring { width: 26px; height: 26px; border: 2px solid var(--ds-line-strong); }
-.dot { width: 40px; height: 40px; position: relative; border: 2px solid var(--ds-line); }
+.dot { width: 44px; height: 44px; position: relative; border: 0; }
 .ring:disabled, .dot:disabled { cursor: default; }
-.dot[data-off] { opacity: 0.35; border-style: dashed; }
-.dot[data-today]:not([data-level]) { border-color: var(--ds-muted); border-width: 2.5px; }
+.dot[data-off] { opacity: 0.35; }
+.dot[data-today]:not([data-level]) { border: 0; }
 .ring[data-level='full'], .dot[data-level='full'] { background: transparent; border: 0; }
 .ring[data-level='part'], .dot[data-level='part'] { border: 0; background: transparent; }
 .dot[data-level='fail'] { border: 0; background: transparent; color: var(--ds-danger); }

@@ -15,6 +15,7 @@ import { QuickAdd } from '../shell/QuickAdd'
 import { useQuickMenu, type QuickMenuConfig } from '../shell/QuickMenu'
 import { hiddenOccurrenceIds } from '../../../lib/v2/series'
 import { DotRing } from '../habits/DotRing'
+import { abbreviateUnit } from '../../../lib/v2/units'
 import { AgendaStrip } from './AgendaStrip'
 import styles from './TodayModern.module.css'
 
@@ -871,7 +872,7 @@ export function TodayModern({ state, today, commit, navigate, inspect, options, 
                     </button>
                     <span className={styles.habitDots}>
                       {weekKeys.map(key => (
-                        <button key={key} type="button" className={styles.habitDay} data-day="" style={{ ['--p' as string]: pctOn(item.habit, key) }} data-on={levelOn(item.habit, key) === 'full' || undefined} data-part={levelOn(item.habit, key) === 'part' || undefined} data-failed={failedEntry(entryByKey.get(`${item.habit.id}|${key}`)) || undefined} data-today={key === day || undefined} data-off={!habitEligible(item.habit, key) || undefined} disabled={key > today || !habitEligible(item.habit, key)} onClick={() => logHabitOn(item.habit, key)} aria-label={`${name} em ${naturalDate(key, today)}`}>{failedEntry(entryByKey.get(`${item.habit.id}|${key}`)) ? <DotRing pct={100} fail /> : levelOn(item.habit, key) ? <DotRing pct={levelOn(item.habit, key) === 'full' ? 100 : Number(pctOn(item.habit, key))} value={Number(entryByKey.get(`${item.habit.id}|${key}`)?.valor || 0)} unit={String(item.habit.unidade || '')} /> : null}</button>
+                        <button key={key} type="button" className={styles.habitDay} data-day="" style={{ ['--p' as string]: pctOn(item.habit, key) }} data-on={levelOn(item.habit, key) === 'full' || undefined} data-part={levelOn(item.habit, key) === 'part' || undefined} data-failed={failedEntry(entryByKey.get(`${item.habit.id}|${key}`)) || undefined} data-today={key === day || undefined} data-off={!habitEligible(item.habit, key) || undefined} disabled={key > today || !habitEligible(item.habit, key)} onClick={() => logHabitOn(item.habit, key)} aria-label={`${name} em ${naturalDate(key, today)}`}><DotRing pct={levelOn(item.habit, key) === 'full' ? 100 : Number(pctOn(item.habit, key))} value={Number(entryByKey.get(`${item.habit.id}|${key}`)?.valor || 0)} unit={abbreviateUnit(item.habit.unidade)} fail={Boolean(failedEntry(entryByKey.get(`${item.habit.id}|${key}`)))} empty={!levelOn(item.habit, key) && !failedEntry(entryByKey.get(`${item.habit.id}|${key}`))} today={key === day} /></button>
                       ))}
                     </span>
                     <span className={styles.streak} data-on={streak > 0 || undefined} title={`Sequência de ${streak} ${streak === 1 ? 'dia' : 'dias'}`}><Icon name="local_fire_department" size={15} />{streak}</span>

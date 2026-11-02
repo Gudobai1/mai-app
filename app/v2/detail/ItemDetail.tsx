@@ -12,6 +12,7 @@ import { FinanceContextDrawerV4 } from '../FinanceContextDrawerV4'
 import { financeCardPaymentState } from '../FinanceTransactionCard'
 import { resolveMaiIcon } from '../MaiIcons'
 import { askConfirm, notify } from '../shell/ConfirmDialog'
+import { UnitField } from '../habits/UnitField'
 import { DatePicker, Floating, OptionList, TimePicker, type PickerOption } from './Pickers'
 import { CategoryChooser } from './CategoryChooser'
 import { eventCategories, withEventCategory, type EventCategory } from '../../../lib/v2/event-categories'
@@ -724,7 +725,7 @@ function HabitDetail({ item, state, today, commit, register, close }: DetailProp
 
         <div className={styles.props}>
           <Prop icon="target" color="var(--ds-accent)" label="Meta por dia" display={<input className={styles.inlineInput} type="number" inputMode="numeric" min={1} value={draft.meta} onChange={event => update({ meta: Math.max(1, Number(event.target.value || 1)) })} aria-label="Meta por dia" />} />
-          <Prop icon="straighten" color="var(--ds-text-2)" label="Unidade" display={<input className={styles.inlineInput} value={draft.unidade} placeholder="vezes" onChange={event => update({ unidade: event.target.value })} aria-label="Unidade" />} />
+          <Prop icon="straighten" color="var(--ds-text-2)" label="Unidade" display={<UnitField className={styles.inlineInput} value={String(draft.unidade || '')} onChange={unidade => update({ unidade })} />} />
         </div>
       </div>
       <Footer status={savedStatus} onDelete={() => void remove()} deleteLabel="Arquivar" />
