@@ -2,6 +2,7 @@
 
 import { DragEvent, FormEvent, useEffect, useMemo, useState } from 'react'
 import { addDays, PlannerItem, plannerItems } from '../../lib/v2/planner'
+import { nextOccurrenceIds, onlyNextOccurrences } from '../../lib/v2/series'
 import { MaiState, nextRepeat } from '../../lib/v2/state'
 import styles from './mai-v2.module.css'
 import type { SecondaryView } from './app-types'
@@ -61,7 +62,11 @@ export function AgendaView({ state, today, connected, commit, googleRpc, refresh
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState('')
   const range = useMemo(() => rangeFor(anchor || today, mode), [anchor, mode, today])
-  const allItems = useMemo(() => plannerItems(state, range.start, range.end), [state, range.start, range.end])
+  const nextOnlyAgenda = Boolean((state.configs.nextOnlyByModule as Record<string, boolean> | undefined)?.agenda)
+  const allItems = useMemo(() => {
+    const items = plannerItems(state, range.start, range.end)
+    return nextOnlyAgenda ? onlyNextOccurrences(items, nextOccurrenceIds(state, today)) : items
+  }, [state, range.start, range.end, nextOnlyAgenda, today])
   const visible = allItems.filter(item => filters[item.kind])
 
   useEffect(() => { if (!anchor && today) { setAnchor(today); setSelectedDay(today) } }, [anchor, today])
