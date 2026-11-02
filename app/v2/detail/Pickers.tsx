@@ -91,11 +91,6 @@ export function OptionList({ options, value, onSelect }: { options: PickerOption
 
 const WEEKDAYS = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S']
 
-function nextMonday(today: string) {
-  const day = new Date(`${today}T12:00:00`).getDay()
-  return addDays(today, ((8 - day) % 7) || 7)
-}
-
 export function DatePicker({ value, today, onSelect, allowEmpty = true }: { value: string; today: string; onSelect: (value: string) => void; allowEmpty?: boolean }) {
   const [month, setMonth] = useState(() => (value || today).slice(0, 7))
   const cells = useMemo(() => {
@@ -112,7 +107,6 @@ export function DatePicker({ value, today, onSelect, allowEmpty = true }: { valu
   const quick = [
     { label: 'Hoje', icon: 'today', value: today },
     { label: 'Amanhã', icon: 'wb_sunny', value: addDays(today, 1) },
-    { label: 'Próx. semana', icon: 'date_range', value: nextMonday(today) },
   ]
 
   return (
@@ -153,23 +147,39 @@ export function DatePicker({ value, today, onSelect, allowEmpty = true }: { valu
   )
 }
 
-const TIMES = Array.from({ length: 96 }, (_, index) => `${String(Math.floor(index / 4)).padStart(2, '0')}:${String((index % 4) * 15).padStart(2, '0')}`)
+const SUGGESTED_TIMES = ['08:00', '09:00', '12:00', '14:00', '18:00', '20:00']
 
 export function TimePicker({ value, onSelect, allowEmpty = true, emptyLabel = 'Sem horário' }: { value: string; onSelect: (value: string) => void; allowEmpty?: boolean; emptyLabel?: string }) {
-  const list = useRef<HTMLDivElement | null>(null)
-  const times = value && !TIMES.includes(value) ? [...TIMES, value].sort() : TIMES
-  useEffect(() => {
-    const target = list.current?.querySelector<HTMLElement>('[data-selected]') || list.current?.querySelector<HTMLElement>('[data-time="09:00"]')
-    if (target && list.current) list.current.scrollTop = target.offsetTop - list.current.clientHeight / 2 + target.clientHeight / 2
-  }, [])
+  const [custom, setCustom] = useState(value || '')
+  const valid = /^\d{2}:\d{2}$/.test(custom)
   return (
     <div className={styles.time}>
-      {allowEmpty ? <button type="button" className={styles.option} data-selected={!value || undefined} onClick={() => onSelect('')}><Icon name="schedule" size={18} className={styles.optionIcon} /><span className={styles.optionText}>{emptyLabel}</span>{!value ? <Icon name="check" size={18} className={styles.optionCheck} /> : null}</button> : null}
-      <div ref={list} className={styles.timeGrid}>
-        {times.map(time => (
-          <button key={time} type="button" data-time={time} className={styles.timeCell} data-selected={time === value || undefined} data-hour={time.endsWith(':00') || undefined} onClick={() => onSelect(time)}>{time}</button>
+      {allowEmpty ? (
+        <button type="button" className={styles.timeNone} data-selected={!value || undefined} onClick={() => onSelect('')}>
+          <Icon name="schedule" size={18} className={styles.optionIcon} />
+          <span className={styles.optionText}>{emptyLabel}</span>
+          {!value ? <Icon name="check" size={18} className={styles.optionCheck} /> : null}
+        </button>
+      ) : null}
+      <div className={styles.timeGrid}>
+        {SUGGESTED_TIMES.map(time => (
+          <button key={time} type="button" className={styles.timeCell} data-selected={time === value || undefined} onClick={() => onSelect(time)}>{time}</button>
         ))}
       </div>
+      <form
+        className={styles.timeCustom}
+        onSubmit={event => { event.preventDefault(); if (valid) onSelect(custom) }}
+      >
+        <input
+          type="time"
+          className={styles.timeInput}
+          value={custom}
+          step={300}
+          aria-label="Outro horário"
+          onChange={event => setCustom(event.target.value)}
+        />
+        <button type="submit" className={styles.timeOk} disabled={!valid}>Definir</button>
+      </form>
     </div>
   )
 }
