@@ -323,3 +323,8 @@
 .titleWrap .title, .titleMirror { line-height: 1.3; box-sizing: border-box; font-family: inherit; }
 .titleWrap .title { height: auto; }
 .inlinePanel .titleMirror { font-size: 16px; }
+
+/* Menos ar entre a descrição e as opções. */
+.description.description { min-height: 24px; }
+.footer.footer, .inlinePanel .footer.footer { padding-top: 6px; border-top: 0; }
+.inlinePanel .description.description { min-height: 22px; }
