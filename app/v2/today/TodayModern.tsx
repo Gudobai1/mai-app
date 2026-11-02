@@ -636,7 +636,7 @@ export function TodayModern({ state, today, commit, navigate, inspect, options, 
     )
   }
 
-  const renderTask = (task: Row) => {
+  const renderTask = (task: Row, sub = false): ReactNode => {
     const due = dateKey(task.data_vencimento)
     const late = due < today
     const time = timeKey(task.data_vencimento)
@@ -663,27 +663,13 @@ export function TodayModern({ state, today, commit, navigate, inspect, options, 
                 <Icon name={expanded ? 'expand_more' : 'chevron_right'} size={20} filled={false} />
               </button>
             ) : null}
-            <span className={styles.projLabel} style={{ color: projectColor(task.projeto_id) }}>{projectLabel}<b>#</b></span>
+            {sub ? null : <span className={styles.projLabel} style={{ color: projectColor(task.projeto_id) }}>{projectLabel}<b>#</b></span>}
           </div>
         </div>
       </div>
       {expanded && children.length ? (
         <div className={styles.subList} role="list" aria-label={`Subtarefas de ${title}`}>
-          {[...children].sort(compareSubtasks).map(child => {
-            const childId = String(child.id)
-            const childDue = dateKey(child.data_vencimento)
-            const childLate = Boolean(childDue) && childDue < today && !child.concluida
-            const childPriority = Number(child.prioridade || 4)
-            return (
-              <div key={childId} role="listitem" className={styles.subRow} data-done={child.concluida || undefined} onClick={() => inspectTask(child)} {...quick.bind(() => taskMenu(child))}>
-                <button type="button" className={styles.subCheck} data-done={child.concluida || undefined} data-late={childLate || undefined} style={!child.concluida && PRIORITY_COLOR[childPriority] ? ({ borderColor: PRIORITY_COLOR[childPriority] } as CSSProperties) : undefined} aria-label={child.concluida ? `Reabrir subtarefa ${String(child.titulo || '')}` : `Concluir subtarefa ${String(child.titulo || '')}`} onClick={event => { event.stopPropagation(); toggleTask(childId) }}>
-                  <Icon name="check" size={11} />
-                </button>
-                <button type="button" className={styles.subTitle}>{String(child.titulo || 'Subtarefa')}</button>
-                {childDue ? <span className={styles.subMeta} data-late={childLate || undefined}>{naturalDate(childDue, today)}</span> : null}
-              </div>
-            )
-          })}
+          {[...children].sort(compareSubtasks).map(child => renderTask(child, true))}
           {subAddFor === taskId ? (
             <QuickAdd inline kinds={['task']} initial="task" parentId={taskId} state={state} today={today} defaultProjectId={String(task.projeto_id || 'entrada')} defaultSection={String(task.secao || '')} commit={commit} onFinance={() => undefined} onClose={() => setSubAddFor('')} />
           ) : (
