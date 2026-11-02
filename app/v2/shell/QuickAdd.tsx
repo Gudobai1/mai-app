@@ -32,6 +32,8 @@ type Props = {
   onClose: () => void
   /** Abre o formulário no próprio lugar (dentro da lista), sem janela. */
   inline?: boolean
+  /** Cria a tarefa como subtarefa desta. */
+  parentId?: string
 }
 
 const rows = (value: unknown): Row[] => (Array.isArray(value) ? (value as Row[]) : [])
@@ -74,7 +76,7 @@ const plusHour = (time: string) => {
 
 type Picker = '' | 'ftype' | 'account' | 'date' | 'time' | 'reminder' | 'priority' | 'project' | 'repeat' | 'start' | 'end' | 'category'
 
-export function QuickAdd({ kinds, initial, state, today, defaultProjectId, defaultDate, defaultSection, commit, onFinance, onClose, inline }: Props) {
+export function QuickAdd({ kinds, initial, state, today, defaultProjectId, defaultDate, defaultSection, commit, onFinance, onClose, inline, parentId }: Props) {
   const [kind, setKind] = useState<QuickAddKind>(initial)
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
@@ -131,7 +133,7 @@ export function QuickAdd({ kinds, initial, state, today, defaultProjectId, defau
     } else if (kind === 'task') {
       const task: Row = {
         id: uid('t'), titulo: name, descricao: description.trim(), data_vencimento: date ? `${date}${taskTime ? `T${taskTime}` : ''}` : '', prioridade: priority, concluida: false,
-        projeto_id: projectId, parent_id: '', secao: section, criado_em: new Date().toISOString(), ordem: Date.now(),
+        projeto_id: projectId, parent_id: parentId || '', secao: section, criado_em: new Date().toISOString(), ordem: Date.now(),
         notas: [], anexos: [], subtarefas: [], lembretes: reminder ? [reminder] : [], etiquetas: [], repeticao: repeat, ocultar_agenda: false,
       }
       commit(current => ({ ...current, tasks: [...current.tasks, task as (typeof current.tasks)[number]] }))
@@ -172,12 +174,12 @@ export function QuickAdd({ kinds, initial, state, today, defaultProjectId, defau
             autoFocus
             className={styles.title}
             value={title}
-            placeholder={kind === 'task' ? 'Nome da tarefa' : kind === 'finance' ? 'Nome do lançamento' : 'Nome do compromisso'}
+            placeholder={kind === 'task' ? (parentId ? 'Nome da subtarefa' : 'Nome da tarefa') : kind === 'finance' ? 'Nome do lançamento' : 'Nome do compromisso'}
             enterKeyHint="done"
             onChange={event => setTitle(event.target.value)}
             onKeyDown={event => { if (event.key === 'Enter') { event.preventDefault(); submit() } }}
           />
-          {inline ? null : <textarea className={styles.description} value={description} rows={2} placeholder="Descrição" onChange={event => setDescription(event.target.value)} />}
+          <textarea className={styles.description} value={description} rows={inline ? 1 : 2} placeholder="Descrição" onChange={event => setDescription(event.target.value)} />
           {kind === 'finance' ? (
             <label className={styles.place}>
               <Icon name="payments" size={16} filled={false} />
@@ -251,7 +253,7 @@ export function QuickAdd({ kinds, initial, state, today, defaultProjectId, defau
 
         <div className={styles.footer}>
           <button type="button" className={styles.ghost} onClick={onClose}>Cancelar</button>
-          <button type="button" className={styles.primary} disabled={!title.trim()} onClick={submit}>{kind === 'task' ? 'Adicionar tarefa' : kind === 'finance' ? 'Adicionar lançamento' : 'Adicionar compromisso'}</button>
+          <button type="button" className={styles.primary} disabled={!title.trim()} onClick={submit}>{kind === 'task' ? (parentId ? 'Adicionar subtarefa' : 'Adicionar tarefa') : kind === 'finance' ? 'Adicionar lançamento' : 'Adicionar compromisso'}</button>
         </div>
       </div>
 

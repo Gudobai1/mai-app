@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from 'react'
+import { createContext, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from 'react'
 import { createPortal } from 'react-dom'
 import { addDays } from '../../../lib/v2/planner'
 import { Icon } from '../../ds'
@@ -17,10 +17,32 @@ function isMobile() {
   return typeof window !== 'undefined' && window.matchMedia('(max-width: 900px)').matches
 }
 
+/*
+ * Os seletores só valem depois de "Definir": escolher uma opção apenas marca;
+ * "Cancelar" (ou Esc / clicar fora) fecha sem mudar nada.
+ */
+type Stage = { set: (apply: () => void) => void }
+const StageCtx = createContext<Stage | null>(null)
+
+/** Marca a escolha dentro de um Floating; fora dele, vale na hora. */
+function useStaged<T>(value: T, onSelect: (value: T) => void): [T, (value: T) => void] {
+  const stage = useContext(StageCtx)
+  const [pending, setPending] = useState<{ value: T } | null>(null)
+  const choose = (next: T) => {
+    if (!stage) { onSelect(next); return }
+    setPending({ value: next })
+    stage.set(() => onSelect(next))
+  }
+  return [pending ? pending.value : value, choose]
+}
+
 export function Floating({ anchor, title, onClose, children, width = 280 }: { anchor: RefObject<HTMLElement | null>; title: string; onClose: () => void; children: ReactNode; width?: number }) {
   const panel = useRef<HTMLDivElement | null>(null)
   const [mobile] = useState(isMobile)
   const [position, setPosition] = useState<{ left: number; top: number } | null>(null)
+  const applyRef = useRef<(() => void) | null>(null)
+  const [staged, setStaged] = useState(false)
+  const stage = useMemo<Stage>(() => ({ set: apply => { applyRef.current = apply; setStaged(true) } }), [])
 
   useLayoutEffect(() => {
     if (mobile || !anchor.current || !panel.current) return
@@ -61,14 +83,19 @@ export function Floating({ anchor, title, onClose, children, width = 280 }: { an
       >
         {mobile ? <div className={styles.handle} aria-hidden="true" /> : null}
         {mobile ? <div className={styles.sheetTitle}>{title}</div> : null}
-        {children}
+        <StageCtx.Provider value={stage}>{children}</StageCtx.Provider>
+        <div className={styles.pickerFooter}>
+          <button type="button" className={styles.pickerCancel} onClick={onClose}>Cancelar</button>
+          <button type="button" className={styles.pickerOk} disabled={!staged} onClick={() => { const apply = applyRef.current; if (apply) apply() }}>Definir</button>
+        </div>
       </div>
     </div>,
     document.body,
   )
 }
 
-export function OptionList({ options, value, onSelect }: { options: PickerOption[]; value: string; onSelect: (value: string) => void }) {
+export function OptionList({ options, value: current, onSelect: select }: { options: PickerOption[]; value: string; onSelect: (value: string) => void }) {
+  const [value, onSelect] = useStaged(current, select)
   const list = useRef<HTMLDivElement | null>(null)
   useEffect(() => {
     list.current?.querySelector<HTMLElement>('[data-selected]')?.scrollIntoView({ block: 'nearest' })
@@ -91,7 +118,8 @@ export function OptionList({ options, value, onSelect }: { options: PickerOption
 
 const WEEKDAYS = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S']
 
-export function DatePicker({ value, today, onSelect, allowEmpty = true }: { value: string; today: string; onSelect: (value: string) => void; allowEmpty?: boolean }) {
+export function DatePicker({ value: current, today, onSelect: select, allowEmpty = true }: { value: string; today: string; onSelect: (value: string) => void; allowEmpty?: boolean }) {
+  const [value, onSelect] = useStaged(current, select)
   const [month, setMonth] = useState(() => (value || today).slice(0, 7))
   const cells = useMemo(() => {
     const first = new Date(`${month}-01T12:00:00`)
@@ -156,6 +184,29 @@ function Wheel({ count, value, onChange, label }: { count: number; value: number
   const timer = useRef<number | undefined>(undefined)
   useLayoutEffect(() => { if (ref.current) ref.current.scrollTop = value * WHEEL_ROW }, []) // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => () => window.clearTimeout(timer.current), [])
+  // Mouse: cada rolada anda um número só.
+  const current = useRef(value)
+  current.current = value
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    let last = 0
+    const onWheel = (event: WheelEvent) => {
+      event.preventDefault()
+      const now = Date.now()
+      if (now - last < 70) return
+      const direction = Math.sign(event.deltaY)
+      if (!direction) return
+      last = now
+      const next = Math.max(0, Math.min(count - 1, current.current + direction))
+      if (next === current.current) return
+      current.current = next
+      onChange(next)
+      el.scrollTo({ top: next * WHEEL_ROW, behavior: 'smooth' })
+    }
+    el.addEventListener('wheel', onWheel, { passive: false })
+    return () => el.removeEventListener('wheel', onWheel)
+  }, [count, onChange])
   const settle = () => {
     window.clearTimeout(timer.current)
     timer.current = window.setTimeout(() => {
@@ -183,20 +234,25 @@ function Wheel({ count, value, onChange, label }: { count: number; value: number
 }
 
 export function TimePicker({ value, onSelect, allowEmpty = true, emptyLabel = 'Sem horário' }: { value: string; onSelect: (value: string) => void; allowEmpty?: boolean; emptyLabel?: string }) {
+  const stage = useContext(StageCtx)
   const parsed = /^(\d{2}):(\d{2})$/.exec(value || '')
   const [hour, setHour] = useState(parsed ? Number(parsed[1]) : 9)
   const [minute, setMinute] = useState(parsed ? Number(parsed[2]) : 0)
+  const [cleared, setCleared] = useState(false)
+  const result = cleared ? '' : `${pad2(hour)}:${pad2(minute)}`
+  // O horário das colunas já fica marcado: é só tocar em Definir.
+  useEffect(() => { if (stage) stage.set(() => onSelect(result)) }, [result]) // eslint-disable-line react-hooks/exhaustive-deps
   return (
     <div className={styles.time}>
       <div className={styles.wheels}>
         <div className={styles.wheelBand} aria-hidden="true" />
-        <Wheel count={24} value={hour} onChange={setHour} label="Horas" />
+        <Wheel count={24} value={hour} onChange={next => { setCleared(false); setHour(next) }} label="Horas" />
         <span className={styles.wheelColon} aria-hidden="true">:</span>
-        <Wheel count={60} value={minute} onChange={setMinute} label="Minutos" />
+        <Wheel count={60} value={minute} onChange={next => { setCleared(false); setMinute(next) }} label="Minutos" />
       </div>
       <div className={styles.timeActions}>
-        {allowEmpty ? <button type="button" className={styles.timeClear} onClick={() => onSelect('')}>{emptyLabel}</button> : <span />}
-        <button type="button" className={styles.timeOk} onClick={() => onSelect(`${pad2(hour)}:${pad2(minute)}`)}>Definir</button>
+        {allowEmpty ? <button type="button" className={styles.timeClear} data-active={cleared || undefined} onClick={() => (stage ? setCleared(true) : onSelect(''))}>{emptyLabel}</button> : <span />}
+        {stage ? null : <button type="button" className={styles.timeOk} onClick={() => onSelect(result)}>Definir</button>}
       </div>
     </div>
   )
@@ -280,6 +336,12 @@ export function RepeatPicker({ value, onSelect }: { value: string; onSelect: (va
 
   const count = Math.max(1, Math.min(365, Math.floor(Number(amount)) || 1))
   const encoded = mode === 'weekdays' ? (days.length ? `semanal:${[...days].sort((a, b) => a - b).join(',')}` : '') : `intervalo:${count * (unit === 'semanas' ? 7 : 1)}`
+  return <RepeatCustom encoded={encoded} onSelect={onSelect} count={count} mode={mode} setMode={setMode} amount={amount} setAmount={setAmount} unit={unit} setUnit={setUnit} days={days} setDays={setDays} back={() => setCustom(false)} />
+}
+
+function RepeatCustom({ encoded, onSelect, count, mode, setMode, amount, setAmount, unit, setUnit, days, setDays, back }: { encoded: string; onSelect: (value: string) => void; count: number; mode: 'interval' | 'weekdays'; setMode: (mode: 'interval' | 'weekdays') => void; amount: string; setAmount: (value: string) => void; unit: 'dias' | 'semanas'; setUnit: (unit: 'dias' | 'semanas') => void; days: number[]; setDays: (update: (current: number[]) => number[]) => void; back: () => void }) {
+  const stage = useContext(StageCtx)
+  useEffect(() => { if (stage && encoded) stage.set(() => onSelect(encoded)) }, [encoded]) // eslint-disable-line react-hooks/exhaustive-deps
   return (
     <div className={styles.custom}>
       <div className={styles.segment} role="tablist">
@@ -302,8 +364,8 @@ export function RepeatPicker({ value, onSelect }: { value: string; onSelect: (va
         </div>
       )}
       <div className={styles.customActions}>
-        <button type="button" className={styles.customBack} onClick={() => setCustom(false)}>Voltar</button>
-        <button type="button" className={styles.customOk} disabled={!encoded} onClick={() => onSelect(encoded)}>Definir</button>
+        <button type="button" className={styles.customBack} onClick={back}>Voltar</button>
+        {stage ? null : <button type="button" className={styles.customOk} disabled={!encoded} onClick={() => onSelect(encoded)}>Definir</button>}
       </div>
     </div>
   )
@@ -326,6 +388,12 @@ export function ReminderPicker({ value, onSelect }: { value: string; onSelect: (
   }
 
   const count = Math.max(1, Math.min(999, Math.floor(Number(amount)) || 1))
+  return <ReminderCustom count={count} unit={unit} setUnit={setUnit} amount={amount} setAmount={setAmount} onSelect={onSelect} back={() => setCustom(false)} />
+}
+
+function ReminderCustom({ count, unit, setUnit, amount, setAmount, onSelect, back }: { count: number; unit: 'm' | 'h' | 'd'; setUnit: (unit: 'm' | 'h' | 'd') => void; amount: string; setAmount: (value: string) => void; onSelect: (value: string) => void; back: () => void }) {
+  const stage = useContext(StageCtx)
+  useEffect(() => { if (stage) stage.set(() => onSelect(`${count}${unit}`)) }, [count, unit]) // eslint-disable-line react-hooks/exhaustive-deps
   return (
     <div className={styles.custom}>
       <div className={styles.customRow}>
@@ -338,8 +406,8 @@ export function ReminderPicker({ value, onSelect }: { value: string; onSelect: (
         <span className={styles.customHint}>antes</span>
       </div>
       <div className={styles.customActions}>
-        <button type="button" className={styles.customBack} onClick={() => setCustom(false)}>Voltar</button>
-        <button type="button" className={styles.customOk} onClick={() => onSelect(`${count}${unit}`)}>Definir</button>
+        <button type="button" className={styles.customBack} onClick={back}>Voltar</button>
+        {stage ? null : <button type="button" className={styles.customOk} onClick={() => onSelect(`${count}${unit}`)}>Definir</button>}
       </div>
     </div>
   )
@@ -349,7 +417,11 @@ export function ReminderPicker({ value, onSelect }: { value: string; onSelect: (
 
 type TreeProject = Record<string, any>
 
-export function ProjectPicker({ projects, projectId, section, imageOf, onSelect }: { projects: TreeProject[]; projectId: string; section: string; imageOf?: (project: TreeProject) => string | undefined; onSelect: (projectId: string, section: string) => void }) {
+export function ProjectPicker({ projects, projectId: currentProject, section: currentSection, imageOf, onSelect: select }: { projects: TreeProject[]; projectId: string; section: string; imageOf?: (project: TreeProject) => string | undefined; onSelect: (projectId: string, section: string) => void }) {
+  const [choice, choose] = useStaged<{ id: string; section: string }>({ id: currentProject, section: currentSection }, value => select(value.id, value.section))
+  const projectId = choice.id
+  const section = choice.section
+  const onSelect = (id: string, name: string) => choose({ id, section: name })
   const ids = new Set(projects.map(project => String(project.id)))
   const childrenOf = (parent: string) => projects.filter(project => String(project.parent_id || '') === parent)
   const roots = projects.filter(project => !project.parent_id || !ids.has(String(project.parent_id)))

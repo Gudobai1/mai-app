@@ -2072,3 +2072,13 @@
   background: transparent;
   color: var(--ds-muted);
 }
+
+/* Passar o mouse mostra o check, para saber onde clicar. */
+.subCheck.subCheck.subCheck > * { opacity: 0; transform: scale(0.4); transition: opacity 140ms ease, transform 180ms cubic-bezier(0.2, 0.8, 0.2, 1); }
+.subCheck.subCheck.subCheck:hover { color: var(--ds-muted); }
+.subCheck.subCheck.subCheck:hover > * { opacity: 0.6; transform: none; }
+.subCheck.subCheck.subCheck[data-done] > * { opacity: 1; transform: none; }
+
+/* Adicionar subtarefa ao fim da lista aberta. */
+.subAddBtn.subAddBtn { appearance: none; display: inline-flex; align-items: center; gap: 6px; align-self: flex-start; margin: 2px 0 4px; padding: 4px 6px; border: 0; border-radius: 6px; background: transparent; color: var(--ds-muted); font: inherit; font-size: 13px; font-weight: var(--ds-fw-medium); cursor: pointer; }
+.subAddBtn.subAddBtn:hover { background: var(--ds-surface-hover); color: var(--ds-text); }

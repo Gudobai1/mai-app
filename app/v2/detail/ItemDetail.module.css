@@ -1547,5 +1547,13 @@
 /* Foto e ícone do projeto: sempre redondos. */
 .crumbImg.crumbImg, .crumbIcon.crumbIcon, .projectImg.projectImg { border-radius: 50%; }
 
-/* Subtarefa: Cancelar na esquerda, Adicionar na direita. */
-.composerActions.composerActions.composerActions { flex-direction: row-reverse; justify-content: space-between; }
+/* Subtarefa: no canto direito, Cancelar e Adicionar lado a lado. */
+.composerActions.composerActions.composerActions { flex-direction: row-reverse; justify-content: flex-start; }
+.composerDesc { width: 100%; min-height: 24px; padding: 0 2px; border: 0; outline: none; resize: none; background: transparent; color: var(--ds-text-2); font: inherit; font-size: 13px; }
+.composerDesc::placeholder { color: var(--ds-muted); }
+
+/* Passar o mouse mostra o check, para saber onde clicar. */
+.round.round.round > * { opacity: 0; transform: scale(0.4); transition: opacity 140ms ease, transform 180ms cubic-bezier(0.2, 0.8, 0.2, 1); }
+.round.round.round:hover { color: var(--ds-muted); }
+.round.round.round:hover > * { opacity: 0.6; transform: none; }
+.round.round.round[data-checked] > * { opacity: 1; transform: none; }

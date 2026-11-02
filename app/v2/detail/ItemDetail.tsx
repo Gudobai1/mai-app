@@ -14,6 +14,7 @@ import { resolveMaiIcon } from '../MaiIcons'
 import { askChoice, askConfirm, notify } from '../shell/ConfirmDialog'
 import { askUnsaved } from '../shell/unsaved'
 import { useQuickMenu } from '../shell/QuickMenu'
+import { compareSubtasks } from '../subtaskOrder'
 import { useTaskQuick } from '../shell/TaskQuick'
 import { uploadAttachment } from './upload'
 import { CommentsSection, type Comment } from './Comments'
@@ -210,8 +211,16 @@ function Header({ kind, crumbs, hideKind }: { kind: string; crumbs?: ReactNode; 
   )
 }
 
-function Footer({ status, onDelete, deleteLabel = 'Excluir' }: { status?: ReactNode; onDelete?: () => void; deleteLabel?: string }) {
+function Footer({ status, onDelete, deleteLabel = 'Excluir', readOnly }: { status?: ReactNode; onDelete?: () => void; deleteLabel?: string; readOnly?: boolean }) {
   const { dirty, requestClose, saveAndClose, saving } = useContext(DetailCtx)
+  if (readOnly) {
+    return (
+      <footer className={styles.footer}>
+        <span className={styles.status}>{status}</span>
+        <button type="button" className={styles.footerCancel} onClick={requestClose}>Fechar</button>
+      </footer>
+    )
+  }
   return (
     <footer className={styles.footer}>
       {onDelete ? <button type="button" className={styles.delete} onClick={onDelete} disabled={saving}><Icon name="delete" size={17} filled={false} />{deleteLabel}</button> : null}
@@ -440,7 +449,7 @@ function Attachments({ files, onChange }: { files: Row[]; onChange: (files: Row[
 function Round({ checked, late, onToggle, label, tone }: { checked: boolean; late?: boolean; onToggle: () => void; label: string; tone?: 'success' }) {
   return (
     <button type="button" className={styles.round} data-checked={checked || undefined} data-late={late || undefined} data-tone={tone} onClick={onToggle} aria-pressed={checked} aria-label={label}>
-      {checked ? <Icon name="check" size={13} /> : null}
+      <Icon name="check" size={13} />
     </button>
   )
 }
@@ -499,6 +508,7 @@ function TaskBody({ task, state, today, commit, register, close, openTask }: { t
   const doneChildren = children.filter(row => row.concluida).length
   const late = Boolean(draft._data) && draft._data < today && !task.concluida
   const [subtask, setSubtask] = useState('')
+  const [subDesc, setSubDesc] = useState('')
   const [composing, setComposing] = useState(false)
   const [subDue, setSubDue] = useState('')
   const [subPriority, setSubPriority] = useState(4)
@@ -512,7 +522,7 @@ function TaskBody({ task, state, today, commit, register, close, openTask }: { t
   const subRepeatRef = useRef<HTMLButtonElement | null>(null)
   const subReminderRef = useRef<HTMLButtonElement | null>(null)
   const [showDone, setShowDone] = useState(true)
-  const sortedChildren = [...children].filter(row => showDone || !row.concluida).sort((a, b) => Number(Boolean(a.concluida)) - Number(Boolean(b.concluida)) || Number(a.ordem || 0) - Number(b.ordem || 0))
+  const sortedChildren = [...children].filter(row => showDone || !row.concluida).sort(compareSubtasks)
 
   const crumbs: Row[] = []
   let parentId = String(task.parent_id || '')
@@ -539,8 +549,9 @@ function TaskBody({ task, state, today, commit, register, close, openTask }: { t
   function addSubtask() {
     const title = subtask.trim()
     if (!title) return
-    commit(current => ({ ...current, tasks: [...current.tasks, { id: uid('t'), titulo: title, descricao: '', data_vencimento: subDue ? `${subDue}${subTime ? `T${subTime}` : ''}` : '', prioridade: subPriority, concluida: false, projeto_id: draft.projeto_id || 'entrada', parent_id: id, secao: draft.secao || '', criado_em: new Date().toISOString(), ordem: Date.now(), anexos: [], subtarefas: [], lembretes: subReminder ? [subReminder] : [], etiquetas: [], repeticao: subRepeat, notas: [] }] }))
+    commit(current => ({ ...current, tasks: [...current.tasks, { id: uid('t'), titulo: title, descricao: subDesc.trim(), data_vencimento: subDue ? `${subDue}${subTime ? `T${subTime}` : ''}` : '', prioridade: subPriority, concluida: false, projeto_id: draft.projeto_id || 'entrada', parent_id: id, secao: draft.secao || '', criado_em: new Date().toISOString(), ordem: Date.now(), anexos: [], subtarefas: [], lembretes: subReminder ? [subReminder] : [], etiquetas: [], repeticao: subRepeat, notas: [] }] }))
     setSubtask('')
+    setSubDesc('')
     setSubDue('')
     setSubTime('')
     setSubPriority(4)
@@ -637,9 +648,10 @@ function TaskBody({ task, state, today, commit, register, close, openTask }: { t
                     onChange={event => setSubtask(event.target.value)}
                     onKeyDown={event => {
                       if (event.key === 'Enter') { event.preventDefault(); addSubtask() }
-                      if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); setComposing(false); setSubtask('') }
+                      if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); setComposing(false); setSubtask(''); setSubDesc('') }
                     }}
                   />
+                  <textarea className={styles.composerDesc} rows={1} value={subDesc} placeholder="Descrição" onChange={event => setSubDesc(event.target.value)} />
                   <div className={styles.composerChips}>
                     <button ref={subDateRef} type="button" className={styles.subChip} style={{ '--chip-color': subDue && subDue < today ? 'var(--ds-danger)' : 'var(--ds-warn)' } as CSSProperties} data-empty={!subDue || undefined} onClick={() => setSubPicker('date')}>
                       <Icon name="calendar_today" size={14} />{subDue ? friendlyDate(subDue, today) : 'Data'}
@@ -684,7 +696,7 @@ function TaskBody({ task, state, today, commit, register, close, openTask }: { t
                   ) : null}
                   <div className={styles.composerActions}>
                     <button type="button" className={styles.composerAdd} disabled={!subtask.trim()} onClick={addSubtask}>Adicionar</button>
-                    <button type="button" className={styles.composerCancel} onClick={() => { setComposing(false); setSubtask(''); setSubDue(''); setSubTime(''); setSubPriority(4); setSubRepeat(''); setSubReminder('') }}>Cancelar</button>
+                    <button type="button" className={styles.composerCancel} onClick={() => { setComposing(false); setSubtask(''); setSubDesc(''); setSubDue(''); setSubTime(''); setSubPriority(4); setSubRepeat(''); setSubReminder('') }}>Cancelar</button>
                   </div>
                 </div>
               ) : (
@@ -798,7 +810,36 @@ function EventDetail({ item, state, today, commit, googleRpc, refreshEvents, reg
 
   const calendarName = google ? String(source.calendario_nome || 'Google Agenda') : String(draft.categoria || source.categoria || 'MAI')
   const color = String(source.calendarColor || source.cor || 'var(--ds-accent)')
+  const googleCategory = String(source.categoria || source.calendario_nome || 'Google Agenda')
   const timeRange = draft.dia_inteiro ? 'Dia todo' : `${draft.hora_inicio || '--:--'}${draft.hora_fim ? ` – ${draft.hora_fim}` : ''}`
+
+  // Compromisso do Google Agenda: só leitura. Nome, categoria e o atalho para abrir no Google.
+  if (google) {
+    return (
+      <>
+        <Header kind="event" crumbs={<span className={styles.crumb}><i>·</i>{calendarName}</span>} />
+        <div className={styles.scroll}>
+          <div className={styles.titleRow}>
+            <span className={styles.tile} style={{ background: color.startsWith('#') ? color : undefined }}><Icon name="event" size={17} /></span>
+            <div className={styles.titleBody}>
+              <h2 className={styles.title} style={{ margin: 0 }}>{String(source.titulo || item.title || 'Compromisso')}</h2>
+            </div>
+          </div>
+          <div className={styles.props}>
+            <Prop icon="sell" color="var(--ds-sky-fg)" label="Categoria" display={googleCategory} />
+          </div>
+          <div className={styles.actions}>
+            {source.url ? (
+              <a className={styles.actionRow} href={String(source.url)} target="_blank" rel="noreferrer">
+                <Icon name="open_in_new" size={20} filled={false} /><span>Abrir no Google Agenda</span>
+              </a>
+            ) : <p className={styles.description} style={{ margin: 0 }}>Este compromisso vem do Google Agenda e só pode ser editado lá.</p>}
+          </div>
+        </div>
+        <Footer readOnly />
+      </>
+    )
+  }
 
   return (
     <>

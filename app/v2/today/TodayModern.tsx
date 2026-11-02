@@ -12,6 +12,7 @@ import { driveAssetUrl } from '../DriveAsset'
 import { resolveMaiIcon } from '../MaiIcons'
 import { askConfirm } from '../shell/ConfirmDialog'
 import { QuickAdd } from '../shell/QuickAdd'
+import { compareSubtasks } from '../subtaskOrder'
 import { useTaskQuick } from '../shell/TaskQuick'
 import { useQuickMenu, type QuickMenuConfig } from '../shell/QuickMenu'
 import { hiddenOccurrenceIds } from '../../../lib/v2/series'
@@ -608,6 +609,7 @@ export function TodayModern({ state, today, commit, navigate, inspect, options, 
 
   /* Adicionar no próprio lugar: o formulário completo abre onde o clique aconteceu. */
   const [inlineAdd, setInlineAdd] = useState('')
+  const [subAddFor, setSubAddFor] = useState('')
   const addRow = (label: string, kind: 'task' | 'event' | 'finance', projectId = '') => {
     const key = `${kind}:${projectId}`
     if (inlineAdd === key) {
@@ -667,7 +669,7 @@ export function TodayModern({ state, today, commit, navigate, inspect, options, 
       </div>
       {expanded && children.length ? (
         <div className={styles.subList} role="list" aria-label={`Subtarefas de ${title}`}>
-          {[...children].sort((a, b) => Number(Boolean(a.concluida)) - Number(Boolean(b.concluida)) || Number(a.ordem || 0) - Number(b.ordem || 0)).map(child => {
+          {[...children].sort(compareSubtasks).map(child => {
             const childId = String(child.id)
             const childDue = dateKey(child.data_vencimento)
             const childLate = Boolean(childDue) && childDue < today && !child.concluida
@@ -675,13 +677,18 @@ export function TodayModern({ state, today, commit, navigate, inspect, options, 
             return (
               <div key={childId} role="listitem" className={styles.subRow} data-done={child.concluida || undefined} onClick={() => inspectTask(child)} {...quick.bind(() => taskMenu(child))}>
                 <button type="button" className={styles.subCheck} data-done={child.concluida || undefined} data-late={childLate || undefined} style={!child.concluida && PRIORITY_COLOR[childPriority] ? ({ borderColor: PRIORITY_COLOR[childPriority] } as CSSProperties) : undefined} aria-label={child.concluida ? `Reabrir subtarefa ${String(child.titulo || '')}` : `Concluir subtarefa ${String(child.titulo || '')}`} onClick={event => { event.stopPropagation(); toggleTask(childId) }}>
-                  {child.concluida ? <Icon name="check" size={11} /> : null}
+                  <Icon name="check" size={11} />
                 </button>
                 <button type="button" className={styles.subTitle}>{String(child.titulo || 'Subtarefa')}</button>
                 {childDue ? <span className={styles.subMeta} data-late={childLate || undefined}>{naturalDate(childDue, today)}</span> : null}
               </div>
             )
           })}
+          {subAddFor === taskId ? (
+            <QuickAdd inline kinds={['task']} initial="task" parentId={taskId} state={state} today={today} defaultProjectId={String(task.projeto_id || 'entrada')} defaultSection={String(task.secao || '')} commit={commit} onFinance={() => undefined} onClose={() => setSubAddFor('')} />
+          ) : (
+            <button type="button" className={styles.subAddBtn} onClick={() => setSubAddFor(taskId)}><Icon name="add" size={15} filled={false} />Adicionar subtarefa</button>
+          )}
         </div>
       ) : null}
       </Fragment>
