@@ -14,6 +14,7 @@ import { askConfirm } from '../shell/ConfirmDialog'
 import { QuickAdd } from '../shell/QuickAdd'
 import { useQuickMenu, type QuickMenuConfig } from '../shell/QuickMenu'
 import { hiddenOccurrenceIds } from '../../../lib/v2/series'
+import { DotRing } from '../habits/DotRing'
 import { AgendaStrip } from './AgendaStrip'
 import styles from './TodayModern.module.css'
 
@@ -843,6 +844,18 @@ export function TodayModern({ state, today, commit, navigate, inspect, options, 
         {!collapsed.has('habits') ? (
           habits.length ? (
             <div className={styles.habitList} role="list">
+              <div className={styles.habitHead} aria-hidden="true">
+                <span className={styles.habitHeadSpacer} />
+                <span className={styles.habitDots}>
+                  {weekKeys.map(key => (
+                    <span key={key} className={styles.habitHeadDay} data-today={key === day || undefined}>
+                      <small>{['D', 'S', 'T', 'Q', 'Q', 'S', 'S'][new Date(`${key}T12:00:00`).getDay()]}</small>
+                      <b>{Number(key.slice(8))}</b>
+                    </span>
+                  ))}
+                </span>
+                <span className={styles.habitHeadStreak} />
+              </div>
               {habits.map(item => {
                 const name = String(item.habit.nome || 'Hábito')
                 const color = String(item.habit.cor_hex || 'var(--ds-accent)')
@@ -858,7 +871,7 @@ export function TodayModern({ state, today, commit, navigate, inspect, options, 
                     </button>
                     <span className={styles.habitDots}>
                       {weekKeys.map(key => (
-                        <button key={key} type="button" className={styles.habitDay} data-day="" style={{ ['--p' as string]: pctOn(item.habit, key) }} data-on={levelOn(item.habit, key) === 'full' || undefined} data-part={levelOn(item.habit, key) === 'part' || undefined} data-failed={failedEntry(entryByKey.get(`${item.habit.id}|${key}`)) || undefined} data-today={key === day || undefined} data-off={!habitEligible(item.habit, key) || undefined} disabled={key > today || !habitEligible(item.habit, key)} onClick={() => logHabitOn(item.habit, key)} aria-label={`${name} em ${naturalDate(key, today)}`} />
+                        <button key={key} type="button" className={styles.habitDay} data-day="" style={{ ['--p' as string]: pctOn(item.habit, key) }} data-on={levelOn(item.habit, key) === 'full' || undefined} data-part={levelOn(item.habit, key) === 'part' || undefined} data-failed={failedEntry(entryByKey.get(`${item.habit.id}|${key}`)) || undefined} data-today={key === day || undefined} data-off={!habitEligible(item.habit, key) || undefined} disabled={key > today || !habitEligible(item.habit, key)} onClick={() => logHabitOn(item.habit, key)} aria-label={`${name} em ${naturalDate(key, today)}`}>{levelOn(item.habit, key) === 'part' ? <DotRing pct={Number(pctOn(item.habit, key))} /> : null}</button>
                       ))}
                     </span>
                     <span className={styles.streak} data-on={streak > 0 || undefined} title={`Sequência de ${streak} ${streak === 1 ? 'dia' : 'dias'}`}><Icon name="local_fire_department" size={15} />{streak}</span>

@@ -82,6 +82,7 @@ export function AppSettingsDrawer(props: Props) {
   }, [props])
 
   const notifications = Boolean(props.state.configs.notificationsEnabled)
+  const hideInbox = Boolean(props.state.configs.hideInbox)
 
   return (
     <div className={styles.layer} onMouseDown={props.onClose}>
@@ -124,6 +125,10 @@ export function AppSettingsDrawer(props: Props) {
                 onMode={mode => props.commit(current => ({ ...current, configs: { ...current.configs, theme: mode } }))}
                 onTheme={theme => props.commit(current => ({ ...current, configs: { ...current.configs, accentColor: theme } }))}
               />
+              <div className={styles.row}>
+                <span><strong>Ocultar Entrada</strong><small>Esconde a Entrada da lista de projetos no menu lateral.</small></span>
+                <button type="button" role="switch" aria-checked={hideInbox} aria-label="Ocultar Entrada" className={styles.switch} data-on={hideInbox || undefined} onClick={() => props.commit(current => ({ ...current, configs: { ...current.configs, hideInbox: !current.configs.hideInbox } }))}><i /></button>
+              </div>
             </section>
 
             <section className={styles.section} data-section="notificacoes">

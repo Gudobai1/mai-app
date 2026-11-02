@@ -41,7 +41,7 @@
 .dot[data-off] { opacity: 0.35; border-style: dashed; }
 .dot[data-today]:not([data-level]) { border-color: var(--ds-muted); border-width: 2.5px; }
 .ring[data-level='full'], .dot[data-level='full'] { background: var(--hc); border-color: var(--hc); }
-.ring[data-level='part'], .dot[data-level='part'] { border: 0; background: conic-gradient(var(--hc) calc(var(--p) * 1%), var(--ds-line) 0); }
+.ring[data-level='part'], .dot[data-level='part'] { border: 0; background: transparent; }
 .dot[data-level='fail'] { border-color: var(--ds-danger); color: var(--ds-danger); }
 .dots { display: flex; gap: 8px; }
 
@@ -151,7 +151,7 @@
 
 .dayNumber { font-size: 12px; font-weight: 600; color: var(--ds-text); }
 .dot[data-level='full'] .dayNumber { color: #fff; }
-.dot[data-level='part'] .dayNumber { text-shadow: 0 0 3px var(--ds-bg), 0 0 3px var(--ds-bg), 0 0 3px var(--ds-bg); }
+.dot[data-level='part'] .dayNumber { display: none; }
 .dot[data-level='fail'] .dayNumber { color: var(--ds-danger); }
 .month .dot { width: 100%; max-width: 38px; height: auto; aspect-ratio: 1; justify-self: center; }
 .month { gap: 6px; }
@@ -170,12 +170,7 @@
 @media (hover: none) { .quickButton { opacity: 1; } }
 .quick { display: grid; gap: 10px; padding: 4px; }
 
-.habitIcon { display: inline-block; margin-right: 6px; vertical-align: -3px; color: var(--ds-muted); }
 .title { display: flex; align-items: center; }
-.iconGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(38px, 1fr)); gap: 6px; }
-.iconGrid button { display: grid; place-items: center; height: 38px; border: 1px solid var(--ds-line); border-radius: 6px; background: transparent; color: var(--ds-muted); cursor: pointer; }
-.iconGrid button:hover { background: var(--ds-surface-hover); color: var(--ds-text); }
-.iconGrid button[data-active] { border-color: var(--hc, var(--ds-accent)); color: var(--hc, var(--ds-accent)); }
 .wideField { flex-basis: 100%; }
 .composerFields .wideField input { width: 100%; box-sizing: border-box; }
 

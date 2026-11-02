@@ -161,13 +161,15 @@ export function ModernSidebar({ state, today, view, navigate, onSearch, onSettin
         <div className={styles.group}>
           <div className={styles.groupLabel}>Projetos</div>
           <div className={styles.projectBlock}>
-            <div className={styles.projectRow} data-active={(view === 'tasks' && activeProjectId === 'entrada') || undefined}>
-              <button type="button" className={styles.projectButton} aria-current={view === 'tasks' && activeProjectId === 'entrada' ? 'page' : undefined} onClick={() => navigate('inbox' as AppView)}>
-                <SidebarIcon name="inbox" />
-                <span className={styles.itemLabel}>Entrada</span>
-                {inboxCount ? <span className={styles.projectCount}>{inboxCount}</span> : null}
-              </button>
-            </div>
+            {state.configs.hideInbox ? null : (
+              <div className={styles.projectRow} data-active={(view === 'tasks' && activeProjectId === 'entrada') || undefined}>
+                <button type="button" className={styles.projectButton} aria-current={view === 'tasks' && activeProjectId === 'entrada' ? 'page' : undefined} onClick={() => navigate('inbox' as AppView)}>
+                  <SidebarIcon name="inbox" />
+                  <span className={styles.itemLabel}>Entrada</span>
+                  {inboxCount ? <span className={styles.projectCount}>{inboxCount}</span> : null}
+                </button>
+              </div>
+            )}
           </div>
           {roots.map(project => renderProject(project))}
           {onNewProject ? (
