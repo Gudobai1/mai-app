@@ -11,7 +11,7 @@ import { FilePreviewOverlay } from '../FilePreviewOverlay'
 import { FinanceContextDrawerV4 } from '../FinanceContextDrawerV4'
 import { financeCardPaymentState } from '../FinanceTransactionCard'
 import { resolveMaiIcon } from '../MaiIcons'
-import { askConfirm, notify } from '../shell/ConfirmDialog'
+import { askChoice, askConfirm, notify } from '../shell/ConfirmDialog'
 import { askUnsaved } from '../shell/unsaved'
 import { uploadAttachment } from './upload'
 import { CommentsSection, type Comment } from './Comments'
@@ -438,7 +438,7 @@ function Attachments({ files, onChange }: { files: Row[]; onChange: (files: Row[
 function Round({ checked, late, onToggle, label, tone }: { checked: boolean; late?: boolean; onToggle: () => void; label: string; tone?: 'success' }) {
   return (
     <button type="button" className={styles.round} data-checked={checked || undefined} data-late={late || undefined} data-tone={tone} onClick={onToggle} aria-pressed={checked} aria-label={label}>
-      {checked ? <Icon name="check" size={16} /> : null}
+      {checked ? <Icon name="check" size={12} /> : null}
     </button>
   )
 }
@@ -545,9 +545,31 @@ function TaskBody({ task, state, today, commit, register, close, openTask }: { t
   }
 
   async function remove() {
-    if (!(await askConfirm({ title: 'Excluir tarefa?', message: `“${draft.titulo || 'Tarefa'}” será excluída${children.length ? ' e as subtarefas sobem um nível' : ''}. Não dá para desfazer.` }))) return
+    const title = `“${draft.titulo || 'Tarefa'}”`
     const parent = String(task.parent_id || '')
-    commit(current => ({ ...current, tasks: current.tasks.filter(row => String(row.id) !== id).map(row => String(row.parent_id || '') === id ? { ...row, parent_id: parent } : row) }))
+    let removeIds = new Set<string>([id])
+    if (children.length) {
+      const answer = await askChoice({
+        title: 'Excluir também as subtarefas?',
+        message: `${title} tem ${children.length} ${children.length === 1 ? 'subtarefa' : 'subtarefas'}. Quer excluir tudo junto? Não dá para desfazer.`,
+        confirmLabel: 'Excluir tudo',
+        extraLabel: 'Só esta',
+        cancelLabel: 'Cancelar',
+        tone: 'danger',
+      })
+      if (answer === 'cancel') return
+      if (answer === 'confirm') {
+        removeIds = new Set([id])
+        let grew = true
+        while (grew) {
+          grew = false
+          for (const row of state.tasks as Row[]) {
+            if (!removeIds.has(String(row.id)) && removeIds.has(String(row.parent_id || ''))) { removeIds.add(String(row.id)); grew = true }
+          }
+        }
+      }
+    } else if (!(await askConfirm({ title: 'Excluir tarefa?', message: `${title} será excluída. Não dá para desfazer.` }))) return
+    commit(current => ({ ...current, tasks: current.tasks.filter(row => !removeIds.has(String(row.id))).map(row => String(row.parent_id || '') === id ? { ...row, parent_id: parent } : row) }))
     void close()
   }
 
@@ -572,7 +594,12 @@ function TaskBody({ task, state, today, commit, register, close, openTask }: { t
   return (
     <>
       <Header kind="task" hideKind onClose={() => void close()} crumbs={<>
-        <span className={styles.crumb}>{String(project?.nome || 'Entrada')}{draft.secao ? <><i>›</i>{draft.secao}</> : null}</span>
+        <span className={styles.crumb}>
+          {project?.imagem_url
+            ? <img className={styles.crumbImg} src={driveAssetUrl(project.imagem_url)} alt="" />
+            : <Icon name={project ? String(project.icone || 'folder') : 'inbox'} size={15} filled={false} className={styles.crumbIcon} style={project?.cor ? { color: String(project.cor) } : undefined} />}
+          {String(project?.nome || 'Entrada')}{draft.secao ? <><i>›</i>{draft.secao}</> : null}
+        </span>
         {crumbs.map(crumb => <span key={String(crumb.id)} className={styles.crumb}><i>›</i><button type="button" onClick={() => openTask(String(crumb.id))}>{String(crumb.titulo || 'Tarefa')}</button></span>)}
       </>} />
       <div className={styles.taskMain}>
