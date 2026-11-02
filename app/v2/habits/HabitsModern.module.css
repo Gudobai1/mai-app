@@ -178,3 +178,28 @@
 .presets button { height: 28px; padding: 0 8px; border: 0; border-radius: 4px; background: transparent; color: var(--ds-muted); font: inherit; font-size: 12px; font-weight: 600; cursor: pointer; }
 .presets button:hover { background: var(--ds-surface-hover); color: var(--ds-text); }
 .weekdays button[aria-pressed="true"] { background: var(--ds-accent-soft); }
+
+/* Pop-up de quantidade: progresso, passo a passo e atalhos. */
+.valueBody { gap: 12px; padding: 6px 20px 10px; }
+.valueProgress { position: relative; height: 8px; border-radius: 99px; background: var(--ds-surface-2); overflow: hidden; }
+.valueProgress i { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 99px; background: var(--ds-accent); transition: width 180ms ease; }
+.valueProgress b { position: absolute; top: 0; bottom: 0; background: color-mix(in srgb, var(--ds-accent) 45%, transparent); transition: width 180ms ease, left 180ms ease; }
+.valueSummary { margin: 0; font-size: 13px; color: var(--ds-muted); }
+.valueSummary strong { color: var(--ds-text); font-size: 15px; }
+.stepper { display: flex; align-items: center; gap: 10px; }
+.stepper > button { appearance: none; display: grid; place-items: center; width: 44px; height: 44px; flex-shrink: 0; border: 1px solid var(--ds-line); border-radius: 50%; background: transparent; color: var(--ds-text); cursor: pointer; }
+.stepper > button:hover { background: var(--ds-surface-hover); }
+.stepper label { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 0; }
+.stepper input { width: 100%; height: 44px; padding: 0; border: 0; border-bottom: 2px solid var(--ds-line); border-radius: 0; background: transparent; color: var(--ds-text); font: inherit; font-size: 28px; font-weight: 700; text-align: center; -moz-appearance: textfield; }
+.stepper input::-webkit-outer-spin-button, .stepper input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.stepper input:focus { outline: 0; border-color: var(--ds-accent); }
+.stepper label span { margin-top: 2px; font-size: 12px; color: var(--ds-muted); }
+.quickAmounts { display: flex; flex-wrap: wrap; gap: 6px; }
+.quickAmounts button { appearance: none; height: 30px; padding: 0 12px; border: 1px solid var(--ds-line); border-radius: 99px; background: transparent; color: var(--ds-text); font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; }
+.quickAmounts button:hover { background: var(--ds-surface-hover); }
+.quickAmounts button[data-active] { border-color: var(--ds-accent); background: var(--ds-accent-soft); color: var(--ds-accent); }
+.panelFoot { gap: 8px; padding: 6px 20px 16px; }
+.panelFoot .textPrimary { order: 3; margin-left: auto; height: 38px; padding: 0 18px; background: var(--ds-accent); color: var(--ds-on-accent); }
+.panelFoot .textPrimary:hover:not(:disabled) { background: var(--ds-accent); filter: brightness(1.08); }
+.panelFoot .textButton { order: 2; height: 38px; }
+.panelFoot .textDanger { order: 1; margin-left: 0; font-size: 13px; font-weight: 500; }

@@ -383,16 +383,28 @@ export function ValueDialog({ habit, day, current, hasEntry, onClose, onSave, on
         </header>
         {quantitative ? (
           <div className={styles.valueBody}>
-            <label className={styles.field}>
-              <span>Quanto adicionar{habit.unidade ? ` (${String(habit.unidade)})` : ''}</span>
-              <input autoFocus type="number" step="0.1" value={value} onFocus={event => event.currentTarget.select()} onChange={event => setValue(event.target.value)} onKeyDown={event => { if (event.key === 'Enter' && Number.isFinite(add) && amount >= 0) onSave(amount) }} />
-            </label>
-            <p className={styles.hint}>Já feito: <strong>{current} de {goal} {String(habit.unidade || '')}</strong>{Number.isFinite(add) && add !== 0 ? <> → ficará <strong>{Math.round(amount * 100) / 100}</strong></> : null}</p>
+            <div className={styles.valueProgress} aria-hidden="true">
+              <i style={{ width: `${Math.min(100, (current / goal) * 100)}%` }} />
+              <b style={{ left: `${Math.min(100, (current / goal) * 100)}%`, width: `${Math.max(0, Math.min(100 - Math.min(100, (current / goal) * 100), (Number.isFinite(add) ? add : 0) / goal * 100))}%` }} />
+            </div>
+            <p className={styles.valueSummary}><strong>{Math.round(current * 100) / 100}</strong>{Number.isFinite(add) && add !== 0 ? <> → <strong>{Math.round(amount * 100) / 100}</strong></> : null} de {goal} {String(habit.unidade || '')}</p>
+            <div className={styles.stepper}>
+              <button type="button" onClick={() => setValue(String(Math.round(((Number.isFinite(add) ? add : 0) - 1) * 100) / 100))} aria-label="Diminuir"><Icon name="remove" size={20} filled={false} /></button>
+              <label>
+                <input autoFocus type="number" step="any" inputMode="decimal" aria-label={`Quanto adicionar${habit.unidade ? ` (${String(habit.unidade)})` : ''}`} value={value} onFocus={event => event.currentTarget.select()} onChange={event => setValue(event.target.value)} onKeyDown={event => { if (event.key === 'Enter' && Number.isFinite(add) && add !== 0 && amount >= 0) onSave(amount) }} />
+                <span>{String(habit.unidade || 'a adicionar')}</span>
+              </label>
+              <button type="button" onClick={() => setValue(String(Math.round(((Number.isFinite(add) ? add : 0) + 1) * 100) / 100))} aria-label="Aumentar"><Icon name="add" size={20} filled={false} /></button>
+            </div>
+            <div className={styles.quickAmounts}>
+              {[1, 2, 5].filter(step => step < goal).map(step => <button key={step} type="button" data-active={add === step || undefined} onClick={() => setValue(String(step))}>+{step}</button>)}
+              {goal - current > 0 ? <button type="button" data-active={add === goal - current || undefined} onClick={() => setValue(String(Math.round((goal - current) * 100) / 100))}>Completar (+{Math.round((goal - current) * 100) / 100})</button> : null}
+            </div>
           </div>
         ) : null}
         <footer className={styles.panelFoot}>
           {quantitative
-            ? <button type="button" className={styles.textPrimary} disabled={!Number.isFinite(add) || amount < 0} onClick={() => onSave(amount)}>Adicionar</button>
+            ? <button type="button" className={styles.textPrimary} disabled={!Number.isFinite(add) || add === 0 || amount < 0} onClick={() => onSave(amount)}>{add < 0 ? 'Remover' : 'Adicionar'}</button>
             : <button type="button" className={styles.textPrimary} onClick={() => onSave(goal)}>Concluir</button>}
           <button type="button" className={styles.textButton} onClick={onClose}>Cancelar</button>
           {hasEntry ? <button type="button" className={styles.textButton} onClick={onClear}>Limpar</button> : null}
