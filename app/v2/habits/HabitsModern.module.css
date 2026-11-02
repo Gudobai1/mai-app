@@ -40,9 +40,9 @@
 .ring:disabled, .dot:disabled { cursor: default; }
 .dot[data-off] { opacity: 0.35; border-style: dashed; }
 .dot[data-today]:not([data-level]) { border-color: var(--ds-muted); border-width: 2.5px; }
-.ring[data-level='full'], .dot[data-level='full'] { background: var(--hc); border-color: var(--hc); }
+.ring[data-level='full'], .dot[data-level='full'] { background: transparent; border: 0; }
 .ring[data-level='part'], .dot[data-level='part'] { border: 0; background: transparent; }
-.dot[data-level='fail'] { border-color: var(--ds-danger); color: var(--ds-danger); }
+.dot[data-level='fail'] { border: 0; background: transparent; color: var(--ds-danger); }
 .dots { display: flex; gap: 8px; }
 
 .streak { display: inline-flex; align-items: center; justify-content: flex-end; gap: 2px; color: var(--ds-muted); font-size: 13px; font-weight: 700; }
@@ -151,7 +151,7 @@
 
 .dayNumber { font-size: 12px; font-weight: 600; color: var(--ds-text); }
 .dot[data-level='full'] .dayNumber { color: #fff; }
-.dot[data-level='part'] .dayNumber { display: none; }
+.dot[data-level='part'] .dayNumber, .dot[data-level='full'] .dayNumber { display: none; }
 .dot[data-level='fail'] .dayNumber { color: var(--ds-danger); }
 .month .dot { width: 100%; max-width: 38px; height: auto; aspect-ratio: 1; justify-self: center; }
 .month { gap: 6px; }
