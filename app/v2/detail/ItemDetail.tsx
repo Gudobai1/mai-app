@@ -142,7 +142,7 @@ function DetailShell(props: Props & { item: InspectableItem }) {
     onClose()
   }, [saving, onClose])
 
-  /** Fechar (X, Esc, fora, Cancelar): avisa se há alterações não salvas. */
+  /** Fechar (X, Esc, Cancelar): avisa se há alterações não salvas. Clicar fora salva sozinho. */
   const requestClose = useCallback(async () => {
     if (saving) return
     if (dirtyRef.current) {
@@ -184,7 +184,7 @@ function DetailShell(props: Props & { item: InspectableItem }) {
   // Fora da casca do app, para nenhuma regra antiga de CSS alcançar o popup.
   return createPortal(
     <DetailCtx.Provider value={{ dirty: dirtyKeys.size > 0, setDirty, requestClose: () => void requestClose(), saveAndClose: () => void saveAndClose(), saving }}>
-    <div className={styles.layer} onClick={event => { if (event.target === event.currentTarget) void requestClose() }}>
+    <div className={styles.layer} onClick={event => { if (event.target !== event.currentTarget) return; if (dirtyRef.current) void saveAndClose(); else onClose() }}>
       <section className={styles.panel} data-kind={item.kind} role="dialog" aria-modal="true" aria-label={KIND[item.kind]?.label || 'Detalhes'}>
         <div className={styles.handle} aria-hidden="true" />
         {body}
