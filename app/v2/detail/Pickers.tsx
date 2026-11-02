@@ -18,8 +18,8 @@ function isMobile() {
 }
 
 /*
- * Os seletores só valem depois de "Definir": escolher uma opção apenas marca;
- * "Cancelar" (ou Esc / clicar fora) fecha sem mudar nada.
+ * Escolher uma opção apenas marca. "Definir" (ou clicar fora) aplica a escolha;
+ * "Cancelar" (ou Esc) fecha sem mudar nada.
  */
 type Stage = { set: (apply: () => void) => void }
 const StageCtx = createContext<Stage | null>(null)
@@ -71,7 +71,14 @@ export function Floating({ anchor, title, onClose, children, width = 280 }: { an
     <div
       className={styles.layer}
       data-sheet={mobile || undefined}
-      onClick={event => { event.stopPropagation(); if (event.target === event.currentTarget) onClose() }}
+      onClick={event => {
+        event.stopPropagation()
+        if (event.target !== event.currentTarget) return
+        // Clicar fora vale como "Definir" quando há uma escolha marcada.
+        const apply = applyRef.current
+        if (apply) apply()
+        else onClose()
+      }}
       onPointerDown={event => event.stopPropagation()}
     >
       <div
