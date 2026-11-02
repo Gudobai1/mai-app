@@ -120,8 +120,16 @@
 /* Compromisso: pontinho na cor do evento (sem círculo de conclusão). */
 .dot { flex-shrink: 0; width: 8px; height: 8px; margin: 6px 2px 0; border-radius: 50%; background: var(--ev); }
 .row { align-items: flex-start; }
-.row[data-external] { margin: 6px 0; padding: 10px 12px; border: 1px solid var(--ev); border-radius: 10px; background: color-mix(in srgb, var(--ev) 9%, transparent); }
-.list > .row[data-external]:last-child { border-bottom: 1px solid var(--ev); }
-.row[data-external] .source { right: 12px; }
-.row[data-external] .body { max-width: calc(100% - 140px); }
-.row[data-external] .source b { display: none; }
+
+/* Eventos de agendas externas — como o bloco "Eventos" do Todoist. */
+.events { position: relative; display: flex; flex-direction: column; gap: 2px; margin: 4px 0 8px; padding: 8px 44px 8px 12px; border-radius: 8px; background: var(--ds-surface-2); }
+.ext { appearance: none; display: flex; align-items: center; gap: 8px; min-width: 0; padding: 3px 0; border: 0; background: transparent; color: var(--ds-text); font: inherit; font-size: 14px; text-align: left; cursor: pointer; }
+.ext i { flex-shrink: 0; width: 3px; height: 14px; border-radius: 2px; background: var(--ev); }
+.extTitle { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ext small { flex-shrink: 0; color: var(--ds-muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+.ext:hover .extTitle { text-decoration: underline; text-underline-offset: 3px; }
+.fold { appearance: none; position: absolute; top: 8px; right: 10px; display: grid; place-items: center; width: 24px; height: 24px; padding: 0; border: 0; border-radius: 50%; background: var(--ds-surface-hover); color: var(--ds-muted); cursor: pointer; }
+.fold:hover { color: var(--ds-text); }
+.eventsHead { appearance: none; display: flex; align-items: center; gap: 8px; width: 100%; padding: 0; border: 0; background: transparent; color: var(--ds-text); font: inherit; font-size: 14px; cursor: pointer; }
+.eventsHead small { color: var(--ds-muted); }
+.eventsHead svg, .eventsHead > :last-child { margin-left: auto; color: var(--ds-muted); }
