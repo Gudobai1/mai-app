@@ -45,7 +45,6 @@
 .empty { margin: 0; font-size: 13px; color: var(--ds-muted); }
 
 .group { display: flex; flex-direction: column; gap: 6px; }
-.group h4 { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 11px; font-weight: var(--ds-fw-heavy); letter-spacing: 0.06em; text-transform: uppercase; color: var(--ds-muted); }
 .groupBody { display: flex; flex-direction: column; gap: 2px; }
 
 /* Cartões de tarefa/hábito/finança usam o estilo das Tarefas; só ajustes de espaço */
@@ -210,11 +209,7 @@
 
 /* Página fixa no desktop: só a lista, a semana e o mês rolam por dentro. */
 @media (min-width: 901px) {
-  .page { position: sticky; top: 0; height: calc(100dvh - 48px); padding: 0; overflow: hidden; }
-  .listLayout { flex: 1; min-height: 0; align-items: stretch; }
-  .listMain { overflow-y: auto; min-height: 0; padding-right: 8px; padding-bottom: 48px; scrollbar-width: thin; }
-  .daySlot { scroll-margin-top: 0; }
-  .mini { position: static; align-self: start; }
+  .page[data-mode='week'], .page[data-mode='month'] { position: sticky; top: 0; height: calc(100dvh - 48px); padding: 0; overflow: hidden; }
   .weekGrid { flex: 1; min-height: 0; }
   .weekScroll { flex: 1; max-height: none; min-height: 0; }
   .monthWrap { flex: 1; min-height: 0; align-items: stretch; }
@@ -238,3 +233,11 @@
 .listMain::-webkit-scrollbar-button, .weekScroll::-webkit-scrollbar-button, .monthWrap > :last-child::-webkit-scrollbar-button { display: none; }
 .listMain::-webkit-scrollbar-track, .weekScroll::-webkit-scrollbar-track, .monthWrap > :last-child::-webkit-scrollbar-track { background: transparent; }
 .cellEvent { font-weight: var(--ds-fw-medium); color: var(--ds-text-2); }
+
+/* Categorias recolhíveis */
+.groupHead { appearance: none; width: 100%; display: flex; align-items: center; gap: 8px; padding: 4px 2px; border: 0; background: transparent; color: var(--ds-muted); font: inherit; cursor: pointer; text-align: left; border-radius: 6px; }
+.groupHead:hover { color: var(--ds-text); }
+.groupHead h4 { margin: 0; font-size: 11px; font-weight: var(--ds-fw-heavy); letter-spacing: 0.06em; text-transform: uppercase; }
+.groupHead i { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.groupCount { font-size: 11px; font-weight: var(--ds-fw-bold); }
+.groupHead > :last-child { margin-left: auto; }
