@@ -408,6 +408,11 @@ function TaskBody({ task, state, today, commit, register, close, openTask }: { t
   const late = Boolean(draft._data) && draft._data < today && !task.concluida
   const [subtask, setSubtask] = useState('')
   const [composing, setComposing] = useState(false)
+  const [subDue, setSubDue] = useState('')
+  const [subPriority, setSubPriority] = useState(4)
+  const [subPicker, setSubPicker] = useState<'' | 'date' | 'priority'>('')
+  const subDateRef = useRef<HTMLButtonElement | null>(null)
+  const subPriorityRef = useRef<HTMLButtonElement | null>(null)
   const sortedChildren = [...children].sort((a, b) => Number(Boolean(a.concluida)) - Number(Boolean(b.concluida)) || Number(a.ordem || 0) - Number(b.ordem || 0))
 
   const crumbs: Row[] = []
@@ -424,8 +429,10 @@ function TaskBody({ task, state, today, commit, register, close, openTask }: { t
   function addSubtask() {
     const title = subtask.trim()
     if (!title) return
-    commit(current => ({ ...current, tasks: [...current.tasks, { id: uid('t'), titulo: title, descricao: '', data_vencimento: '', prioridade: 4, concluida: false, projeto_id: draft.projeto_id || 'entrada', parent_id: id, secao: draft.secao || '', criado_em: new Date().toISOString(), ordem: Date.now(), anexos: [], subtarefas: [], lembretes: [], etiquetas: [], repeticao: '', notas: [] }] }))
+    commit(current => ({ ...current, tasks: [...current.tasks, { id: uid('t'), titulo: title, descricao: '', data_vencimento: subDue, prioridade: subPriority, concluida: false, projeto_id: draft.projeto_id || 'entrada', parent_id: id, secao: draft.secao || '', criado_em: new Date().toISOString(), ordem: Date.now(), anexos: [], subtarefas: [], lembretes: [], etiquetas: [], repeticao: '', notas: [] }] }))
     setSubtask('')
+    setSubDue('')
+    setSubPriority(4)
   }
 
   async function remove() {
@@ -467,7 +474,7 @@ function TaskBody({ task, state, today, commit, register, close, openTask }: { t
           <div className={styles.sectionHead}><h3>Subtarefas</h3>{children.length ? <span>{doneChildren} de {children.length}</span> : null}</div>
           {children.length ? <div className={styles.bar}><span style={{ width: `${(doneChildren / children.length) * 100}%` }} /></div> : null}
           <div className={styles.list}>
-            {sortedChildren.map(child => <SubtaskCard key={String(child.id)} task={child} state={state} today={today} commit={commit} onToggle={() => toggle(String(child.id))} onOpen={() => openTask(String(child.id))} />)}
+            {sortedChildren.map(child => <SubtaskCard key={String(child.id)} task={child} state={state} today={today} onToggle={() => toggle(String(child.id))} onOpen={() => openTask(String(child.id))} />)}
             {composing ? (
               <div className={styles.composer}>
                 <input
@@ -481,9 +488,27 @@ function TaskBody({ task, state, today, commit, register, close, openTask }: { t
                     if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); setComposing(false); setSubtask('') }
                   }}
                 />
+                <div className={styles.composerChips}>
+                  <button ref={subDateRef} type="button" className={styles.subChip} data-empty={!subDue || undefined} onClick={() => setSubPicker('date')}>
+                    <Icon name="calendar_today" size={14} />{subDue ? friendlyDate(subDue, today) : 'Data'}
+                  </button>
+                  <button ref={subPriorityRef} type="button" className={styles.subChip} data-empty={subPriority === 4 || undefined} onClick={() => setSubPicker('priority')}>
+                    <Icon name={(PRIORITIES.find(option => Number(option.value) === subPriority) || PRIORITIES[3]).icon} size={14} style={{ color: (PRIORITIES.find(option => Number(option.value) === subPriority) || PRIORITIES[3]).color }} />{subPriority === 4 ? 'Prioridade' : (PRIORITIES.find(option => Number(option.value) === subPriority) || PRIORITIES[3]).label}
+                  </button>
+                </div>
+                {subPicker === 'date' ? (
+                  <Floating anchor={subDateRef} title="Data da subtarefa" width={300} onClose={() => setSubPicker('')}>
+                    <DatePicker value={subDue} today={today} onSelect={value => { setSubPicker(''); setSubDue(value || '') }} />
+                  </Floating>
+                ) : null}
+                {subPicker === 'priority' ? (
+                  <Floating anchor={subPriorityRef} title="Prioridade" onClose={() => setSubPicker('')}>
+                    <OptionList options={PRIORITIES} value={String(subPriority)} onSelect={value => { setSubPicker(''); setSubPriority(Number(value)) }} />
+                  </Floating>
+                ) : null}
                 <div className={styles.composerActions}>
                   <span className={styles.composerHint}>Enter adiciona e continua</span>
-                  <button type="button" className={styles.composerCancel} onClick={() => { setComposing(false); setSubtask('') }}>Cancelar</button>
+                  <button type="button" className={styles.composerCancel} onClick={() => { setComposing(false); setSubtask(''); setSubDue(''); setSubPriority(4) }}>Cancelar</button>
                   <button type="button" className={styles.composerAdd} disabled={!subtask.trim()} onClick={addSubtask}>Adicionar</button>
                 </div>
               </div>
@@ -503,60 +528,23 @@ function TaskBody({ task, state, today, commit, register, close, openTask }: { t
   )
 }
 
-/** Cartão de subtarefa: sempre mostra o contexto e deixa mudar data e prioridade ali mesmo. */
-function SubtaskCard({ task, state, today, commit, onToggle, onOpen }: { task: Row; state: MaiState; today: string; commit: Commit; onToggle: () => void; onOpen: () => void }) {
+/** Subtarefa compacta, dentro do cartão: só marcar, ler e abrir. Data e prioridade são escolhidas ao criar. */
+function SubtaskCard({ task, state, today, onToggle, onOpen }: { task: Row; state: MaiState; today: string; commit?: Commit; onToggle: () => void; onOpen: () => void }) {
   const id = String(task.id)
-  const [picker, setPicker] = useState<'' | 'date' | 'priority'>('')
-  const dateRef = useRef<HTMLButtonElement | null>(null)
-  const priorityRef = useRef<HTMLButtonElement | null>(null)
   const due = dateKey(task.data_vencimento)
   const time = timeKey(task.data_vencimento)
   const done = Boolean(task.concluida)
   const late = Boolean(due) && due < today && !done
-  const priority = PRIORITIES.find(option => Number(option.value) === Number(task.prioridade || 4)) || PRIORITIES[3]
   const children = state.tasks.filter(row => String(row.parent_id || '') === id) as Row[]
-  const files = rows(task.anexos).length
-  const desc = String(task.descricao || '').replace(/<[^>]*>/g, ' ').replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ').trim()
-  const doneAt = dateKey(task.concluida_em)
-  const patch = (values: Row) => commit(current => ({ ...current, tasks: current.tasks.map(row => String(row.id) === id ? { ...row, ...values } : row) }))
+  const info = [due ? `${friendlyDate(due, today)}${time ? ` · ${time}` : ''}` : '', children.length ? `${children.filter(row => row.concluida).length}/${children.length}` : ''].filter(Boolean).join(' · ')
 
   return (
     <div className={styles.subCard} data-done={done || undefined}>
       <Round checked={done} late={late} onToggle={onToggle} label={`${done ? 'Reabrir' : 'Concluir'} ${String(task.titulo || 'subtarefa')}`} />
-      <div className={styles.subBody}>
-        <button type="button" className={styles.subMain} onClick={onOpen}>
-          <span className={styles.subTitle}>{String(task.titulo || 'Subtarefa')}</span>
-          {desc ? <span className={styles.subDesc}>{desc}</span> : null}
-        </button>
-        <div className={styles.subMeta}>
-          {done ? (
-            <span className={styles.subInfo}><Icon name="task_alt" size={14} />{doneAt ? `Concluída ${friendlyDate(doneAt, today).toLocaleLowerCase('pt-BR')}` : 'Concluída'}</span>
-          ) : (
-            <>
-              <button ref={dateRef} type="button" className={styles.subChip} data-empty={!due || undefined} data-late={late || undefined} onClick={() => setPicker('date')}>
-                <Icon name="calendar_today" size={14} />{due ? `${friendlyDate(due, today)}${time ? ` · ${time}` : ''}` : 'Sem data'}
-              </button>
-              <button ref={priorityRef} type="button" className={styles.subChip} data-empty={Number(priority.value) === 4 || undefined} onClick={() => setPicker('priority')}>
-                <Icon name={priority.icon} size={14} style={{ color: priority.color }} />{Number(priority.value) === 4 ? 'Prioridade' : priority.label}
-              </button>
-            </>
-          )}
-          {task.repeticao ? <span className={styles.subInfo}><Icon name="repeat" size={14} />{(REPEATS.find(option => option.value === task.repeticao) || { label: 'Repete' }).label}</span> : null}
-          {children.length ? <span className={styles.subInfo}><Icon name="account_tree" size={14} />{children.filter(row => row.concluida).length}/{children.length}</span> : null}
-          {files ? <span className={styles.subInfo}><Icon name="attach_file" size={14} />{files}</span> : null}
-        </div>
-      </div>
-      <button type="button" className={styles.subOpen} onClick={onOpen} aria-label={`Abrir ${String(task.titulo || 'subtarefa')}`}><Icon name="chevron_right" size={20} filled={false} /></button>
-      {picker === 'date' ? (
-        <Floating anchor={dateRef} title="Data da subtarefa" width={300} onClose={() => setPicker('')}>
-          <DatePicker value={due} today={today} onSelect={value => { setPicker(''); patch({ data_vencimento: value ? `${value}${time ? `T${time}` : ''}` : '' }) }} />
-        </Floating>
-      ) : null}
-      {picker === 'priority' ? (
-        <Floating anchor={priorityRef} title="Prioridade" onClose={() => setPicker('')}>
-          <OptionList options={PRIORITIES} value={priority.value} onSelect={value => { setPicker(''); patch({ prioridade: Number(value) }) }} />
-        </Floating>
-      ) : null}
+      <button type="button" className={styles.subMain} onClick={onOpen}>
+        <span className={styles.subTitle}>{String(task.titulo || 'Subtarefa')}</span>
+        {info ? <span className={styles.subInfo} data-late={late || undefined}>{info}</span> : null}
+      </button>
     </div>
   )
 }
