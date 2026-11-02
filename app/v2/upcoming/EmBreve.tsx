@@ -7,7 +7,7 @@ import { Icon } from '../../ds'
 import type { Row } from '../app-types'
 import type { InspectableItem } from '../ContextDrawer'
 import { driveAssetUrl } from '../DriveAsset'
-import { financeCardPaymentState } from '../FinanceTransactionCard'
+import { FinanceTransactionCard, financeCardPaymentState } from '../FinanceTransactionCard'
 import { askConfirm } from '../shell/ConfirmDialog'
 import { useQuickMenu, type QuickMenuConfig } from '../shell/QuickMenu'
 import tasksStyles from '../tasks/TasksModern.module.css'
@@ -121,6 +121,7 @@ export function EmBreve({ state, today, commit, inspect, syncRange }: Props) {
   const [scrollTo, setScrollTo] = useState({ day: today, n: 0 })
   const stripRef = useRef<HTMLDivElement | null>(null)
   const sentinelRef = useRef<HTMLDivElement | null>(null)
+  const listRef = useRef<HTMLDivElement | null>(null)
   const weekBodyRef = useRef<HTMLDivElement | null>(null)
   const lockUntil = useRef(0)
 
@@ -383,35 +384,36 @@ export function EmBreve({ state, today, commit, inspect, syncRange }: Props) {
     </div>
   )
 
-  const renderHabit = (entry: Entry) => (
-    <div key={entry.id} role="listitem" className={tasksStyles.card} data-done={entry.done || undefined} {...quick.bind(() => menuFor(entry))}>
-      <button type="button" className={tasksStyles.check} data-done={entry.done || undefined} data-priority="1" style={{ '--check-color': entry.color } as CSSProperties} onClick={() => toggleHabit(entry)} aria-label={entry.done ? `Desmarcar ${entry.title}` : `Marcar ${entry.title}`}>
-        {entry.done ? <Icon name="check" size={13} /> : null}
-      </button>
-      <button type="button" className={tasksStyles.cardMain} onClick={() => open(entry)}>
-        <span className={tasksStyles.cardTitle}>{entry.title}</span>
-        <span className={tasksStyles.cardMeta}>
-          {entry.time ? <span><Icon name="schedule" size={12} />{entry.time}</span> : null}
-          <span><Icon name="autorenew" size={12} />{entry.subtitle}</span>
-        </span>
-      </button>
-    </div>
-  )
+  const renderHabit = (entry: Entry) => {
+    const habit = entry.planner.raw
+    const color = String(habit.cor_hex || entry.color || 'var(--ds-accent)')
+    const target = Math.max(1, Number(habit.meta || 1))
+    const dayEntry = rows(state.habitEntries).find(item => String(item.habito_id) === String(habit.id) && ymd(item.data) === entry.day)
+    const value = dayEntry && !failedEntry(dayEntry) ? Number(dayEntry.valor || 0) : 0
+    const full = entry.done || value >= target
+    const part = !full && value > 0
+    const desc = String(habit.descricao || '').replace(/<[^>]*>/g, '').trim()
+    return (
+      <div key={entry.id} role="listitem" className={styles.habitRow} style={{ '--hc': color } as CSSProperties} {...quick.bind(() => menuFor(entry))}>
+        <button type="button" className={styles.habitBody} onClick={() => open(entry)}>
+          <span className={styles.habitTitle} style={{ color }}>{entry.title}</span>
+          {entry.time || desc ? <span className={styles.habitDesc}>{[entry.time, desc].filter(Boolean).join(' · ')}</span> : null}
+        </button>
+        <button type="button" className={styles.habitDay} data-day="" style={{ ['--p' as string]: Math.min(100, Math.round((value / target) * 100)) }} data-on={full || undefined} data-part={part || undefined} data-failed={failedEntry(dayEntry) || undefined} data-today={entry.day === today || undefined} disabled={entry.day > today} onClick={() => toggleHabit(entry)} aria-label={`${entry.title} em ${naturalDate(entry.day, today)}`} />
+      </div>
+    )
+  }
 
   const renderFinance = (entry: Entry) => (
-    <div key={entry.id} role="listitem" className={tasksStyles.card} data-done={entry.done || undefined} {...quick.bind(() => menuFor(entry))}>
-      <button type="button" className={tasksStyles.check} data-done={entry.done || undefined} data-priority="1" style={{ '--check-color': 'var(--ds-mint-fg)' } as CSSProperties} onClick={() => toggleFinance(entry)} aria-label={entry.done ? `Marcar ${entry.title} como pendente` : `Marcar ${entry.title} como pago`}>
-        {entry.done ? <Icon name="check" size={13} /> : null}
-      </button>
-      <button type="button" className={tasksStyles.cardMain} onClick={() => open(entry)}>
-        <span className={tasksStyles.cardTitle}>{entry.title}</span>
-        <span className={tasksStyles.cardMeta}>
-          <span><Icon name="payments" size={12} />{entry.source}</span>
-          <span>{entry.done ? 'Pago' : 'Pendente'}</span>
-        </span>
-      </button>
-      <span className={styles.amount} style={{ color: entry.color }}>{entry.amount}</span>
-    </div>
+    <FinanceTransactionCard
+      key={entry.id}
+      item={entry.planner.raw}
+      accounts={rows(state.finance.accounts)}
+      cards={rows(state.finance.cards)}
+      today={today}
+      onOpen={() => open(entry)}
+      onTogglePaid={() => toggleFinance(entry)}
+    />
   )
 
   /* Compromisso: bolinha na cor, título, quando embaixo e a agenda à direita. */
@@ -537,7 +539,7 @@ export function EmBreve({ state, today, commit, inspect, syncRange }: Props) {
     if (mode !== 'list' || !sentinelRef.current) return
     const observer = new IntersectionObserver(items => {
       if (items.some(item => item.isIntersecting)) setHorizon(value => Math.min(MAX_HORIZON, value + 14))
-    }, { rootMargin: '0px 0px 400px 0px' })
+    }, { root: mobile ? null : listRef.current, rootMargin: '0px 0px 400px 0px' })
     observer.observe(sentinelRef.current)
     return () => observer.disconnect()
   }, [mode, horizon])
@@ -550,7 +552,7 @@ export function EmBreve({ state, today, commit, inspect, syncRange }: Props) {
       if (Date.now() < lockUntil.current) return
       const hit = items.filter(item => item.isIntersecting).sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)[0]
       if (hit) setSelected(String((hit.target as HTMLElement).dataset.daySection))
-    }, { rootMargin: '-130px 0px -70% 0px' })
+    }, { root: mobile ? null : listRef.current, rootMargin: mobile ? '-130px 0px -70% 0px' : '0px 0px -70% 0px' })
     sections.forEach(section => observer.observe(section))
     return () => observer.disconnect()
   }, [mode, listDays.join(',')])  // eslint-disable-line react-hooks/exhaustive-deps
@@ -857,7 +859,7 @@ export function EmBreve({ state, today, commit, inspect, syncRange }: Props) {
 
       {mode === 'list' ? (
         <div className={styles.listLayout}>
-          <div className={styles.listMain}>
+          <div ref={listRef} className={styles.listMain}>
             {listDays.map(day => <div key={day} data-day-section={day} className={styles.daySlot}>{dayBlock(day, byDay.get(day) || [])}</div>)}
             <div ref={sentinelRef} className={styles.sentinel} aria-hidden="true" />
           </div>
