@@ -288,3 +288,8 @@
 .check.check.check:hover { color: var(--ds-muted); }
 .check.check.check:hover > * { opacity: 0.6; transform: none; }
 .checkOn.checkOn.checkOn > * { opacity: 1; transform: none; }
+
+/* Hover: o círculo não muda; só o check aparece, na cor dele. */
+.check.check.check:not(.checkOn):hover { border-color: var(--check-color, var(--ds-line-strong)); color: var(--check-color, var(--ds-muted)); }
+.checkLate.checkLate.checkLate:not(.checkOn):hover { border-color: var(--ds-danger); color: var(--ds-danger); }
+.check.check.check:not(.checkOn):hover > * { opacity: 0.9; }

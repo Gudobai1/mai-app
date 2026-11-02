@@ -1562,3 +1562,8 @@
 .composerBar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px 12px; }
 .composerBar .composerChips { flex: 1 1 260px; min-width: 0; }
 .composerBar .composerActions.composerActions.composerActions { flex: 0 0 auto; margin-left: auto; }
+
+/* Hover: só o check, na cor do círculo. */
+.round.round.round:not([data-checked]):hover { color: var(--ds-muted); }
+.round.round.round[data-late]:not([data-checked]):hover { color: var(--ds-danger); }
+.round.round.round:not([data-checked]):hover > * { opacity: 0.9; }
