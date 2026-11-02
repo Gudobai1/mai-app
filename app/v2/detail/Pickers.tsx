@@ -11,7 +11,7 @@ import styles from './Pickers.module.css'
  * Computador: caixinha ao lado do campo. Celular: folha que sobe de baixo.
  */
 
-export type PickerOption = { value: string; label: string; icon?: string; color?: string; image?: string; hint?: string }
+export type PickerOption = { value: string; label: string; icon?: string; color?: string; image?: string; hint?: string; depth?: number }
 
 function isMobile() {
   return typeof window !== 'undefined' && window.matchMedia('(max-width: 900px)').matches
@@ -76,7 +76,7 @@ export function OptionList({ options, value, onSelect }: { options: PickerOption
   return (
     <div ref={list} className={styles.options} role="listbox">
       {options.map(option => (
-        <button key={option.value} type="button" role="option" aria-selected={option.value === value} data-selected={option.value === value || undefined} className={styles.option} onClick={() => onSelect(option.value)}>
+        <button key={option.value} type="button" role="option" aria-selected={option.value === value} data-selected={option.value === value || undefined} className={styles.option} style={option.depth ? { paddingLeft: 10 + option.depth * 18 } : undefined} onClick={() => onSelect(option.value)}>
           {option.image
             ? <img className={styles.optionImage} src={option.image} alt="" />
             : option.icon ? <Icon name={option.icon} size={18} className={styles.optionIcon} style={option.color ? { color: option.color } : undefined} />
@@ -180,6 +180,149 @@ export function TimePicker({ value, onSelect, allowEmpty = true, emptyLabel = 'S
         />
         <button type="submit" className={styles.timeOk} disabled={!valid}>Definir</button>
       </form>
+    </div>
+  )
+}
+
+/* ------------------------------------------------- Repetir e lembrete (com personalizado) */
+
+const WEEK_NAMES = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb']
+const REPEAT_PRESETS = [
+  { value: '', label: 'Não repete' },
+  { value: 'diariamente', label: 'Todos os dias' },
+  { value: 'semanal:1,2,3,4,5', label: 'Dias úteis' },
+  { value: 'semanalmente', label: 'Toda semana' },
+  { value: 'mensalmente', label: 'Todo mês' },
+  { value: 'anualmente', label: 'Todo ano' },
+]
+
+export function repeatLabel(value: string) {
+  const preset = REPEAT_PRESETS.find(item => item.value === value)
+  if (preset) return preset.label
+  if (value.startsWith('intervalo:')) {
+    const days = Math.max(1, Number(value.split(':')[1]) || 1)
+    if (days % 7 === 0) return days === 7 ? 'Toda semana' : `A cada ${days / 7} semanas`
+    return days === 1 ? 'Todos os dias' : `A cada ${days} dias`
+  }
+  if (value.startsWith('semanal:')) {
+    const days = value.split(':')[1].split(',').map(Number).filter(day => day >= 0 && day <= 6)
+    return days.length ? days.map(day => WEEK_NAMES[day]).join(', ') : 'Personalizado'
+  }
+  return value ? 'Personalizado' : 'Não repete'
+}
+
+const REMINDER_PRESETS = [
+  { value: '', label: 'Nenhum' },
+  { value: '10m', label: '10 min antes' },
+  { value: '30m', label: '30 min antes' },
+  { value: '1h', label: '1 hora antes' },
+  { value: '1d', label: '1 dia antes' },
+]
+
+export const REMINDER_OPTIONS = REMINDER_PRESETS
+
+export function reminderLabel(value: string) {
+  const preset = REMINDER_PRESETS.find(item => item.value === value)
+  if (preset) return preset.label
+  const match = /^(\d+)([mhd])$/.exec(value)
+  if (!match) return value ? 'Personalizado' : 'Nenhum'
+  const amount = Number(match[1])
+  if (match[2] === 'm') return `${amount} min antes`
+  if (match[2] === 'h') return `${amount} ${amount === 1 ? 'hora' : 'horas'} antes`
+  return `${amount} ${amount === 1 ? 'dia' : 'dias'} antes`
+}
+
+function CustomRow({ onClick, active }: { onClick: () => void; active: boolean }) {
+  return (
+    <button type="button" className={styles.option} data-selected={active || undefined} onClick={onClick}>
+      <Icon name="tune" size={18} className={styles.optionIcon} />
+      <span className={styles.optionText}>Personalizado…</span>
+      {active ? <Icon name="check" size={18} className={styles.optionCheck} /> : <Icon name="chevron_right" size={18} filled={false} className={styles.optionCheck} />}
+    </button>
+  )
+}
+
+export function RepeatPicker({ value, onSelect }: { value: string; onSelect: (value: string) => void }) {
+  const isCustom = Boolean(value) && !REPEAT_PRESETS.some(item => item.value === value)
+  const [custom, setCustom] = useState(false)
+  const intervalDays = value.startsWith('intervalo:') ? Math.max(1, Number(value.split(':')[1]) || 1) : 1
+  const [mode, setMode] = useState<'interval' | 'weekdays'>(value.startsWith('semanal:') && isCustom ? 'weekdays' : 'interval')
+  const [unit, setUnit] = useState<'dias' | 'semanas'>(intervalDays % 7 === 0 ? 'semanas' : 'dias')
+  const [amount, setAmount] = useState(String(unit === 'semanas' ? intervalDays / 7 : intervalDays))
+  const [days, setDays] = useState<number[]>(value.startsWith('semanal:') ? value.split(':')[1].split(',').map(Number).filter(day => day >= 0 && day <= 6) : [1])
+
+  if (!custom) {
+    return (
+      <div className={styles.options} role="listbox">
+        <OptionList options={REPEAT_PRESETS} value={isCustom ? '__custom__' : value} onSelect={onSelect} />
+        <CustomRow active={isCustom} onClick={() => setCustom(true)} />
+      </div>
+    )
+  }
+
+  const count = Math.max(1, Math.min(365, Math.floor(Number(amount)) || 1))
+  const encoded = mode === 'weekdays' ? (days.length ? `semanal:${[...days].sort((a, b) => a - b).join(',')}` : '') : `intervalo:${count * (unit === 'semanas' ? 7 : 1)}`
+  return (
+    <div className={styles.custom}>
+      <div className={styles.segment} role="tablist">
+        <button type="button" role="tab" aria-selected={mode === 'interval'} data-active={mode === 'interval' || undefined} onClick={() => setMode('interval')}>A cada</button>
+        <button type="button" role="tab" aria-selected={mode === 'weekdays'} data-active={mode === 'weekdays' || undefined} onClick={() => setMode('weekdays')}>Dias da semana</button>
+      </div>
+      {mode === 'interval' ? (
+        <div className={styles.customRow}>
+          <input className={styles.customInput} type="number" inputMode="numeric" min={1} max={365} value={amount} aria-label="Quantidade" onChange={event => setAmount(event.target.value)} />
+          <select className={styles.customSelect} value={unit} aria-label="Unidade" onChange={event => setUnit(event.target.value as 'dias' | 'semanas')}>
+            <option value="dias">{count === 1 ? 'dia' : 'dias'}</option>
+            <option value="semanas">{count === 1 ? 'semana' : 'semanas'}</option>
+          </select>
+        </div>
+      ) : (
+        <div className={styles.weekdays}>
+          {WEEKDAYS.map((label, index) => (
+            <button key={index} type="button" aria-pressed={days.includes(index)} aria-label={WEEK_NAMES[index]} data-active={days.includes(index) || undefined} onClick={() => setDays(current => current.includes(index) ? current.filter(day => day !== index) : [...current, index])}>{label}</button>
+          ))}
+        </div>
+      )}
+      <div className={styles.customActions}>
+        <button type="button" className={styles.customBack} onClick={() => setCustom(false)}>Voltar</button>
+        <button type="button" className={styles.customOk} disabled={!encoded} onClick={() => onSelect(encoded)}>Definir</button>
+      </div>
+    </div>
+  )
+}
+
+export function ReminderPicker({ value, onSelect }: { value: string; onSelect: (value: string) => void }) {
+  const isCustom = Boolean(value) && !REMINDER_PRESETS.some(item => item.value === value)
+  const [custom, setCustom] = useState(false)
+  const parsed = /^(\d+)([mhd])$/.exec(value)
+  const [amount, setAmount] = useState(parsed ? parsed[1] : '1')
+  const [unit, setUnit] = useState<'m' | 'h' | 'd'>((parsed?.[2] as 'm' | 'h' | 'd') || 'h')
+
+  if (!custom) {
+    return (
+      <div className={styles.options} role="listbox">
+        <OptionList options={REMINDER_PRESETS} value={isCustom ? '__custom__' : value} onSelect={onSelect} />
+        <CustomRow active={isCustom} onClick={() => setCustom(true)} />
+      </div>
+    )
+  }
+
+  const count = Math.max(1, Math.min(999, Math.floor(Number(amount)) || 1))
+  return (
+    <div className={styles.custom}>
+      <div className={styles.customRow}>
+        <input className={styles.customInput} type="number" inputMode="numeric" min={1} max={999} value={amount} aria-label="Quantidade" onChange={event => setAmount(event.target.value)} />
+        <select className={styles.customSelect} value={unit} aria-label="Unidade" onChange={event => setUnit(event.target.value as 'm' | 'h' | 'd')}>
+          <option value="m">{count === 1 ? 'minuto' : 'minutos'}</option>
+          <option value="h">{count === 1 ? 'hora' : 'horas'}</option>
+          <option value="d">{count === 1 ? 'dia' : 'dias'}</option>
+        </select>
+        <span className={styles.customHint}>antes</span>
+      </div>
+      <div className={styles.customActions}>
+        <button type="button" className={styles.customBack} onClick={() => setCustom(false)}>Voltar</button>
+        <button type="button" className={styles.customOk} onClick={() => onSelect(`${count}${unit}`)}>Definir</button>
+      </div>
     </div>
   )
 }

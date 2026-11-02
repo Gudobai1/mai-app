@@ -16,7 +16,7 @@ import { askUnsaved } from '../shell/unsaved'
 import { uploadAttachment } from './upload'
 import { CommentsSection, type Comment } from './Comments'
 import { UnitField } from '../habits/UnitField'
-import { DatePicker, Floating, OptionList, TimePicker, type PickerOption } from './Pickers'
+import { DatePicker, Floating, OptionList, ReminderPicker, RepeatPicker, TimePicker, repeatLabel, reminderLabel, type PickerOption } from './Pickers'
 import { CategoryChooser } from './CategoryChooser'
 import { eventCategories, withEventCategory, type EventCategory } from '../../../lib/v2/event-categories'
 import styles from './ItemDetail.module.css'
@@ -61,14 +61,6 @@ const REPEATS = [
   { value: 'semanalmente', label: 'Toda semana' },
   { value: 'mensalmente', label: 'Todo mês' },
   { value: 'anualmente', label: 'Todo ano' },
-]
-
-const REMINDERS = [
-  { value: '', label: 'Nenhum' },
-  { value: '10m', label: '10 min antes' },
-  { value: '30m', label: '30 min antes' },
-  { value: '1h', label: '1 hora antes' },
-  { value: '1d', label: '1 dia antes' },
 ]
 
 const KIND: Record<string, { label: string; icon: string }> = {
@@ -222,7 +214,7 @@ function Footer({ status, onDelete, deleteLabel = 'Excluir' }: { status?: ReactN
   return (
     <footer className={styles.footer}>
       {onDelete ? <button type="button" className={styles.delete} onClick={onDelete} disabled={saving}><Icon name="delete" size={17} filled={false} />{deleteLabel}</button> : null}
-      <span className={styles.status} data-dirty={dirty || undefined}>{dirty ? 'Alterações não salvas' : status}</span>
+      <span className={styles.status}>{status}</span>
       <button type="button" className={styles.footerCancel} onClick={requestClose} disabled={saving}>Cancelar</button>
       <button type="button" className={styles.footerSave} onClick={saveAndClose} disabled={!dirty || saving}>{saving ? 'Salvando…' : 'Salvar'}</button>
     </footer>
@@ -300,15 +292,16 @@ function Prop({ icon, color, label, display, muted, onOpen, buttonRef, open }: {
   if (variant === 'icon') {
     const text = typeof display === 'string' ? display : ''
     return (
-      <button ref={buttonRef} type="button" className={styles.iconProp} data-muted={muted || undefined} data-open={open || undefined} style={style} onClick={onOpen} aria-haspopup="dialog" aria-expanded={open} aria-label={text ? `${label}: ${text}` : label} title={text ? `${label}: ${text}` : label}>
-        {iconNode}
+      <button ref={buttonRef} type="button" className={styles.iconProp} data-text={(!muted && text) || undefined} data-muted={muted || undefined} data-open={open || undefined} style={style} onClick={onOpen} aria-haspopup="dialog" aria-expanded={open} aria-label={text ? `${label}: ${text}` : label} title={text ? `${label}: ${text}` : label}>
+        <span className={styles.iconProp_icon}>{iconNode}</span>
+        {!muted && text ? <span className={styles.iconProp_text}>{text}</span> : null}
       </button>
     )
   }
   if (variant === 'row') {
     const inner = <>
       <span className={styles.sideLabel}>{label}</span>
-      <span className={styles.sideValue} data-muted={muted || undefined} style={style}>{typeof icon === 'string' || color ? <span className={styles.sideIcon}>{iconNode}</span> : iconNode}<span className={styles.sideText}>{display}</span></span>
+      <span className={styles.sideValue} data-muted={muted || undefined} style={style}><span className={styles.sideIcon}>{iconNode}</span><span className={styles.sideText}>{display}</span></span>
     </>
     if (!onOpen) return <div className={styles.sideRow}>{inner}</div>
     return <button ref={buttonRef} type="button" className={`${styles.sideRow} ${styles.sideRowButton}`} data-open={open || undefined} onClick={onOpen} aria-haspopup="dialog" aria-expanded={open}>{inner}</button>
@@ -327,13 +320,13 @@ function Prop({ icon, color, label, display, muted, onOpen, buttonRef, open }: {
   )
 }
 
-function SelectProp({ icon, color, label, value, options, onChange, display }: { icon: ReactNode; color?: string; label: string; value: string; options: Option[]; onChange: (value: string) => void; display?: ReactNode }) {
+function SelectProp({ icon, color, label, value, options, onChange, display, muted }: { icon: ReactNode; color?: string; label: string; value: string; options: Option[]; onChange: (value: string) => void; display?: ReactNode; muted?: boolean }) {
   const [open, setOpen] = useState(false)
   const anchor = useRef<HTMLButtonElement | null>(null)
   const current = options.find(option => option.value === value)
   return (
     <>
-      <Prop icon={icon} color={color} label={label} display={display ?? current?.label ?? '—'} onOpen={() => setOpen(true)} buttonRef={anchor} open={open} />
+      <Prop icon={icon} color={color} label={label} display={display ?? current?.label ?? '—'} muted={muted} onOpen={() => setOpen(true)} buttonRef={anchor} open={open} />
       {open ? (
         <Floating anchor={anchor} title={label} onClose={() => setOpen(false)}>
           <OptionList options={options} value={value} onSelect={next => { setOpen(false); if (next !== value) onChange(next) }} />
@@ -364,7 +357,7 @@ function CategoryProp({ categories, value, display, onPick, onCreate }: { catego
   )
 }
 
-function PickerProp({ type, icon, color, label, value, display, onChange, muted, today = '', allowEmpty = true, emptyLabel }: { type: 'date' | 'time'; icon: string; color?: string; label: string; value: string; display: ReactNode; onChange: (value: string) => void; muted?: boolean; today?: string; allowEmpty?: boolean; emptyLabel?: string }) {
+function PickerProp({ type, icon, color, label, value, display, onChange, muted, today = '', allowEmpty = true, emptyLabel }: { type: 'date' | 'time' | 'repeat' | 'reminder'; icon: string; color?: string; label: string; value: string; display: ReactNode; onChange: (value: string) => void; muted?: boolean; today?: string; allowEmpty?: boolean; emptyLabel?: string }) {
   const [open, setOpen] = useState(false)
   const anchor = useRef<HTMLButtonElement | null>(null)
   const pick = (next: string) => { setOpen(false); if (next !== value) onChange(next) }
@@ -372,10 +365,14 @@ function PickerProp({ type, icon, color, label, value, display, onChange, muted,
     <>
       <Prop icon={icon} color={color} label={label} display={display} muted={muted} onOpen={() => setOpen(true)} buttonRef={anchor} open={open} />
       {open ? (
-        <Floating anchor={anchor} title={label} onClose={() => setOpen(false)} width={type === 'date' ? 300 : 260}>
+        <Floating anchor={anchor} title={label} onClose={() => setOpen(false)} width={type === 'date' ? 300 : type === 'time' ? 260 : 280}>
           {type === 'date'
             ? <DatePicker value={value} today={today} onSelect={pick} allowEmpty={allowEmpty} />
-            : <TimePicker value={value} onSelect={pick} allowEmpty={allowEmpty} emptyLabel={emptyLabel} />}
+            : type === 'time'
+              ? <TimePicker value={value} onSelect={pick} allowEmpty={allowEmpty} emptyLabel={emptyLabel} />
+              : type === 'repeat'
+                ? <RepeatPicker value={value} onSelect={pick} />
+                : <ReminderPicker value={value} onSelect={pick} />}
         </Floating>
       ) : null}
     </>
@@ -456,6 +453,25 @@ function TaskDetail({ item, state, today, commit, register, close }: DetailProps
   return <TaskBody key={activeId} task={task} state={state} today={today} commit={commit} register={register} close={close} openTask={setActiveId} />
 }
 
+/** Projetos em árvore: projeto, subprojetos e, embaixo de cada um, as seções (colunas). */
+function projectTreeOptions(projects: Row[], imageOf: (project: Row) => string | undefined): PickerOption[] {
+  const ids = new Set(projects.map(project => String(project.id)))
+  const childrenOf = (parent: string) => projects.filter(project => String(project.parent_id || '') === parent)
+  const roots = projects.filter(project => !project.parent_id || !ids.has(String(project.parent_id)))
+  const out: PickerOption[] = [{ value: 'entrada', label: 'Entrada', icon: 'inbox' }]
+  const walk = (project: Row, depth: number, seen: Set<string>) => {
+    const id = String(project.id)
+    if (seen.has(id)) return
+    seen.add(id)
+    out.push({ value: `p:${id}`, label: String(project.nome || 'Projeto'), image: imageOf(project), color: String(project.cor || 'var(--ds-line-strong)'), depth })
+    for (const name of rows(project.secoes).map(String)) out.push({ value: `s:${id}:${name}`, label: name, icon: 'view_agenda', depth: depth + 1 })
+    for (const child of childrenOf(id)) walk(child, depth + 1, seen)
+  }
+  const seen = new Set<string>()
+  roots.forEach(root => walk(root, 0, seen))
+  return out
+}
+
 function TaskBody({ task, state, today, commit, register, close, openTask }: { task: Row; state: MaiState; today: string; commit: Commit; register: DetailProps['register']; close: () => Promise<void>; openTask: (id: string) => void }) {
   const id = String(task.id)
   const save = useCallback((draft: Row) => {
@@ -489,9 +505,15 @@ function TaskBody({ task, state, today, commit, register, close, openTask }: { t
   const [composing, setComposing] = useState(false)
   const [subDue, setSubDue] = useState('')
   const [subPriority, setSubPriority] = useState(4)
-  const [subPicker, setSubPicker] = useState<'' | 'date' | 'priority'>('')
+  const [subTime, setSubTime] = useState('')
+  const [subRepeat, setSubRepeat] = useState('')
+  const [subReminder, setSubReminder] = useState('')
+  const [subPicker, setSubPicker] = useState<'' | 'date' | 'time' | 'priority' | 'repeat' | 'reminder'>('')
   const subDateRef = useRef<HTMLButtonElement | null>(null)
+  const subTimeRef = useRef<HTMLButtonElement | null>(null)
   const subPriorityRef = useRef<HTMLButtonElement | null>(null)
+  const subRepeatRef = useRef<HTMLButtonElement | null>(null)
+  const subReminderRef = useRef<HTMLButtonElement | null>(null)
   const [showDone, setShowDone] = useState(false)
   const sortedChildren = [...children].filter(row => showDone || !row.concluida).sort((a, b) => Number(Boolean(a.concluida)) - Number(Boolean(b.concluida)) || Number(a.ordem || 0) - Number(b.ordem || 0))
 
@@ -518,10 +540,13 @@ function TaskBody({ task, state, today, commit, register, close, openTask }: { t
   function addSubtask() {
     const title = subtask.trim()
     if (!title) return
-    commit(current => ({ ...current, tasks: [...current.tasks, { id: uid('t'), titulo: title, descricao: '', data_vencimento: subDue, prioridade: subPriority, concluida: false, projeto_id: draft.projeto_id || 'entrada', parent_id: id, secao: draft.secao || '', criado_em: new Date().toISOString(), ordem: Date.now(), anexos: [], subtarefas: [], lembretes: [], etiquetas: [], repeticao: '', notas: [] }] }))
+    commit(current => ({ ...current, tasks: [...current.tasks, { id: uid('t'), titulo: title, descricao: '', data_vencimento: subDue ? `${subDue}${subTime ? `T${subTime}` : ''}` : '', prioridade: subPriority, concluida: false, projeto_id: draft.projeto_id || 'entrada', parent_id: id, secao: draft.secao || '', criado_em: new Date().toISOString(), ordem: Date.now(), anexos: [], subtarefas: [], lembretes: subReminder ? [subReminder] : [], etiquetas: [], repeticao: subRepeat, notas: [] }] }))
     setSubtask('')
     setSubDue('')
+    setSubTime('')
     setSubPriority(4)
+    setSubRepeat('')
+    setSubReminder('')
   }
 
   async function remove() {
@@ -536,15 +561,23 @@ function TaskBody({ task, state, today, commit, register, close, openTask }: { t
     : <span className={styles.projectDot} style={{ background: String(project?.cor || 'var(--ds-line-strong)') }} />
 
   const reminder = draft.lembretes[0] || ''
+  const treeOptions = projectTreeOptions(projects, row => row.imagem_url ? driveAssetUrl(row.imagem_url) : undefined)
+  const projectValue = draft.secao ? `s:${draft.projeto_id}:${draft.secao}` : draft.projeto_id === 'entrada' ? 'entrada' : `p:${draft.projeto_id}`
+  const projectDisplay = `${String(project?.nome || 'Entrada')}${draft.secao ? ` › ${draft.secao}` : ''}`
+  const pickProject = (value: string) => {
+    const section = /^s:([^:]+):(.*)$/.exec(value)
+    if (section) update({ projeto_id: section[1], secao: section[2] }, true)
+    else if (value.startsWith('p:')) update({ projeto_id: value.slice(2), secao: '' }, true)
+    else update({ projeto_id: 'entrada', secao: '' }, true)
+  }
   const propsList = (
     <>
-      <SelectProp icon={projectIcon} label="Projeto" value={draft.projeto_id} onChange={projeto_id => update({ projeto_id, secao: '' }, true)} options={[{ value: 'entrada', label: 'Entrada', icon: 'inbox' }, ...projects.map(row => ({ value: String(row.id), label: String(row.nome || 'Projeto'), image: row.imagem_url ? driveAssetUrl(row.imagem_url) : undefined, color: String(row.cor || 'var(--ds-line-strong)') }))]} />
+      <SelectProp icon={projectIcon} label="Projeto" value={projectValue} display={projectDisplay} onChange={pickProject} options={treeOptions} />
       <PickerProp today={today} type="date" icon="calendar_today" color={draft._data ? (late ? 'var(--ds-danger)' : 'var(--ds-warn)') : 'var(--ds-muted)'} label="Data" value={draft._data} muted={!draft._data} display={friendlyDate(draft._data, today)} onChange={_data => update({ _data, _hora: _data ? draft._hora : '' }, true)} />
       <PickerProp type="time" icon="schedule" color="var(--ds-lilac-fg)" label="Horário" value={draft._hora} display={draft._hora || 'Sem horário'} muted={!draft._hora} onChange={_hora => update(_hora && !draft._data ? { _hora, _data: today } : { _hora }, true)} />
-      {sections.length ? <SelectProp icon="view_agenda" color="var(--ds-text-2)" label="Seção" value={draft.secao} onChange={secao => update({ secao }, true)} options={[{ value: '', label: 'Sem seção' }, ...sections.map(name => ({ value: name, label: name }))]} /> : null}
-      <SelectProp icon="flag" color={priority.color} label="Prioridade" value={String(draft.prioridade)} onChange={value => update({ prioridade: Number(value) }, true)} options={PRIORITIES} display={priority.label} />
-      <SelectProp icon="repeat" color="var(--ds-mint-fg)" label="Repetir" value={draft.repeticao} onChange={repeticao => update({ repeticao }, true)} options={REPEATS.some(option => option.value === draft.repeticao) ? REPEATS : [...REPEATS, { value: draft.repeticao, label: 'Personalizado' }]} />
-      <SelectProp icon="notifications" color="var(--ds-sky-fg)" label="Lembrete" value={reminder} onChange={value => update({ lembretes: value ? [value] : [] }, true)} options={REMINDERS.some(option => option.value === reminder) ? REMINDERS : [...REMINDERS, { value: reminder, label: reminder }]} />
+      <SelectProp icon="flag" color={priority.color} label="Prioridade" value={String(draft.prioridade)} onChange={value => update({ prioridade: Number(value) }, true)} options={PRIORITIES} display={priority.label} muted={Number(draft.prioridade) === 4} />
+      <PickerProp type="repeat" icon="repeat" color="var(--ds-mint-fg)" label="Repetir" value={draft.repeticao} display={repeatLabel(draft.repeticao)} muted={!draft.repeticao} onChange={repeticao => update({ repeticao }, true)} />
+      <PickerProp type="reminder" icon="notifications" color="var(--ds-sky-fg)" label="Lembrete" value={reminder} display={reminderLabel(reminder)} muted={!reminder} onChange={value => update({ lembretes: value ? [value] : [] }, true)} />
     </>
   )
 
@@ -587,13 +620,27 @@ function TaskBody({ task, state, today, commit, register, close, openTask }: { t
                     <button ref={subDateRef} type="button" className={styles.subChip} data-empty={!subDue || undefined} onClick={() => setSubPicker('date')}>
                       <Icon name="calendar_today" size={14} />{subDue ? friendlyDate(subDue, today) : 'Data'}
                     </button>
+                    <button ref={subTimeRef} type="button" className={styles.subChip} data-empty={!subTime || undefined} onClick={() => setSubPicker('time')}>
+                      <Icon name="schedule" size={14} />{subTime || 'Horário'}
+                    </button>
                     <button ref={subPriorityRef} type="button" className={styles.subChip} data-empty={subPriority === 4 || undefined} onClick={() => setSubPicker('priority')}>
                       <Icon name={(PRIORITIES.find(option => Number(option.value) === subPriority) || PRIORITIES[3]).icon} size={14} style={{ color: (PRIORITIES.find(option => Number(option.value) === subPriority) || PRIORITIES[3]).color }} />{subPriority === 4 ? 'Prioridade' : (PRIORITIES.find(option => Number(option.value) === subPriority) || PRIORITIES[3]).label}
+                    </button>
+                    <button ref={subRepeatRef} type="button" className={styles.subChip} data-empty={!subRepeat || undefined} onClick={() => setSubPicker('repeat')}>
+                      <Icon name="repeat" size={14} />{subRepeat ? repeatLabel(subRepeat) : 'Repetir'}
+                    </button>
+                    <button ref={subReminderRef} type="button" className={styles.subChip} data-empty={!subReminder || undefined} onClick={() => setSubPicker('reminder')}>
+                      <Icon name="notifications" size={14} />{subReminder ? reminderLabel(subReminder) : 'Lembrete'}
                     </button>
                   </div>
                   {subPicker === 'date' ? (
                     <Floating anchor={subDateRef} title="Data da subtarefa" width={300} onClose={() => setSubPicker('')}>
-                      <DatePicker value={subDue} today={today} onSelect={value => { setSubPicker(''); setSubDue(value || '') }} />
+                      <DatePicker value={subDue} today={today} onSelect={value => { setSubPicker(''); setSubDue(value || ''); if (!value) setSubTime('') }} />
+                    </Floating>
+                  ) : null}
+                  {subPicker === 'time' ? (
+                    <Floating anchor={subTimeRef} title="Horário da subtarefa" width={260} onClose={() => setSubPicker('')}>
+                      <TimePicker value={subTime} onSelect={value => { setSubPicker(''); setSubTime(value); if (value && !subDue) setSubDue(today) }} />
                     </Floating>
                   ) : null}
                   {subPicker === 'priority' ? (
@@ -601,9 +648,19 @@ function TaskBody({ task, state, today, commit, register, close, openTask }: { t
                       <OptionList options={PRIORITIES} value={String(subPriority)} onSelect={value => { setSubPicker(''); setSubPriority(Number(value)) }} />
                     </Floating>
                   ) : null}
+                  {subPicker === 'repeat' ? (
+                    <Floating anchor={subRepeatRef} title="Repetir" width={280} onClose={() => setSubPicker('')}>
+                      <RepeatPicker value={subRepeat} onSelect={value => { setSubPicker(''); setSubRepeat(value) }} />
+                    </Floating>
+                  ) : null}
+                  {subPicker === 'reminder' ? (
+                    <Floating anchor={subReminderRef} title="Lembrete" width={280} onClose={() => setSubPicker('')}>
+                      <ReminderPicker value={subReminder} onSelect={value => { setSubPicker(''); setSubReminder(value) }} />
+                    </Floating>
+                  ) : null}
                   <div className={styles.composerActions}>
-                    <span className={styles.composerHint}>Enter adiciona e continua</span>
-                    <button type="button" className={styles.composerCancel} onClick={() => { setComposing(false); setSubtask(''); setSubDue(''); setSubPriority(4) }}>Cancelar</button>
+                    <span className={styles.composerGrow} />
+                    <button type="button" className={styles.composerCancel} onClick={() => { setComposing(false); setSubtask(''); setSubDue(''); setSubTime(''); setSubPriority(4); setSubRepeat(''); setSubReminder('') }}>Cancelar</button>
                     <button type="button" className={styles.composerAdd} disabled={!subtask.trim()} onClick={addSubtask}>Adicionar</button>
                   </div>
                 </div>
