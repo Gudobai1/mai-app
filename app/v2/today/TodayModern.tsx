@@ -723,15 +723,20 @@ export function TodayModern({ state, today, commit, navigate, inspect, options, 
       grouped.get(id)!.push(task)
     })
     const projectOrder = (id: string) => id === 'entrada' ? -1 : projects.findIndex(project => String(project.id) === id)
+    const custom = sortMode !== 'overdue'
+    const firstSeen = (id: string) => tasks.findIndex(task => String(task.projeto_id || 'entrada') === id)
     return [...grouped.entries()]
-      .sort(([a], [b]) => projectOrder(a) - projectOrder(b))
+      // Padrão: ordem dos projetos. Outras ordenações: projetos pela ordem escolhida (nome ou melhor tarefa).
+      .sort(([a], [b]) => !custom ? projectOrder(a) - projectOrder(b)
+        : sortMode === 'project' ? (a === 'entrada' ? 'Entrada' : projectName(a)).localeCompare(b === 'entrada' ? 'Entrada' : projectName(b), 'pt-BR', { sensitivity: 'base' })
+        : firstSeen(a) - firstSeen(b))
       .map(([id, items]) => {
         const sections = rows(projectMap.get(id)?.secoes).map(String)
         const sectionIndex = (task: Row) => { const index = sections.indexOf(String(task.secao || '')); return index < 0 ? (task.secao ? sections.length : -1) : index }
-        return { id, name: id === 'entrada' ? 'Entrada' : projectName(id), items: [...items].sort((a, b) => sectionIndex(a) - sectionIndex(b)) }
+        return { id, name: id === 'entrada' ? 'Entrada' : projectName(id), items: custom ? items : [...items].sort((a, b) => sectionIndex(a) - sectionIndex(b)) }
       })
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tasks, projectMap])
+  }, [tasks, projectMap, sortMode])
 
   /* Hábitos: semana (seg–dom) do dia mostrado e sequência atual. */
   const entryByKey = new Map(rows(state.habitEntries).map(entry => [`${entry.habito_id}|${dateKey(entry.data)}`, entry]))
