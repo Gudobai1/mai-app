@@ -4,6 +4,8 @@ import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import type { MaiState } from '../../../lib/v2/state'
 import { Icon } from '../../ds'
 import { DotRing } from './DotRing'
+import { UnitField } from './UnitField'
+import { abbreviateUnit } from '../../../lib/v2/units'
 import type { Row } from '../app-types'
 import type { InspectableItem } from '../ContextDrawer'
 import { DEFAULT_COLOR } from '../../../lib/v2/palette'
@@ -256,7 +258,7 @@ export function HabitsModern({ state, today, commit, createRequest }: Props) {
                           aria-label={`${String(habit.nome)} em ${longDate(day)}`}
                           title={level === 'fail' ? 'Falha' : level === 'part' ? `${progressOf(habit, day)}%` : !eligible(habit, day) ? 'Fora da frequência' : longDate(day)}
                         >
-                          {level ? <DotRing pct={level === 'full' ? 100 : progressOf(habit, day)} value={amountOf(habit, day)} unit={String(habit.unidade || '')} fail={level === 'fail'} /> : null}
+                          <DotRing pct={level === 'full' ? 100 : progressOf(habit, day)} value={amountOf(habit, day)} unit={abbreviateUnit(habit.unidade)} fail={level === 'fail'} empty={!level} today={day === today} />
                         </button>
                       )
                     })}
@@ -340,7 +342,7 @@ function HabitComposer({ today, onCancel, onSave }: { today: string; onCancel: (
           <div className={styles.composerFields}>
             <label className={styles.wideField}><span>Descrição</span><input value={String(draft.descricao || '')} placeholder="Opcional" onChange={event => setDraft({ ...draft, descricao: event.target.value })} /></label>
             <label><span>Meta</span><input type="number" min="1" step="1" value={Number(draft.meta || 1)} onChange={event => setDraft({ ...draft, meta: Number(event.target.value) })} /></label>
-            <label><span>Unidade</span><input value={String(draft.unidade || '')} placeholder="copos, páginas…" onChange={event => setDraft({ ...draft, unidade: event.target.value })} /></label>
+            <label><span>Unidade</span><UnitField value={String(draft.unidade || '')} onChange={unidade => setDraft({ ...draft, unidade })} /></label>
             <label><span>Horário</span><input type="time" value={String(draft.hora || '')} onChange={event => setDraft({ ...draft, hora: event.target.value })} /></label>
           </div>
           <FrequencyEditor draft={draft} setDraft={setDraft} today={today} />
@@ -493,7 +495,7 @@ function HabitDetail({ habit, today, stats, levelOf, progressOf, entries, onTogg
                 const level = levelOf(habit, day)
                 return (
                   <button key={day} type="button" className={styles.dot} data-day="" data-level={level || undefined} data-today={day === today || undefined} data-off={!eligible(habit, day) || undefined} disabled={!eligible(habit, day) || day > today} style={level === 'part' ? ({ '--p': progressOf(habit, day) } as CSSProperties) : undefined} onClick={() => onToggle(day)} aria-label={longDate(day)}>
-                    {level ? <DotRing pct={level === 'full' ? 100 : progressOf(habit, day)} label={String(index + 1)} fail={false} /> : null}
+                    <DotRing pct={level === 'full' ? 100 : progressOf(habit, day)} label={String(index + 1)} empty={!level} today={day === today} />
                     <span className={styles.dayNumber}>{index + 1}</span>
                   </button>
                 )
@@ -531,7 +533,7 @@ function HabitDetail({ habit, today, stats, levelOf, progressOf, entries, onTogg
             <label className={styles.field}><span>Descrição</span><input value={String(draft.descricao || '')} placeholder="Opcional" onChange={event => setDraft({ ...draft, descricao: event.target.value })} /></label>
             <div className={styles.fieldRow}>
               <label className={styles.field}><span>Meta</span><input type="number" min="1" step="0.1" value={Number(draft.meta || 1)} onChange={event => setDraft({ ...draft, meta: Number(event.target.value) })} /></label>
-              <label className={styles.field}><span>Unidade</span><input value={String(draft.unidade || '')} placeholder="copos, km, páginas…" onChange={event => setDraft({ ...draft, unidade: event.target.value })} /></label>
+              <label className={styles.field}><span>Unidade</span><UnitField value={String(draft.unidade || '')} onChange={unidade => setDraft({ ...draft, unidade })} /></label>
               <label className={styles.field}><span>Horário</span><input type="time" value={String(draft.hora || '')} onChange={event => setDraft({ ...draft, hora: event.target.value })} /></label>
             </div>
 
@@ -589,7 +591,7 @@ function QuickEdit({ habit, today, commit }: { habit: Row; today: string; commit
             <label className={styles.field}><span>Nome</span><input autoFocus value={String(draft.nome || '')} onChange={event => setDraft({ ...draft, nome: event.target.value })} onKeyDown={event => { if (event.key === 'Enter') setOpen(false) }} /></label>
             <div className={styles.fieldRow}>
               <label className={styles.field}><span>Meta</span><input type="number" min="1" step="0.1" value={Number(draft.meta || 1)} onChange={event => setDraft({ ...draft, meta: Number(event.target.value) })} /></label>
-              <label className={styles.field}><span>Unidade</span><input value={String(draft.unidade || '')} placeholder="copos…" onChange={event => setDraft({ ...draft, unidade: event.target.value })} /></label>
+              <label className={styles.field}><span>Unidade</span><UnitField value={String(draft.unidade || '')} onChange={unidade => setDraft({ ...draft, unidade })} /></label>
             </div>
             <ColorField value={draft.cor_hex} onChange={color => setDraft({ ...draft, cor_hex: color })} />
             <FrequencyEditor draft={draft} setDraft={setDraft} today={today} />
