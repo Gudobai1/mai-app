@@ -30,14 +30,14 @@ export function DotRing({ pct, value, unit, label, fail, empty, today }: Props) 
       {empty ? null : fail ? (
         <path d="M15.5 15.5 L24.5 24.5 M24.5 15.5 L15.5 24.5" stroke="var(--ds-danger)" strokeWidth={2} strokeLinecap="round" />
       ) : label ? (
-        <text x="20" y="20" textAnchor="middle" dominantBaseline="central" fontSize={10} fontWeight={700} fill="var(--ds-text)">{label}</text>
+        <text x="20" y="20" textAnchor="middle" dominantBaseline="central" fontSize={9.5} fontWeight={700} fill="var(--ds-text)">{label}</text>
       ) : shortUnit ? (
         <>
-          <text x="20" y="16.5" textAnchor="middle" dominantBaseline="central" fontSize={amount.length > 3 ? 10 : 13.5} fontWeight={700} fill="var(--ds-text)">{amount}</text>
-          <text x="20" y="26" textAnchor="middle" dominantBaseline="central" fontSize={8.5} fontWeight={600} fill="var(--ds-muted)">{shortUnit}</text>
+          <text x="20" y="16" textAnchor="middle" dominantBaseline="central" fontSize={amount.length > 3 ? 8.5 : 11} fontWeight={700} fill="var(--ds-text)">{amount}</text>
+          <text x="20" y="26" textAnchor="middle" dominantBaseline="central" fontSize={7} fontWeight={600} fill="var(--ds-muted)">{shortUnit}</text>
         </>
       ) : (
-        <text x="20" y="20" textAnchor="middle" dominantBaseline="central" fontSize={amount.length > 3 ? 11 : 15} fontWeight={700} fill="var(--ds-text)">{amount}</text>
+        <text x="20" y="20" textAnchor="middle" dominantBaseline="central" fontSize={amount.length > 3 ? 9 : 12} fontWeight={700} fill="var(--ds-text)">{amount}</text>
       )}
     </svg>
   )

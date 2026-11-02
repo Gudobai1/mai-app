@@ -293,6 +293,6 @@
 /* Foto do projeto: sempre redonda. */
 .chipImg.chipImg { border-radius: 50%; }
 
-/* Cancelar na esquerda, Adicionar na direita. */
-.footer.footer, .inlinePanel .footer.footer { justify-content: space-between; }
+/* Nome, descrição, opções e, no canto direito, Cancelar e Adicionar lado a lado. */
+.footer.footer, .inlinePanel .footer.footer { justify-content: flex-end; }
 .inlinePanel .primary.primary { order: 0; }

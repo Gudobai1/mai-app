@@ -10,6 +10,7 @@ import { DatePicker, Floating, OptionList, type PickerOption } from '../detail/P
 import { driveAssetUrl } from '../DriveAsset'
 import { askConfirm } from '../shell/ConfirmDialog'
 import { QuickAdd } from '../shell/QuickAdd'
+import { compareSubtasks } from '../subtaskOrder'
 import { useTaskQuick } from '../shell/TaskQuick'
 import { useQuickMenu, type QuickMenuConfig } from '../shell/QuickMenu'
 import styles from './TasksModern.module.css'
@@ -311,6 +312,7 @@ export function TasksModern(props: Props) {
   /* ------------------------------------------------- Adicionar na seção */
 
   const [composer, setComposer] = useState('')
+  const [subAddFor, setSubAddFor] = useState('')
   const [draftTitle, setDraftTitle] = useState('')
   const [draftDesc, setDraftDesc] = useState('')
   const [descOpen, setDescOpen] = useState(false)
@@ -511,7 +513,7 @@ export function TasksModern(props: Props) {
           </button>
         ) : (
           <button type="button" className={styles.check} data-done={done || undefined} data-priority={!done && PRIORITY_COLOR[priority] ? priority : undefined} style={!done && PRIORITY_COLOR[priority] ? ({ '--check-color': PRIORITY_COLOR[priority] } as React.CSSProperties) : undefined} onClick={() => toggleTask(id)} aria-label={done ? `Reabrir ${String(task.titulo)}` : `Concluir ${String(task.titulo)}`}>
-            {done ? <Icon name="check" size={12} /> : null}
+            <Icon name="check" size={12} />
           </button>
         )}
         <div tabIndex={0} className={styles.cardMain} onClick={onClick} onKeyDown={event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onClick(event as unknown as ReactMouseEvent) } }}>
@@ -540,7 +542,7 @@ export function TasksModern(props: Props) {
       </div>
       {expanded && children.length ? (
         <div className={styles.subList} role="list" aria-label={`Subtarefas de ${String(task.titulo || 'tarefa')}`}>
-          {[...children].sort((a, b) => Number(Boolean(a.concluida)) - Number(Boolean(b.concluida)) || Number(a.ordem || 0) - Number(b.ordem || 0)).map(child => {
+          {[...children].sort(compareSubtasks).map(child => {
             const childId = String(child.id)
             const childDue = dayOf(child)
             const childLate = Boolean(childDue) && childDue < today && !child.concluida
@@ -549,7 +551,7 @@ export function TasksModern(props: Props) {
             return (
               <div key={childId} role="listitem" className={styles.subRow} data-done={child.concluida || undefined} onClick={() => openTask(child)} {...quick.bind(() => taskMenu(child))}>
                 <button type="button" className={styles.subCheck} data-done={child.concluida || undefined} style={!child.concluida && PRIORITY_COLOR[childPriority] ? ({ borderColor: PRIORITY_COLOR[childPriority] } as React.CSSProperties) : undefined} onClick={event => { event.stopPropagation(); toggleTask(childId) }} aria-label={child.concluida ? `Reabrir ${String(child.titulo)}` : `Concluir ${String(child.titulo)}`}>
-                  {child.concluida ? <Icon name="check" size={11} /> : null}
+                  <Icon name="check" size={11} />
                 </button>
                 <button type="button" className={styles.subTitle}>{String(child.titulo || 'Subtarefa')}</button>
                 {grand.length ? <span className={styles.subMeta}><Icon name="account_tree" size={12} />{grand.filter(item => item.concluida).length}/{grand.length}</span> : null}
@@ -557,6 +559,11 @@ export function TasksModern(props: Props) {
               </div>
             )
           })}
+          {subAddFor === id ? (
+            <QuickAdd inline kinds={['task']} initial="task" parentId={id} state={state} today={today} defaultProjectId={String(task.projeto_id || 'entrada')} defaultSection={String(task.secao || '')} commit={commit} onFinance={() => undefined} onClose={() => setSubAddFor('')} />
+          ) : (
+            <button type="button" className={styles.subAddBtn} onClick={() => setSubAddFor(id)}><Icon name="add" size={15} filled={false} />Adicionar subtarefa</button>
+          )}
         </div>
       ) : null}
       </Fragment>

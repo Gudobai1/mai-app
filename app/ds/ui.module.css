@@ -282,3 +282,9 @@
 
 /* Concluído: círculo cinza vazio com um check pequeno. */
 .checkOn.checkOn.checkOn { background: transparent; border-color: var(--ds-muted); color: var(--ds-muted); }
+
+/* Passar o mouse mostra o check, para saber onde clicar. */
+.check.check.check > * { opacity: 0; transform: scale(0.4); transition: opacity 140ms ease, transform 180ms cubic-bezier(0.2, 0.8, 0.2, 1); }
+.check.check.check:hover { color: var(--ds-muted); }
+.check.check.check:hover > * { opacity: 0.6; transform: none; }
+.checkOn.checkOn.checkOn > * { opacity: 1; transform: none; }

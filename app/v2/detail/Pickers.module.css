@@ -515,3 +515,18 @@ button.treeChevron:hover { color: var(--ds-text); background: var(--ds-surface-h
 .treeChevron > span { transition: transform var(--ds-dur-fast, 120ms) var(--ds-ease, ease); }
 .treeChevron[data-open] > span { transform: rotate(90deg); }
 .layer[data-sheet] .treeChevron { height: 44px; flex-basis: 36px; width: 36px; }
+
+/* Rodapé dos seletores: Cancelar e Definir. */
+.pickerFooter { display: flex; justify-content: flex-end; gap: 8px; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--ds-line); }
+.pickerCancel, .pickerOk { appearance: none; height: 34px; padding: 0 16px; border-radius: 6px; font: inherit; font-size: 13.5px; font-weight: var(--ds-fw-bold); cursor: pointer; }
+.pickerCancel { border: 1px solid var(--ds-line); background: transparent; color: var(--ds-text); font-weight: var(--ds-fw-medium); }
+.pickerCancel:hover { border-color: var(--ds-line-strong); }
+.pickerOk { border: 1px solid var(--ds-accent); background: var(--ds-accent); color: var(--ds-on-accent); }
+.pickerOk:disabled { opacity: 0.45; cursor: default; }
+.layer[data-sheet] .pickerCancel, .layer[data-sheet] .pickerOk { height: 44px; font-size: 15px; }
+.layer[data-sheet] .pickerFooter { padding-bottom: env(safe-area-inset-bottom); }
+.timeActions { border-top: 0; padding-top: 0; justify-content: flex-start; }
+.timeClear[data-active] { background: var(--ds-surface-2); color: var(--ds-text); }
+
+/* Rolagem do horário: um número por vez, também no toque. */
+.wheelItem { scroll-snap-stop: always; }
