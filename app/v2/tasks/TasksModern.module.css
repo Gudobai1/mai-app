@@ -19,7 +19,7 @@
   position: relative;
   min-width: 0;
   padding: 4px;
-  border-radius: 8px;
+  border-radius: 6px;
   background: var(--ds-surface);
   box-shadow: var(--ds-shadow-1);
 }
@@ -48,7 +48,7 @@
   gap: 8px;
   padding: 0 12px 0 10px;
   border: 0;
-  border-radius: 6px;
+  border-radius: 4px;
   background: transparent;
   color: var(--ds-text-2);
   font: inherit;
@@ -94,7 +94,7 @@
   flex-shrink: 0;
   display: grid;
   place-items: center;
-  border-radius: 6px;
+  border-radius: 4px;
   object-fit: cover;
   color: #fff;
 }
@@ -121,7 +121,7 @@
   display: grid;
   place-items: center;
   border: 0;
-  border-radius: 6px;
+  border-radius: 4px;
   background: var(--ds-surface-2);
   color: var(--ds-text-2);
   cursor: pointer;
@@ -154,7 +154,7 @@
   flex-shrink: 0;
   display: grid;
   place-items: center;
-  border-radius: 8px;
+  border-radius: 6px;
   object-fit: cover;
   color: #fff;
 }
@@ -198,7 +198,7 @@
   display: grid;
   place-items: center;
   border: 0;
-  border-radius: 6px;
+  border-radius: 4px;
   background: transparent;
   color: var(--ds-muted);
   cursor: pointer;
@@ -212,7 +212,7 @@
 .segmented {
   display: flex;
   padding: 3px;
-  border-radius: 6px;
+  border-radius: 4px;
   background: var(--ds-surface-2);
 }
 
@@ -224,7 +224,7 @@
   gap: 6px;
   padding: 0 12px;
   border: 0;
-  border-radius: 6px;
+  border-radius: 4px;
   background: transparent;
   color: var(--ds-muted);
   font: inherit;
@@ -265,7 +265,7 @@
   padding: 0 !important;
   justify-content: center !important;
   border: 0 !important;
-  border-radius: 6px !important;
+  border-radius: 4px !important;
   background: var(--ds-surface-2) !important;
   color: var(--ds-text-2) !important;
 }
@@ -287,7 +287,7 @@
   gap: 6px;
   padding: 0 14px;
   border: 0;
-  border-radius: 6px;
+  border-radius: 4px;
   background: var(--ds-accent);
   color: var(--ds-on-accent);
   font: inherit;
@@ -375,7 +375,7 @@
   display: grid;
   place-items: center;
   border: 0;
-  border-radius: 6px;
+  border-radius: 4px;
   background: transparent;
   color: var(--ds-muted);
   cursor: pointer;
@@ -408,7 +408,7 @@
   align-items: flex-start;
   gap: 12px;
   padding: 12px 12px 12px 14px;
-  border-radius: 8px;
+  border-radius: 6px;
   background: var(--ds-surface);
   box-shadow: var(--ds-shadow-1);
   -webkit-touch-callout: none;
@@ -475,7 +475,7 @@
 }
 
 .selectBox.selectBox {
-  border-radius: 7px;
+  border-radius: 5px;
   width: 22px;
   height: 22px;
   margin-top: 0;
@@ -578,7 +578,7 @@
   gap: 12px;
   padding: 0 14px;
   border: 0;
-  border-radius: 8px;
+  border-radius: 6px;
   background: transparent;
   color: var(--ds-accent);
   font: inherit;
@@ -607,7 +607,7 @@
   flex-direction: column;
   gap: 10px;
   padding: 12px 12px 10px 14px;
-  border-radius: 8px;
+  border-radius: 6px;
   background: var(--ds-surface);
   box-shadow: inset 0 0 0 1.5px var(--ds-accent);
 }
@@ -643,7 +643,7 @@
   height: 32px;
   padding: 0 12px;
   border: 0;
-  border-radius: 6px;
+  border-radius: 4px;
   font: inherit;
   font-size: 13px;
   font-weight: var(--ds-fw-bold);
@@ -714,7 +714,7 @@
   flex-direction: column;
   gap: 8px;
   padding: 12px;
-  border-radius: 10px;
+  border-radius: 8px;
   background: color-mix(in srgb, var(--ds-surface) 55%, var(--ds-bg));
 }
 
@@ -736,7 +736,7 @@
   justify-content: center;
   gap: 6px;
   border: 1.5px dashed var(--ds-line-strong);
-  border-radius: 8px;
+  border-radius: 6px;
   background: transparent;
   color: var(--ds-muted);
   font: inherit;
@@ -765,7 +765,7 @@
   gap: 12px;
   padding: 8px 8px 8px 10px;
   box-sizing: border-box;
-  border-radius: 10px;
+  border-radius: 8px;
   background: var(--ds-surface);
   box-shadow: 0 18px 50px rgba(0, 0, 0, 0.45), 0 0 0 1px var(--ds-line);
   animation: rise 180ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
@@ -796,7 +796,7 @@
   height: 34px;
   display: grid;
   place-items: center;
-  border-radius: 6px;
+  border-radius: 4px;
   background: var(--ds-surface-2);
   color: var(--ds-text-2);
 }
@@ -804,7 +804,7 @@
 .bulkAll.bulkAll {
   height: 30px;
   padding: 0 10px;
-  border-radius: 6px;
+  border-radius: 4px;
   background: transparent;
   color: var(--ds-accent);
   font-size: 13px;
@@ -824,7 +824,7 @@
   gap: 6px;
   padding: 0 12px;
   border: 0;
-  border-radius: 6px;
+  border-radius: 4px;
   background: transparent;
   color: var(--ds-text);
   font: inherit;
@@ -889,7 +889,7 @@
   .headVisual {
     width: 38px;
     height: 38px;
-    border-radius: 6px;
+    border-radius: 4px;
   }
 
   .headText h1 {
@@ -944,7 +944,7 @@
     align-items: stretch;
     gap: 8px;
     padding: 10px;
-    border-radius: 12px;
+    border-radius: 10px;
   }
 
   .bulkActions {
@@ -993,7 +993,7 @@
   gap: 2px;
   height: 18px;
   padding: 0 5px;
-  border-radius: 6px;
+  border-radius: 4px;
   background: var(--ds-surface-2);
   color: var(--ds-muted);
   font-size: 11px;
@@ -1042,7 +1042,7 @@
   gap: 8px;
   margin-top: -8px;
   padding: 10px;
-  border-radius: 8px;
+  border-radius: 6px;
   background: color-mix(in srgb, var(--ds-surface) 55%, var(--ds-bg));
 }
 
@@ -1055,7 +1055,7 @@
   gap: 7px;
   padding: 0 12px 0 9px;
   border: 0;
-  border-radius: 6px;
+  border-radius: 4px;
   font: inherit;
   font-size: 13px;
   font-weight: var(--ds-fw-bold);
@@ -1124,7 +1124,7 @@
   gap: 5px;
   padding: 0 10px;
   border: 0;
-  border-radius: 6px;
+  border-radius: 4px;
   background: var(--ds-surface-2);
   color: var(--ds-text);
   font: inherit;
@@ -1184,7 +1184,7 @@
   row-gap: 2px;
   padding: 12px 14px;
   border: 0;
-  border-radius: 8px;
+  border-radius: 6px;
   background: var(--ds-surface);
   box-shadow: var(--ds-shadow-1);
   color: var(--ds-text);
@@ -1209,7 +1209,7 @@
   height: 34px;
   display: grid;
   place-items: center;
-  border-radius: 6px;
+  border-radius: 4px;
   background: color-mix(in srgb, var(--list-color) 18%, transparent);
   color: var(--list-color);
 }
@@ -1339,7 +1339,7 @@
   gap: 2px;
   padding: 0 4px 0 8px;
   border: 0;
-  border-radius: 8px;
+  border-radius: 6px;
   background: var(--ds-surface-2);
   color: var(--ds-text-2);
   font: inherit;
@@ -1381,7 +1381,7 @@
   align-items: center;
   gap: 10px;
   padding: 0 10px;
-  border-radius: 6px;
+  border-radius: 4px;
   background: color-mix(in srgb, var(--ds-surface) 70%, transparent);
 }
 
@@ -1653,7 +1653,7 @@
   display: grid;
   place-items: center;
   border: 0;
-  border-radius: 6px;
+  border-radius: 4px;
   background: transparent;
   color: var(--ds-muted);
   cursor: pointer;
@@ -1680,7 +1680,7 @@
   gap: 6px;
   padding: 0 10px;
   border: 0;
-  border-radius: 8px;
+  border-radius: 6px;
   background: transparent;
   color: var(--ds-muted);
   font: inherit;
@@ -1717,7 +1717,7 @@
   gap: 10px;
   padding: 0 8px;
   border: 0;
-  border-radius: 6px;
+  border-radius: 4px;
   background: transparent;
   color: var(--ds-text);
   font: inherit;
@@ -1761,7 +1761,7 @@
   display: grid;
   place-items: center;
   border: 0;
-  border-radius: 8px;
+  border-radius: 6px;
   background: transparent;
   color: var(--ds-muted);
   cursor: pointer;
@@ -1783,7 +1783,7 @@
   gap: 8px;
   padding: 0 12px;
   border: 0;
-  border-radius: 6px;
+  border-radius: 4px;
   background: transparent;
   color: var(--ds-muted);
   font: inherit;
@@ -1958,7 +1958,7 @@
   gap: 8px;
   padding: 0 14px 0 11px;
   border: 0;
-  border-radius: 8px;
+  border-radius: 6px;
   background: var(--ds-surface);
   color: var(--ds-text-2);
   font: inherit;
@@ -2222,7 +2222,7 @@
   gap: 5px;
   padding: 0 10px 0 8px;
   border: 0;
-  border-radius: 6px;
+  border-radius: 4px;
   background: var(--ds-surface-2);
   color: var(--ds-muted);
   font: inherit;
@@ -2267,7 +2267,7 @@
   width: 24px;
   height: 24px;
   flex-shrink: 0;
-  border-radius: 8px;
+  border-radius: 6px;
   object-fit: cover;
 }
 
@@ -2324,7 +2324,7 @@
 .board .card.card {
   gap: 10px;
   padding: 12px;
-  border-radius: 8px;
+  border-radius: 6px;
   background: var(--ds-surface);
   box-shadow: none;
   border: 1px solid var(--ds-line);
@@ -2408,7 +2408,7 @@
 .descLink { color: var(--ds-accent); text-decoration: underline; text-underline-offset: 2px; }
 .cardDesc { white-space: normal; overflow-wrap: anywhere; }
 .list { gap: 0; }
-.projChevron { appearance: none; margin-left: auto; width: 28px; height: 28px; display: grid; place-items: center; padding: 0; border: 0; border-radius: 8px; background: transparent; color: var(--ds-muted); cursor: pointer; }
+.projChevron { appearance: none; margin-left: auto; width: 28px; height: 28px; display: grid; place-items: center; padding: 0; border: 0; border-radius: 6px; background: transparent; color: var(--ds-muted); cursor: pointer; }
 .projChevron:hover { color: var(--ds-text); }
 
 /* Seta de esconder dentro da seção, no canto direito (como na Hoje) */

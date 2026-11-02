@@ -49,7 +49,7 @@
   font-size:12px;
   font-weight:600;
   padding:6px 8px;
-  border-radius:8px;
+  border-radius:6px;
 }
 .mai-item-attachments-add:hover{background:var(--v3-hover,rgba(0,0,0,.05))}
 .mai-item-attachments-add[data-busy]{opacity:.65;pointer-events:none}
@@ -63,7 +63,7 @@
   padding:3px 2px;
   border:0;
   background:transparent;
-  border-radius:8px;
+  border-radius:6px;
 }
 .mai-item-attachments-list article:hover{background:var(--v3-hover,rgba(0,0,0,.04))}
 .mai-item-attachments-file-icon{font-size:18px;color:var(--v3-muted,#7a817b)}
@@ -84,7 +84,7 @@
   place-items:center;
   border:0;
   background:transparent;
-  border-radius:7px;
+  border-radius:5px;
   color:var(--v3-muted,#7a817b);
   cursor:pointer;
 }

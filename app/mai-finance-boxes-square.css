@@ -50,7 +50,7 @@
 .mai-v4-finance:has(.mai-finance-v4-tabs>button:nth-child(5)[data-active="true"]) .mai-finance-v4-goal-icon{
   width:40px!important;
   height:40px!important;
-  border-radius:6px!important;
+  border-radius:4px!important;
 }
 
 .mai-v4-finance:has(.mai-finance-v4-tabs>button:nth-child(5)[data-active="true"]) .mai-finance-v4-goal-icon .material-symbols-rounded{
@@ -117,7 +117,7 @@
   .mai-v4-finance:has(.mai-finance-v4-tabs>button:nth-child(5)[data-active="true"]) .mai-finance-v4-goal-icon{
     width:34px!important;
     height:34px!important;
-    border-radius:6px!important;
+    border-radius:4px!important;
   }
   .mai-v4-finance:has(.mai-finance-v4-tabs>button:nth-child(5)[data-active="true"]) .mai-finance-v4-goal-main>b{
     max-width:calc(100% - 20px)!important;

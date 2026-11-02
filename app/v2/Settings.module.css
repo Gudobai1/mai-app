@@ -1,10 +1,10 @@
 /* Configurações — uma página só, no padrão do app (linhas, sem fundos nos blocos). */
 .layer { position: fixed; inset: 0; z-index: 500; display: grid; place-items: center; padding: 16px; background: rgba(0, 0, 0, 0.5); font-family: var(--ds-font); }
-.dialog { display: grid; grid-template-columns: 230px minmax(0, 1fr); width: min(940px, 100%); height: min(86vh, 700px); border: 1px solid var(--ds-line); border-radius: 8px; background: var(--ds-bg); color: var(--ds-text); box-shadow: var(--ds-shadow-modal); overflow: hidden; }
+.dialog { display: grid; grid-template-columns: 230px minmax(0, 1fr); width: min(940px, 100%); height: min(86vh, 700px); border: 1px solid var(--ds-line); border-radius: 6px; background: var(--ds-bg); color: var(--ds-text); box-shadow: var(--ds-shadow-modal); overflow: hidden; }
 
 .nav { display: flex; flex-direction: column; gap: 2px; padding: 16px 12px; background: var(--mai-side-bg, var(--ds-surface-2)); overflow-y: auto; }
 .nav h2 { margin: 2px 8px 14px; font-size: 18px; font-weight: 800; }
-.nav button { display: flex; align-items: center; gap: 10px; height: 38px; padding: 0 10px; border: 0; border-radius: 8px; background: transparent; color: var(--ds-text); font: inherit; font-size: 14px; cursor: pointer; text-align: left; }
+.nav button { display: flex; align-items: center; gap: 10px; height: 38px; padding: 0 10px; border: 0; border-radius: 6px; background: transparent; color: var(--ds-text); font: inherit; font-size: 14px; cursor: pointer; text-align: left; }
 .nav button svg, .nav button > :first-child { color: var(--ds-muted); }
 .nav button:hover { background: var(--ds-surface-hover); }
 .nav button[data-active] { background: var(--ds-accent-soft); color: var(--ds-accent); font-weight: 600; }
@@ -13,7 +13,7 @@
 .content { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
 .top { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px 12px 24px; border-bottom: 1px solid var(--ds-line); }
 .top h2 { margin: 0; font-size: 16px; font-weight: 700; }
-.close { display: grid; place-items: center; width: 34px; height: 34px; border: 0; border-radius: 8px; background: transparent; color: var(--ds-muted); cursor: pointer; }
+.close { display: grid; place-items: center; width: 34px; height: 34px; border: 0; border-radius: 6px; background: transparent; color: var(--ds-muted); cursor: pointer; }
 .close:hover { background: var(--ds-surface-hover); color: var(--ds-text); }
 .scroll { flex: 1; min-height: 0; overflow-y: auto; padding: 0 24px; scroll-behavior: smooth; }
 .section { padding: 22px 0; border-bottom: 1px solid var(--ds-line); scroll-margin-top: 0; }
@@ -32,7 +32,7 @@
 .row > span { display: grid; gap: 2px; min-width: 0; }
 .row strong { font-size: 14px; font-weight: 600; }
 .row small { color: var(--ds-muted); font-size: 12px; }
-.button { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; height: 34px; padding: 0 14px; border: 1px solid var(--ds-line-strong); border-radius: 8px; background: transparent; color: var(--ds-text); font: inherit; font-size: 13px; font-weight: 600; text-decoration: none; cursor: pointer; }
+.button { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; height: 34px; padding: 0 14px; border: 1px solid var(--ds-line-strong); border-radius: 6px; background: transparent; color: var(--ds-text); font: inherit; font-size: 13px; font-weight: 600; text-decoration: none; cursor: pointer; }
 .button:hover { background: var(--ds-surface-hover); }
 .danger { color: var(--ds-danger); border-color: color-mix(in srgb, var(--ds-danger) 55%, transparent); }
 
@@ -48,7 +48,7 @@
 
 @media (max-width: 720px) {
   .layer { align-items: end; padding: 0; }
-  .dialog { grid-template-columns: 1fr; width: 100%; height: 92vh; border-radius: 10px 16px 0 0; }
+  .dialog { grid-template-columns: 1fr; width: 100%; height: 92vh; border-radius: 8px 16px 0 0; }
   .nav { display: none; }
   .scroll { padding: 0 16px; }
   .top { padding-left: 16px; }

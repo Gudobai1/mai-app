@@ -5,7 +5,7 @@ export type ThemeMode = 'light' | 'dark' | 'system'
 
 /* `color` é a cor de destaque no claro; `dark` no escuro (usadas nas prévias). */
 export const THEMES: { id: ThemeId; label: string; color: string; dark: string }[] = [
-  { id: 'todoist', label: 'Todoist', color: '#DC4C3E', dark: '#E8685B' },
+  { id: 'todoist', label: 'Todoist', color: '#DE4C4A', dark: '#DE4C4A' },
   { id: 'pedra-da-lua', label: 'Pedra da lua', color: '#4F5B70', dark: '#8B97AE' },
   { id: 'tangerina', label: 'Tangerina', color: '#C77300', dark: '#F0A030' },
   { id: 'kale', label: 'Kale', color: '#4F7F3F', dark: '#7DB36B' },

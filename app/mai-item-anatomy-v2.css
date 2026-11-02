@@ -7,7 +7,7 @@
   padding:7px 6px!important;
   margin:0!important;
   border:0!important;
-  border-radius:8px!important;
+  border-radius:6px!important;
   background:transparent!important;
   box-shadow:none!important;
   color:var(--v3-text)!important;
@@ -268,7 +268,7 @@ button.mai-item-row-v2{
   padding:0 10px;
   margin:0 0 18px;
   border:0;
-  border-radius:6px;
+  border-radius:4px;
   background:var(--v3-sidebar);
   color:var(--v3-muted);
   box-sizing:border-box;

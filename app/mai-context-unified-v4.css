@@ -9,7 +9,7 @@
   width:min(470px,calc(100vw - 28px))!important;
   max-width:calc(100vw - 28px)!important;
   height:auto!important;
-  border-radius:12px!important;
+  border-radius:10px!important;
 }
 
 .mai-task-v4-top,
@@ -133,7 +133,7 @@
   gap:9px!important;
   padding:0 6px!important;
   border:0!important;
-  border-radius:8px!important;
+  border-radius:6px!important;
   background:transparent!important;
   box-shadow:none!important;
   text-align:left!important;
@@ -214,7 +214,7 @@
   height:20px!important;
   display:block!important;
   object-fit:cover!important;
-  border-radius:6px!important;
+  border-radius:4px!important;
 }
 .mai-task-v4-project-option-image{width:18px!important;height:18px!important}
 
@@ -240,7 +240,7 @@
   color:var(--mai-tool-color,#687d62)!important;
 }
 .mai-task-v4-popover-leading>.material-symbols-rounded{font-size:19px!important;color:inherit!important}
-.mai-task-v4-popover-leading img{width:20px!important;height:20px!important;border-radius:6px!important;object-fit:cover!important}
+.mai-task-v4-popover-leading img{width:20px!important;height:20px!important;border-radius:4px!important;object-fit:cover!important}
 
 /* Sem divisórias entre descrição, metadados, subtarefas e arquivos. */
 .mai-task-v4-section,
@@ -274,7 +274,7 @@
     width:calc(100vw - 16px)!important;
     max-width:calc(100vw - 16px)!important;
     height:auto!important;
-    border-radius:10px!important;
+    border-radius:8px!important;
   }
 
   .mai-task-v4-scroll,

@@ -187,7 +187,7 @@
 .nextIcon {
   width: 42px;
   height: 42px;
-  border-radius: 8px;
+  border-radius: 6px;
   background: var(--ds-on-accent-soft);
   display: inline-flex;
   align-items: center;
@@ -248,7 +248,7 @@
 
 .bar {
   flex: 1;
-  border-radius: 8px;
+  border-radius: 6px;
   background: var(--ds-inverse-line);
 }
 

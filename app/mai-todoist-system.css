@@ -196,7 +196,7 @@
   align-items:center!important;
 }
 .mai-v3-habit-body{display:grid!important;gap:3px!important;min-width:0!important;padding:0!important;border:0!important;background:transparent!important;text-align:left!important}
-.mai-v4-habit-value{min-width:38px!important;height:28px!important;padding:0 8px!important;border:0!important;border-radius:7px!important;background:transparent!important;color:var(--v3-muted)!important;font-size:11px!important}
+.mai-v4-habit-value{min-width:38px!important;height:28px!important;padding:0 8px!important;border:0!important;border-radius:5px!important;background:transparent!important;color:var(--v3-muted)!important;font-size:11px!important}
 .mai-v4-habit-value:hover{background:var(--v3-hover)!important;color:var(--v3-text)!important}
 
 /* Metas: círculo à esquerda, conteúdo no centro, percentual à direita. */
@@ -366,12 +366,12 @@
   align-items:center!important;
   text-align:left!important;
 }
-.mai-v3-file-icon{width:26px!important;height:26px!important;border-radius:7px!important;background:var(--v3-accent-soft)!important;color:var(--v3-accent)!important}
+.mai-v3-file-icon{width:26px!important;height:26px!important;border-radius:5px!important;background:var(--v3-accent-soft)!important;color:var(--v3-accent)!important}
 .mai-v3-file-list>button>span:last-child{display:grid!important;grid-template-columns:minmax(0,1fr) auto!important;grid-template-rows:auto!important;gap:10px!important;align-items:center!important}
 .mai-v3-file-list>button>span:last-child>strong{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .mai-v3-file-list>button>span:last-child>small{text-align:right;white-space:nowrap}
 .mai-v3-file-grid{gap:6px!important}
-.mai-v3-file-grid>button{border:0!important;box-shadow:none!important;background:transparent!important;border-radius:6px!important}
+.mai-v3-file-grid>button{border:0!important;box-shadow:none!important;background:transparent!important;border-radius:4px!important}
 .mai-v3-file-grid>button:hover{background:var(--mai-item-hover)!important}
 
 /* Projetos na coluna de Tarefas. */
@@ -380,7 +380,7 @@
   column-gap:9px!important;
   padding-right:34px!important;
 }
-.mai-v4-project-item>img,.mai-v4-project-icon{width:26px!important;height:26px!important;border-radius:7px!important}
+.mai-v4-project-item>img,.mai-v4-project-icon{width:26px!important;height:26px!important;border-radius:5px!important}
 
 /* Relatórios continuam informativos, mas cada registro é uma linha. */
 .mai-v3-report-list>article{

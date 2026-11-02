@@ -51,7 +51,7 @@
   font:inherit;
   font-size:10.5px;
   padding:4px 6px;
-  border-radius:6px;
+  border-radius:4px;
   cursor:pointer;
 }
 .mai-v4-today-list-section>header button:hover{background:var(--v3-hover);color:var(--v3-text)}
@@ -62,7 +62,7 @@
   padding:7px 6px!important;
   margin:0!important;
   border:0!important;
-  border-radius:8px!important;
+  border-radius:6px!important;
   align-items:center!important;
 }
 
@@ -98,7 +98,7 @@
   place-items:center;
   align-self:center;
   border:0;
-  border-radius:8px;
+  border-radius:6px;
   background:transparent;
   color:var(--v3-muted);
   cursor:pointer;
@@ -128,7 +128,7 @@
   overflow:auto;
   padding:10px;
   border:1px solid var(--v3-line);
-  border-radius:8px;
+  border-radius:6px;
   background:var(--v3-card);
   box-shadow:0 14px 38px rgba(0,0,0,.12);
 }
@@ -146,7 +146,7 @@
   grid-template-columns:minmax(0,1fr) auto;
   align-items:center;
   gap:6px;
-  border-radius:8px;
+  border-radius:6px;
 }
 .mai-v4-today-customize>div:hover{background:var(--v3-hover)}
 .mai-v4-section-toggle{
@@ -170,7 +170,7 @@
   width:28px;
   height:28px;
   border:0;
-  border-radius:7px;
+  border-radius:5px;
   background:transparent;
   color:var(--v3-muted);
   cursor:pointer;
