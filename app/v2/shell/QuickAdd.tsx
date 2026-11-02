@@ -6,7 +6,7 @@ import type { MaiState } from '../../../lib/v2/state'
 import { Icon } from '../../ds'
 import type { Row } from '../app-types'
 import { driveAssetUrl } from '../DriveAsset'
-import { DatePicker, Floating, OptionList, TimePicker, type PickerOption } from '../detail/Pickers'
+import { DatePicker, Floating, OptionList, ProjectPicker, ReminderPicker, RepeatPicker, TimePicker, repeatLabel as repeatText, reminderLabel, type PickerOption } from '../detail/Pickers'
 import { CategoryChooser } from '../detail/CategoryChooser'
 import { eventCategories, withEventCategory, type EventCategory } from '../../../lib/v2/event-categories'
 import styles from './QuickAdd.module.css'
@@ -51,14 +51,6 @@ const PRIORITIES: PickerOption[] = [
 ]
 const PRIORITY_COLOR: Record<number, string> = { 1: 'var(--ds-rose-fg)', 2: 'var(--ds-peach-fg)', 3: 'var(--ds-sky-fg)' }
 
-const REPEATS: PickerOption[] = [
-  { value: '', label: 'Não repetir', icon: 'block' },
-  { value: 'diariamente', label: 'Todos os dias', icon: 'today' },
-  { value: 'semanal:1,2,3,4,5', label: 'Dias úteis', icon: 'work' },
-  { value: 'semanalmente', label: 'Toda semana', icon: 'date_range' },
-  { value: 'mensalmente', label: 'Todo mês', icon: 'calendar_month' },
-]
-
 function addDays(key: string, amount: number) {
   const value = new Date(`${key}T12:00:00`)
   value.setDate(value.getDate() + amount)
@@ -80,7 +72,7 @@ const plusHour = (time: string) => {
   return `${String(Math.min(23, h + 1)).padStart(2, '0')}:${String(m || 0).padStart(2, '0')}`
 }
 
-type Picker = '' | 'ftype' | 'account' | 'date' | 'priority' | 'project' | 'section' | 'repeat' | 'start' | 'end' | 'category'
+type Picker = '' | 'ftype' | 'account' | 'date' | 'time' | 'reminder' | 'priority' | 'project' | 'repeat' | 'start' | 'end' | 'category'
 
 export function QuickAdd({ kinds, initial, state, today, defaultProjectId, defaultDate, defaultSection, commit, onFinance, onClose, inline }: Props) {
   const [kind, setKind] = useState<QuickAddKind>(initial)
@@ -91,6 +83,8 @@ export function QuickAdd({ kinds, initial, state, today, defaultProjectId, defau
   const [projectId, setProjectId] = useState(defaultProjectId || 'entrada')
   const [section, setSection] = useState(defaultSection || '')
   const [repeat, setRepeat] = useState('')
+  const [taskTime, setTaskTime] = useState('')
+  const [reminder, setReminder] = useState('')
   const [allDay, setAllDay] = useState(false)
   const [start, setStart] = useState('09:00')
   const [end, setEnd] = useState('10:00')
@@ -106,7 +100,6 @@ export function QuickAdd({ kinds, initial, state, today, defaultProjectId, defau
   const projects = rows(state.projects).filter(item => item.ativo !== false)
   const accounts = rows((state.finance as Row | undefined)?.accounts)
   const project = projects.find(item => String(item.id) === projectId)
-  const sections = project ? rows(project.secoes).map(String) : []
 
   // Evento sem data usa o dia de hoje; tarefa pode ficar sem data.
   const eventDate = date || today
@@ -137,9 +130,9 @@ export function QuickAdd({ kinds, initial, state, today, defaultProjectId, defau
       commit(current => ({ ...current, finance: { ...current.finance, transactions: [entry, ...rows(current.finance.transactions)] } }))
     } else if (kind === 'task') {
       const task: Row = {
-        id: uid('t'), titulo: name, descricao: description.trim(), data_vencimento: date, prioridade: priority, concluida: false,
+        id: uid('t'), titulo: name, descricao: description.trim(), data_vencimento: date ? `${date}${taskTime ? `T${taskTime}` : ''}` : '', prioridade: priority, concluida: false,
         projeto_id: projectId, parent_id: '', secao: section, criado_em: new Date().toISOString(), ordem: Date.now(),
-        notas: [], anexos: [], subtarefas: [], lembretes: [], etiquetas: [], repeticao: repeat, ocultar_agenda: false,
+        notas: [], anexos: [], subtarefas: [], lembretes: reminder ? [reminder] : [], etiquetas: [], repeticao: repeat, ocultar_agenda: false,
       }
       commit(current => ({ ...current, tasks: [...current.tasks, task as (typeof current.tasks)[number]] }))
     } else {
@@ -158,7 +151,7 @@ export function QuickAdd({ kinds, initial, state, today, defaultProjectId, defau
   }
 
   const done = (fn: () => void) => { fn(); setPicker('') }
-  const repeatLabel = REPEATS.find(item => item.value === repeat)?.label || 'Repetir'
+  const repeatLabel = repeat ? repeatText(repeat) : 'Repetir'
 
   const body = (
     <div className={inline ? styles.inlineWrap : styles.layer} onClick={inline ? undefined : event => { if (event.target === event.currentTarget) onClose() }}>
@@ -193,7 +186,7 @@ export function QuickAdd({ kinds, initial, state, today, defaultProjectId, defau
           ) : null}
 
           <div className={styles.chips}>
-            <button type="button" className={styles.chip} data-set={date || undefined} data-late={(kind === 'task' && date && date < today) || undefined} onClick={open('date')}>
+            <button type="button" className={styles.chip} data-set={date || undefined} data-late={(kind === 'task' && date && date < today) || undefined} style={{ '--chip-color': 'var(--ds-warn)' } as CSSProperties} onClick={open('date')}>
               <Icon name="event" size={16} filled={false} />{naturalDate(kind === 'event' ? eventDate : kind === 'finance' ? (date || today) : date, today)}
             </button>
 
@@ -210,18 +203,19 @@ export function QuickAdd({ kinds, initial, state, today, defaultProjectId, defau
               </>
             ) : kind === 'task' ? (
               <>
+                <button type="button" className={styles.chip} data-set={taskTime || undefined} style={{ '--chip-color': 'var(--ds-lilac-fg)' } as CSSProperties} onClick={open('time')}>
+                  <Icon name="schedule" size={16} filled={false} />{taskTime || 'Horário'}
+                </button>
                 <button type="button" className={styles.chip} data-set={priority < 4 || undefined} style={PRIORITY_COLOR[priority] ? ({ '--chip-color': PRIORITY_COLOR[priority] } as CSSProperties) : undefined} onClick={open('priority')}>
                   <Icon name="flag" size={16} filled={priority < 4} />{priority < 4 ? PRIORITIES[priority - 1].label : 'Prioridade'}
                 </button>
-                <button type="button" className={styles.chip} onClick={open('project')}>
-                  {project?.imagem_url ? <img className={styles.chipImg} src={driveAssetUrl(project.imagem_url)} alt="" /> : <Icon name={projectId === 'entrada' ? 'inbox' : String(project?.icone || 'folder')} size={16} filled={false} />}
-                  <span>{projectId === 'entrada' ? 'Entrada' : String(project?.nome || 'Projeto')}</span>
+                <button type="button" className={styles.chip} data-set={reminder || undefined} style={{ '--chip-color': 'var(--ds-sky-fg)' } as CSSProperties} onClick={open('reminder')}>
+                  <Icon name="notifications" size={16} filled={false} />{reminder ? reminderLabel(reminder) : 'Lembrete'}
                 </button>
-                {sections.length ? (
-                  <button type="button" className={styles.chip} data-set={section || undefined} onClick={open('section')}>
-                    <Icon name="view_agenda" size={16} filled={false} /><span>{section || 'Seção'}</span>
-                  </button>
-                ) : null}
+                <button type="button" className={styles.chip} data-set={projectId !== 'entrada' || undefined} style={{ '--chip-color': String(project?.cor || 'var(--ds-text-2)') } as CSSProperties} onClick={open('project')}>
+                  {project?.imagem_url ? <img className={styles.chipImg} src={driveAssetUrl(project.imagem_url)} alt="" /> : <Icon name={projectId === 'entrada' ? 'inbox' : String(project?.icone || 'folder')} size={16} filled={false} />}
+                  <span>{projectId === 'entrada' ? 'Entrada' : String(project?.nome || 'Projeto')}{section ? ` › ${section}` : ''}</span>
+                </button>
               </>
             ) : (
               <>
@@ -241,7 +235,7 @@ export function QuickAdd({ kinds, initial, state, today, defaultProjectId, defau
             )}
 
             {kind === 'finance' ? null : (
-              <button type="button" className={styles.chip} data-set={repeat || undefined} onClick={open('repeat')}>
+              <button type="button" className={styles.chip} data-set={repeat || undefined} style={{ '--chip-color': 'var(--ds-mint-fg)' } as CSSProperties} onClick={open('repeat')}>
                 <Icon name="repeat" size={16} filled={false} />{repeatLabel}
               </button>
             )}
@@ -281,18 +275,19 @@ export function QuickAdd({ kinds, initial, state, today, defaultProjectId, defau
           <OptionList options={PRIORITIES} value={String(priority)} onSelect={value => done(() => setPriority(Number(value)))} />
         </Floating>
       ) : null}
-      {picker === 'project' ? (
-        <Floating anchor={anchor} title="Projeto" width={260} onClose={() => setPicker('')}>
-          <OptionList
-            options={[{ value: 'entrada', label: 'Entrada', icon: 'inbox' }, ...projects.map(item => ({ value: String(item.id), label: String(item.nome || 'Projeto'), image: item.imagem_url ? driveAssetUrl(item.imagem_url) : undefined, color: String(item.cor || 'var(--ds-line-strong)') }))]}
-            value={projectId}
-            onSelect={value => done(() => { setProjectId(value); setSection('') })}
-          />
+      {picker === 'time' ? (
+        <Floating anchor={anchor} title="Horário" width={260} onClose={() => setPicker('')}>
+          <TimePicker value={taskTime} onSelect={value => done(() => { setTaskTime(value); if (value && !date) setDate(today) })} />
         </Floating>
       ) : null}
-      {picker === 'section' ? (
-        <Floating anchor={anchor} title="Seção" width={240} onClose={() => setPicker('')}>
-          <OptionList options={[{ value: '', label: 'Sem seção', icon: 'horizontal_rule' }, ...sections.map(name => ({ value: name, label: name, icon: 'view_agenda' }))]} value={section} onSelect={value => done(() => setSection(value))} />
+      {picker === 'reminder' ? (
+        <Floating anchor={anchor} title="Lembrete" width={280} onClose={() => setPicker('')}>
+          <ReminderPicker value={reminder} onSelect={value => done(() => setReminder(value))} />
+        </Floating>
+      ) : null}
+      {picker === 'project' ? (
+        <Floating anchor={anchor} title="Projeto" width={280} onClose={() => setPicker('')}>
+          <ProjectPicker projects={projects} projectId={projectId} section={section} imageOf={item => item.imagem_url ? driveAssetUrl(item.imagem_url) : undefined} onSelect={(id, name) => done(() => { setProjectId(id); setSection(name) })} />
         </Floating>
       ) : null}
       {picker === 'category' ? (
@@ -306,8 +301,8 @@ export function QuickAdd({ kinds, initial, state, today, defaultProjectId, defau
         </Floating>
       ) : null}
       {picker === 'repeat' ? (
-        <Floating anchor={anchor} title="Repetição" width={240} onClose={() => setPicker('')}>
-          <OptionList options={REPEATS} value={repeat} onSelect={value => done(() => setRepeat(value))} />
+        <Floating anchor={anchor} title="Repetição" width={280} onClose={() => setPicker('')}>
+          <RepeatPicker value={repeat} onSelect={value => done(() => setRepeat(value))} />
         </Floating>
       ) : null}
       {picker === 'start' ? (

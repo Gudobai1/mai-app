@@ -326,3 +326,90 @@ export function ReminderPicker({ value, onSelect }: { value: string; onSelect: (
     </div>
   )
 }
+
+/* ------------------------------------------------ Projeto > subprojeto > seção (recolhíveis) */
+
+type TreeProject = Record<string, any>
+
+export function ProjectPicker({ projects, projectId, section, imageOf, onSelect }: { projects: TreeProject[]; projectId: string; section: string; imageOf?: (project: TreeProject) => string | undefined; onSelect: (projectId: string, section: string) => void }) {
+  const ids = new Set(projects.map(project => String(project.id)))
+  const childrenOf = (parent: string) => projects.filter(project => String(project.parent_id || '') === parent)
+  const roots = projects.filter(project => !project.parent_id || !ids.has(String(project.parent_id)))
+  const sectionsOf = (project: TreeProject): string[] => (Array.isArray(project.secoes) ? project.secoes.map(String) : [])
+
+  // Abre sozinho o caminho até o projeto escolhido.
+  const [open, setOpen] = useState<Set<string>>(() => {
+    const start = new Set<string>()
+    let current = projects.find(project => String(project.id) === projectId)
+    let guard = 0
+    while (current && guard++ < 8) {
+      start.add(String(current.id))
+      current = projects.find(project => String(project.id) === String(current?.parent_id || ''))
+    }
+    return start
+  })
+  const toggle = (id: string) => setOpen(current => {
+    const next = new Set(current)
+    if (next.has(id)) next.delete(id)
+    else next.add(id)
+    return next
+  })
+
+  const row = (project: TreeProject, depth: number, seen: Set<string>): ReactNode => {
+    const id = String(project.id)
+    if (seen.has(id)) return null
+    seen.add(id)
+    const sections = sectionsOf(project)
+    const children = childrenOf(id)
+    const expandable = sections.length > 0 || children.length > 0
+    const expanded = open.has(id)
+    const image = imageOf?.(project)
+    const selected = projectId === id && !section
+    return (
+      <div key={id} className={styles.treeGroup}>
+        <div className={styles.treeRow} style={{ paddingLeft: 4 + depth * 16 }}>
+          {expandable
+            ? <button type="button" className={styles.treeChevron} data-open={expanded || undefined} aria-label={expanded ? 'Recolher' : 'Expandir'} aria-expanded={expanded} onClick={() => toggle(id)}><Icon name="chevron_right" size={18} filled={false} /></button>
+            : <span className={styles.treeChevron} aria-hidden="true" />}
+          <button type="button" className={styles.option} data-selected={selected || undefined} onClick={() => onSelect(id, '')}>
+            {image ? <img className={styles.optionImage} src={image} alt="" /> : <span className={styles.optionDot} style={{ background: String(project.cor || 'var(--ds-line-strong)') }} />}
+            <span className={styles.optionText}>{String(project.nome || 'Projeto')}</span>
+            {selected ? <Icon name="check" size={18} className={styles.optionCheck} /> : null}
+          </button>
+        </div>
+        {expanded ? (
+          <>
+            {sections.map(name => {
+              const active = projectId === id && section === name
+              return (
+                <div key={`s:${name}`} className={styles.treeRow} style={{ paddingLeft: 4 + (depth + 1) * 16 + 28 }}>
+                  <button type="button" className={styles.option} data-selected={active || undefined} onClick={() => onSelect(id, name)}>
+                    <Icon name="view_agenda" size={16} className={styles.optionIcon} />
+                    <span className={styles.optionText}>{name}</span>
+                    {active ? <Icon name="check" size={18} className={styles.optionCheck} /> : null}
+                  </button>
+                </div>
+              )
+            })}
+            {children.map(child => row(child, depth + 1, seen))}
+          </>
+        ) : null}
+      </div>
+    )
+  }
+
+  const seen = new Set<string>()
+  return (
+    <div className={styles.tree} role="tree">
+      <div className={styles.treeRow} style={{ paddingLeft: 4 }}>
+        <span className={styles.treeChevron} aria-hidden="true" />
+        <button type="button" className={styles.option} data-selected={projectId === 'entrada' || undefined} onClick={() => onSelect('entrada', '')}>
+          <Icon name="inbox" size={18} className={styles.optionIcon} />
+          <span className={styles.optionText}>Entrada</span>
+          {projectId === 'entrada' ? <Icon name="check" size={18} className={styles.optionCheck} /> : null}
+        </button>
+      </div>
+      {roots.map(root => row(root, 0, seen))}
+    </div>
+  )
+}
