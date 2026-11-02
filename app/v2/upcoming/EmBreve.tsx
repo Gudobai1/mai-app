@@ -3,7 +3,7 @@
 import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { addDays, eventColor, plannerItems, type PlannerItem } from '../../../lib/v2/planner'
 import { dateKey, type MaiState } from '../../../lib/v2/state'
-import { Icon } from '../../ds'
+import { Check, Icon } from '../../ds'
 import type { Row } from '../app-types'
 import type { InspectableItem } from '../ContextDrawer'
 import { driveAssetUrl } from '../DriveAsset'
@@ -11,6 +11,7 @@ import { FinanceTransactionCard, financeCardPaymentState } from '../FinanceTrans
 import { askConfirm } from '../shell/ConfirmDialog'
 import { useQuickMenu, type QuickMenuConfig } from '../shell/QuickMenu'
 import tasksStyles from '../tasks/TasksModern.module.css'
+import todayStyles from '../today/TodayModern.module.css'
 import styles from './EmBreve.module.css'
 import { DEFAULT_DISPLAY, EMPTY_FILTERS, KINDS, UpcomingControls, normalizeFilters, type Kind, type UpcomingDisplay, type UpcomingFilters } from './UpcomingControls'
 
@@ -121,7 +122,6 @@ export function EmBreve({ state, today, commit, inspect, syncRange }: Props) {
   const [scrollTo, setScrollTo] = useState({ day: today, n: 0 })
   const stripRef = useRef<HTMLDivElement | null>(null)
   const sentinelRef = useRef<HTMLDivElement | null>(null)
-  const listRef = useRef<HTMLDivElement | null>(null)
   const weekBodyRef = useRef<HTMLDivElement | null>(null)
   const lockUntil = useRef(0)
 
@@ -368,21 +368,26 @@ export function EmBreve({ state, today, commit, inspect, syncRange }: Props) {
     </span>
   ) : null
 
-  const renderTask = (entry: Entry, withDate = false) => (
-    <div key={entry.id} role="listitem" className={tasksStyles.card} data-done={entry.done || undefined} {...quick.bind(() => menuFor(entry))}>
-      <button type="button" className={tasksStyles.check} data-done={entry.done || undefined} data-late={entry.late || undefined} data-priority={!entry.done && PRIORITY_COLOR[entry.priority] ? entry.priority : undefined} style={priorityStyle(entry)} onClick={() => toggleTask(entry)} aria-label={entry.done ? `Reabrir ${entry.title}` : `Concluir ${entry.title}`}>
-        {entry.done ? <Icon name="check" size={13} /> : null}
-      </button>
-      <button type="button" className={tasksStyles.cardMain} onClick={() => open(entry)}>
-        <span className={tasksStyles.cardTitle}>{entry.title}</span>
-        <span className={tasksStyles.cardMeta}>
-          {withDate ? <span data-late={entry.late || undefined} data-today={entry.day === today || undefined} data-future={entry.day > today || undefined}><Icon name="calendar_today" size={12} />{naturalDate(entry.day, today)}{entry.time ? ` · ${entry.time}` : ''}</span> : entry.time ? <span data-today={entry.day === today || undefined} data-future={entry.day > today || undefined}><Icon name="schedule" size={12} />{entry.time}</span> : null}
-          {projectTag(entry)}
-          {entry.recurring ? <span><Icon name="repeat" size={12} />Repete</span> : null}
-        </span>
-      </button>
-    </div>
-  )
+  const renderTask = (entry: Entry, withDate = false) => {
+    const task = entry.planner.raw
+    const description = String(task.descricao || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()
+    const when = withDate ? `${naturalDate(entry.day, today)}${entry.time ? ` · ${entry.time}` : ''}` : entry.time
+    return (
+      <div key={entry.id} role="listitem" className={`${todayStyles.item} ${todayStyles.itemWrap} ${todayStyles.task} ${entry.done ? todayStyles.itemPassed : ''}`} {...quick.bind(() => menuFor(entry))}>
+        <Check className={todayStyles.itemCheck} checked={entry.done} late={entry.late} data-priority={!entry.done && PRIORITY_COLOR[entry.priority] ? entry.priority : undefined} style={priorityStyle(entry)} label={`Concluir: ${entry.title}`} onCheckedChange={() => toggleTask(entry)} />
+        <div className={todayStyles.taskMain} onClick={() => open(entry)}>
+          <button type="button" className={todayStyles.taskTitleBtn}>{entry.title}</button>
+          {description ? <div className={todayStyles.taskDesc}>{description}</div> : null}
+          <div className={todayStyles.taskMeta}>
+            {when ? <span className={`${todayStyles.dateTag} ${entry.late ? todayStyles.dateLate : entry.day === today ? todayStyles.dateToday : ''}`}><Icon name={withDate ? 'calendar_today' : 'schedule'} size={14} filled={false} />{when}</span> : null}
+            {entry.recurring ? <span className={todayStyles.dateTag}><Icon name="repeat" size={14} filled={false} />Repete</span> : null}
+            {entry.project ? <span className={todayStyles.projLabel} style={{ color: entry.project.color }}>{entry.project.name}<b>#</b></span> : null}
+          </div>
+        </div>
+      </div>
+    )
+  }
+  const taskList = (entries: Entry[], withDate = false) => <div className={todayStyles.items} role="list">{entries.map(entry => renderTask(entry, withDate))}</div>
 
   const renderHabit = (entry: Entry) => {
     const habit = entry.planner.raw
@@ -431,15 +436,26 @@ export function EmBreve({ state, today, commit, inspect, syncRange }: Props) {
     )
   }
 
-  const group = (label: string, children: ReactNode, key: string, color?: string) => (
-    <div key={key} className={styles.group}>
-      <h4>{color ? <i style={{ background: color }} /> : null}{label}</h4>
-      <div className={styles.groupBody} role="list">{children}</div>
-    </div>
-  )
+  const [closedGroups, setClosedGroups] = useState<Set<string>>(new Set())
+  const toggleGroup = (id: string) => setClosedGroups(current => { const next = new Set(current); if (next.has(id)) next.delete(id); else next.add(id); return next })
+  const group = (label: string, children: ReactNode, key: string, count: number, day: string, color?: string) => {
+    const id = `${day}|${key}`
+    const closed = closedGroups.has(id)
+    return (
+      <div key={key} className={styles.group}>
+        <button type="button" className={styles.groupHead} aria-expanded={!closed} aria-label={`${closed ? 'Expandir' : 'Recolher'} ${label}`} onClick={() => toggleGroup(id)}>
+          {color ? <i style={{ background: color }} /> : null}
+          <h4>{label}</h4>
+          <span className={styles.groupCount}>{count}</span>
+          <Icon name={closed ? 'chevron_right' : 'expand_more'} size={18} filled={false} />
+        </button>
+        {closed ? null : <div className={styles.groupBody}>{children}</div>}
+      </div>
+    )
+  }
 
   /** Compromissos primeiro (mesmo com horário), depois tarefas, hábitos e finanças. */
-  const sections = (items: Entry[]) => {
+  const sections = (items: Entry[], day: string) => {
     const events = items.filter(entry => entry.kind === 'event')
     const tasks = items.filter(entry => entry.kind === 'task')
     const habits = items.filter(entry => entry.kind === 'habit')
@@ -448,7 +464,7 @@ export function EmBreve({ state, today, commit, inspect, syncRange }: Props) {
       return (
         <div className={styles.groupBody} role="list">
           {events.map(renderEvent)}
-          {tasks.map(entry => renderTask(entry, false))}
+          {tasks.length ? taskList(tasks) : null}
           {habits.map(renderHabit)}
           {finance.map(renderFinance)}
         </div>
@@ -459,10 +475,10 @@ export function EmBreve({ state, today, commit, inspect, syncRange }: Props) {
       : tasks.length ? [{ key: 'tasks', label: 'Tarefas', color: undefined as string | undefined, items: tasks }] : []
     return (
       <>
-        {events.length ? group('Compromissos', events.map(renderEvent), 'events') : null}
-        {taskGroups.map(item => group(item.label, item.items.map(entry => renderTask(entry)), item.key, item.color))}
-        {habits.length ? group('Hábitos', habits.map(renderHabit), 'habits') : null}
-        {finance.length ? group('Finanças', finance.map(renderFinance), 'finance') : null}
+        {events.length ? group('Compromissos', <div role="list">{events.map(renderEvent)}</div>, 'events', events.length, day) : null}
+        {taskGroups.map(item => group(item.label, taskList(item.items), item.key, item.items.length, day, item.color))}
+        {habits.length ? group('Hábitos', <div role="list">{habits.map(renderHabit)}</div>, 'habits', habits.length, day) : null}
+        {finance.length ? group('Finanças', <div role="list">{finance.map(renderFinance)}</div>, 'finance', finance.length, day) : null}
       </>
     )
   }
@@ -476,7 +492,7 @@ export function EmBreve({ state, today, commit, inspect, syncRange }: Props) {
           {heading.sub ? <span>{heading.sub}</span> : null}
           <em>{items.length ? `${items.length} ${items.length === 1 ? 'item' : 'itens'}` : ''}</em>
         </header>
-        {items.length ? sections(items) : <p className={styles.empty}>Nada marcado para este dia.</p>}
+        {items.length ? sections(items, day) : <p className={styles.empty}>Nada marcado para este dia.</p>}
       </section>
     )
   }
@@ -487,7 +503,7 @@ export function EmBreve({ state, today, commit, inspect, syncRange }: Props) {
         <Icon name="schedule" size={16} filled={false} />{overdue.length} {overdue.length === 1 ? 'tarefa atrasada' : 'tarefas atrasadas'}
         <Icon name="expand_more" size={18} filled={false} className={styles.lateChevron} />
       </button>
-      {lateOpen ? <div className={styles.lateBody} role="list">{overdue.map(entry => renderTask(entry, true))}</div> : null}
+      {lateOpen ? <div className={styles.lateBody}>{taskList(overdue, true)}</div> : null}
     </div>
   ) : null
 
@@ -539,7 +555,7 @@ export function EmBreve({ state, today, commit, inspect, syncRange }: Props) {
     if (mode !== 'list' || !sentinelRef.current) return
     const observer = new IntersectionObserver(items => {
       if (items.some(item => item.isIntersecting)) setHorizon(value => Math.min(MAX_HORIZON, value + 14))
-    }, { root: mobile ? null : listRef.current, rootMargin: '0px 0px 400px 0px' })
+    }, { rootMargin: '0px 0px 400px 0px' })
     observer.observe(sentinelRef.current)
     return () => observer.disconnect()
   }, [mode, horizon])
@@ -552,7 +568,7 @@ export function EmBreve({ state, today, commit, inspect, syncRange }: Props) {
       if (Date.now() < lockUntil.current) return
       const hit = items.filter(item => item.isIntersecting).sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)[0]
       if (hit) setSelected(String((hit.target as HTMLElement).dataset.daySection))
-    }, { root: mobile ? null : listRef.current, rootMargin: mobile ? '-130px 0px -70% 0px' : '0px 0px -70% 0px' })
+    }, { rootMargin: '-130px 0px -70% 0px' })
     sections.forEach(section => observer.observe(section))
     return () => observer.disconnect()
   }, [mode, listDays.join(',')])  // eslint-disable-line react-hooks/exhaustive-deps
@@ -859,7 +875,7 @@ export function EmBreve({ state, today, commit, inspect, syncRange }: Props) {
 
       {mode === 'list' ? (
         <div className={styles.listLayout}>
-          <div ref={listRef} className={styles.listMain}>
+          <div className={styles.listMain}>
             {listDays.map(day => <div key={day} data-day-section={day} className={styles.daySlot}>{dayBlock(day, byDay.get(day) || [])}</div>)}
             <div ref={sentinelRef} className={styles.sentinel} aria-hidden="true" />
           </div>
