@@ -546,10 +546,11 @@ export function EmBreve({ state, today, commit, inspect, syncRange }: Props) {
   /* -------------------------------------------------- Lista infinita */
   const listDays = useMemo(() => {
     const days = new Set<string>([today])
-    if (selected >= today && selected <= range.end) days.add(selected)
+    // Só dias escolhidos de propósito (calendário/Hoje) entram vazios; rolar não altera a lista.
+    if (scrollTo.day >= today && scrollTo.day <= range.end) days.add(scrollTo.day)
     for (const day of byDay.keys()) days.add(day)
     return [...days].sort()
-  }, [byDay, today, selected, range.end])
+  }, [byDay, today, scrollTo.day, range.end])
 
   const goList = (day: string) => {
     lockUntil.current = Date.now() + 1500
@@ -563,7 +564,12 @@ export function EmBreve({ state, today, commit, inspect, syncRange }: Props) {
     if (mode !== 'list') return
     const sections = [...document.querySelectorAll<HTMLElement>('[data-day-section]')]
     const target = sections.find(section => String(section.dataset.daySection) >= scrollTo.day) || sections[sections.length - 1]
-    target?.scrollIntoView({ block: 'start', behavior: scrollTo.n ? 'smooth' : 'auto' })
+    const box = listRef.current
+    if (!target) return
+    const behavior = scrollTo.n ? 'smooth' : 'auto'
+    // Desktop: rola só a lista (scrollIntoView também moveria a página inteira, que é fixa).
+    if (!mobile && box) box.scrollTo({ top: target.getBoundingClientRect().top - box.getBoundingClientRect().top + box.scrollTop, behavior })
+    else target.scrollIntoView({ block: 'start', behavior })
   }, [scrollTo, mode])  // eslint-disable-line react-hooks/exhaustive-deps
 
   // Carrega mais dias ao chegar no fim da lista.
