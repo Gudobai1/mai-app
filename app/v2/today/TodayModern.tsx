@@ -17,6 +17,7 @@ import { useTaskQuick } from '../shell/TaskQuick'
 import { useQuickMenu, type QuickMenuConfig } from '../shell/QuickMenu'
 import { hiddenOccurrenceIds } from '../../../lib/v2/series'
 import { DotRing } from '../habits/DotRing'
+import { ValueDialog } from '../habits/HabitsModern'
 import { abbreviateUnit } from '../../../lib/v2/units'
 import { AgendaStrip } from './AgendaStrip'
 import styles from './TodayModern.module.css'
@@ -405,11 +406,24 @@ export function TodayModern({ state, today, commit, navigate, inspect, options, 
   const habitsDone = habits.filter(item => item.done).length
 
   /* Clique no círculo de um dia da semana: registra (ou desfaz) aquele dia. */
+  const [habitValue, setHabitValue] = useState<{ habit: Row; day: string } | null>(null)
+  function writeHabitOn(habit: Row, key: string, next: { valor: number; falhou: boolean } | null) {
+    commit(current => {
+      const all = rows(current.habitEntries)
+      const existing = all.find(entry => String(entry.habito_id) === String(habit.id) && dateKey(entry.data) === key)
+      const others = all.filter(entry => !(String(entry.habito_id) === String(habit.id) && dateKey(entry.data) === key))
+      if (!next) return { ...current, habitEntries: others }
+      return { ...current, habitEntries: [...others, { id: existing?.id || uid('hr'), habito_id: habit.id, data: key, valor: next.valor, falhou: next.falhou, status: next.falhou ? 'falha' : '', criado_em: existing?.criado_em || new Date().toISOString() }] }
+    })
+    setHabitValue(null)
+  }
   function logHabitOn(habit: Row, key: string) {
     if (key > today || !habitEligible(habit, key)) return
     const habitId = habit.id
     const target = Math.max(1, Number(habit.meta || 1))
     const quantitative = target > 1 || Boolean(habit.unidade)
+    // Hábito com quantidade: pergunta quanto, em vez de somar 1.
+    if (quantitative) { setHabitValue({ habit, day: key }); return }
     commit(current => {
       const all = rows(current.habitEntries)
       const existing = all.find(entry => String(entry.habito_id) === String(habitId) && dateKey(entry.data) === key)
@@ -967,6 +981,12 @@ export function TodayModern({ state, today, commit, navigate, inspect, options, 
         {column('side')}
       </div>
       {quick.element}
+      {habitValue ? (() => {
+        const { habit, day: key } = habitValue
+        const entry = rows(state.habitEntries).find(item => String(item.habito_id) === String(habit.id) && dateKey(item.data) === key)
+        const current = entry && !failedEntry(entry) ? Number(entry.valor || 0) : 0
+        return <ValueDialog habit={habit} day={key} current={current} hasEntry={Boolean(entry)} onClose={() => setHabitValue(null)} onSave={amount => writeHabitOn(habit, key, amount > 0 ? { valor: amount, falhou: false } : null)} onFail={() => writeHabitOn(habit, key, { valor: 0, falhou: true })} onClear={() => writeHabitOn(habit, key, null)} />
+      })() : null}
       {taskQuick.element}
     </div>
   )
