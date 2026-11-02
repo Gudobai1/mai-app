@@ -156,9 +156,9 @@
 .month .dot { width: 100%; max-width: 38px; height: auto; aspect-ratio: 1; justify-self: center; }
 .month { gap: 6px; }
 .stats { display: grid; grid-template-columns: repeat(3, 1fr); border-top: 1px solid var(--ds-line); border-bottom: 1px solid var(--ds-line); }
-.stats div { display: grid; justify-items: center; gap: 2px; padding: 12px 0; }
-.stats strong { font-size: 24px; font-weight: 800; color: var(--hc); line-height: 1; }
-.stats span { font-size: 12px; color: var(--ds-muted); }
+.stats div { display: grid; justify-items: center; gap: 4px; padding: 12px 0; }
+.stats strong { font-size: 18px; font-weight: 700; color: var(--hc); line-height: 1; }
+.stats span { font-size: 12px; line-height: 1.2; color: var(--ds-muted); }
 .monthHead { display: grid; grid-template-columns: 32px 1fr 32px; align-items: center; text-align: center; }
 .monthHead div { display: grid; gap: 2px; }
 .monthHead strong { font-size: 15px; }

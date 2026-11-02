@@ -10,6 +10,7 @@ import type { InspectableItem } from '../ContextDrawer'
 import { driveAssetUrl } from '../DriveAsset'
 import { FinanceTransactionCard, financeCardPaymentState } from '../FinanceTransactionCard'
 import { askConfirm } from '../shell/ConfirmDialog'
+import { useTaskQuick } from '../shell/TaskQuick'
 import { useQuickMenu, type QuickMenuConfig } from '../shell/QuickMenu'
 import tasksStyles from '../tasks/TasksModern.module.css'
 import todayStyles from '../today/TodayModern.module.css'
@@ -302,31 +303,10 @@ export function EmBreve({ state, today, commit, inspect, syncRange }: Props) {
     { label: 'Próx. semana', icon: 'date_range', value: addDays(nextSunday, 1) },
   ]
 
+  const taskQuick = useTaskQuick({ state, today, commit, onOpen: task => inspect({ kind: 'task', sourceId: String(task.id), title: String(task.titulo || 'Tarefa'), date: String(task.data_vencimento || '').slice(0, 10), time: String(task.data_vencimento || '').includes('T') ? String(task.data_vencimento).slice(11, 16) : '', raw: task }) })
   function menuFor(entry: Entry): QuickMenuConfig {
     const details = { label: 'Abrir detalhes', icon: 'open_in_full', onSelect: () => open(entry) }
-    if (entry.kind === 'task') {
-      const id = entry.planner.sourceId
-      const time = String(entry.planner.raw.data_vencimento || '').includes('T') ? String(entry.planner.raw.data_vencimento).slice(11, 16) : ''
-      return {
-        title: entry.title,
-        subtitle: entry.project?.name || 'Tarefa',
-        groups: [
-          { label: 'Data', inline: true, options: [
-            ...choices.map(choice => ({ label: choice.label, icon: choice.icon, active: entry.day === choice.value, onSelect: () => patchTask(id, { data_vencimento: `${choice.value}${time ? `T${time}` : ''}` }) })),
-            { label: 'Sem data', icon: 'event_busy', onSelect: () => patchTask(id, { data_vencimento: '' }) },
-          ] },
-          { label: 'Prioridade', inline: true, options: [1, 2, 3, 4].map(level => ({ label: ['Alta', 'Média', 'Baixa', 'Nenhuma'][level - 1], icon: 'flag', color: PRIORITY_COLOR[level] || 'var(--ds-muted)', active: entry.priority === level, onSelect: () => patchTask(id, { prioridade: level }) })) },
-          { options: [
-            { label: entry.done ? 'Reabrir tarefa' : 'Concluir', icon: entry.done ? 'undo' : 'check_circle', onSelect: () => toggleTask(entry) },
-            details,
-            { label: 'Excluir', icon: 'delete', tone: 'danger' as const, onSelect: async () => {
-              if (!(await askConfirm({ title: 'Excluir tarefa?', message: `“${entry.title}” será excluída. Não dá para desfazer.` }))) return
-              commit(current => ({ ...current, tasks: current.tasks.filter(item => String(item.id) !== id && String(item.parent_id || '') !== id) }))
-            } },
-          ] },
-        ],
-      }
-    }
+    if (entry.kind === 'task') return taskQuick.menu(entry.planner.raw)
     if (entry.kind === 'habit') {
       return { title: entry.title, subtitle: 'Hábito', groups: [{ options: [{ label: entry.done ? 'Desmarcar' : 'Marcar como feito', icon: entry.done ? 'undo' : 'check_circle', onSelect: () => toggleHabit(entry) }, details] }] }
     }
@@ -884,6 +864,7 @@ export function EmBreve({ state, today, commit, inspect, syncRange }: Props) {
       {mode === 'week' ? (mobile ? weekMobile : weekDesktop) : null}
       {mode === 'month' ? monthView : null}
       {quick.element}
+      {taskQuick.element}
     </div>
   )
 }

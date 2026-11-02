@@ -292,3 +292,7 @@
     padding:8px 10px max(10px,env(safe-area-inset-bottom))!important;
   }
 }
+
+/* Foto do projeto: sempre redonda. */
+.mai-task-v4-project-icon-image,
+.mai-task-v4-project-option-image{ border-radius:50%!important }

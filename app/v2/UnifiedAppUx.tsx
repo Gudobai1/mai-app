@@ -11,6 +11,7 @@ import { CompletedV4 } from './CompletedV4'
 import { ItemDetail } from './detail/ItemDetail'
 import { ConfirmHost } from './shell/ConfirmDialog'
 import { UndoToast } from './shell/UndoToast'
+import { AuthorCtx } from './detail/Comments'
 import { QuickAdd, type QuickAddKind } from './shell/QuickAdd'
 import type { InspectableItem } from './ContextDrawer'
 import { FilesV4 } from './FilesV4'
@@ -334,6 +335,8 @@ export function UnifiedAppUx() {
     {creating ? <QuickCreateDrawer kind={creating.kind} allowKindSwitch={creating.switchable} state={runtime.state} today={runtime.today} defaultProjectId={creating.kind === 'task' ? activeProjectId : undefined} defaultDate={view === 'today' || (view === 'tasks' && taskScope === 'today') ? runtime.today : ''} commit={runtime.commit} onClose={() => setCreating(null)} /> : null}
     <UndoToast toast={runtime.toast} onUndo={runtime.undo} onClose={runtime.dismissToast} />
     <ConfirmHost />
-    <ItemDetail item={selected} state={runtime.state} today={runtime.today} commit={runtime.commit} googleRpc={runtime.googleRpc} refreshEvents={() => runtime.syncCalendar(runtime.state.configs.calendarios || [])} onClose={() => setSelected(null)} />
+    <AuthorCtx.Provider value={googleProfile}>
+      <ItemDetail item={selected} state={runtime.state} today={runtime.today} commit={runtime.commit} googleRpc={runtime.googleRpc} refreshEvents={() => runtime.syncCalendar(runtime.state.configs.calendarios || [])} onClose={() => setSelected(null)} />
+    </AuthorCtx.Provider>
   </div>
 }

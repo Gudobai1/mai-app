@@ -204,7 +204,7 @@
 
 .round[data-checked],
 .round[data-checked][data-tone='success'] {
-  border-color: transparent;
+  border-color: var(--ds-muted);
   background: transparent;
   color: var(--ds-muted);
 }
@@ -1543,3 +1543,9 @@
 .composerAdd.composerAdd:hover:not(:disabled) { background: var(--ds-accent); filter: brightness(0.94); }
 .composerCancel.composerCancel { height: 34px; padding: 0 16px; border: 1px solid var(--ds-line); border-radius: var(--ds-r-md); color: var(--ds-text); font-size: 13.5px; font-weight: var(--ds-fw-medium); }
 .composerCancel.composerCancel:hover { background: var(--ds-surface-hover); color: var(--ds-text); }
+
+/* Foto e ícone do projeto: sempre redondos. */
+.crumbImg.crumbImg, .crumbIcon.crumbIcon, .projectImg.projectImg { border-radius: 50%; }
+
+/* Subtarefa: Cancelar na esquerda, Adicionar na direita. */
+.composerActions.composerActions.composerActions { flex-direction: row-reverse; justify-content: space-between; }

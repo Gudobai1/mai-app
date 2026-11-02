@@ -10,6 +10,7 @@ import { DatePicker, Floating, OptionList, type PickerOption } from '../detail/P
 import { driveAssetUrl } from '../DriveAsset'
 import { askConfirm } from '../shell/ConfirmDialog'
 import { QuickAdd } from '../shell/QuickAdd'
+import { useTaskQuick } from '../shell/TaskQuick'
 import { useQuickMenu, type QuickMenuConfig } from '../shell/QuickMenu'
 import styles from './TasksModern.module.css'
 
@@ -297,27 +298,14 @@ export function TasksModern(props: Props) {
     { label: 'Amanhã', icon: 'wb_sunny', value: addDays(today, 1) },
     { label: 'Próx. semana', icon: 'date_range', value: nextMonday(today) },
   ]
+  const taskQuick = useTaskQuick({
+    state, today, commit,
+    onOpen: task => openTask(task as LegacyTask),
+    extra: task => [{ label: 'Selecionar', icon: 'check_box', onSelect: () => toggleSelect(String(task.id)) }],
+    onDelete: task => removeTasks([String(task.id)]),
+  })
   function taskMenu(task: LegacyTask): QuickMenuConfig {
-    const id = String(task.id)
-    const due = dayOf(task)
-    const priority = Number(task.prioridade || 4)
-    return {
-      title: String(task.titulo || 'Tarefa'),
-      subtitle: `${projectName(task.projeto_id)}${task.secao ? ` · ${String(task.secao)}` : ''}`,
-      groups: [
-        { label: 'Data', inline: true, options: [
-          ...dateChoices.map(choice => ({ label: choice.label, icon: choice.icon, active: due === choice.value, onSelect: () => patchTask(id, { data_vencimento: withDate(task, choice.value) }) })),
-          { label: 'Sem data', icon: 'event_busy', active: !due, onSelect: () => patchTask(id, { data_vencimento: '' }) },
-        ] },
-        { label: 'Prioridade', inline: true, options: [1, 2, 3, 4].map(level => ({ label: ['Alta', 'Média', 'Baixa', 'Nenhuma'][level - 1], icon: 'flag', color: PRIORITY_COLOR[level] || 'var(--ds-muted)', active: priority === level, onSelect: () => patchTask(id, { prioridade: level }) })) },
-        { options: [
-          { label: task.concluida ? 'Reabrir tarefa' : 'Concluir', icon: task.concluida ? 'undo' : 'check_circle', onSelect: () => toggleTask(id) },
-          { label: 'Selecionar', icon: 'check_box', onSelect: () => toggleSelect(id) },
-          { label: 'Abrir detalhes', icon: 'open_in_full', onSelect: () => openTask(task) },
-          { label: 'Excluir', icon: 'delete', tone: 'danger', onSelect: () => removeTasks([id]) },
-        ] },
-      ],
-    }
+    return taskQuick.menu(task)
   }
 
   /* ------------------------------------------------- Adicionar na seção */
@@ -523,7 +511,7 @@ export function TasksModern(props: Props) {
           </button>
         ) : (
           <button type="button" className={styles.check} data-done={done || undefined} data-priority={!done && PRIORITY_COLOR[priority] ? priority : undefined} style={!done && PRIORITY_COLOR[priority] ? ({ '--check-color': PRIORITY_COLOR[priority] } as React.CSSProperties) : undefined} onClick={() => toggleTask(id)} aria-label={done ? `Reabrir ${String(task.titulo)}` : `Concluir ${String(task.titulo)}`}>
-            {done ? <Icon name="check" size={18} /> : null}
+            {done ? <Icon name="check" size={12} /> : null}
           </button>
         )}
         <div tabIndex={0} className={styles.cardMain} onClick={onClick} onKeyDown={event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onClick(event as unknown as ReactMouseEvent) } }}>
@@ -559,9 +547,9 @@ export function TasksModern(props: Props) {
             const childPriority = Number(child.prioridade || 4)
             const grand = state.tasks.filter(item => String(item.parent_id || '') === childId)
             return (
-              <div key={childId} role="listitem" className={styles.subRow} data-done={child.concluida || undefined} onClick={() => openTask(child)}>
+              <div key={childId} role="listitem" className={styles.subRow} data-done={child.concluida || undefined} onClick={() => openTask(child)} {...quick.bind(() => taskMenu(child))}>
                 <button type="button" className={styles.subCheck} data-done={child.concluida || undefined} style={!child.concluida && PRIORITY_COLOR[childPriority] ? ({ borderColor: PRIORITY_COLOR[childPriority] } as React.CSSProperties) : undefined} onClick={event => { event.stopPropagation(); toggleTask(childId) }} aria-label={child.concluida ? `Reabrir ${String(child.titulo)}` : `Concluir ${String(child.titulo)}`}>
-                  {child.concluida ? <Icon name="check" size={16} /> : null}
+                  {child.concluida ? <Icon name="check" size={11} /> : null}
                 </button>
                 <button type="button" className={styles.subTitle}>{String(child.titulo || 'Subtarefa')}</button>
                 {grand.length ? <span className={styles.subMeta}><Icon name="account_tree" size={12} />{grand.filter(item => item.concluida).length}/{grand.length}</span> : null}
@@ -819,6 +807,7 @@ export function TasksModern(props: Props) {
       ) : null}
 
       {quick.element}
+      {taskQuick.element}
     </div>
   )
 }

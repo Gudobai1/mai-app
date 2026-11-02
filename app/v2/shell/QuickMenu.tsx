@@ -17,7 +17,7 @@ export type QuickOption = {
   color?: string
   active?: boolean
   tone?: 'danger'
-  onSelect: () => void | Promise<void>
+  onSelect: (point?: { x: number; y: number }) => void | Promise<void>
 }
 
 /** Grupo em linha (datas, prioridade) ou lista de ações. */
@@ -124,7 +124,7 @@ function QuickMenuView({ menu, onClose }: { menu: OpenMenu; onClose: () => void 
 
   const run = (option: QuickOption) => {
     onClose()
-    option.onSelect()
+    option.onSelect({ x: menu.x, y: menu.y })
   }
 
   const body = (

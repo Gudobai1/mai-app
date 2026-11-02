@@ -13,6 +13,8 @@ import { financeCardPaymentState } from '../FinanceTransactionCard'
 import { resolveMaiIcon } from '../MaiIcons'
 import { askChoice, askConfirm, notify } from '../shell/ConfirmDialog'
 import { askUnsaved } from '../shell/unsaved'
+import { useQuickMenu } from '../shell/QuickMenu'
+import { useTaskQuick } from '../shell/TaskQuick'
 import { uploadAttachment } from './upload'
 import { CommentsSection, type Comment } from './Comments'
 import { UnitField } from '../habits/UnitField'
@@ -438,7 +440,7 @@ function Attachments({ files, onChange }: { files: Row[]; onChange: (files: Row[
 function Round({ checked, late, onToggle, label, tone }: { checked: boolean; late?: boolean; onToggle: () => void; label: string; tone?: 'success' }) {
   return (
     <button type="button" className={styles.round} data-checked={checked || undefined} data-late={late || undefined} data-tone={tone} onClick={onToggle} aria-pressed={checked} aria-label={label}>
-      {checked ? <Icon name="check" size={18} /> : null}
+      {checked ? <Icon name="check" size={13} /> : null}
     </button>
   )
 }
@@ -530,6 +532,8 @@ function TaskBody({ task, state, today, commit, register, close, openTask }: { t
     openTask(taskId)
   }
 
+  const subQuick = useQuickMenu()
+  const subTaskQuick = useTaskQuick({ state, today, commit, onOpen: row => void goTo(String(row.id)) })
   const toggle = (taskId: string) => commit(current => ({ ...current, tasks: current.tasks.map(row => String(row.id) === taskId ? { ...row, concluida: !row.concluida, concluida_em: !row.concluida ? new Date().toISOString() : '' } : row) }))
 
   function addSubtask() {
@@ -622,7 +626,7 @@ function TaskBody({ task, state, today, commit, register, close, openTask }: { t
               {doneChildren ? <button type="button" className={styles.subDoneToggle} onClick={() => setShowDone(value => !value)}>{showDone ? 'Ocultar concluídas' : `Mostrar concluídas (${doneChildren})`}</button> : null}
             </div>
             <div className={styles.list}>
-              {sortedChildren.map(child => <SubtaskCard key={String(child.id)} task={child} state={state} today={today} onToggle={() => toggle(String(child.id))} onOpen={() => void goTo(String(child.id))} />)}
+              {sortedChildren.map(child => <SubtaskCard key={String(child.id)} task={child} state={state} today={today} bind={subQuick.bind(() => subTaskQuick.menu(child))} onToggle={() => toggle(String(child.id))} onOpen={() => void goTo(String(child.id))} />)}
               {composing ? (
                 <div className={styles.composer}>
                   <input
@@ -707,12 +711,14 @@ function TaskBody({ task, state, today, commit, register, close, openTask }: { t
         ) : null}
       </div>
       <Footer status={savedStatus} onDelete={() => void remove()} />
+      {subQuick.element}
+      {subTaskQuick.element}
     </>
   )
 }
 
 /** Subtarefa compacta, dentro do cartão: só marcar, ler e abrir. Data e prioridade são escolhidas ao criar. */
-function SubtaskCard({ task, state, today, onToggle, onOpen }: { task: Row; state: MaiState; today: string; commit?: Commit; onToggle: () => void; onOpen: () => void }) {
+function SubtaskCard({ task, state, today, bind, onToggle, onOpen }: { task: Row; state: MaiState; today: string; bind?: Record<string, unknown>; commit?: Commit; onToggle: () => void; onOpen: () => void }) {
   const id = String(task.id)
   const due = dateKey(task.data_vencimento)
   const time = timeKey(task.data_vencimento)
@@ -722,7 +728,7 @@ function SubtaskCard({ task, state, today, onToggle, onOpen }: { task: Row; stat
   const info = [due ? `${friendlyDate(due, today)}${time ? ` · ${time}` : ''}` : '', children.length ? `${children.filter(row => row.concluida).length}/${children.length}` : ''].filter(Boolean).join(' · ')
 
   return (
-    <div className={styles.subCard} data-done={done || undefined}>
+    <div className={styles.subCard} data-done={done || undefined} {...bind}>
       <Round checked={done} late={late} onToggle={onToggle} label={`${done ? 'Reabrir' : 'Concluir'} ${String(task.titulo || 'subtarefa')}`} />
       <button type="button" className={styles.subMain} onClick={onOpen}>
         <span className={styles.subTitle}>{String(task.titulo || 'Subtarefa')}</span>
