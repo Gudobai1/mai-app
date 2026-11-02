@@ -223,3 +223,18 @@
 }
 .habitRow { padding-right: 4px; }
 .monthWrap > :last-child { padding-right: 6px; }
+
+/* Mês: compromissos com bolinha (sem fundo) e texto que corta com reticências */
+.cellEvent { background: transparent; padding: 0 2px; gap: 6px; min-width: 0; }
+.cellEvent .cellDot { width: 8px; height: 8px; flex-shrink: 0; border-radius: 50%; background: var(--ev); }
+.cellEvent em { color: var(--ds-muted); font-weight: var(--ds-fw-medium); }
+.cellText { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cellTask { min-width: 0; }
+
+/* Barras de rolagem discretas */
+.listMain, .weekScroll, .monthWrap > :last-child, .month { scrollbar-width: thin; scrollbar-color: var(--ds-line-strong) transparent; }
+.listMain::-webkit-scrollbar, .weekScroll::-webkit-scrollbar, .monthWrap > :last-child::-webkit-scrollbar { width: 8px; height: 8px; }
+.listMain::-webkit-scrollbar-thumb, .weekScroll::-webkit-scrollbar-thumb, .monthWrap > :last-child::-webkit-scrollbar-thumb { background: var(--ds-line-strong); border-radius: 8px; border: 2px solid transparent; background-clip: padding-box; }
+.listMain::-webkit-scrollbar-button, .weekScroll::-webkit-scrollbar-button, .monthWrap > :last-child::-webkit-scrollbar-button { display: none; }
+.listMain::-webkit-scrollbar-track, .weekScroll::-webkit-scrollbar-track, .monthWrap > :last-child::-webkit-scrollbar-track { background: transparent; }
+.cellEvent { font-weight: var(--ds-fw-medium); color: var(--ds-text-2); }

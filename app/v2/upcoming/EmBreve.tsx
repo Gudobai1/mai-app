@@ -771,8 +771,8 @@ export function EmBreve({ state, today, commit, inspect, syncRange }: Props) {
         <b>{Number(day.slice(8))}</b>
         <span className={styles.cellItems}>
           {shown.map(entry => entry.kind === 'event'
-            ? <span key={entry.id} className={styles.cellEvent} data-passed={passed(entry) || undefined} style={{ '--ev': entry.color } as CSSProperties}>{entry.allDay ? null : <em>{entry.time}</em>}{entry.title}</span>
-            : <span key={entry.id} className={styles.cellTask} data-done={entry.done || undefined} style={{ '--ev': PRIORITY_COLOR[entry.priority] || 'var(--ds-muted)' } as CSSProperties}><u />{entry.title}</span>)}
+            ? <span key={entry.id} className={styles.cellEvent} data-passed={passed(entry) || undefined} style={{ '--ev': entry.color } as CSSProperties}><i className={styles.cellDot} />{entry.allDay ? null : <em>{entry.time}</em>}<span className={styles.cellText}>{entry.title}</span></span>
+            : <span key={entry.id} className={styles.cellTask} data-done={entry.done || undefined} style={{ '--ev': PRIORITY_COLOR[entry.priority] || 'var(--ds-muted)' } as CSSProperties}><u /><span className={styles.cellText}>{entry.title}</span></span>)}
           {rest > 0 ? <span className={styles.cellMore}>+{rest} mais</span> : null}
         </span>
         {habits.length || finance.length ? (
