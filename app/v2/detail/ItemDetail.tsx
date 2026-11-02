@@ -584,8 +584,8 @@ function TaskBody({ task, state, today, commit, register, close, openTask }: { t
     <>
       <ProjectProp icon={projectIcon} display={projectDisplay} projects={projects} projectId={draft.projeto_id} section={draft.secao} imageOf={row => row.imagem_url ? driveAssetUrl(row.imagem_url) : undefined} onPick={pickProject} />
       <PickerProp today={today} type="date" icon="calendar_today" color={draft._data ? (late ? 'var(--ds-danger)' : 'var(--ds-warn)') : 'var(--ds-muted)'} label="Data" value={draft._data} muted={!draft._data} display={friendlyDate(draft._data, today)} onChange={_data => update({ _data, _hora: _data ? draft._hora : '' }, true)} />
-      <PickerProp type="time" icon="schedule" color="var(--ds-lilac-fg)" label="Horário" value={draft._hora} display={draft._hora || 'Sem horário'} muted={!draft._hora} onChange={_hora => update(_hora && !draft._data ? { _hora, _data: today } : { _hora }, true)} />
       <SelectProp icon="flag" color={priority.color} label="Prioridade" value={String(draft.prioridade)} onChange={value => update({ prioridade: Number(value) }, true)} options={PRIORITIES} display={priority.label} muted={Number(draft.prioridade) === 4} />
+      <PickerProp type="time" icon="schedule" color="var(--ds-lilac-fg)" label="Horário" value={draft._hora} display={draft._hora || 'Sem horário'} muted={!draft._hora} onChange={_hora => update(_hora && !draft._data ? { _hora, _data: today } : { _hora }, true)} />
       <PickerProp type="repeat" icon="repeat" color="var(--ds-mint-fg)" label="Repetir" value={draft.repeticao} display={repeatLabel(draft.repeticao)} muted={!draft.repeticao} onChange={repeticao => update({ repeticao }, true)} />
       <PickerProp type="reminder" icon="notifications" color="var(--ds-sky-fg)" label="Lembrete" value={reminder} display={reminderLabel(reminder)} muted={!reminder} onChange={value => update({ lembretes: value ? [value] : [] }, true)} />
     </>
