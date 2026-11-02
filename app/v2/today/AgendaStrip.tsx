@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, type CSSProperties, type HTMLAttributes } from 'react'
+import { useMemo, useState, type CSSProperties, type HTMLAttributes } from 'react'
 import { eventColor, type PlannerItem } from '../../../lib/v2/planner'
 import { Icon } from '../../ds'
 import styles from './AgendaStrip.module.css'
@@ -48,40 +48,69 @@ export function AgendaStrip({ items, nowMinutes, onOpen, bind }: Props) {
     [items],
   )
 
+  const [folded, setFolded] = useState(false)
+  const external: { item: PlannerItem; when: string }[] = []
+
   const row = (item: PlannerItem, when: string, icon: string, now: boolean) => {
-  const external = isGoogle(item)
-  return (
-    <div
-      key={item.id}
-      role="listitem"
-      className={styles.row}
-      data-now={now || undefined}
-      data-external={external || undefined}
-      style={{ '--ev': eventColor(item.raw) } as CSSProperties}
-      {...bind(item)}
-    >
-      {external ? null : <span className={styles.dot} aria-hidden="true" />}
-      <button type="button" className={styles.body} onClick={() => onOpen(item)}>
-        <span className={styles.title}>
-          {item.title}
-          {item.recurring ? <Icon name="repeat" size={12} /> : null}
-        </span>
-        <span className={styles.when}><Icon name={icon} size={13} filled={false} />{when}</span>
-      </button>
-      <span className={styles.source}>{sourceOf(item)}<b>#</b></span>
-    </div>
-  )
+    if (isGoogle(item)) { external.push({ item, when }); return null }
+    return (
+      <div
+        key={item.id}
+        role="listitem"
+        className={styles.row}
+        data-now={now || undefined}
+        style={{ '--ev': eventColor(item.raw) } as CSSProperties}
+        {...bind(item)}
+      >
+        <span className={styles.dot} aria-hidden="true" />
+        <button type="button" className={styles.body} onClick={() => onOpen(item)}>
+          <span className={styles.title}>
+            {item.title}
+            {item.recurring ? <Icon name="repeat" size={12} /> : null}
+          </span>
+          <span className={styles.when}><Icon name={icon} size={13} filled={false} />{when}</span>
+        </button>
+        <span className={styles.source}>{sourceOf(item)}<b>#</b></span>
+      </div>
+    )
   }
+
+  const internal = [
+    ...allDay.map(item => row(item, item.subtitle === 'Em andamento' ? 'Em andamento' : 'Dia todo', item.subtitle === 'Em andamento' ? 'schedule' : 'calendar_today', false)),
+    ...timed.map(({ item, start, end, hasEnd }) => row(
+      item,
+      `${hm(start)}${hasEnd ? ` – ${hm(end)}` : ''}`,
+      'schedule',
+      nowMinutes !== null && nowMinutes >= start && nowMinutes < end,
+    )),
+  ]
+
+  /* Agendas externas: bloco "Eventos" como no Todoist — barrinha na cor e o título. */
+  const block = external.length ? (
+    <div className={styles.events} role="group" aria-label="Eventos">
+      {folded ? (
+        <button type="button" className={styles.eventsHead} onClick={() => setFolded(false)} aria-expanded="false">
+          <strong>Eventos</strong><small>{external.length}</small><Icon name="expand_more" size={18} filled={false} />
+        </button>
+      ) : (
+        <>
+          <button type="button" className={styles.fold} onClick={() => setFolded(true)} aria-label="Recolher eventos" aria-expanded="true"><Icon name="expand_less" size={18} filled={false} /></button>
+          {external.map(({ item, when }) => (
+            <button key={item.id} type="button" role="listitem" className={styles.ext} style={{ '--ev': eventColor(item.raw) } as CSSProperties} onClick={() => onOpen(item)} {...bind(item)}>
+              <i aria-hidden="true" />
+              <span className={styles.extTitle}>{item.title}</span>
+              {when && when !== 'Dia todo' ? <small>{when}</small> : null}
+            </button>
+          ))}
+        </>
+      )}
+    </div>
+  ) : null
 
   return (
     <div className={styles.list} role="list">
-      {allDay.map(item => row(item, item.subtitle === 'Em andamento' ? 'Em andamento' : 'Dia todo', item.subtitle === 'Em andamento' ? 'schedule' : 'calendar_today', false))}
-      {timed.map(({ item, start, end, hasEnd }) => row(
-        item,
-        `${hm(start)}${hasEnd ? ` – ${hm(end)}` : ''}`,
-        'schedule',
-        nowMinutes !== null && nowMinutes >= start && nowMinutes < end,
-      ))}
+      {block}
+      {internal}
     </div>
   )
 }

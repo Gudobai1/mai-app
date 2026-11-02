@@ -197,4 +197,5 @@
   .daySlot { scroll-margin-top: 96px; }
 }
 
-.event[data-external] { margin: 4px 0; padding: 8px 12px; border: 1px solid var(--ev); border-radius: 10px; background: color-mix(in srgb, var(--ev) 9%, transparent); }
+.event[data-external] { margin: 2px 0; padding: 6px 12px; border-radius: 8px; background: var(--ds-surface-2); }
+.extBar { flex-shrink: 0; width: 3px; height: 14px; border-radius: 2px; background: var(--ev); }
