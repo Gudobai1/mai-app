@@ -256,8 +256,7 @@ export function HabitsModern({ state, today, commit, createRequest }: Props) {
                           aria-label={`${String(habit.nome)} em ${longDate(day)}`}
                           title={level === 'fail' ? 'Falha' : level === 'part' ? `${progressOf(habit, day)}%` : !eligible(habit, day) ? 'Fora da frequência' : longDate(day)}
                         >
-                          {level === 'fail' ? <Icon name="close" size={12} weight={600} /> : null}
-                          {level === 'part' ? <DotRing pct={progressOf(habit, day)} /> : null}
+                          {level ? <DotRing pct={level === 'full' ? 100 : progressOf(habit, day)} value={amountOf(habit, day)} unit={String(habit.unidade || '')} fail={level === 'fail'} /> : null}
                         </button>
                       )
                     })}
@@ -494,7 +493,7 @@ function HabitDetail({ habit, today, stats, levelOf, progressOf, entries, onTogg
                 const level = levelOf(habit, day)
                 return (
                   <button key={day} type="button" className={styles.dot} data-day="" data-level={level || undefined} data-today={day === today || undefined} data-off={!eligible(habit, day) || undefined} disabled={!eligible(habit, day) || day > today} style={level === 'part' ? ({ '--p': progressOf(habit, day) } as CSSProperties) : undefined} onClick={() => onToggle(day)} aria-label={longDate(day)}>
-                    {level === 'part' ? <DotRing pct={progressOf(habit, day)} label={String(index + 1)} /> : null}
+                    {level ? <DotRing pct={level === 'full' ? 100 : progressOf(habit, day)} label={String(index + 1)} fail={false} /> : null}
                     <span className={styles.dayNumber}>{index + 1}</span>
                   </button>
                 )
