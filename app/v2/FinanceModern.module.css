@@ -110,8 +110,8 @@
 .tabs { overflow-y: hidden; }
 .tabs button { padding-bottom: 10px; }
 .tabs button[data-active='true'] { box-shadow: inset 0 -2px 0 var(--v3-text); border-bottom-color: transparent; }
-.balance { max-width: 560px; margin-left: auto; margin-right: auto; gap: 14px; }
-.summary { max-width: 620px; margin-left: auto; margin-right: auto; grid-template-columns: repeat(4, 1fr); }
+.balance { max-width: 680px; margin-left: auto; margin-right: auto; gap: 14px; }
+.summary { max-width: 700px; margin-left: auto; margin-right: auto; grid-template-columns: repeat(4, 1fr); }
 .summary > div { padding-left: 12px; padding-right: 8px; }
 .summary > div:first-child { padding-left: 0; }
 @media (max-width: 640px) {
@@ -121,3 +121,8 @@
   .summary { max-width: none; }
   .summary strong { font-size: 14px; }
 }
+.summary > button { display: grid; gap: 2px; text-align: left; border: 0; background: transparent; font: inherit; color: inherit; cursor: pointer; padding: 12px 8px 12px 12px; border-radius: 6px; }
+.summary > button + button { border-left: 1px solid var(--v3-line, rgba(127,127,127,.2)); border-radius: 0 6px 6px 0; }
+.summary > button:first-child { padding-left: 0; }
+.summary > button:hover { background: var(--v3-sidebar); }
+.summary > button:hover span { color: var(--v3-text); }
