@@ -102,3 +102,16 @@
 .options :global(.mai-app-topbar-menu-button) > span:last-child { display: none !important; }
 .options :global(.mai-app-topbar-menu-button[data-active='true']) { background: var(--ds-accent-soft) !important; color: var(--ds-accent) !important; }
 .options :global(.mai-app-topbar-panel) { top: 52px !important; }
+
+/* ajustes de desktop */
+.options :global(.mai-app-topbar-menu-button) { background: transparent !important; box-shadow: none !important; }
+.options :global(.mai-app-topbar-menu-button:hover) { background: var(--v3-sidebar) !important; }
+.options :global(.mai-app-topbar-menu-button[data-active='true']) { background: transparent !important; }
+.balance { justify-content: flex-start; gap: 18px; }
+.balance i { flex: 0 1 72px; }
+.summary { grid-template-columns: repeat(4, max-content); justify-content: start; }
+.summary > div { padding-right: 36px; }
+.summary > div + div { padding-left: 24px; }
+.tabs { overflow-y: hidden; }
+.tabs button { padding-bottom: 10px; }
+.tabs button[data-active='true'] { box-shadow: inset 0 -2px 0 var(--v3-text); border-bottom-color: transparent; }
