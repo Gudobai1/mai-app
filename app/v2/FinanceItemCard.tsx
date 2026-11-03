@@ -35,15 +35,15 @@ export function SideField({ label, icon, color, children }: { label: string; ico
 }
 
 /** Escolha de mês no padrão do app (sem o seletor do navegador). */
-export function MonthStepper({ value, onChange, clearable = false, empty = 'Sem fim' }: { value: string; onChange: (value: string) => void; clearable?: boolean; empty?: string }) {
-  const label = value ? new Date(`${value}-15T12:00:00`).toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' }).replace('.', '') : empty
+export function MonthStepper({ value, onChange, clearable = false, empty = 'Sem fim', long = false, onLabel }: { value: string; onChange: (value: string) => void; clearable?: boolean; empty?: string; long?: boolean; onLabel?: () => void }) {
+  const label = value ? (long ? new Date(`${value}-15T12:00:00`).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }).replace(' de ', ' de ') : new Date(`${value}-15T12:00:00`).toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' }).replace('.', '')) : empty
   const move = (amount: number) => {
     const base = value || new Date().toISOString().slice(0, 7)
     const date = new Date(`${base}-15T12:00:00`)
     date.setMonth(date.getMonth() + amount)
     onChange(`${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`)
   }
-  return <div className={s.stepper}><button type="button" onClick={() => move(-1)} aria-label="Mês anterior">‹</button><span>{label}</span><button type="button" onClick={() => move(1)} aria-label="Próximo mês">›</button>{clearable && value ? <button type="button" onClick={() => onChange('')} aria-label="Limpar">×</button> : null}</div>
+  return <div className={s.stepper}><button type="button" onClick={() => move(-1)} aria-label="Mês anterior">‹</button>{onLabel ? <button type="button" className={s.stepperLabel} onClick={onLabel} title="Voltar ao mês atual">{label}</button> : <span>{label}</span>}<button type="button" onClick={() => move(1)} aria-label="Próximo mês">›</button>{clearable && value ? <button type="button" onClick={() => onChange('')} aria-label="Limpar">×</button> : null}</div>
 }
 
 /** Escolha entre poucas opções, em botões do app. */

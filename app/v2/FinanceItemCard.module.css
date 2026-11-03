@@ -105,3 +105,7 @@
 
 .addLine { align-self: flex-start; appearance: none; border: 0; background: transparent; color: var(--ds-muted); font: inherit; font-size: 13px; padding: 6px 0; cursor: pointer; }
 .addLine:hover { color: var(--ds-text); }
+
+.stepperLabel { min-width: 74px; text-align: center; text-transform: capitalize; color: var(--ds-text) !important; }
+.valueButton { appearance: none; border: 0; background: transparent; padding: 0; font: inherit; color: inherit; font-size: 28px; font-weight: 700; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; cursor: pointer; border-radius: 6px; }
+.valueButton:hover { text-decoration: underline; text-underline-offset: 5px; text-decoration-thickness: 1px; }
