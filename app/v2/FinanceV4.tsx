@@ -1,7 +1,7 @@
 'use client'
 
 import { ColorField } from './detail/ColorField'
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import type { MaiState } from '../../lib/v2/state'
 import type { InspectableItem } from './ContextDrawer'
 import { CreateCalendarPicker, CreateNumberEditor, CreateOptionList, createNaturalDate } from './CreateDrawerTools'
@@ -155,12 +155,8 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
   const quick = useQuickMenu()
   const [quickAdding, setQuickAdding] = useState(false)
   const [cardAdding, setCardAdding] = useState(false)
-  // Navegar entre meses dentro de uma conta/cartão não muda o mês geral: ao fechar, volta o que estava.
-  const baseMonth = useRef<string | null>(null)
-  useEffect(() => {
-    if (draft && (kind === 'account' || kind === 'card')) { if (baseMonth.current === null) baseMonth.current = month }
-    else if (!draft && baseMonth.current !== null) { setMonth(baseMonth.current); baseMonth.current = null }
-  }, [draft === null, kind]) // eslint-disable-line react-hooks/exhaustive-deps
+  const [popupMonth, setPopupMonth] = useState<string | null>(null)
+  useEffect(() => { if (!draft) setPopupMonth(null) }, [draft === null]) // eslint-disable-line react-hooks/exhaustive-deps
   const [moveForm, setMoveForm] = useState<{ type: 'in' | 'out'; amount: string; date: string; cal: boolean; done: boolean; editId?: string } | null>(null)
   const [showDone, setShowDone] = useState(false)
   useEffect(() => { setMoveForm(null); setShowDone(false) }, [draft?.id])
@@ -250,6 +246,20 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
   })
   const monthItems: Row[] = [...monthTx, ...monthFixed]
   const monthCalculationItems = monthItems.filter(item => !item.ignorar_calculo)
+  /** Mês e lançamentos do que está aberto no popup (independente do mês da página). */
+  const viewMonth = popupMonth ?? month
+  const viewItems: Row[] = (() => {
+    if (viewMonth === month) return monthItems
+    const fx = fixedForMonthAt(viewMonth)
+    const raw = transactions.filter(item => dateKey(item.data).slice(0, 7) === viewMonth)
+    const tx = raw.map(item => {
+      if (item.ajuste_fatura !== true || item.ajuste_delta === undefined) return item
+      const cardId = String(item.ajuste_fatura_card_id || item.cartao_id || '')
+      const purchases = [...raw, ...fx].filter(row => !row.ajuste_fatura && !row.ignorar_calculo && row.tipo !== 'receita' && (String(row.conta_id || '') === `card|${cardId}` || String(row.cartao_id || '') === cardId)).reduce((sum, row) => sum + clampMoney(row.valor), 0)
+      return { ...item, valor: invoiceValue(item, purchases) }
+    })
+    return [...tx, ...fx]
+  })()
   const monthIncome = monthCalculationItems.filter(item => item.tipo === 'receita').reduce((sum, item) => sum + clampMoney(item.valor), 0)
   const monthInvoice = cards.reduce((sum, card) => {
     const cardId = String(card.id)
@@ -300,9 +310,9 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
   const investmentResult = totalInvestmentValue - totalInvested
   const investmentResultPercent = totalInvested ? investmentResult / totalInvested * 100 : 0
 
-  function cardInvoice(card: Row, source: Row[] = monthItems) {
+  function cardInvoice(card: Row, source: Row[] = viewItems, m: string = viewMonth) {
     const cardId = String(card.id)
-    const manual = source.find(item => item.ajuste_fatura === true && String(item.ajuste_fatura_card_id || item.cartao_id || '') === cardId && String(item.competencia_fatura || dateKey(item.data).slice(0, 7)) === month)
+    const manual = source.find(item => item.ajuste_fatura === true && String(item.ajuste_fatura_card_id || item.cartao_id || '') === cardId && String(item.competencia_fatura || dateKey(item.data).slice(0, 7)) === m)
     const purchases = source.filter(item => !item.ajuste_fatura && (String(item.conta_id || '') === `card|${cardId}` || String(item.cartao_id || '') === cardId) && !item.ignorar_calculo && item.tipo !== 'receita').reduce((sum, item) => sum + clampMoney(item.valor), 0)
     return manual ? invoiceValue(manual, purchases) : purchases
   }
@@ -604,9 +614,9 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
     if (Math.abs(diff) < 0.01) return
     commit(current => ({ ...current, finance: { ...current.finance, transactions: [{ id: uid('fin'), titulo: 'Ajuste de saldo', valor: Math.abs(diff), valor_pago: Math.abs(diff), tipo: diff >= 0 ? 'receita' : 'despesa', categoria: 'Ajuste', conta_id: account.id, cartao_id: '', data: today, status: 'pago', observacao: 'Conciliação bancária', pagamentos: [{ id: uid('pay'), data: today, valor: Math.abs(diff) }], anexos: [], ignorar_calculo: false, recorrencia: 'unico' }, ...rows(current.finance.transactions)] } }))
   }
-  const invoicePurchases = (cardId: string) => monthItems.filter(item => !item.ajuste_fatura && !item.ignorar_calculo && item.tipo !== 'receita' && (String(item.conta_id || '') === `card|${cardId}` || String(item.cartao_id || '') === cardId)).reduce((sum, item) => sum + clampMoney(item.valor), 0)
-  const invoiceRow = (list: Row[], cardId: string) => list.find(item => item.ajuste_fatura === true && String(item.ajuste_fatura_card_id || item.cartao_id || '') === cardId && String(item.competencia_fatura || dateKey(item.data).slice(0, 7)) === month)
-  const invoiceBase = (card: Row, existing?: Row): Row => ({ ...(existing || {}), id: existing?.id || uid('invoice'), titulo: `Fatura ${String(card.nome || 'Cartão')}`, tipo: 'despesa', data: existing?.data || monthDateForDay(month, Number(card.vencimento || 10)), categoria: 'Fatura do cartão', conta_id: `card|${String(card.id)}`, cartao_id: String(card.id), conta_pagamento_id: String(card.conta_id || ''), anexos: rows(existing?.anexos), ignorar_calculo: true, recorrencia: 'unico', ajuste_fatura: true, ajuste_fatura_card_id: String(card.id), competencia_fatura: month })
+  const invoicePurchases = (cardId: string) => viewItems.filter(item => !item.ajuste_fatura && !item.ignorar_calculo && item.tipo !== 'receita' && (String(item.conta_id || '') === `card|${cardId}` || String(item.cartao_id || '') === cardId)).reduce((sum, item) => sum + clampMoney(item.valor), 0)
+  const invoiceRow = (list: Row[], cardId: string) => list.find(item => item.ajuste_fatura === true && String(item.ajuste_fatura_card_id || item.cartao_id || '') === cardId && String(item.competencia_fatura || dateKey(item.data).slice(0, 7)) === viewMonth)
+  const invoiceBase = (card: Row, existing?: Row): Row => ({ ...(existing || {}), id: existing?.id || uid('invoice'), titulo: `Fatura ${String(card.nome || 'Cartão')}`, tipo: 'despesa', data: existing?.data || monthDateForDay(viewMonth, Number(card.vencimento || 10)), categoria: 'Fatura do cartão', conta_id: `card|${String(card.id)}`, cartao_id: String(card.id), conta_pagamento_id: String(card.conta_id || ''), anexos: rows(existing?.anexos), ignorar_calculo: true, recorrencia: 'unico', ajuste_fatura: true, ajuste_fatura_card_id: String(card.id), competencia_fatura: viewMonth })
   const saveInvoice = (card: Row, change: (existing: Row | undefined) => Row) => commit(currentState => {
     const list = rows(currentState.finance.transactions)
     const existing = invoiceRow(list, String(card.id))
@@ -616,8 +626,8 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
   const statusOf = (value: number, paid: number) => value > 0 && paid >= value - 0.005 ? 'pago' : paid > 0 ? 'parcial' : 'pendente'
 
   async function adjustInvoice(card: Row) {
-    const current = cardInvoice(card, monthItems)
-    const answer = await askText({ title: `Valor da fatura de ${monthLabel(month).split(' de ')[0]}`, message: 'Troque o valor calculado pelo que veio no banco. Novas compras continuam somando.', icon: 'credit_card', tone: 'default', input: { kind: 'money', value: current.toFixed(2).replace('.', ',') } })
+    const current = cardInvoice(card, viewItems)
+    const answer = await askText({ title: `Valor da fatura de ${monthLabel(viewMonth).split(' de ')[0]}`, message: 'Troque o valor calculado pelo que veio no banco. Novas compras continuam somando.', icon: 'credit_card', tone: 'default', input: { kind: 'money', value: current.toFixed(2).replace('.', ',') } })
     if (answer === null) return
     const value = parseMoneyInput(answer)
     if (!Number.isFinite(value) || value < 0) { void notify('Digite um valor válido.'); return }
@@ -626,8 +636,8 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
   }
   async function payInvoice(card: Row) {
     const cardId = String(card.id)
-    const total = cardInvoice(card, monthItems)
-    const paidBefore = clampMoney(invoiceRow(monthItems, cardId)?.valor_pago)
+    const total = cardInvoice(card, viewItems)
+    const paidBefore = clampMoney(invoiceRow(viewItems, cardId)?.valor_pago)
     const remaining = Math.max(0, total - paidBefore)
     if (remaining <= 0) { void notify('Esta fatura já está paga.'); return }
     let amount = remaining
@@ -866,7 +876,7 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
 
     {tab === 'cards' ? <>
       <div className={fm.listHead}><span>{cards.length} {cards.length === 1 ? 'cartão' : 'cartões'}</span><span>Faturas de {monthLabel(month).split(' de ')[0]} · {money.format(monthInvoice)}</span></div>
-      <div className={fm.list}>{cards.map(card => { const invoice = cardInvoice(card, monthItems); const openInvoice = Math.max(0, invoice - clampMoney(invoiceRow(monthItems, String(card.id))?.valor_pago)); const limit = clampMoney(card.limite); const dueKey = monthDateForDay(month, Number(card.vencimento || 10)); return <div key={String(card.id)} className={fm.entityRow} {...quick.bind(() => entityMenu('card', card))}><button type="button" className={fm.entity} onClick={() => openExisting('card', card)}><i className={fm.ring} style={{ '--ring': String(card.cor || 'var(--ds-accent)') } as React.CSSProperties} /><span className={fm.copy}><span className={fm.name}>{card.nome}</span><span className={fm.subLine}><span className={fm.due} data-tone={dueTone(dueKey)}>{calIcon}Vence {naturalDate(dueKey, today)}</span>{limit ? <span>{money.format(Math.max(0, limit - openInvoice))} de limite disponível</span> : null}</span></span><span className={fm.amount}><b>{money.format(invoice)}</b></span></button></div> })}</div>
+      <div className={fm.list}>{cards.map(card => { const invoice = cardInvoice(card, monthItems, month); const openInvoice = Math.max(0, invoice - clampMoney(invoiceRow(monthItems, String(card.id))?.valor_pago)); const limit = clampMoney(card.limite); const dueKey = monthDateForDay(month, Number(card.vencimento || 10)); return <div key={String(card.id)} className={fm.entityRow} {...quick.bind(() => entityMenu('card', card))}><button type="button" className={fm.entity} onClick={() => openExisting('card', card)}><i className={fm.ring} style={{ '--ring': String(card.cor || 'var(--ds-accent)') } as React.CSSProperties} /><span className={fm.copy}><span className={fm.name}>{card.nome}</span><span className={fm.subLine}><span className={fm.due} data-tone={dueTone(dueKey)}>{calIcon}Vence {naturalDate(dueKey, today)}</span>{limit ? <span>{money.format(Math.max(0, limit - openInvoice))} de limite disponível</span> : null}</span></span><span className={fm.amount}><b>{money.format(invoice)}</b></span></button></div> })}</div>
       {addRow('Adicionar cartão', () => openNew('card'))}
     </> : null}
 
@@ -917,12 +927,12 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
       const moveLine = (mov: Row, plus: boolean) => { const done = isDone(mov); const editable = editableMove(mov); return <div key={String(mov.id)} className={ic.line} {...quick.bind(() => ({ title: plus ? (kind === 'box' ? 'Guardado' : 'Aporte') : (kind === 'box' ? 'Retirada' : 'Resgate'), subtitle: `${plus ? '+' : '−'}${money.format(clampMoney(mov.valor))}`, groups: [{ options: editable ? [{ label: done ? 'Marcar como pendente' : 'Marcar como efetivado', icon: done ? 'undo' : 'check_circle', onSelect: () => toggleMove(mov) }, { label: 'Editar', icon: 'edit', onSelect: () => editMove(mov) }, { label: 'Excluir', icon: 'delete', tone: 'danger' as const, onSelect: () => deleteMove(mov) }] : [{ label: 'Excluir', icon: 'delete', tone: 'danger' as const, onSelect: () => deleteMove(mov) }] }] }))}><button type="button" className={ic.lineCheck} data-paid={done} disabled={!editable} title={done ? 'Marcar como pendente' : 'Marcar como efetivado'} style={done ? undefined : { borderColor: plus ? 'var(--ds-success)' : 'var(--ds-danger)' }} onClick={() => toggleMove(mov)}>{done ? '✓' : ''}</button><button type="button" className={ic.lineBody} disabled={!editable} onClick={() => editMove(mov)}><span className={ic.lineText}><b>{plus ? (kind === 'box' ? 'Guardado' : 'Aporte') : (kind === 'box' ? 'Retirada' : 'Resgate')}</b><small>{new Date(mov.data).toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' })}{done ? '' : ' · pendente'}</small></span><span className={ic.lineValue} data-tone={plus ? 'in' : 'out'}>{plus ? '+' : '−'} {money.format(clampMoney(mov.valor))}</span></button></div> }
       const listSection = (title: string, count: number, children: ReactNode, _empty?: string) => !count ? null : <section className={ic.section}><h3>{title}<small>{count}</small></h3>{children}</section>
       const draftId = String(draft.id)
-      const accountTx = kind === 'account' ? monthItems.filter(item => String(item.conta_id || '') === draftId || (item.ajuste_fatura === true && String(item.conta_pagamento_id || '') === draftId)).sort((x, y) => String(x.data).localeCompare(String(y.data))) : []
-      const inMonth = (mov: Row) => dateKey(mov.data).slice(0, 7) === month
+      const accountTx = kind === 'account' ? viewItems.filter(item => String(item.conta_id || '') === draftId || (item.ajuste_fatura === true && String(item.conta_pagamento_id || '') === draftId)).sort((x, y) => String(x.data).localeCompare(String(y.data))) : []
+      const inMonth = (mov: Row) => dateKey(mov.data).slice(0, 7) === viewMonth
       const permanent = kind === 'box' || kind === 'investment'
       const monthMoves = rows(draft.movimentos).filter(mov => permanent || inMonth(mov))
-      const cardTx = kind === 'card' ? monthItems.filter(item => !item.ajuste_fatura && item.tipo !== 'receita' && (String(item.conta_id || '') === `card|${draftId}` || String(item.cartao_id || '') === draftId)).sort((x, y) => String(x.data).localeCompare(String(y.data))) : []
-      const history = kind === 'transaction' && draft._persisted ? [...transactions.filter(item => String(item.id) !== draftId && String(item.titulo || '').replace(/\s+\(\d+\/\d+\)$/, '') === String(draft.titulo || '').replace(/\s+\(\d+\/\d+\)$/, '')), ...(draft._isFixed ? [-1, -2, -3].flatMap(delta => { const rule = fixed.find(item => String(item.id) === draftId); const entry = rule ? fixedRuleAtMonth(rule, shiftMonth(month, delta)) : null; return entry ? [entry] : [] }) : [])].sort((x, y) => String(y.data).localeCompare(String(x.data))).slice(0, 6) : []
+      const cardTx = kind === 'card' ? viewItems.filter(item => !item.ajuste_fatura && item.tipo !== 'receita' && (String(item.conta_id || '') === `card|${draftId}` || String(item.cartao_id || '') === draftId)).sort((x, y) => String(x.data).localeCompare(String(y.data))) : []
+      const history = kind === 'transaction' && draft._persisted ? [...transactions.filter(item => String(item.id) !== draftId && String(item.titulo || '').replace(/\s+\(\d+\/\d+\)$/, '') === String(draft.titulo || '').replace(/\s+\(\d+\/\d+\)$/, '')), ...(draft._isFixed ? [-1, -2, -3].flatMap(delta => { const rule = fixed.find(item => String(item.id) === draftId); const entry = rule ? fixedRuleAtMonth(rule, shiftMonth(viewMonth, delta)) : null; return entry ? [entry] : [] }) : [])].sort((x, y) => String(y.data).localeCompare(String(x.data))).slice(0, 6) : []
       const dueLabel = (key: string) => naturalDate(key, today)
       const tagCtx = { categories, accounts, cards }
       const tagResult = kind === 'transaction' ? parseFinanceTags(String(draft.titulo || ''), tagCtx) : null
@@ -953,8 +963,8 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
       const numberField = (label: string, key: string, step = '0.01') => <SideField label={label} icon={fieldIcons[label]?.[0]} color={fieldIcons[label]?.[1]}><input type="number" step={step} value={draft[key] || 0} onChange={event => setDraft({ ...draft, [key]: Number(event.target.value) })} /></SideField>
 
       const commentsField = kind === 'card' ? 'comentarios_faturas' : 'comentarios_meses'
-      const monthLabelShort = new Date(`${month}-15T12:00:00`).toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' }).replace(/^./, c => c.toUpperCase())
-      const monthStepper = <div className={ic.inlineStepper}><button type="button" onClick={() => { setCardAdding(false); setMonth(shiftMonth(month, -1)) }} aria-label="Mês anterior"><MaiIcon name="chevron_left" size={22} /></button><button type="button" className={ic.inlineStepperValue} onClick={() => { setCardAdding(false); setMonth(today.slice(0, 7)) }} title="Voltar ao mês atual">{monthLabelShort}</button><button type="button" onClick={() => { setCardAdding(false); setMonth(shiftMonth(month, 1)) }} aria-label="Próximo mês"><MaiIcon name="chevron_right" size={22} /></button></div>
+      const monthLabelShort = new Date(`${viewMonth}-15T12:00:00`).toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' }).replace(/^./, c => c.toUpperCase())
+      const monthStepper = <div className={ic.inlineStepper}><button type="button" onClick={() => { setCardAdding(false); setPopupMonth(shiftMonth(viewMonth, -1)) }} aria-label="Mês anterior"><MaiIcon name="chevron_left" size={22} /></button><button type="button" className={ic.inlineStepperValue} onClick={() => { setCardAdding(false); setPopupMonth(today.slice(0, 7)) }} title="Voltar ao mês atual">{monthLabelShort}</button><button type="button" onClick={() => { setCardAdding(false); setPopupMonth(shiftMonth(viewMonth, 1)) }} aria-label="Próximo mês"><MaiIcon name="chevron_right" size={22} /></button></div>
       const submitMove = () => {
         if (!moveForm || !permanent) return
         const value = parseMoneyInput(moveForm.amount)
@@ -974,7 +984,7 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
         setMoveForm(null)
       }
       const valueBlock = (label: ReactNode, tip: string, onClick: () => void, sub?: ReactNode, caption?: string) => <div className={ic.valueBlock}>{caption ? <span className={ic.valueCaption}>{caption}</span> : null}<button type="button" className={ic.valueButton} title={tip} onClick={onClick}>{label}<MaiIcon name="edit" size={16} /></button>{sub ? <span className={ic.valueSub}>{sub}</span> : null}</div>
-      const extras = <>{rows(draft.anexos).length ? <ItemAttachments attachments={rows(draft.anexos)} onChange={anexos => setDraft({ ...draft, anexos })} /> : null}<div className={ic.commentsSlot}><CommentsSection key={kind === 'transaction' || permanent ? 'c' : month} comments={(kind === 'transaction' || permanent ? rows(draft.comentarios) : rows((draft[commentsField] || {})[month])) as Comment[]} onChange={comentarios => setDraft(kind === 'transaction' || permanent ? { ...draft, comentarios } : { ...draft, [commentsField]: { ...(draft[commentsField] || {}), [month]: comentarios } })} /></div></>
+      const extras = <>{rows(draft.anexos).length ? <ItemAttachments attachments={rows(draft.anexos)} onChange={anexos => setDraft({ ...draft, anexos })} /> : null}<div className={ic.commentsSlot}><CommentsSection key={kind === 'transaction' || permanent ? 'c' : viewMonth} comments={(kind === 'transaction' || permanent ? rows(draft.comentarios) : rows((draft[commentsField] || {})[viewMonth])) as Comment[]} onChange={comentarios => setDraft(kind === 'transaction' || permanent ? { ...draft, comentarios } : { ...draft, [commentsField]: { ...(draft[commentsField] || {}), [viewMonth]: comentarios } })} /></div></>
       const setQuickDate = (value: string) => setDraft({ ...draft, data: value, dia_mes: Number(value.slice(8)), mes_inicio: draft.mes_inicio || value.slice(0, 7) })
       const quickChip = (label: string, icon: string, color: string, active: boolean, onClick: () => void) => <button key={label} type="button" data-active={active || undefined} onClick={onClick}><i style={{ color }}><MaiIcon name={icon} size={14} /></i>{label}</button>
       const quickBar = kind === 'transaction' ? <div className={ic.hints}>
@@ -1001,8 +1011,8 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
           {kind === 'card' ? <button type="button" className={ic.payButton} onClick={() => void payInvoice(draft)}>Pagar fatura</button> : null}
         </div> : null}
         {kind === 'investment' && clampMoney(draft.rent_taxa) > 0 ? <p className={ic.note}>Valor estimado pela taxa configurada; você pode corrigir quando quiser.</p> : null}
-        {kind === 'account' ? <>{listSection('Lançamentos', accountTx.length, accountTx.map(txLine), '')}{draft._persisted ? (cardAdding ? <QuickAdd key={`${draftId}-${month}`} inline kinds={['finance']} initial="finance" state={state} today={today} defaultDate={month === today.slice(0, 7) ? today : `${month}-01`} defaultAccount={draftId} commit={commit} onFinance={() => undefined} onClose={() => setCardAdding(false)} /> : <button type="button" className={fm.addRow} onClick={() => setCardAdding(true)}><MaiIcon name="add" size={18} />Adicionar lançamento</button>) : null}</> : null}
-        {kind === 'card' ? <>{listSection('Lançamentos', cardTx.length, cardTx.map(txLine), 'Nenhuma compra na fatura deste mês.')}{draft._persisted ? (cardAdding ? <QuickAdd key={`${draftId}-${month}`} inline kinds={['finance']} initial="finance" state={state} today={today} defaultDate={month === today.slice(0, 7) ? today : `${month}-01`} defaultAccount={`card|${draftId}`} commit={commit} onFinance={() => undefined} onClose={() => setCardAdding(false)} /> : <button type="button" className={fm.addRow} onClick={() => setCardAdding(true)}><MaiIcon name="add" size={18} />Adicionar lançamento</button>) : null}</> : null}
+        {kind === 'account' ? <>{listSection('Lançamentos', accountTx.length, accountTx.map(txLine), '')}{draft._persisted ? (cardAdding ? <QuickAdd key={`${draftId}-${viewMonth}`} inline kinds={['finance']} initial="finance" state={state} today={today} defaultDate={viewMonth === today.slice(0, 7) ? today : `${viewMonth}-01`} defaultAccount={draftId} commit={commit} onFinance={() => undefined} onClose={() => setCardAdding(false)} /> : <button type="button" className={fm.addRow} onClick={() => setCardAdding(true)}><MaiIcon name="add" size={18} />Adicionar lançamento</button>) : null}</> : null}
+        {kind === 'card' ? <>{listSection('Lançamentos', cardTx.length, cardTx.map(txLine), 'Nenhuma compra na fatura deste mês.')}{draft._persisted ? (cardAdding ? <QuickAdd key={`${draftId}-${viewMonth}`} inline kinds={['finance']} initial="finance" state={state} today={today} defaultDate={viewMonth === today.slice(0, 7) ? today : `${viewMonth}-01`} defaultAccount={`card|${draftId}`} commit={commit} onFinance={() => undefined} onClose={() => setCardAdding(false)} /> : <button type="button" className={fm.addRow} onClick={() => setCardAdding(true)}><MaiIcon name="add" size={18} />Adicionar lançamento</button>) : null}</> : null}
         {permanent ? (() => { const all = rows(draft.movimentos); const doneCount = all.filter(isDone).length; const visible = all.filter(mov => showDone || !isDone(mov)); return all.length ? <section className={ic.section}><h3>Lançamentos<small>{visible.length}</small>{doneCount ? <button type="button" className={ic.toggleDone} onClick={() => setShowDone(!showDone)}><MaiIcon name={showDone ? 'visibility_off' : 'visibility'} size={15} />{showDone ? 'Ocultar efetivados' : `Mostrar efetivados (${doneCount})`}</button> : null}</h3>{visible.map(mov => moveLine(mov, kind === 'box' ? mov.tipo === 'entrada' : mov.tipo === 'aporte'))}</section> : null })() : null}
 
         {permanent && draft._persisted ? (moveForm ? <div className={ic.moveForm}>
