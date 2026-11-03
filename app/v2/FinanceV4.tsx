@@ -284,11 +284,11 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
 
   function openSummary(target: Tab, type?: 'income' | 'expense') {
     commit(current => {
-      const configs = current.configs as Row
-      const areaTabs = configs.areaTabs && typeof configs.areaTabs === 'object' ? configs.areaTabs as Record<string, string> : {}
-      const filters = configs.moduleFilters && typeof configs.moduleFilters === 'object' ? configs.moduleFilters as Record<string, Row> : {}
-      const nextFinance = { ...(filters.finance || {}), type: type && String((filters.finance || {}).type || 'all') !== type ? type : 'all' }
-      return { ...current, configs: { ...configs, areaTabs: { ...areaTabs, finance: target }, moduleFilters: type ? { ...filters, finance: nextFinance } : filters } } as MaiState
+      const areaTabs = current.configs.areaTabs && typeof current.configs.areaTabs === 'object' ? current.configs.areaTabs as Record<string, string> : {}
+      const filters = current.configs.moduleFilters && typeof current.configs.moduleFilters === 'object' ? current.configs.moduleFilters as Record<string, Row> : {}
+      const currentType = String((filters.finance || {}).type || 'all')
+      const moduleFilters = type ? { ...filters, finance: { ...(filters.finance || {}), type: currentType === type ? 'all' : type } } : filters
+      return { ...current, configs: { ...current.configs, areaTabs: { ...areaTabs, finance: target }, moduleFilters } }
     })
   }
 
