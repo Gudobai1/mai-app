@@ -1,18 +1,21 @@
 'use client'
 
 import type { ReactNode } from 'react'
+import { createPortal } from 'react-dom'
 import { MaiIcon } from './MaiIcons'
 import s from './FinanceItemCard.module.css'
 
 /** Casca do cartão de item financeiro: conteúdo à esquerda, configurações à direita. */
 export function FinanceItemShell({ crumb, onClose, content, side, footer }: { crumb: string; onClose: () => void; content: ReactNode; side: ReactNode; footer: ReactNode }) {
-  return <div className={s.layer} onMouseDown={onClose}>
+  const layer = <div className={s.layer} onMouseDown={onClose}>
     <div className={s.panel} role="dialog" aria-label={crumb} onMouseDown={event => event.stopPropagation()}>
       <header className={s.header}><span className={s.crumb}>{crumb}</span><button type="button" className={s.close} onClick={onClose} aria-label="Fechar"><MaiIcon name="close" size={18} /></button></header>
       <div className={s.body}><div className={s.content}>{content}</div><aside className={s.side}>{side}</aside></div>
       <footer className={s.footer}>{footer}</footer>
     </div>
   </div>
+  // Portal: o centro é o da tela inteira, não o da área ao lado do menu lateral.
+  return typeof document === 'undefined' ? layer : createPortal(layer, document.body)
 }
 
 type RowProps = { id: string; icon?: string; label: string; summary: string; color?: string; leading?: ReactNode; open: string; setOpen: (id: string) => void; children?: ReactNode }
