@@ -93,3 +93,12 @@
 .barTrack div { height: 8px; border-radius: 5px; }
 
 .entityRow { display: block; }
+
+.topRight { display: flex; align-items: center; gap: 12px; }
+.options { position: relative; }
+.options :global(.mai-app-topbar) { position: static !important; display: block !important; min-height: 0 !important; margin: 0 !important; padding: 0 !important; border: 0 !important; background: transparent !important; backdrop-filter: none !important; }
+.options :global(.mai-app-topbar-context) { display: none !important; }
+.options :global(.mai-app-topbar-menu-button) { height: 44px !important; width: 44px !important; padding: 0 !important; justify-content: center !important; border-radius: var(--ds-r-md) !important; background: var(--ds-surface) !important; box-shadow: var(--ds-shadow-1) !important; color: var(--ds-text) !important; }
+.options :global(.mai-app-topbar-menu-button) > span:last-child { display: none !important; }
+.options :global(.mai-app-topbar-menu-button[data-active='true']) { background: var(--ds-accent-soft) !important; color: var(--ds-accent) !important; }
+.options :global(.mai-app-topbar-panel) { top: 52px !important; }
