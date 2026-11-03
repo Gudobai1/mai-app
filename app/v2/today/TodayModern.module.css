@@ -2093,3 +2093,8 @@
 .items .item.item[data-sub] .taskMain { gap: 1px; }
 .items .item.item[data-sub] .taskMeta:empty { display: none; }
 .items .item.item[data-sub] .taskTitle, .items .item.item[data-sub] .taskTitleBtn { font-size: 14px; line-height: 1.35; }
+
+/* Finanças em Hoje: ao passar o mouse só o título é sublinhado (nunca a data). */
+html body .itemButton.itemButton:hover > .taskBody,
+html body .itemButton.itemButton:hover .taskSub { text-decoration: none !important; }
+html body .itemButton.itemButton:hover .taskTitle { text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px; }

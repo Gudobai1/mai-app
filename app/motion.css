@@ -97,3 +97,13 @@ html body [role="listitem"]:hover { background-color: transparent; }
 html body .mai-finance-v4-row .mai-finance-v4-row-main { align-self: stretch; align-items: center; }
 html body .mai-finance-v4-row .mai-finance-v4-value { align-self: center; align-content: center; justify-items: end; text-align: right; margin: 0; }
 html body .mai-finance-v4-row .mai-item-subline-v2 { text-decoration: none; }
+
+/* Finanças (qualquer lista): o sublinhado ao passar o mouse vai só no título. */
+.mai-finance-v4-row:hover .mai-item-titleline-v2 strong,
+.mai-finance-v4-row-main:hover .mai-item-titleline-v2 strong {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1px;
+}
+.mai-finance-v4-row:hover .mai-item-subline-v2,
+.mai-finance-v4-row:hover .mai-item-subline-v2 span { text-decoration: none; }
