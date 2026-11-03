@@ -17,7 +17,7 @@ import fm from './FinanceModern.module.css'
 
 type Row = Record<string, any>
 type Commit = (change: (current: MaiState) => MaiState) => void
-type Tab = 'overview' | 'transactions' | 'accounts' | 'cards' | 'boxes' | 'investments' | 'reports'
+type Tab = 'transactions' | 'accounts' | 'cards' | 'boxes' | 'investments' | 'reports'
 type DraftKind = 'transaction' | 'account' | 'card' | 'box' | 'investment'
 
 const rows = (value: unknown): Row[] => Array.isArray(value) ? value as Row[] : []
@@ -76,6 +76,12 @@ function parseSignedMoneyInput(value: string) {
   return Number.isFinite(parsed) ? parsed : Number.NaN
 }
 
+function shiftMonth(key: string, amount: number) {
+  const date = new Date(`${key}-15T12:00:00`)
+  date.setMonth(date.getMonth() + amount)
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
+}
+
 function monthSequence(start: string, end: string) {
   if (!/^\d{4}-\d{2}$/.test(start) || !/^\d{4}-\d{2}$/.test(end) || start > end) return []
   const result: string[] = []
@@ -112,8 +118,8 @@ function paymentState(item: Row, value: unknown = item.pagamentos) {
 export function FinanceV4({ state, today, commit, createRequest, inspect: _inspect }: { state: MaiState; today: string; commit: Commit; createRequest?: string; inspect: (item: InspectableItem) => void }) {
   const savedTabs = state.configs.areaTabs && typeof state.configs.areaTabs === 'object' ? state.configs.areaTabs as Record<string, string> : {}
   const savedTab = String(savedTabs.finance || 'overview')
-  const allowedTabs: Tab[] = ['overview', 'transactions', 'accounts', 'cards', 'boxes', 'investments', 'reports']
-  const tab: Tab = allowedTabs.includes(savedTab as Tab) ? savedTab as Tab : savedTab === 'fixed' || savedTab === 'categories' ? 'transactions' : 'overview'
+  const allowedTabs: Tab[] = ['transactions', 'accounts', 'cards', 'boxes', 'investments', 'reports']
+  const tab: Tab = allowedTabs.includes(savedTab as Tab) ? savedTab as Tab : 'transactions'
   const finance = state.finance || {}
   const transactions = rows(finance.transactions)
   const accounts = rows(finance.accounts)
@@ -131,8 +137,12 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
   const statusFilter = String(financeFilter.status || 'all')
   const categoryFilter = String(financeFilter.category || 'all')
   const originFilter = String(financeFilter.origin || 'all')
-  const order = String(financeControl.sort || 'date_desc')
+  const order = String(financeControl.sort || 'date_asc')
   const [month, setMonth] = useState(today.slice(0, 7))
+  const [period, setPeriod] = useState<'month' | '3' | '6' | 'year' | 'custom'>('month')
+  const [periodMenu, setPeriodMenu] = useState(false)
+  const [customFrom, setCustomFrom] = useState(`${today.slice(0, 4)}-01`)
+  const [customTo, setCustomTo] = useState(today.slice(0, 7))
   const [draft, setDraft] = useState<Row | null>(null)
   const [kind, setKind] = useState<DraftKind>('transaction')
   const [createTool, setCreateTool] = useState('')
@@ -568,14 +578,69 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
     if (order === 'name') return String(a.titulo).localeCompare(String(b.titulo), 'pt-BR')
     return String(b.data).localeCompare(String(a.data))
   }), [monthItems, typeFilter, statusFilter, categoryFilter, originFilter, order, today])
+
+  function monthTotals(key: string) {
+    const items: Row[] = [...transactions.filter(item => dateKey(item.data).slice(0, 7) === key), ...fixedForMonthAt(key)]
+    const calc = items.filter(item => !item.ignorar_calculo)
+    const income = calc.filter(item => item.tipo === 'receita').reduce((sum, item) => sum + clampMoney(item.valor), 0)
+    const invoice = cards.reduce((sum, card) => {
+      const cardId = String(card.id)
+      const manual = items.find(item => item.ajuste_fatura === true && String(item.ajuste_fatura_card_id || item.cartao_id || '') === cardId && String(item.competencia_fatura || dateKey(item.data).slice(0, 7)) === key)
+      if (manual) return sum + clampMoney(manual.valor)
+      return sum + calc.filter(item => !item.ajuste_fatura && item.tipo !== 'receita' && (String(item.conta_id || '') === `card|${cardId}` || String(item.cartao_id || '') === cardId)).reduce((cardSum, item) => cardSum + clampMoney(item.valor), 0)
+    }, 0)
+    const orphan = calc.filter(item => {
+      if (item.tipo === 'receita') return false
+      const accountId = String(item.conta_id || '')
+      const cardId = String(item.cartao_id || (accountId.startsWith('card|') ? accountId.slice(5) : ''))
+      return Boolean(cardId) && !knownCardIds.has(cardId)
+    }).reduce((sum, item) => sum + clampMoney(item.valor), 0)
+    const cash = calc.filter(item => item.tipo !== 'receita' && !String(item.conta_id || '').startsWith('card|') && !item.cartao_id).reduce((sum, item) => sum + clampMoney(item.valor), 0)
+    return { items: calc, income, invoice, expense: cash + invoice + orphan }
+  }
+  const reportMonths = period === 'month' ? [month] : period === '3' ? monthSequence(shiftMonth(today.slice(0, 7), -2), today.slice(0, 7)) : period === '6' ? monthSequence(shiftMonth(today.slice(0, 7), -5), today.slice(0, 7)) : period === 'year' ? monthSequence(`${today.slice(0, 4)}-01`, `${today.slice(0, 4)}-12`) : monthSequence(customFrom, customTo)
+  const rangeMode = tab === 'reports' && period !== 'month'
+  const reportTotals = reportMonths.map(monthTotals)
+  const reportItems = reportTotals.flatMap(entry => entry.items)
+  const reportIncome = reportTotals.reduce((sum, entry) => sum + entry.income, 0)
+  const reportExpense = reportTotals.reduce((sum, entry) => sum + entry.expense, 0)
+  const reportInvoice = reportTotals.reduce((sum, entry) => sum + entry.invoice, 0)
+  const reportSaving = reportIncome - reportExpense
+  const stripIncome = rangeMode ? reportIncome : monthIncome
+  const stripExpense = rangeMode ? reportExpense : monthExpense
+  const stripInvoice = rangeMode ? reportInvoice : monthInvoice
+  const stripSaving = stripIncome - stripExpense
+  const stripPercent = stripIncome ? Math.round(stripSaving / stripIncome * 100) : 0
+  const palette = ['#b8693d', '#e0a04a', '#6c8fa8', '#7a6fd0', '#c94f45', '#8a05be', '#e8a33d', '#4f7cac']
+  const greens = ['#2e8b57', '#7cc49a', '#4b8b6c', '#a3d9b8']
+  type Slice = { name: string; value: number; color: string }
+  const sumBy = (list: Row[], keyOf: (item: Row) => string, colors: string[] | ((name: string) => string)): Slice[] => {
+    const map = new Map<string, number>()
+    list.forEach(item => map.set(keyOf(item), (map.get(keyOf(item)) || 0) + clampMoney(item.valor)))
+    return [...map.entries()].sort((a, b) => b[1] - a[1]).map(([name, value], index) => ({ name, value, color: typeof colors === 'function' ? colors(name) : colors[index % colors.length] }))
+  }
+  const reportExpenses = reportItems.filter(item => item.tipo !== 'receita')
+  const reportIncomes = reportItems.filter(item => item.tipo === 'receita')
+  const originColor = (name: string) => {
+    const account = accounts.find(item => String(item.nome) === name)
+    const card = cards.find(item => String(item.nome) === name)
+    return String((account || card)?.cor || '#8a7d72')
+  }
+  const reportBlocks: { title: string; total: number; tone: 'out' | 'in'; slices: Slice[] }[] = [
+    { title: 'Despesas por categoria', total: reportExpenses.reduce((sum, item) => sum + clampMoney(item.valor), 0), tone: 'out', slices: sumBy(reportExpenses, item => String(item.categoria || 'Sem categoria'), palette) },
+    { title: 'Receitas por categoria', total: reportIncomes.reduce((sum, item) => sum + clampMoney(item.valor), 0), tone: 'in', slices: sumBy(reportIncomes, item => String(item.categoria || 'Sem categoria'), greens) },
+    { title: 'Despesas por conta e cartão', total: reportExpenses.reduce((sum, item) => sum + clampMoney(item.valor), 0), tone: 'out', slices: sumBy(reportExpenses, item => originName(item.conta_id || (item.cartao_id ? `card|${item.cartao_id}` : ''), accounts, cards), originColor) },
+    { title: 'Despesas fixas e variáveis', total: reportExpenses.reduce((sum, item) => sum + clampMoney(item.valor), 0), tone: 'out', slices: sumBy(reportExpenses, item => item._isFixed ? 'Fixas' : 'Variáveis', name => name === 'Fixas' ? '#6c8fa8' : '#e0a04a') },
+  ]
+  const periodLabel = period === 'month' ? 'Mensal' : period === '3' ? 'Últimos 3 meses' : period === '6' ? 'Últimos 6 meses' : period === 'year' ? 'Este ano' : 'Personalizado'
+  const periodRange = reportMonths.length ? (reportMonths.length === 1 ? monthLabel(reportMonths[0]) : `${monthLabel(reportMonths[0])} – ${monthLabel(reportMonths[reportMonths.length - 1])}`) : 'Período inválido'
+  const pendingCount = filtered.filter(item => paymentState(item).status !== 'pago').length
   const filtersActive = typeFilter !== 'all' || statusFilter !== 'all' || categoryFilter !== 'all' || originFilter !== 'all'
   const calculationItems = filtered.filter(item => !item.ignorar_calculo)
   const filteredIncome = calculationItems.filter(item => item.tipo === 'receita').reduce((sum, item) => sum + clampMoney(item.valor), 0)
   const filteredExpense = calculationItems.filter(item => item.tipo !== 'receita').reduce((sum, item) => sum + clampMoney(item.valor), 0)
   const filteredResult = filteredIncome - filteredExpense
   const filteredInvoice = filtersActive ? calculationItems.filter(item => item.tipo !== 'receita' && (String(item.conta_id || '').startsWith('card|') || item.cartao_id)).reduce((sum, item) => sum + clampMoney(item.valor), 0) : monthInvoice
-  const recent = filtered.slice(0, 8)
-  const catReport = (Object.entries(calculationItems.reduce((map: Record<string, number>, item) => { if (item.tipo !== 'receita') map[item.categoria || 'Sem categoria'] = (map[item.categoria || 'Sem categoria'] || 0) + clampMoney(item.valor); return map }, {})) as [string, number][]).sort((a, b) => b[1] - a[1])
   const visibleAccounts = accounts
   const visibleCards = cards
   const accountSummary = draft ? originName(draft.conta_id, accounts, cards) : 'Sem origem'
@@ -590,89 +655,85 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
     onTogglePaid={() => togglePaid(item)}
   />
 
-  const tabs: { id: Tab; label: string; icon?: string }[] = [
-    { id: 'overview', label: 'Visão geral' }, { id: 'transactions', label: 'Lançamentos' }, { id: 'accounts', label: 'Contas' }, { id: 'cards', label: 'Cartões' }, { id: 'boxes', label: 'Caixinhas' }, { id: 'investments', label: 'Investimentos' }, { id: 'reports', label: 'Relatórios' },
+  const tabs: { id: Tab; label: string }[] = [
+    { id: 'transactions', label: 'Lançamentos' }, { id: 'accounts', label: 'Contas' }, { id: 'cards', label: 'Cartões' }, { id: 'boxes', label: 'Caixinhas' }, { id: 'investments', label: 'Investimentos' }, { id: 'reports', label: 'Relatórios' },
   ]
 
   const draftPayment = draft && kind === 'transaction' ? paymentState(draft) : null
 
-  const addTarget: Record<Tab, { kind: DraftKind; label: string }> = { overview: { kind: 'transaction', label: 'Lançamento' }, transactions: { kind: 'transaction', label: 'Lançamento' }, accounts: { kind: 'account', label: 'Conta' }, cards: { kind: 'card', label: 'Cartão' }, boxes: { kind: 'box', label: 'Caixinha' }, investments: { kind: 'investment', label: 'Investimento' }, reports: { kind: 'transaction', label: 'Lançamento' } }
-  const weekdayDate = (key: string) => naturalDate(key, today) === 'Sem data' ? 'Sem data' : `${naturalDate(key, today)} · ${new Date(`${key}T12:00:00`).toLocaleDateString('pt-BR', { weekday: 'long' })}`
-  const dayGroups = (list: Row[]) => {
-    const map = new Map<string, Row[]>()
-    list.forEach(item => { const key = dateKey(item.data); map.set(key, [...(map.get(key) || []), item]) })
-    return [...map.entries()]
-  }
-  const dayTotal = (list: Row[]) => list.filter(item => !item.ignorar_calculo).reduce((sum, item) => sum + signed(item, clampMoney(item.valor)), 0)
+  const addTarget: Record<Tab, { kind: DraftKind; label: string }> = { transactions: { kind: 'transaction', label: 'Lançamento' }, accounts: { kind: 'account', label: 'Conta' }, cards: { kind: 'card', label: 'Cartão' }, boxes: { kind: 'box', label: 'Caixinha' }, investments: { kind: 'investment', label: 'Investimento' }, reports: { kind: 'transaction', label: 'Lançamento' } }
   const signedMoney = (value: number) => `${value > 0 ? '+' : value < 0 ? '−' : ''}${money.format(Math.abs(value))}`
-  const grouped = (list: Row[]) => dayGroups(list).map(([key, items]) => <section key={key || 'none'}><div className={fm.dayHead}><strong>{weekdayDate(key)}</strong><span>{signedMoney(dayTotal(items))}</span></div><div className={fm.list}>{items.map(transactionRow)}</div></section>)
-  const upcoming = monthItems.filter(item => String(item.tipo) !== 'receita' && !item.ignorar_calculo && paymentState(item).status !== 'pago').sort((a, b) => String(a.data).localeCompare(String(b.data))).slice(0, 5)
   const showFilterNote = filtersActive && (tab === 'transactions' || tab === 'reports')
+  const addRow = (label: string, onClick: () => void) => <button type="button" className={fm.addRow} onClick={onClick}><MaiIcon name="add" size={18} />{label}</button>
+  const calIcon = <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="2.5" /><path d="M3.5 10h17M8 3v4M16 3v4" /></svg>
+  const dueTone = (key: string) => key < today ? 'late' : key === today ? 'today' : 'future'
+  const periodOptions: { id: typeof period; label: string }[] = [{ id: 'month', label: 'Mensal' }, { id: '3', label: 'Últimos 3 meses' }, { id: '6', label: 'Últimos 6 meses' }, { id: 'year', label: 'Este ano' }, { id: 'custom', label: 'Personalizado' }]
+  const barBlock = (block: typeof reportBlocks[number]) => <section className={fm.reportBlock} key={block.title}>
+    <div className={fm.reportTitle}><strong>{block.title}</strong><span>{money.format(block.total)}</span></div>
+    <div className={fm.barList}>{block.slices.map(slice => { const percent = block.total ? slice.value / block.total * 100 : 0; return <div className={fm.barRow} key={slice.name}><div className={fm.barTop}><span className={fm.barName}>{slice.name}</span><span className={fm.barPct}>{percent.toFixed(1).replace('.', ',')}%</span><span className={fm.barValue} data-tone={block.tone}>{money.format(slice.value)}</span></div><div className={fm.barTrack}><div style={{ width: `${percent}%`, background: slice.color }} /></div></div> })}{!block.slices.length ? <div className={fm.empty}>Sem dados no período.</div> : null}</div>
+  </section>
 
   return <div className={`mai-v3-area-page mai-v4-finance ${fm.page}`}>
     <div className={fm.top}>
-      <div className={fm.month}><button type="button" onClick={() => moveMonth(-1)} aria-label="Mês anterior">‹</button><button type="button" className={fm.label} aria-label="Voltar ao mês atual" title="Voltar ao mês atual" onClick={() => setMonth(today.slice(0, 7))}>{monthLabel(month)}</button><button type="button" onClick={() => moveMonth(1)} aria-label="Próximo mês">›</button></div>
-      <button type="button" className={fm.add} onClick={() => openNew(addTarget[tab].kind)}><MaiIcon name="add" size={18} />{addTarget[tab].label}</button>
+      <h1 className={fm.title}>Financeiro</h1>
+      {rangeMode ? <div className={fm.month}><span className={fm.label}>{periodRange}</span></div> : <div className={fm.month}><button type="button" onClick={() => moveMonth(-1)} aria-label="Mês anterior">‹</button><button type="button" className={fm.label} aria-label="Voltar ao mês atual" title="Voltar ao mês atual" onClick={() => setMonth(today.slice(0, 7))}>{monthLabel(month)}</button><button type="button" onClick={() => moveMonth(1)} aria-label="Próximo mês">›</button></div>}
     </div>
+
+    {!rangeMode ? <div className={fm.balance}>
+      <div><small>Saldo inicial</small><b>{money.format(initialBalance)}</b></div><i />
+      <div className={fm.balanceMain}><small>Saldo atual</small><strong data-negative={realBalance < 0}>{money.format(realBalance)}</strong></div><i />
+      <div className={fm.balanceEnd}><small>Saldo previsto</small><b>{money.format(projectedBalance)}</b></div>
+    </div> : null}
+
+    <div className={fm.summary}>
+      <div><span>Receitas</span><strong data-tone="in">{money.format(stripIncome)}</strong></div>
+      <div><span>Despesas</span><strong data-tone="neg">{money.format(stripExpense)}</strong></div>
+      <div><span>Cartões de crédito</span><strong data-tone="card">{money.format(stripInvoice)}</strong></div>
+      <div><span>Economia mensal</span><strong data-tone={stripSaving < 0 ? 'neg' : 'in'}>{signedMoney(stripSaving)} <small>{stripPercent > 0 ? '+' : ''}{stripPercent}%</small></strong></div>
+    </div>
+
     <div className={fm.tabs} role="tablist">{tabs.map(item => <button key={item.id} role="tab" aria-selected={tab === item.id} data-active={tab === item.id} onClick={() => setTab(item.id)}>{item.label}</button>)}</div>
 
-    {tab === 'overview' ? <>
-      <div className={fm.hero}><small>Saldo atual</small><strong data-negative={realBalance < 0}>{money.format(realBalance)}</strong><div className={fm.forecast}>Previsto até {monthLabel(month)} <b>{money.format(projectedBalance)}</b></div></div>
-      <div className={fm.summary}>
-        <div><span>Receitas</span><strong data-tone="in">{money.format(monthIncome)}</strong></div>
-        <div><span>Despesas</span><strong data-tone="out">{money.format(monthExpense)}</strong></div>
-        <div><span>Balanço</span><strong data-tone={monthResult < 0 ? 'neg' : monthResult > 0 ? 'in' : 'out'}>{signedMoney(monthResult)}</strong></div>
-      </div>
-      {upcoming.length ? <section className={fm.section}><div className={fm.sectionHead}><h2>A pagar</h2><small>{upcoming.length === 1 ? '1 pendente' : `${upcoming.length} próximos`}</small></div><div className={fm.list}>{upcoming.map(transactionRow)}</div></section> : null}
-      <section className={fm.section}><div className={fm.sectionHead}><h2>Patrimônio</h2></div>
-        <button type="button" className={fm.entity} onClick={() => setTab('boxes')}><MaiIcon name="savings" size={20} /><span className={fm.copy}><span className={fm.name}>Caixinhas</span><span className={fm.sub}>{boxes.length} {boxes.length === 1 ? 'caixinha' : 'caixinhas'}{totalBoxTarget ? ` · ${Math.round(totalBoxProgress)}% da meta` : ''}</span></span><span className={fm.amount}><b>{money.format(totalBoxes)}</b></span></button>
-        <button type="button" className={fm.entity} onClick={() => setTab('investments')}><MaiIcon name="trending_up" size={20} /><span className={fm.copy}><span className={fm.name}>Investimentos</span><span className={fm.sub}>{investments.length} {investments.length === 1 ? 'ativo' : 'ativos'}</span></span><span className={fm.amount}><b>{money.format(totalInvestmentValue)}</b>{totalInvested ? <small className={investmentResult >= 0 ? fm.pos : fm.neg}>{signedMoney(investmentResult)} · {investmentResultPercent.toFixed(1)}%</small> : null}</span></button>
-      </section>
-      <section className={fm.section}><div className={fm.sectionHead}><h2>{filtersActive ? 'Lançamentos filtrados' : 'Últimos lançamentos'}</h2><button type="button" onClick={() => setTab('transactions')}>Ver todos</button></div>
-        <div className={fm.list}>{recent.map(transactionRow)}{!recent.length ? <div className={fm.empty}>Nenhum lançamento em {monthLabel(month)}.</div> : null}</div></section>
+    {tab === 'transactions' ? <>
+      <div className={fm.listHead}><span>{filtered.length} {filtered.length === 1 ? 'lançamento' : 'lançamentos'} em {monthLabel(month).split(' de ')[0]}{showFilterNote ? ' · filtro ativo' : ''}</span><span>{pendingCount} {pendingCount === 1 ? 'pendente' : 'pendentes'}</span></div>
+      <div className={fm.list}>{filtered.map(transactionRow)}</div>
+      {!filtered.length ? <div className={fm.empty}>Nenhum lançamento encontrado.</div> : null}
+      {addRow('Adicionar lançamento', () => openNew('transaction'))}
     </> : null}
 
-    {tab === 'transactions' ? <section className={fm.section}>
-      <div className={fm.sectionHead}><h2>Lançamentos</h2><small>{filtered.length} {filtered.length === 1 ? 'item' : 'itens'}{showFilterNote ? ' · filtro ativo' : ''} · {signedMoney(filteredResult)}</small></div>
-      {grouped(filtered)}
-      {!filtered.length ? <div className={fm.empty}>Nenhum lançamento encontrado.</div> : null}
-    </section> : null}
+    {tab === 'accounts' ? <>
+      <div className={fm.listHead}><span>{accounts.length} {accounts.length === 1 ? 'conta' : 'contas'}</span><span>{money.format(realBalance)} no total</span></div>
+      <div className={fm.list}>{accounts.map(account => <div key={String(account.id)} className={fm.entityRow}><button type="button" className={fm.entity} onClick={() => openExisting('account', account)}><FinanceEntityIcon photo={String(account.foto || '')} icon="account_balance" color={String(account.cor || '#718269')} /><span className={fm.copy}><span className={fm.name}>{account.nome}</span><span className={fm.sub}>Saldo inicial {money.format(Number(account.saldo_inicial || 0))}</span></span><span className={fm.amount}><b>{money.format(accountBalance(account))}</b></span></button><button type="button" className={fm.rowAction} onClick={() => reconcile(account)}>Conciliar</button></div>)}</div>
+      {addRow('Adicionar conta', () => openNew('account'))}
+    </> : null}
 
-    {tab === 'accounts' ? <section className={fm.section}>
-      <div className={fm.sectionHead}><h2>Contas</h2><small>{money.format(realBalance)}</small></div>
-      {visibleAccounts.map(account => <div key={String(account.id)} className={fm.entityRow}><button type="button" className={fm.entity} onClick={() => openExisting('account', account)}><FinanceEntityIcon photo={String(account.foto || '')} icon="account_balance" color={String(account.cor || '#718269')} /><span className={fm.copy}><span className={fm.name}>{account.nome}</span><span className={fm.sub}>Saldo inicial {money.format(Number(account.saldo_inicial || 0))}</span></span><span className={fm.amount}><b>{money.format(accountBalance(account))}</b></span></button><button type="button" className={fm.rowAction} onClick={() => reconcile(account)}>Conciliar</button></div>)}
-      {!visibleAccounts.length ? <div className={fm.emptyCta}><strong>Nenhuma conta ainda</strong><span>Adicione suas contas para acompanhar o saldo real.</span><button type="button" onClick={() => openNew('account')}>Adicionar conta</button></div> : null}
-    </section> : null}
+    {tab === 'cards' ? <>
+      <div className={fm.listHead}><span>{cards.length} {cards.length === 1 ? 'cartão' : 'cartões'}</span><span>Faturas de {monthLabel(month).split(' de ')[0]} · {money.format(monthInvoice)}</span></div>
+      <div className={fm.list}>{cards.map(card => { const invoice = cardInvoice(card, monthItems); const limit = clampMoney(card.limite); const dueKey = monthDateForDay(month, Number(card.vencimento || 10)); return <div key={String(card.id)} className={fm.entityRow}><button type="button" className={fm.entity} onClick={() => openExisting('card', card)}><FinanceEntityIcon photo={String(card.foto || '')} icon="credit_card" color={String(card.cor || '#8a7d72')} /><span className={fm.copy}><span className={fm.name}>{card.nome}</span><span className={fm.subLine}><span className={fm.due} data-tone={dueTone(dueKey)}>{calIcon}Vence {naturalDate(dueKey, today)}</span>{limit ? <span>{money.format(Math.max(0, limit - invoice))} de limite disponível</span> : null}</span></span><span className={fm.amount}><b>{money.format(invoice)}</b></span></button><button type="button" className={fm.rowAction} onClick={() => adjustCardInvoice(card)}>Ajustar fatura</button></div> })}</div>
+      {addRow('Adicionar cartão', () => openNew('card'))}
+    </> : null}
 
-    {tab === 'cards' ? <section className={fm.section}>
-      <div className={fm.sectionHead}><h2>Cartões</h2><small>Faturas de {monthLabel(month)} · {money.format(monthInvoice)}</small></div>
-      {visibleCards.map(card => { const invoice = cardInvoice(card, monthItems); const limit = clampMoney(card.limite); const used = limit ? Math.min(100, invoice / limit * 100) : 0; return <div key={String(card.id)} className={fm.entityRow}><button type="button" className={fm.entity} onClick={() => openExisting('card', card)}><FinanceEntityIcon photo={String(card.foto || '')} icon="credit_card" color={String(card.cor || '#8a7d72')} /><span className={fm.copy}><span className={fm.name}>{card.nome}</span><span className={fm.sub}>Fecha dia {card.fechamento || '—'} · vence dia {card.vencimento || '—'}</span>{limit ? <span className={fm.bar} style={{ '--bar': card.cor || '#8a7d72' } as React.CSSProperties}><i style={{ width: `${used}%` }} /></span> : null}</span><span className={fm.amount}><b>{money.format(invoice)}</b><small>{money.format(Math.max(0, limit - invoice))} disponível</small></span></button><button type="button" className={fm.rowAction} onClick={() => adjustCardInvoice(card)}>Ajustar fatura</button></div> })}
-      {!visibleCards.length ? <div className={fm.emptyCta}><strong>Nenhum cartão ainda</strong><span>Acompanhe fatura, limite e vencimento.</span><button type="button" onClick={() => openNew('card')}>Adicionar cartão</button></div> : null}
-    </section> : null}
+    {tab === 'boxes' ? <>
+      <div className={fm.listHead}><span>{boxes.length} {boxes.length === 1 ? 'caixinha' : 'caixinhas'}</span><span>{money.format(totalBoxes)} guardados</span></div>
+      <div className={fm.list}>{boxes.map(box => { const target = clampMoney(box.meta); const current = clampMoney(box.saldo); const prazo = dateKey(box.prazo); return <div key={String(box.id)} className={fm.entityRow}><button type="button" className={fm.entity} onClick={() => openExisting('box', box)}><FinanceEntityIcon photo={String(box.foto || '')} icon={String(box.icone || 'savings')} color={String(box.cor || '#718269')} /><span className={fm.copy}><span className={fm.name}>{box.nome}</span><span className={fm.subLine}>{prazo ? <span className={fm.due} data-tone={dueTone(prazo)}>{calIcon}Até {naturalDate(prazo, today)}</span> : null}<span>{target ? `Meta ${money.format(target)}` : 'Sem meta definida'}</span></span></span><span className={fm.amount}><b>{money.format(current)}</b></span></button><button type="button" className={fm.rowAction} onClick={() => { openExisting('box', box); setTimeout(() => { const el = document.querySelector('.mai-finance-v4-drawer-box .mai-finance-v4-positive-action') as HTMLButtonElement | null; el?.focus() }, 0) }}>Guardar</button></div> })}</div>
+      {addRow('Adicionar caixinha', () => openNew('box'))}
+    </> : null}
 
-    {tab === 'boxes' ? <section className={fm.section}>
-      <div className={fm.sectionHead}><h2>Caixinhas</h2><small>{money.format(totalBoxes)} guardados</small></div>
-      {boxes.map(box => { const target = clampMoney(box.meta); const current = clampMoney(box.saldo); const progress = target ? Math.min(100, current / target * 100) : 0; return <div key={String(box.id)} className={fm.entityRow}><button type="button" className={fm.entity} onClick={() => openExisting('box', box)}><FinanceEntityIcon photo={String(box.foto || '')} icon={String(box.icone || 'savings')} color={String(box.cor || '#718269')} /><span className={fm.copy}><span className={fm.name}>{box.nome}</span><span className={fm.sub}>{target ? `${Math.round(progress)}% de ${money.format(target)}` : 'Sem meta definida'}{box.prazo ? ` · até ${naturalDate(dateKey(box.prazo), today)}` : ''}</span>{target ? <span className={fm.bar} style={{ '--bar': box.cor || '#718269' } as React.CSSProperties}><i style={{ width: `${progress}%` }} /></span> : null}</span><span className={fm.amount}><b>{money.format(current)}</b></span></button><button type="button" className={fm.rowAction} onClick={() => { openExisting('box', box); setTimeout(() => { const el = document.querySelector('.mai-finance-v4-drawer-box .mai-finance-v4-positive-action') as HTMLButtonElement | null; el?.focus() }, 0) }}>Guardar</button></div> })}
-      {!boxes.length ? <div className={fm.emptyCta}><strong>Crie sua primeira caixinha</strong><span>Carro, viagem, reserva ou qualquer objetivo.</span><button type="button" onClick={() => openNew('box')}>Criar caixinha</button></div> : null}
-    </section> : null}
-
-    {tab === 'investments' ? <section className={fm.section}>
-      <div className={fm.sectionHead}><h2>Investimentos</h2><small>{money.format(totalInvestmentValue)} · <span className={investmentResult >= 0 ? fm.pos : fm.neg}>{signedMoney(investmentResult)}</span></small></div>
-      {investments.map(item => { const gain = clampMoney(item.valor_atual) - clampMoney(item.aportado); const percent = clampMoney(item.aportado) ? gain / clampMoney(item.aportado) * 100 : 0; return <div key={String(item.id)} className={fm.entityRow}><button type="button" className={fm.entity} onClick={() => openExisting('investment', item)}><FinanceEntityIcon photo={String(item.foto || '')} icon={String(item.icone || 'trending_up')} color={String(item.cor || '#607d6b')} /><span className={fm.copy}><span className={fm.name}>{item.nome}</span><span className={fm.sub}>{item.tipo || 'Investimento'}{item.instituicao ? ` · ${item.instituicao}` : ''} · aportado {money.format(clampMoney(item.aportado))}</span></span><span className={fm.amount}><b>{money.format(clampMoney(item.valor_atual))}</b><small className={gain >= 0 ? fm.pos : fm.neg}>{signedMoney(gain)} · {percent.toFixed(1)}%</small></span></button><span /></div> })}
-      {!investments.length ? <div className={fm.emptyCta}><strong>Comece sua carteira</strong><span>Acompanhe aportes, valor atual e evolução.</span><button type="button" onClick={() => openNew('investment')}>Adicionar investimento</button></div> : null}
-    </section> : null}
+    {tab === 'investments' ? <>
+      <div className={fm.listHead}><span>{investments.length} {investments.length === 1 ? 'investimento' : 'investimentos'}</span><span>{money.format(totalInvestmentValue)} · <span className={investmentResult >= 0 ? fm.pos : fm.neg}>{signedMoney(investmentResult)}</span></span></div>
+      <div className={fm.list}>{investments.map(item => { const gain = clampMoney(item.valor_atual) - clampMoney(item.aportado); const percent = clampMoney(item.aportado) ? gain / clampMoney(item.aportado) * 100 : 0; return <div key={String(item.id)} className={fm.entityRow}><button type="button" className={fm.entity} onClick={() => openExisting('investment', item)}><FinanceEntityIcon photo={String(item.foto || '')} icon={String(item.icone || 'trending_up')} color={String(item.cor || '#607d6b')} /><span className={fm.copy}><span className={fm.name}>{item.nome}</span><span className={fm.subLine}><span className={gain >= 0 ? fm.pos : fm.neg}>{signedMoney(gain)} · {percent.toFixed(1).replace('.', ',')}%</span><span>Aplicado {money.format(clampMoney(item.aportado))}</span></span></span><span className={fm.amount}><b>{money.format(clampMoney(item.valor_atual))}</b></span></button><span /></div> })}</div>
+      {addRow('Adicionar investimento', () => openNew('investment'))}
+    </> : null}
 
     {tab === 'reports' ? <>
-      <section className={fm.section}><div className={fm.sectionHead}><h2>Despesas por categoria</h2><small>{money.format(filteredExpense)}{filtersActive ? ' · filtro ativo' : ''}</small></div>
-        {catReport.map(([name, value]) => <div className={fm.reportRow} key={name}><span>{name}</span><i><b style={{ width: `${filteredExpense ? value / filteredExpense * 100 : 0}%` }} /></i><strong>{money.format(value)}</strong></div>)}
-        {!catReport.length ? <div className={fm.empty}>Sem despesas em {monthLabel(month)}.</div> : null}
-      </section>
-      <section className={fm.section}><div className={fm.sectionHead}><h2>Resumo</h2><small>{monthLabel(month)}</small></div>
-        <div className={fm.kv}><span>Receitas</span><strong>{money.format(filteredIncome)}</strong></div>
-        <div className={fm.kv}><span>Despesas</span><strong>{money.format(filteredExpense)}</strong></div>
-        <div className={fm.kv}><span>Faturas de cartão</span><strong>{money.format(filteredInvoice)}</strong></div>
-        <div className={fm.kv}><span>Balanço</span><strong className={filteredResult < 0 ? fm.neg : ''}>{signedMoney(filteredResult)}</strong></div>
-      </section>
+      <div className={fm.periodBar}>
+        {period === 'custom' ? <span className={fm.customRange}>De <input type="month" value={customFrom} onChange={event => setCustomFrom(event.target.value)} /> Até <input type="month" value={customTo} onChange={event => setCustomTo(event.target.value)} /></span> : null}
+        <div className={fm.periodWrap}>
+          <button type="button" className={fm.periodChip} onClick={() => setPeriodMenu(open => !open)}>Período <b>{periodLabel}</b><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg></button>
+          {periodMenu ? <div className={fm.periodMenu}>{periodOptions.map(option => <button key={option.id} type="button" data-active={period === option.id} onClick={() => { setPeriod(option.id); setPeriodMenu(false) }}>{option.label}{period === option.id ? <span>✓</span> : null}</button>)}</div> : null}
+        </div>
+      </div>
+      {reportBlocks.map(barBlock)}
     </> : null}
 
     {draft ? <div className="mai-v3-create-layer" onMouseDown={closeDraft}><form className={`mai-v3-create-drawer mai-finance-v4-drawer mai-finance-v4-drawer-${kind}`} onSubmit={event => event.preventDefault()} onMouseDown={event => event.stopPropagation()}><header className="mai-v3-drawer-header"><div><small>{draft._persisted ? 'Editar' : 'Novo'}</small><strong>{kind === 'transaction' ? draft._persisted ? 'Editar lançamento' : 'Novo lançamento' : kind === 'account' ? draft._persisted ? 'Editar conta' : 'Nova conta' : kind === 'card' ? draft._persisted ? 'Editar cartão' : 'Novo cartão' : kind === 'box' ? draft._persisted ? 'Editar caixinha' : 'Nova caixinha' : draft._persisted ? 'Editar investimento' : 'Novo investimento'}</strong></div><button type="button" className="mai-v3-close" onClick={closeDraft}>×</button></header><div className="mai-v3-drawer-body mai-create-unified-body" onMouseDown={() => createTool && setCreateTool('')}>
