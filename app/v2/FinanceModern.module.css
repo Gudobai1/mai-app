@@ -139,7 +139,7 @@ button.balanceMain:hover { background: var(--ds-surface-hover); }
 .list { gap: 0; }
 .entityRow { padding: 12px 6px; border-radius: 0; background: transparent; box-shadow: none; border-bottom: 1px solid color-mix(in srgb, var(--ds-line) 70%, transparent); transition: background-color var(--ds-dur-fast) var(--ds-ease); }
 .entityRow:hover { background: color-mix(in srgb, var(--ds-surface) 55%, transparent); }
-.entityRow .entity { padding: 0; border-radius: 0; column-gap: 8px; grid-template-columns: 12px minmax(0, 1fr) auto; }
+.entityRow .entity { padding: 0; border-radius: 0; column-gap: 12px; grid-template-columns: 12px minmax(0, 1fr) auto; }
 .entityRow .entity .name { font-size: 15px; font-weight: var(--ds-fw-regular); }
 .entityRow .entity .sub, .entityRow .subLine { font-size: 12px; font-weight: var(--ds-fw-medium); color: var(--ds-muted); }
 .entityRow .entity .amount b { font-size: 14.5px; font-weight: var(--ds-fw-medium); }
