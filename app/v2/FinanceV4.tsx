@@ -5,10 +5,9 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import type { MaiState } from '../../lib/v2/state'
 import type { InspectableItem } from './ContextDrawer'
 import { CreateCalendarPicker, CreateNumberEditor, CreateOptionList, createNaturalDate } from './CreateDrawerTools'
-import { FinanceEntityIcon, FinanceEntityPhotoPicker } from './FinanceEntityPhoto'
 import { FinanceTransactionCard } from './FinanceTransactionCard'
 import { FinanceTransactionExtraTools } from './FinanceTransactionExtraTools'
-import { FinanceItemShell, SideField, SideRow } from './FinanceItemCard'
+import { FinanceItemShell, MonthStepper, SideField, SideRow } from './FinanceItemCard'
 import ic from './FinanceItemCard.module.css'
 import footerStyles from './shell/DraftFooter.module.css'
 import { parseNatural } from '../../lib/v2/nlp'
@@ -21,7 +20,8 @@ import { useQuickMenu, type QuickMenuConfig } from './shell/QuickMenu'
 import { addDays } from '../../lib/v2/planner'
 import { MAI_ENTITY_ICONS, MaiIcon } from './MaiIcons'
 import { useManualDraft } from './useManualDraft'
-import { askConfirm } from './shell/ConfirmDialog'
+import { askConfirm, askText, notify } from './shell/ConfirmDialog'
+import { financeTagSuggestions, parseFinanceTags } from '../../lib/v2/financeTags'
 import fm from './FinanceModern.module.css'
 
 type Row = Record<string, any>
@@ -159,6 +159,7 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
   const [quickAdding, setQuickAdding] = useState(false)
   const [redeem, setRedeem] = useState<{ amount: number; date: string; conta: string; junto: boolean } | null>(null)
   const [categoryDraftName, setCategoryDraftName] = useState('')
+  const [categoryDraftColor, setCategoryDraftColor] = useState('')
 
   const paidAmount = (item: Row) => paymentState(item).paid
   const paidAmountThrough = (item: Row, cutoffDate: string) => {
@@ -369,9 +370,10 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
     const name = categoryDraftName.trim()
     if (!name) return
     const existing = categories.find(item => String(item.nome || '').trim().toLocaleLowerCase('pt-BR') === name.toLocaleLowerCase('pt-BR'))
-    if (!existing) commit(current => ({ ...current, finance: { ...current.finance, categories: [...rows(current.finance.categories), { id: uid('cat'), nome: name, cor: categoryPalette[rows(current.finance.categories).length % categoryPalette.length] }] } }))
+    if (!existing) commit(current => ({ ...current, finance: { ...current.finance, categories: [...rows(current.finance.categories), { id: uid('cat'), nome: name, cor: categoryDraftColor || categoryPalette[rows(current.finance.categories).length % categoryPalette.length] }] } }))
     setDraft({ ...draft, categoria: existing ? String(existing.nome) : name })
     setCategoryDraftName('')
+    setCategoryDraftColor('')
     setCreateTool('')
   }
 
@@ -485,10 +487,10 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
     if (item.tipo === 'receita' && current.remaining > 0) {
       const full = await askConfirm({ title: 'Recebeu o valor todo?', message: `Valor a receber: ${money.format(current.remaining)}.`, confirmLabel: 'Sim, o valor todo', cancelLabel: 'Outro valor', icon: 'payments' })
       if (!full) {
-        const answer = prompt('Quanto foi recebido?', current.remaining.toFixed(2).replace('.', ','))
+        const answer = await askText({ title: 'Quanto foi recebido?', icon: 'payments', tone: 'default', confirmLabel: 'Confirmar', input: { kind: 'money', value: current.remaining.toFixed(2).replace('.', ',') } })
         if (answer === null) return
         const parsed = parseMoneyInput(answer)
-        if (!Number.isFinite(parsed) || parsed <= 0) { alert('Digite um valor válido.'); return }
+        if (!Number.isFinite(parsed) || parsed <= 0) { void notify('Digite um valor válido.'); return }
         amount = Math.min(parsed, current.remaining)
       }
     }
@@ -510,14 +512,13 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
     setDraft({ ...draft, status: 'pago', valor_pago: total, pagamentos: payments })
   }
 
-  function editFixedOccurrence(item = draft) {
+  async function editFixedOccurrence(item = draft) {
     if (!item) return
     const currentOccurrence = fixedForMonthAt(month).find(row => String(row.id) === String(item.id)) || item
-    const value = prompt('Valor somente deste mês:', String(currentOccurrence.valor || item.valor || 0)); if (value === null) return
+    const value = await askText({ title: 'Valor somente deste mês', icon: 'payments', tone: 'default', input: { kind: 'money', value: String(currentOccurrence.valor || item.valor || 0).replace('.', ',') } }); if (value === null) return
     const parsedValue = parseMoneyInput(value)
-    if (!Number.isFinite(parsedValue)) { alert('Digite um valor válido.'); return }
-    const date = prompt('Data somente deste mês (AAAA-MM-DD):', String(currentOccurrence.data || `${month}-${String(item.dia_mes || 1).padStart(2, '0')}`)); if (date === null) return
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || Number.isNaN(new Date(`${date}T12:00:00`).getTime())) { alert('Digite uma data válida no formato AAAA-MM-DD.'); return }
+    if (!Number.isFinite(parsedValue)) { void notify('Digite um valor válido.'); return }
+    const date = await askText({ title: 'Data somente deste mês', icon: 'calendar_today', tone: 'default', input: { kind: 'date', today, value: dateKey(currentOccurrence.data) || `${month}-${String(item.dia_mes || 1).padStart(2, '0')}` } }); if (date === null) return
     const currentPayments = cleanPayments(currentOccurrence.pagamentos, date)
     const paid = Math.min(parsedValue, currentPayments.reduce((sum, payment) => sum + clampMoney(payment.valor), 0))
     updateOccurrence({ ...item, occurrenceKey: `${item.id}|${month}` }, { valor_override: parsedValue, data_override: date, pagamentos: currentPayments, valor_pago: paid, status: parsedValue > 0 && paid >= parsedValue ? 'pago' : paid > 0 ? 'parcial' : 'pendente' })
@@ -527,16 +528,15 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
     updateOccurrence({ ...item, occurrenceKey: `${item.id}|${month}` }, { ignorado: true })
     if (draft && String(draft.id) === String(item.id)) setDraft(null)
   }
-  function addPayment() {
+  async function addPayment() {
     if (!draft || kind !== 'transaction') return
     const current = paymentState(draft)
     if (current.remaining <= 0) return
-    const answer = prompt(`Valor do pagamento (restante ${money.format(current.remaining)}):`, current.remaining.toFixed(2).replace('.', ',')); if (answer === null) return
+    const answer = await askText({ title: 'Valor do pagamento', message: `Restante ${money.format(current.remaining)}`, icon: 'payments', tone: 'default', input: { kind: 'money', value: current.remaining.toFixed(2).replace('.', ',') } }); if (answer === null) return
     const amount = parseMoneyInput(answer)
-    if (!Number.isFinite(amount) || amount <= 0) { alert('Digite um valor de pagamento válido.'); return }
-    if (amount - current.remaining > 0.005) { alert(`O pagamento não pode ser maior que o restante de ${money.format(current.remaining)}.`); return }
-    const paymentDate = prompt('Data do pagamento (AAAA-MM-DD):', today); if (paymentDate === null) return
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(paymentDate) || Number.isNaN(new Date(`${paymentDate}T12:00:00`).getTime())) { alert('Digite uma data válida no formato AAAA-MM-DD.'); return }
+    if (!Number.isFinite(amount) || amount <= 0) { void notify('Digite um valor de pagamento válido.'); return }
+    if (amount - current.remaining > 0.005) { void notify(`O pagamento não pode ser maior que o restante de ${money.format(current.remaining)}.`); return }
+    const paymentDate = await askText({ title: 'Data do pagamento', icon: 'calendar_today', tone: 'default', input: { kind: 'date', today, value: today } }); if (paymentDate === null) return
     const payments = [...current.payments, { id: uid('pay'), data: paymentDate, valor: amount, criado_em: new Date().toISOString() }]
     const next = paymentState({ ...draft, pagamentos: payments, valor_pago: 0, status: 'pendente' }, payments)
     setDraft({ ...draft, pagamentos: next.payments, valor_pago: next.paid, status: next.status })
@@ -554,12 +554,12 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
     commit(current => ({ ...current, finance: { ...current.finance, fixed: rows(current.finance.fixed).filter(item => String(item.id) !== String(draft.id)), fixedOccurrences: rows(current.finance.fixedOccurrences).filter(item => String(item.fixo_id) !== String(draft.id)), transactions: [...rows(current.finance.transactions).filter(item => String(item.id) !== String(draft.id) && String(item.lote_id || '') !== lot), ...generated] } }))
     setDraft({ ...generated[0], _persisted: true })
   }
-  function reconcile(account: Row) {
+  async function reconcile(account: Row) {
     const currentBalance = accountBalance(account)
-    const answer = prompt(`Saldo real de “${account.nome}”:`, currentBalance.toFixed(2).replace('.', ','))
+    const answer = await askText({ title: `Saldo real de ${String(account.nome || 'conta')}`, icon: 'account_balance', tone: 'default', input: { kind: 'money', value: currentBalance.toFixed(2).replace('.', ',') } })
     if (answer === null) return
     const targetBalance = parseSignedMoneyInput(answer)
-    if (!Number.isFinite(targetBalance)) { alert('Digite um saldo válido.'); return }
+    if (!Number.isFinite(targetBalance)) { void notify('Digite um saldo válido.'); return }
     const diff = targetBalance - currentBalance
     if (Math.abs(diff) < 0.01) return
     commit(current => ({ ...current, finance: { ...current.finance, transactions: [{ id: uid('fin'), titulo: 'Ajuste de saldo', valor: Math.abs(diff), valor_pago: Math.abs(diff), tipo: diff >= 0 ? 'receita' : 'despesa', categoria: 'Ajuste', conta_id: account.id, cartao_id: '', data: today, status: 'pago', observacao: 'Conciliação bancária', pagamentos: [{ id: uid('pay'), data: today, valor: Math.abs(diff) }], anexos: [], ignorar_calculo: false, recorrencia: 'unico' }, ...rows(current.finance.transactions)] } }))
@@ -584,16 +584,16 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
     })
     setDraft(null)
   }
-  function moveBoxValue(direction: 'in' | 'out') {
+  async function moveBoxValue(direction: 'in' | 'out') {
     if (!draft || kind !== 'box') return
-    const answer = prompt(direction === 'in' ? 'Quanto deseja guardar?' : 'Quanto deseja retirar?', '0'); if (answer === null) return
+    const answer = await askText({ title: direction === 'in' ? 'Quanto deseja guardar?' : 'Quanto deseja retirar?', icon: 'savings', tone: 'default', input: { kind: 'money', value: '' } }); if (answer === null) return
     const value = parseMoneyInput(answer); if (!Number.isFinite(value) || !value) return
     const nextBalance = direction === 'in' ? clampMoney(draft.saldo) + value : Math.max(0, clampMoney(draft.saldo) - value)
     setDraft({ ...draft, saldo: nextBalance, movimentos: [{ id: uid('mov'), data: new Date().toISOString(), tipo: direction === 'in' ? 'entrada' : 'retirada', valor: value }, ...rows(draft.movimentos)] })
   }
-  function moveInvestmentValue(direction: 'in' | 'out') {
+  async function moveInvestmentValue(direction: 'in' | 'out') {
     if (!draft || kind !== 'investment') return
-    const answer = prompt(direction === 'in' ? 'Valor do aporte:' : 'Valor do resgate:', '0'); if (answer === null) return
+    const answer = await askText({ title: direction === 'in' ? 'Valor do aporte' : 'Valor do resgate', icon: 'trending_up', tone: 'default', input: { kind: 'money', value: '' } }); if (answer === null) return
     const value = parseMoneyInput(answer); if (!Number.isFinite(value) || !value) return
     const apportioned = direction === 'in' ? clampMoney(draft.aportado) + value : Math.max(0, clampMoney(draft.aportado) - value)
     const currentValue = direction === 'in' ? clampMoney(draft.valor_atual) + value : Math.max(0, clampMoney(draft.valor_atual) - value)
@@ -724,13 +724,26 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
       ],
     }
   }
+  function entityMenu(type: Exclude<DraftKind, 'transaction'>, item: Row): QuickMenuConfig {
+    const key = type === 'account' ? 'accounts' : type === 'card' ? 'cards' : type === 'box' ? 'boxes' : 'investments'
+    const name = String(item.nome || 'Registro')
+    return {
+      title: name,
+      groups: [{ options: [
+        { label: 'Abrir detalhes', icon: 'open_in_full', onSelect: () => openExisting(type, item) },
+        { label: 'Excluir', icon: 'delete', tone: 'danger', onSelect: async () => {
+          if (!(await askConfirm({ title: 'Excluir registro?', message: `“${name}” será excluído. Não dá para desfazer.` }))) return
+          commit(current => ({ ...current, finance: { ...current.finance, [key]: rows((current.finance as Row)[key]).filter(row => String(row.id) !== String(item.id)) } }))
+        } },
+      ] }],
+    }
+  }
   const transactionRow = (item: Row) => <div key={`${item._isFixed ? 'fix' : 'tx'}-${String(item.id)}`} {...quick.bind(() => financeMenu(item))}><FinanceTransactionCard
     item={item}
     accounts={accounts}
     cards={cards}
     today={today}
     compact
-    color={categoryColor(item)}
     onOpen={() => openTransaction(item)}
     onTogglePaid={() => togglePaid(item)}
   /></div>
@@ -752,7 +765,7 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
     <div className={fm.barList}>{block.slices.map(slice => { const percent = block.total ? slice.value / block.total * 100 : 0; return <div className={fm.barRow} key={slice.name}><div className={fm.barTop}><span className={fm.barName}>{slice.name}</span><span className={fm.barPct}>{percent.toFixed(1).replace('.', ',')}%</span><span className={fm.barValue} data-tone={block.tone}>{money.format(slice.value)}</span></div><div className={fm.barTrack}><div style={{ width: `${percent}%`, background: slice.color }} /></div></div> })}{!block.slices.length ? <div className={fm.empty}>Sem dados no período.</div> : null}</div>
   </section>
 
-  return <div className={`mai-v3-area-page mai-v4-finance ${fm.page}`}>
+  return <div className={`mai-v3-area-page mai-v4-finance ${fm.page}`} onContextMenu={event => { const target = event.target as HTMLElement; if (!target.closest('input, textarea')) event.preventDefault() }}>
     <div className={fm.top}>
       <h1 className={fm.title}>Financeiro</h1>
       <div className={fm.topRight}>
@@ -785,31 +798,31 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
 
     {tab === 'accounts' ? <>
       <div className={fm.listHead}><span>{accounts.length} {accounts.length === 1 ? 'conta' : 'contas'}</span><span>{money.format(realBalance)} no total</span></div>
-      <div className={fm.list}>{accounts.map(account => <div key={String(account.id)} className={fm.entityRow}><button type="button" className={fm.entity} onClick={() => openExisting('account', account)}><FinanceEntityIcon photo={String(account.foto || '')} icon="account_balance" color={String(account.cor || '#4073FF')} /><span className={fm.copy}><span className={fm.name}>{account.nome}</span><span className={fm.sub}>Saldo inicial {money.format(Number(account.saldo_inicial || 0))}</span></span><span className={fm.amount}><b>{money.format(accountBalance(account))}</b></span></button></div>)}</div>
+      <div className={fm.list}>{accounts.map(account => <div key={String(account.id)} className={fm.entityRow} {...quick.bind(() => entityMenu('account', account))}><button type="button" className={fm.entity} onClick={() => openExisting('account', account)}><i className={fm.ring} style={{ '--ring': String(account.cor || 'var(--ds-accent)') } as React.CSSProperties} /><span className={fm.copy}><span className={fm.name}>{account.nome}</span><span className={fm.sub}>Saldo inicial {money.format(Number(account.saldo_inicial || 0))}</span></span><span className={fm.amount}><b>{money.format(accountBalance(account))}</b></span></button></div>)}</div>
       {addRow('Adicionar conta', () => openNew('account'))}
     </> : null}
 
     {tab === 'cards' ? <>
       <div className={fm.listHead}><span>{cards.length} {cards.length === 1 ? 'cartão' : 'cartões'}</span><span>Faturas de {monthLabel(month).split(' de ')[0]} · {money.format(monthInvoice)}</span></div>
-      <div className={fm.list}>{cards.map(card => { const invoice = cardInvoice(card, monthItems); const limit = clampMoney(card.limite); const dueKey = monthDateForDay(month, Number(card.vencimento || 10)); return <div key={String(card.id)} className={fm.entityRow}><button type="button" className={fm.entity} onClick={() => openExisting('card', card)}><FinanceEntityIcon photo={String(card.foto || '')} icon="credit_card" color={String(card.cor || '#4073FF')} /><span className={fm.copy}><span className={fm.name}>{card.nome}</span><span className={fm.subLine}><span className={fm.due} data-tone={dueTone(dueKey)}>{calIcon}Vence {naturalDate(dueKey, today)}</span>{limit ? <span>{money.format(Math.max(0, limit - invoice))} de limite disponível</span> : null}</span></span><span className={fm.amount}><b>{money.format(invoice)}</b></span></button></div> })}</div>
+      <div className={fm.list}>{cards.map(card => { const invoice = cardInvoice(card, monthItems); const limit = clampMoney(card.limite); const dueKey = monthDateForDay(month, Number(card.vencimento || 10)); return <div key={String(card.id)} className={fm.entityRow} {...quick.bind(() => entityMenu('card', card))}><button type="button" className={fm.entity} onClick={() => openExisting('card', card)}><i className={fm.ring} style={{ '--ring': String(card.cor || 'var(--ds-accent)') } as React.CSSProperties} /><span className={fm.copy}><span className={fm.name}>{card.nome}</span><span className={fm.subLine}><span className={fm.due} data-tone={dueTone(dueKey)}>{calIcon}Vence {naturalDate(dueKey, today)}</span>{limit ? <span>{money.format(Math.max(0, limit - invoice))} de limite disponível</span> : null}</span></span><span className={fm.amount}><b>{money.format(invoice)}</b></span></button></div> })}</div>
       {addRow('Adicionar cartão', () => openNew('card'))}
     </> : null}
 
     {tab === 'boxes' ? <>
       <div className={fm.listHead}><span>{boxes.length} {boxes.length === 1 ? 'caixinha' : 'caixinhas'}</span><span>{money.format(totalBoxes)} guardados</span></div>
-      <div className={fm.list}>{boxes.map(box => { const target = clampMoney(box.meta); const current = clampMoney(box.saldo); const prazo = dateKey(box.prazo); return <div key={String(box.id)} className={fm.entityRow}><button type="button" className={fm.entity} onClick={() => openExisting('box', box)}><FinanceEntityIcon photo={String(box.foto || '')} icon={String(box.icone || 'savings')} color={String(box.cor || '#4073FF')} /><span className={fm.copy}><span className={fm.name}>{box.nome}</span><span className={fm.subLine}>{prazo ? <span className={fm.due} data-tone={dueTone(prazo)}>{calIcon}Até {naturalDate(prazo, today)}</span> : null}<span>{target ? `Meta ${money.format(target)}` : 'Sem meta definida'}</span></span></span><span className={fm.amount}><b>{money.format(current)}</b></span></button></div> })}</div>
+      <div className={fm.list}>{boxes.map(box => { const target = clampMoney(box.meta); const current = clampMoney(box.saldo); const prazo = dateKey(box.prazo); return <div key={String(box.id)} className={fm.entityRow} {...quick.bind(() => entityMenu('box', box))}><button type="button" className={fm.entity} onClick={() => openExisting('box', box)}><i className={fm.ring} style={{ '--ring': String(box.cor || 'var(--ds-accent)') } as React.CSSProperties} /><span className={fm.copy}><span className={fm.name}>{box.nome}</span><span className={fm.subLine}>{prazo ? <span className={fm.due} data-tone={dueTone(prazo)}>{calIcon}Até {naturalDate(prazo, today)}</span> : null}<span>{target ? `Meta ${money.format(target)}` : 'Sem meta definida'}</span></span></span><span className={fm.amount}><b>{money.format(current)}</b></span></button></div> })}</div>
       {addRow('Adicionar caixinha', () => openNew('box'))}
     </> : null}
 
     {tab === 'investments' ? <>
       <div className={fm.listHead}><span>{investments.length} {investments.length === 1 ? 'investimento' : 'investimentos'}</span><span>{money.format(totalInvestmentValue)} · <span className={investmentResult >= 0 ? fm.pos : fm.neg}>{signedMoney(investmentResult)}</span></span></div>
-      <div className={fm.list}>{investments.map(item => { const gain = clampMoney(item.valor_atual) - clampMoney(item.aportado); const percent = clampMoney(item.aportado) ? gain / clampMoney(item.aportado) * 100 : 0; return <div key={String(item.id)} className={fm.entityRow}><button type="button" className={fm.entity} onClick={() => openExisting('investment', item)}><FinanceEntityIcon photo={String(item.foto || '')} icon={String(item.icone || 'trending_up')} color={String(item.cor || '#4073FF')} /><span className={fm.copy}><span className={fm.name}>{item.nome}</span><span className={fm.subLine}><span className={gain >= 0 ? fm.pos : fm.neg}>{signedMoney(gain)} · {percent.toFixed(1).replace('.', ',')}%</span><span>Aplicado {money.format(clampMoney(item.aportado))}</span></span></span><span className={fm.amount}><b>{money.format(clampMoney(item.valor_atual))}</b></span></button></div> })}</div>
+      <div className={fm.list}>{investments.map(item => { const gain = clampMoney(item.valor_atual) - clampMoney(item.aportado); const percent = clampMoney(item.aportado) ? gain / clampMoney(item.aportado) * 100 : 0; return <div key={String(item.id)} className={fm.entityRow} {...quick.bind(() => entityMenu('investment', item))}><button type="button" className={fm.entity} onClick={() => openExisting('investment', item)}><i className={fm.ring} style={{ '--ring': String(item.cor || 'var(--ds-accent)') } as React.CSSProperties} /><span className={fm.copy}><span className={fm.name}>{item.nome}</span><span className={fm.subLine}><span className={gain >= 0 ? fm.pos : fm.neg}>{signedMoney(gain)} · {percent.toFixed(1).replace('.', ',')}%</span><span>Aplicado {money.format(clampMoney(item.aportado))}</span></span></span><span className={fm.amount}><b>{money.format(clampMoney(item.valor_atual))}</b></span></button></div> })}</div>
       {addRow('Adicionar investimento', () => openNew('investment'))}
     </> : null}
 
     {tab === 'reports' ? <>
       <div className={fm.periodBar}>
-        {period === 'custom' ? <span className={fm.customRange}>De <input type="month" value={customFrom} onChange={event => setCustomFrom(event.target.value)} /> Até <input type="month" value={customTo} onChange={event => setCustomTo(event.target.value)} /></span> : null}
+        {period === 'custom' ? <span className={fm.customRange}>De <MonthStepper value={customFrom} onChange={setCustomFrom} /> Até <MonthStepper value={customTo} onChange={setCustomTo} /></span> : null}
         <div className={fm.periodWrap}>
           <button type="button" className={fm.periodChip} onClick={() => setPeriodMenu(open => !open)}>Período <b>{periodLabel}</b><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg></button>
           {periodMenu ? <div className={fm.periodMenu}>{periodOptions.map(option => <button key={option.id} type="button" data-active={period === option.id} onClick={() => { setPeriod(option.id); setPeriodMenu(false) }}>{option.label}{period === option.id ? <span>✓</span> : null}</button>)}</div> : null}
@@ -830,18 +843,29 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
       const cardTx = kind === 'card' ? monthItems.filter(item => !item.ajuste_fatura && item.tipo !== 'receita' && (String(item.conta_id || '') === `card|${draftId}` || String(item.cartao_id || '') === draftId)).sort((x, y) => String(x.data).localeCompare(String(y.data))) : []
       const history = kind === 'transaction' && draft._persisted ? [...transactions.filter(item => String(item.id) !== draftId && String(item.titulo || '').replace(/\s+\(\d+\/\d+\)$/, '') === String(draft.titulo || '').replace(/\s+\(\d+\/\d+\)$/, '')), ...(draft._isFixed ? [-1, -2, -3].flatMap(delta => { const rule = fixed.find(item => String(item.id) === draftId); const entry = rule ? fixedRuleAtMonth(rule, shiftMonth(month, delta)) : null; return entry ? [entry] : [] }) : [])].sort((x, y) => String(y.data).localeCompare(String(x.data))).slice(0, 6) : []
       const dueLabel = (key: string) => naturalDate(key, today)
+      const tagCtx = { categories, accounts, cards }
+      const tagResult = kind === 'transaction' ? parseFinanceTags(String(draft.titulo || ''), tagCtx) : null
       const nlResult = kind === 'transaction' ? parseNatural(String(draft.titulo || ''), { today, kinds: ['date', 'amount', 'repeat'] }) : null
+      const titleWords = String(draft.titulo || '').split(/\s+/)
+      const lastWord = titleWords[titleWords.length - 1] || ''
+      const tagHints = kind === 'transaction' && /^[#@!]/.test(lastWord) ? financeTagSuggestions(lastWord, tagCtx) : []
       const applyNl = () => {
-        if (!nlResult || !nlResult.tokens.length) return
+        if (!nlResult || !tagResult || (!nlResult.tokens.length && !tagResult.tokens.length)) return
+        const tags = parseFinanceTags(nlResult.title, tagCtx)
         const date = nlResult.date || dateKey(draft.data)
         const monthly = nlResult.repeat === 'mensalmente'
-        setDraft({ ...draft, titulo: nlResult.title, data: date, dia_mes: Number(date.slice(8)) || draft.dia_mes, mes_inicio: draft.mes_inicio || date.slice(0, 7), valor: nlResult.amount ?? draft.valor, ...(monthly ? { recorrencia: 'fixo', _isFixed: true } : {}) })
+        const newCategory = tags.category && tags.categoryIsNew && !categories.some(item => String(item.nome).toLocaleLowerCase('pt-BR') === tags.category!.toLocaleLowerCase('pt-BR')) ? tags.category : ''
+        if (newCategory) {
+          const color = categoryPalette[categories.length % categoryPalette.length]
+          commit(current => ({ ...current, finance: { ...current.finance, categories: [...rows(current.finance.categories), { id: uid('cat'), nome: newCategory, cor: color }] } }))
+        }
+        setDraft({ ...draft, titulo: tags.title, data: date, ...(tags.category ? { categoria: tags.category } : {}), ...(tags.origin ? { conta_id: tags.origin } : {}), ...(tags.type ? { tipo: tags.type } : {}), dia_mes: Number(date.slice(8)) || draft.dia_mes, mes_inicio: draft.mes_inicio || date.slice(0, 7), valor: nlResult.amount ?? draft.valor, ...(monthly ? { recorrencia: 'fixo', _isFixed: true } : {}) })
       }
-      const mirror = (() => { const text = String(draft.titulo || ''); const parts: ReactNode[] = []; let cursor = 0; (nlResult?.tokens || []).forEach((token, index) => { parts.push(<span key={`p${index}`}>{text.slice(cursor, token.start)}</span>, <mark key={`m${index}`}>{text.slice(token.start, token.end)}</mark>); cursor = token.end }); parts.push(<span key="end">{text.slice(cursor)}</span>); return parts })()
-      const title = kind === 'transaction' ? <div className={ic.titleWrap}><div className={ic.mirror} aria-hidden="true">{mirror}</div><input className={ic.title} autoFocus value={draft.titulo || ''} placeholder="Ex.: Aluguel dia 5 R$ 1800 todo mês" onChange={event => setDraft({ ...draft, titulo: event.target.value })} onBlur={applyNl} onKeyDown={event => { if (event.key === 'Enter') { event.preventDefault(); applyNl() } }} /></div> : <input className={ic.title} autoFocus value={draft.nome || ''} placeholder={kind === 'account' ? 'Nome da conta' : kind === 'card' ? 'Nome do cartão' : kind === 'box' ? 'Ex.: Meu carro' : 'Ex.: ETFs globais'} onChange={event => setDraft({ ...draft, nome: event.target.value })} />
-      const photo = kind === 'transaction' ? null : <FinanceEntityPhotoPicker value={String(draft.foto || '')} fallbackIcon={kind === 'account' ? 'account_balance' : kind === 'card' ? 'credit_card' : String(draft.icone || (kind === 'box' ? 'savings' : 'trending_up'))} color={String(draft.cor || '#4073FF')} onChange={foto => setDraft({ ...draft, foto })} />
-      const iconPicker = kind === 'box' || kind === 'investment' ? <div className="mai-finance-v4-icon-picker">{financeIcons.map(icon => <button key={icon} type="button" data-active={!draft.foto && draft.icone === icon} onClick={() => setDraft({ ...draft, icone: icon, foto: '' })}><MaiIcon name={icon} size={19} /></button>)}</div> : null
-      const accountOptions = <><option value="">Nenhuma</option>{accounts.map(account => <option key={String(account.id)} value={String(account.id)}>{String(account.nome || 'Conta')}</option>)}</>
+      const mirror = (() => { const text = String(draft.titulo || ''); const parts: ReactNode[] = []; let cursor = 0; [...(nlResult?.tokens || []), ...(tagResult?.tokens || [])].sort((a, b) => a.start - b.start).filter((token, index, list) => !index || token.start >= list[index - 1].end).forEach((token, index) => { parts.push(<span key={`p${index}`}>{text.slice(cursor, token.start)}</span>, <mark key={`m${index}`}>{text.slice(token.start, token.end)}</mark>); cursor = token.end }); parts.push(<span key="end">{text.slice(cursor)}</span>); return parts })()
+      const title = kind === 'transaction' ? <><div className={ic.titleWrap}><div className={ic.mirror} aria-hidden="true">{mirror}</div><input className={ic.title} autoFocus value={draft.titulo || ''} placeholder="Ex.: Aluguel dia 5 R$ 1800 todo mês" onChange={event => setDraft({ ...draft, titulo: event.target.value })} onBlur={applyNl} onKeyDown={event => { if (event.key === 'Enter') { event.preventDefault(); if (tagHints.length) setDraft({ ...draft, titulo: `${String(draft.titulo || '').slice(0, String(draft.titulo || '').length - lastWord.length)}${tagHints[0].insert} ` }); else applyNl() } }} /></div>{tagHints.length ? <div className={ic.hints}>{tagHints.map(hint => <button key={hint.label} type="button" onMouseDown={event => event.preventDefault()} onClick={() => setDraft({ ...draft, titulo: `${String(draft.titulo || '').slice(0, String(draft.titulo || '').length - lastWord.length)}${hint.insert} ` })}><i style={{ color: hint.color }}><MaiIcon name={hint.icon} size={14} /></i>{hint.label}</button>)}</div> : null}</> : <input className={ic.title} autoFocus value={draft.nome || ''} placeholder={kind === 'account' ? 'Nome da conta' : kind === 'card' ? 'Nome do cartão' : kind === 'box' ? 'Ex.: Meu carro' : 'Ex.: ETFs globais'} onChange={event => setDraft({ ...draft, nome: event.target.value })} />
+      const accountChoices = [{ value: '', label: 'Nenhuma', icon: 'remove_circle' }, ...accounts.map(account => ({ value: String(account.id), label: String(account.nome || 'Conta'), icon: 'account_balance' }))]
+      const pickRow = (id: string, icon: string, color: string, label: string, value: string, options: { value: string; label: string; icon: string }[], onChange: (value: string) => void) => <SideRow id={id} icon={icon} color={color} label={label} summary={options.find(option => option.value === value)?.label || options[0]?.label || ''} open={createTool} setOpen={setCreateTool}><CreateOptionList value={value} onChange={next => onChange(String(next))} close={() => setCreateTool('')} options={options} /></SideRow>
+      const dateRow = (id: string, label: string, value: string, onChange: (value: string) => void) => <SideRow id={id} icon="calendar_today" color="var(--ds-sky-fg)" label={label} summary={value ? createNaturalDate(value, today) : 'Sem data'} open={createTool} setOpen={setCreateTool}><CreateCalendarPicker value={value} today={today} onChange={next => onChange(next)} close={() => setCreateTool('')} /></SideRow>
       const colorRow = <SideField label="Cor" icon="palette" color="var(--ds-lilac-fg)"><ColorField value={draft.cor || '#4073FF'} onChange={color => setDraft({ ...draft, cor: color })} /></SideField>
       const fieldIcons: Record<string, [string, string]> = { 'Saldo inicial': ['account_balance', 'var(--ds-muted)'], 'Limite total': ['credit_card', 'var(--ds-sky-fg)'], 'Fechamento (dia)': ['event', 'var(--ds-peach-fg)'], 'Vencimento (dia)': ['event_available', 'var(--ds-danger)'], Meta: ['flag', 'var(--ds-success)'], Aplicado: ['savings', 'var(--ds-success)'], 'Valor atual': ['payments', 'var(--ds-success)'] }
       const numberField = (label: string, key: string, step = '0.01') => <SideField label={label} icon={fieldIcons[label]?.[0]} color={fieldIcons[label]?.[1]}><input type="number" step={step} value={draft[key] || 0} onChange={event => setDraft({ ...draft, [key]: Number(event.target.value) })} /></SideField>
@@ -865,8 +889,6 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
           {kind === 'box' ? <><button type="button" data-primary="true" onClick={() => moveBoxValue('in')}>Guardar</button><button type="button" onClick={() => moveBoxValue('out')}>Retirar</button></> : null}
           {kind === 'investment' ? <><button type="button" data-primary="true" onClick={() => moveInvestmentValue('in')}>Aportar</button><button type="button" onClick={() => setRedeem({ amount: clampMoney(draft.valor_atual), date: today, conta: '', junto: true })}>Resgatar</button></> : null}
         </div> : null}
-        {photo}
-        {iconPicker}
         {kind === 'account' ? listSection('Lançamentos', accountTx.length, accountTx.map(txLine), 'Nenhum lançamento nesta conta.') : null}
         {kind === 'card' ? listSection('Lançamentos da fatura', cardTx.length, cardTx.map(txLine), 'Nenhuma compra na fatura deste mês.') : null}
         {kind === 'box' ? listSection('Lançamentos', rows(draft.movimentos).length, rows(draft.movimentos).map(mov => moveLine(mov, mov.tipo === 'entrada')), 'Nenhuma movimentação ainda.') : null}
@@ -877,16 +899,16 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
       const side = kind === 'transaction' ? <>
         <SideRow id="finance-date" icon="calendar_today" color="var(--ds-sky-fg)" label="Data" summary={createNaturalDate(dateKey(draft.data), today)} open={createTool} setOpen={setCreateTool}><CreateCalendarPicker value={dateKey(draft.data)} today={today} onChange={value => setDraft({ ...draft, data: value, dia_mes: Number(value.slice(8)), mes_inicio: draft.mes_inicio || value.slice(0, 7) })} close={() => setCreateTool('')} /></SideRow>
         <SideRow id="finance-value" icon="payments" color="var(--ds-success)" label="Valor" summary={money.format(clampMoney(draft.valor))} open={createTool} setOpen={setCreateTool}><CreateNumberEditor value={clampMoney(draft.valor)} onChange={value => { const nextPayments = cleanPayments(draft.pagamentos, dateKey(draft.data)); const paid = Math.min(value, nextPayments.reduce((sum, payment) => sum + clampMoney(payment.valor), 0)); setDraft({ ...draft, valor: value, valor_pago: paid, status: value > 0 && paid >= value ? 'pago' : paid > 0 ? 'parcial' : 'pendente' }) }} /></SideRow>
-        <SideRow id="finance-category" icon="sell" color="var(--ds-peach-fg)" label="Categoria" summary={String(draft.categoria || 'Não selecionado')} open={createTool} setOpen={setCreateTool}><div className="mai-finance-v4-category-picker"><CreateOptionList value={String(draft.categoria || '')} onChange={value => setDraft({ ...draft, categoria: value })} close={() => setCreateTool('')} options={[{ value: '', label: 'Sem categoria', icon: 'remove_circle' }, ...categories.map(category => ({ value: String(category.nome), label: String(category.nome), icon: 'sell' }))]} /><div className="mai-finance-v4-category-create"><input value={categoryDraftName} onChange={event => setCategoryDraftName(event.target.value)} onKeyDown={event => { if (event.key === 'Enter') { event.preventDefault(); addCategoryFromLaunch() } }} placeholder="Nova categoria" /><button type="button" onClick={addCategoryFromLaunch}>Adicionar</button></div></div></SideRow>
+        <SideRow id="finance-category" icon="sell" color="var(--ds-peach-fg)" label="Categoria" summary={String(draft.categoria || 'Não selecionado')} open={createTool} setOpen={setCreateTool}><div className="mai-finance-v4-category-picker"><CreateOptionList value={String(draft.categoria || '')} onChange={value => setDraft({ ...draft, categoria: value })} close={() => setCreateTool('')} options={[{ value: '', label: 'Sem categoria', icon: 'remove_circle' }, ...categories.map(category => ({ value: String(category.nome), label: String(category.nome), icon: 'sell' }))]} /><div className="mai-finance-v4-category-create"><input value={categoryDraftName} onChange={event => setCategoryDraftName(event.target.value)} onKeyDown={event => { if (event.key === 'Enter') { event.preventDefault(); addCategoryFromLaunch() } }} placeholder="Nova categoria" /><button type="button" onClick={addCategoryFromLaunch}>Adicionar</button></div><div className={ic.swatches}>{categoryPalette.map(color => <button key={color} type="button" aria-label="Cor da categoria" data-active={(categoryDraftColor || categoryPalette[categories.length % categoryPalette.length]) === color || undefined} style={{ background: color }} onClick={() => setCategoryDraftColor(color)} />)}</div></div></SideRow>
         <SideRow id="finance-account" icon="account_balance_wallet" color="var(--ds-muted)" label="Pagamento" summary={accountSummary} open={createTool} setOpen={setCreateTool}><CreateOptionList value={String(draft.conta_id || '')} onChange={value => setDraft({ ...draft, conta_id: value })} close={() => setCreateTool('')} options={[{ value: '', label: 'Sem origem', icon: 'remove_circle' }, ...accounts.map(account => ({ value: String(account.id), label: String(account.nome || 'Conta'), icon: 'account_balance' })), ...cards.map(card => ({ value: `card|${String(card.id)}`, label: String(card.nome || 'Cartão'), icon: 'credit_card' }))]} /></SideRow>
         <SideRow id="finance-type" icon={draft.tipo === 'receita' ? 'arrow_downward' : 'arrow_upward'} color={draft.tipo === 'receita' ? 'var(--ds-success)' : 'var(--ds-danger)'} label="Tipo" summary={draft.tipo === 'receita' ? 'Receita' : 'Despesa'} open={createTool} setOpen={setCreateTool}><CreateOptionList value={String(draft.tipo || 'despesa')} onChange={value => setDraft({ ...draft, tipo: value })} close={() => setCreateTool('')} options={[{ value: 'despesa', label: 'Despesa', icon: 'arrow_upward' }, { value: 'receita', label: 'Receita', icon: 'arrow_downward' }]} /></SideRow>
         <FinanceTransactionExtraTools asRows draft={draft} setDraft={setDraft} today={today} month={month} open={createTool} setOpen={setCreateTool} draftPayment={draftPayment} addPayment={addPayment} removePayment={removePayment} generateInstallments={generateInstallments} editFixedOccurrence={() => editFixedOccurrence(draft)} ignoreFixed={() => ignoreFixed(draft)} />
         <SideRow id="finance-status" icon="task_alt" color="var(--ds-sky-fg)" label="Status" summary={statusLabel(draft.status)} open={createTool} setOpen={setCreateTool}><CreateOptionList value={draft.status === 'pago' ? 'pago' : 'pendente'} onChange={value => setDraftPaymentStatus(String(value))} close={() => setCreateTool('')} options={[{ value: 'pendente', label: 'Pendente / zerar pagamentos', icon: 'schedule' }, { value: 'pago', label: 'Pago integralmente', icon: 'check_circle' }]} /></SideRow>
       </>
       : kind === 'account' ? <>{numberField('Saldo inicial', 'saldo_inicial')}{colorRow}</>
-      : kind === 'card' ? <>{numberField('Limite total', 'limite')}<SideField label="Disponível" icon="account_balance_wallet" color="var(--ds-success)"><input readOnly value={money.format(Math.max(0, clampMoney(draft.limite) - cardInvoice(draft)))} /></SideField>{numberField('Fechamento (dia)', 'fechamento', '1')}{numberField('Vencimento (dia)', 'vencimento', '1')}<SideField label="Pagar com" icon="account_balance" color="var(--ds-muted)"><select value={draft.conta_id || ''} onChange={event => setDraft({ ...draft, conta_id: event.target.value })}>{accountOptions}</select></SideField>{colorRow}</>
-      : kind === 'box' ? <>{numberField('Meta', 'meta')}<SideField label="Data limite" icon="calendar_today" color="var(--ds-sky-fg)"><input type="date" value={dateKey(draft.prazo)} onChange={event => setDraft({ ...draft, prazo: event.target.value })} /></SideField><SideField label="Guardar de" icon="account_balance" color="var(--ds-muted)"><select value={draft.conta_id || ''} onChange={event => setDraft({ ...draft, conta_id: event.target.value })}>{accountOptions}</select></SideField>{colorRow}</>
-      : <><SideField label="Tipo" icon="category" color="var(--ds-lilac-fg)"><select value={draft.tipo || 'ETF'} onChange={event => setDraft({ ...draft, tipo: event.target.value })}><option>ETF</option><option>Ações</option><option>FIIs</option><option>Renda fixa</option><option>Cripto</option><option>Previdência</option><option>Outro</option></select></SideField><SideField label="Instituição" icon="account_balance" color="var(--ds-muted)"><input value={draft.instituicao || ''} onChange={event => setDraft({ ...draft, instituicao: event.target.value })} /></SideField>{numberField('Aplicado', 'aportado')}{numberField('Valor atual', 'valor_atual')}<SideField label="Primeira aplicação" icon="calendar_today" color="var(--ds-sky-fg)"><input type="date" value={firstApplication(draft)} onChange={event => setDraft({ ...draft, data_inicio: event.target.value })} /></SideField><SideRow id="inv-rent" icon="trending_up" color="var(--ds-success)" label="Rentabilidade" summary={rentSummary(draft)} open={createTool} setOpen={setCreateTool}><RentEditor draft={draft} setDraft={setDraft} /></SideRow><SideRow id="inv-auto" icon="event_repeat" color="var(--ds-lilac-fg)" label="Aporte automático" summary={autoSummary(draft)} open={createTool} setOpen={setCreateTool}><AutoEditor draft={draft} setDraft={setDraft} /></SideRow><SideRow id="inv-tax" icon="receipt_long" color="var(--ds-peach-fg)" label="Impostos" summary={taxSummary(draft)} open={createTool} setOpen={setCreateTool}><TaxEditor draft={draft} setDraft={setDraft} /></SideRow>{colorRow}</>
+      : kind === 'card' ? <>{numberField('Limite total', 'limite')}<SideField label="Disponível" icon="account_balance_wallet" color="var(--ds-success)"><input readOnly value={money.format(Math.max(0, clampMoney(draft.limite) - cardInvoice(draft)))} /></SideField>{numberField('Fechamento (dia)', 'fechamento', '1')}{numberField('Vencimento (dia)', 'vencimento', '1')}{pickRow('card-pay', 'account_balance', 'var(--ds-muted)', 'Pagar com', String(draft.conta_id || ''), accountChoices, value => setDraft({ ...draft, conta_id: value }))}{colorRow}</>
+      : kind === 'box' ? <>{numberField('Meta', 'meta')}{dateRow('box-deadline', 'Data limite', dateKey(draft.prazo), value => setDraft({ ...draft, prazo: value }))}{pickRow('box-from', 'account_balance', 'var(--ds-muted)', 'Guardar de', String(draft.conta_id || ''), accountChoices, value => setDraft({ ...draft, conta_id: value }))}{colorRow}</>
+      : <>{pickRow('inv-type', 'category', 'var(--ds-lilac-fg)', 'Tipo', String(draft.tipo || 'ETF'), ['ETF', 'Ações', 'FIIs', 'Renda fixa', 'Cripto', 'Previdência', 'Outro'].map(label => ({ value: label, label, icon: 'category' })), value => setDraft({ ...draft, tipo: value }))}<SideField label="Instituição" icon="account_balance" color="var(--ds-muted)"><input value={draft.instituicao || ''} onChange={event => setDraft({ ...draft, instituicao: event.target.value })} /></SideField>{numberField('Aplicado', 'aportado')}{numberField('Valor atual', 'valor_atual')}{dateRow('inv-first', 'Primeira aplicação', firstApplication(draft), value => setDraft({ ...draft, data_inicio: value }))}<SideRow id="inv-rent" icon="trending_up" color="var(--ds-success)" label="Rentabilidade" summary={rentSummary(draft)} open={createTool} setOpen={setCreateTool}><RentEditor draft={draft} setDraft={setDraft} /></SideRow><SideRow id="inv-auto" icon="event_repeat" color="var(--ds-lilac-fg)" label="Aporte automático" summary={autoSummary(draft)} open={createTool} setOpen={setCreateTool}><AutoEditor draft={draft} setDraft={setDraft} /></SideRow><SideRow id="inv-tax" icon="receipt_long" color="var(--ds-peach-fg)" label="Impostos" summary={taxSummary(draft)} open={createTool} setOpen={setCreateTool}><TaxEditor draft={draft} setDraft={setDraft} /></SideRow>{colorRow}</>
 
       if (redeem && kind === 'investment') {
         const preview = redeemPreview(draft, redeem.amount, today)
@@ -907,8 +929,8 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
         </>
         const redeemSide = <>
           <SideField label="Valor" icon="payments" color="var(--ds-success)"><input type="number" step="0.01" min="0" max={current} value={redeem.amount} onChange={event => setAmount(Number(event.target.value))} /></SideField>
-          <SideField label="Data" icon="calendar_today" color="var(--ds-sky-fg)"><input type="date" value={redeem.date} onChange={event => setRedeem({ ...redeem, date: event.target.value || today })} /></SideField>
-          <SideField label="Receber em" icon="account_balance" color="var(--ds-muted)"><select value={redeem.conta} onChange={event => setRedeem({ ...redeem, conta: event.target.value })}>{accountOptions}</select></SideField>
+          {dateRow('redeem-date', 'Data', redeem.date, value => setRedeem({ ...redeem, date: value || today }))}
+          {pickRow('redeem-to', 'account_balance', 'var(--ds-muted)', 'Receber em', redeem.conta, accountChoices, value => setRedeem({ ...redeem, conta: value }))}
           <div className={ic.row}><div className={ic.field}><small>Pagar impostos junto</small><button type="button" className={ic.switch} data-on={redeem.junto} onClick={() => setRedeem({ ...redeem, junto: !redeem.junto })}>{redeem.junto ? 'Ligado' : 'Desligado'}</button></div></div>
           <SideRow id="inv-tax" icon="receipt_long" color="var(--ds-peach-fg)" label="Impostos" summary={taxSummary(draft)} open={createTool} setOpen={setCreateTool}><TaxEditor draft={draft} setDraft={setDraft} /></SideRow>
         </>

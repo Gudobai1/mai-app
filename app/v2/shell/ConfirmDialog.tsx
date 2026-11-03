@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { Icon } from '../../ds'
+import { CreateCalendarPicker } from '../CreateDrawerTools'
 import styles from './ConfirmDialog.module.css'
 
 /**
@@ -20,9 +21,11 @@ export type ConfirmOptions = {
   icon?: string
   /** Terceira opção (ex.: Descartar), entre cancelar e confirmar. */
   extraLabel?: string
+  /** Campo de texto, número ou data (calendário do app). */
+  input?: { value?: string; placeholder?: string; kind?: 'text' | 'money' | 'date'; today?: string }
 }
 
-type Answer = boolean | 'extra'
+type Answer = boolean | 'extra' | string
 type Request = ConfirmOptions & { resolve: (value: Answer) => void }
 
 let show: ((request: Request) => void) | null = null
@@ -47,6 +50,14 @@ export function askConfirm(options: ConfirmOptions): Promise<boolean> {
   })
 }
 
+/** Pergunta um texto, valor ou data no diálogo do app. `null` se cancelar. */
+export function askText(options: ConfirmOptions): Promise<string | null> {
+  return new Promise(resolve => {
+    if (!show) { resolve(null); return }
+    show({ ...options, resolve: value => resolve(typeof value === 'string' ? value : null) })
+  })
+}
+
 export function notify(title: string, message?: string) {
   return askConfirm({ title, message, cancelLabel: null, confirmLabel: 'Entendi', icon: 'error', tone: 'default' })
 }
@@ -54,10 +65,12 @@ export function notify(title: string, message?: string) {
 export function ConfirmHost() {
   const [request, setRequest] = useState<Request | null>(null)
   const confirmRef = useRef<HTMLButtonElement | null>(null)
+  const [text, setText] = useState('')
 
   useEffect(() => {
     show = next => setRequest(current => {
       current?.resolve(false)
+      setText(next.input?.value ?? '')
       return next
     })
     return () => { show = null }
@@ -65,7 +78,7 @@ export function ConfirmHost() {
 
   useEffect(() => {
     if (!request) return
-    confirmRef.current?.focus({ preventScroll: true })
+    if (!request.input) confirmRef.current?.focus({ preventScroll: true })
     const onKey = (event: KeyboardEvent) => {
       if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); finish(false) }
     }
@@ -89,10 +102,11 @@ export function ConfirmHost() {
         <span className={styles.icon} data-danger={danger || undefined}><Icon name={icon} size={22} /></span>
         <h2 id="mai-confirm-title" className={styles.title}>{request.title}</h2>
         {request.message ? <p id="mai-confirm-message" className={styles.message}>{request.message}</p> : null}
+        {request.input?.kind === 'date' ? <CreateCalendarPicker value={text} today={request.input.today || text} onChange={value => finish(value)} close={() => undefined} /> : request.input ? <input className={styles.field} autoFocus value={text} inputMode={request.input.kind === 'money' ? 'decimal' : 'text'} placeholder={request.input.placeholder} onChange={event => setText(event.target.value)} onKeyDown={event => { if (event.key === 'Enter') { event.preventDefault(); finish(text) } }} /> : null}
         <div className={styles.buttons}>
           {request.cancelLabel === null ? null : <button type="button" className={styles.cancel} onClick={() => finish(false)}>{request.cancelLabel || 'Cancelar'}</button>}
           {request.extraLabel ? <button type="button" className={styles.cancel} data-extra="" onClick={() => finish('extra')}>{request.extraLabel}</button> : null}
-          <button ref={confirmRef} type="button" className={styles.confirm} data-danger={danger || undefined} onClick={() => finish(true)}>{request.confirmLabel || (danger ? 'Excluir' : 'Confirmar')}</button>
+          <button ref={confirmRef} type="button" className={styles.confirm} data-danger={danger || undefined} onClick={() => finish(request.input ? text : true)}>{request.confirmLabel || (danger ? 'Excluir' : 'Confirmar')}</button>
         </div>
       </div>
     </div>,

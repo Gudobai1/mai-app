@@ -2,6 +2,7 @@
 
 import type { Dispatch, SetStateAction } from 'react'
 import s from './FinanceItemCard.module.css'
+import { Chips } from './FinanceItemCard'
 
 type Row = Record<string, any>
 export type Tax = { id: string; nome: string; aliquota: number; base: 'rendimento' | 'ano' }
@@ -113,7 +114,7 @@ export function RentEditor({ draft, setDraft }: EditorProps) {
   const patch = patchOf(setDraft)
   return <div className={s.mini}>
     <label><span>Taxa (% ao ano)</span><input type="number" step="0.01" min="0" value={draft.rent_taxa || 0} onChange={event => patch({ rent_taxa: Number(event.target.value), rent_ultima: draft.rent_ultima || '' })} /></label>
-    <label><span>Atualizar</span><select value={draft.rent_freq || 'dia'} onChange={event => patch({ rent_freq: event.target.value })}><option value="dia">Todo dia</option><option value="mes">Todo mês</option><option value="manual">Só manual</option></select></label>
+    <div><span className={s.note}>Atualizar</span><Chips value={String(draft.rent_freq || 'dia')} onChange={value => patch({ rent_freq: value })} options={[{ value: 'dia', label: 'Todo dia' }, { value: 'mes', label: 'Todo mês' }, { value: 'manual', label: 'Só manual' }]} /></div>
     <p className={s.note}>O valor atual é estimado pela taxa configurada; você pode corrigir quando quiser.</p>
   </div>
 }
@@ -138,7 +139,7 @@ export function TaxEditor({ draft, setDraft }: EditorProps) {
       {list.map((tax, index) => <div className={s.taxRow} key={tax.id}>
         <input value={tax.nome} aria-label="Nome" onChange={event => update(index, { nome: event.target.value })} />
         <input type="number" step="0.01" min="0" value={tax.aliquota} aria-label="Alíquota (%)" onChange={event => update(index, { aliquota: Number(event.target.value) })} />
-        <select value={tax.base} aria-label="Base" onChange={event => update(index, { base: event.target.value as Tax['base'] })}><option value="rendimento">% s/ rendimento</option><option value="ano">% ao ano</option></select>
+        <Chips value={tax.base} onChange={value => update(index, { base: value as Tax['base'] })} options={[{ value: 'rendimento', label: '% s/ rendimento' }, { value: 'ano', label: '% ao ano' }]} />
         <button type="button" aria-label="Remover" onClick={() => patch({ impostos: list.filter((_, position) => position !== index) })}>×</button>
       </div>)}
       <button type="button" className={s.addTax} onClick={() => patch({ impostos: [...list, { id: `tax-${crypto.randomUUID()}`, nome: 'Imposto', aliquota: 0, base: 'rendimento' }] })}>+ Adicionar imposto ou taxa</button>

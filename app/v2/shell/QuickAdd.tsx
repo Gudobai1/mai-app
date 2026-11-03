@@ -11,6 +11,8 @@ import { CategoryChooser } from '../detail/CategoryChooser'
 import { CategoryManager } from '../detail/CategoryManager'
 import { eventCategories, withEventCategory, type EventCategory } from '../../../lib/v2/event-categories'
 import { fold, parseNatural, replaceRange, type NlKind } from '../../../lib/v2/nlp'
+import { financeTagSuggestions, parseFinanceTags } from '../../../lib/v2/financeTags'
+import { PALETTE } from '../../../lib/v2/palette'
 import styles from './QuickAdd.module.css'
 
 /**
@@ -140,7 +142,12 @@ export function QuickAdd({ kinds, initial, state, today, defaultProjectId, defau
   const setEnd = (value: string) => { setEndS(value); mute('end') }
   const amount = nl.amount !== undefined ? String(nl.amount).replace('.', ',') : amountS
   const setAmount = (value: string) => { setAmountS(value); mute('amount') }
-  const cleanTitle = nl.title.trim() || title.trim()
+  const finCtx = useMemo(() => ({ categories: rows((state.finance as Row | undefined)?.categories), accounts: rows((state.finance as Row | undefined)?.accounts), cards: rows((state.finance as Row | undefined)?.cards) }), [state.finance])
+  const tags = useMemo(() => kind === 'finance' ? parseFinanceTags(nl.title, finCtx) : null, [kind, nl.title, finCtx])
+  const finTypeNow = tags?.type ?? finType
+  const finCategoryNow = tags?.category ?? finCategory
+  const originNow = tags?.origin ?? accountId
+  const cleanTitle = (tags ? tags.title : nl.title).trim() || title.trim()
   const project = projects.find(item => String(item.id) === projectId)
 
   // Sugestões ao digitar #, ! ou @.
@@ -151,7 +158,8 @@ export function QuickAdd({ kinds, initial, state, today, defaultProjectId, defau
     return /^[#!@]/.test(text) ? { start: startAt, end: caret, text } : null
   }, [title, caret])
   const suggestions = useMemo(() => {
-    if (!word || kind === 'finance') return []
+    if (word && kind === 'finance') return financeTagSuggestions(word.text, finCtx)
+    if (!word) return []
     const query = fold(word.text.slice(1))
     if (word.text.startsWith('#') && kind === 'task') {
       const list: Array<{ label: string; insert: string; icon: string }> = []
@@ -170,7 +178,7 @@ export function QuickAdd({ kinds, initial, state, today, defaultProjectId, defau
     if (word.text.startsWith('!') && kind === 'task') return ['alta', 'média', 'baixa'].filter(item => !query || fold(item).startsWith(query)).map(item => ({ label: item, insert: `!${item}`, icon: 'flag' }))
     if (word.text.startsWith('@') && kind === 'task') return ['10min', '30min', '1h', '1d'].filter(item => !query || item.startsWith(query)).map(item => ({ label: `${item} antes`, insert: `@${item}`, icon: 'notifications' }))
     return []
-  }, [word, projects, kind])
+  }, [word, projects, kind, finCtx])
   const applySuggestion = (index: number) => {
     const item = suggestions[index]
     if (!word || !item) return
@@ -211,10 +219,11 @@ export function QuickAdd({ kinds, initial, state, today, defaultProjectId, defau
     if (kind === 'finance') {
       const value = Math.abs(Number(String(amount).replace(',', '.')) || 0)
       const entry: Row = {
-        id: uid('fin'), titulo: name, observacao: '', valor: value, valor_pago: 0, tipo: finType, data: date || today, status: 'pendente',
-        categoria: finCategory, conta_id: accountId, cartao_id: '', anexos: [], pagamentos: [], ignorar_calculo: false, recorrencia: 'unico',
+        id: uid('fin'), titulo: name, observacao: '', valor: value, valor_pago: 0, tipo: finTypeNow, data: date || today, status: 'pendente',
+        categoria: finCategoryNow, conta_id: originNow, cartao_id: originNow.startsWith('card|') ? originNow.slice(5) : '', anexos: [], pagamentos: [], ignorar_calculo: false, recorrencia: 'unico',
       }
-      commit(current => ({ ...current, finance: { ...current.finance, transactions: [entry, ...rows(current.finance.transactions)] } }))
+      const known = finCategoryNow && finCtx.categories.some(item => String(item.nome) === finCategoryNow)
+      commit(current => ({ ...current, finance: { ...current.finance, categories: finCategoryNow && !known ? [...rows(current.finance.categories), { id: uid('cat'), nome: finCategoryNow, cor: PALETTE[rows(current.finance.categories).length % PALETTE.length].color }] : current.finance.categories, transactions: [entry, ...rows(current.finance.transactions)] } }))
     } else if (kind === 'task') {
       const task: Row = {
         id: uid('t'), titulo: name, descricao: description.trim(), data_vencimento: date ? `${date}${taskTime ? `T${taskTime}` : ''}` : '', prioridade: priority, concluida: false,
@@ -313,17 +322,17 @@ export function QuickAdd({ kinds, initial, state, today, defaultProjectId, defau
 
             {kind === 'finance' ? (
               <>
-                <button type="button" className={styles.chip} data-set style={{ '--chip-color': finType === 'receita' ? 'var(--ds-success)' : 'var(--ds-danger)' } as CSSProperties} onClick={open('ftype')}>
-                  <Icon name={finType === 'receita' ? 'trending_up' : 'trending_down'} size={16} filled={false} />{finType === 'receita' ? 'Receita' : 'Despesa'}
+                <button type="button" className={styles.chip} data-set style={{ '--chip-color': finTypeNow === 'receita' ? 'var(--ds-success)' : 'var(--ds-danger)' } as CSSProperties} onClick={open('ftype')}>
+                  <Icon name={finTypeNow === 'receita' ? 'trending_up' : 'trending_down'} size={16} filled={false} />{finTypeNow === 'receita' ? 'Receita' : 'Despesa'}
                 </button>
-                {finCategories.length ? (
-                  <button type="button" className={styles.chip} data-set={finCategory || undefined} onClick={open('fcat')}>
-                    <Icon name="sell" size={16} filled={false} /><span>{finCategory || 'Categoria'}</span>
+                {(finCategories.length || finCategoryNow) ? (
+                  <button type="button" className={styles.chip} data-set={finCategoryNow || undefined} onClick={open('fcat')}>
+                    <Icon name="sell" size={16} filled={false} /><span>{finCategoryNow || 'Categoria'}</span>
                   </button>
                 ) : null}
-                {accounts.length ? (
-                  <button type="button" className={styles.chip} data-set={accountId || undefined} onClick={open('account')}>
-                    <Icon name="account_balance" size={16} filled={false} /><span>{String(accounts.find(item => String(item.id) === accountId)?.nome || 'Conta')}</span>
+                {(accounts.length || finCtx.cards.length) ? (
+                  <button type="button" className={styles.chip} data-set={originNow || undefined} onClick={open('account')}>
+                    <Icon name={originNow.startsWith('card|') ? 'credit_card' : 'account_balance'} size={16} filled={false} /><span>{String(originNow.startsWith('card|') ? finCtx.cards.find(item => String(item.id) === originNow.slice(5))?.nome : accounts.find(item => String(item.id) === originNow)?.nome || 'Conta')}</span>
                   </button>
                 ) : null}
               </>
@@ -392,7 +401,7 @@ export function QuickAdd({ kinds, initial, state, today, defaultProjectId, defau
       ) : null}
       {picker === 'account' ? (
         <Floating anchor={anchor} title="Conta" width={240} onClose={() => setPicker('')}>
-          <OptionList options={[{ value: '', label: 'Sem conta', icon: 'horizontal_rule' }, ...accounts.map(item => ({ value: String(item.id), label: String(item.nome || 'Conta'), icon: 'account_balance' }))]} value={accountId} onSelect={value => done(() => setAccountId(value))} />
+          <OptionList options={[{ value: '', label: 'Sem conta', icon: 'horizontal_rule' }, ...accounts.map(item => ({ value: String(item.id), label: String(item.nome || 'Conta'), icon: 'account_balance' })), ...finCtx.cards.map(item => ({ value: `card|${String(item.id)}`, label: String(item.nome || 'Cartão'), icon: 'credit_card' }))]} value={originNow} onSelect={value => done(() => { setAccountId(value) })} />
         </Floating>
       ) : null}
       {picker === 'priority' ? (

@@ -2,8 +2,8 @@
 
 import { useState } from 'react'
 import type { Dispatch, SetStateAction } from 'react'
-import { CreateTool as CreateToolBase } from './CreateDrawerTools'
-import { SideRow } from './FinanceItemCard'
+import { CreateCalendarPicker, CreateTool as CreateToolBase } from './CreateDrawerTools'
+import { Chips, MonthStepper, SideRow } from './FinanceItemCard'
 import { MaiIcon } from './MaiIcons'
 
 type Row = Record<string, any>
@@ -58,6 +58,7 @@ export function FinanceTransactionExtraTools({
   const hiddenFromHome = draft.ocultar_inicio === true || draft.ocultar_home === true
   const [paymentAmount, setPaymentAmount] = useState('')
   const [paymentDate, setPaymentDate] = useState(today)
+  const [payCal, setPayCal] = useState(false)
   const paymentSummary = draftPayment
     ? draftPayment.status === 'pago' ? 'Quitado' : draftPayment.paid > 0 ? `${money.format(draftPayment.remaining)} restante` : 'Sem pagamentos'
     : 'Sem pagamentos'
@@ -92,7 +93,7 @@ export function FinanceTransactionExtraTools({
     {draft.recorrencia === 'parcelado' && !draft.lote_id ? <CreateTool id="finance-installments" icon="splitscreen" label="Parcelamento" summary={`${Math.max(2, Number(draft.parcelas || 2))}x · ${String(draft.intervalo_parcelas || 'mensal')}`} color="var(--ds-peach-fg)" open={open} setOpen={setOpen}>
       <div className="mai-finance-tool-grid">
         <label><span>Parcelas</span><input type="number" min="2" value={draft.parcelas || 2} onChange={event => patch({ parcelas: Number(event.target.value) })}/></label>
-        <label><span>Intervalo</span><select value={draft.intervalo_parcelas || 'mensal'} onChange={event => patch({ intervalo_parcelas: event.target.value })}><option value="semanal">Semanal</option><option value="quinzenal">Quinzenal</option><option value="mensal">Mensal</option><option value="anual">Anual</option></select></label>
+        <div><span>Intervalo</span><Chips value={String(draft.intervalo_parcelas || 'mensal')} onChange={value => patch({ intervalo_parcelas: value })} options={[{ value: 'semanal', label: 'Semanal' }, { value: 'quinzenal', label: 'Quinzenal' }, { value: 'mensal', label: 'Mensal' }, { value: 'anual', label: 'Anual' }]} /></div>
         <button type="button" className="mai-finance-tool-switch" data-active={draft.dividir_total !== false} onClick={() => patch({ dividir_total: draft.dividir_total === false })}><MaiIcon name={draft.dividir_total !== false ? 'check_box' : 'check_box_outline_blank'} size={18}/><span>Dividir valor total</span></button>
         <button type="button" className="mai-finance-tool-primary" onClick={() => { generateInstallments(); setOpen('') }}><MaiIcon name="splitscreen" size={18}/><span>Gerar parcelas</span></button>
       </div>
@@ -101,8 +102,8 @@ export function FinanceTransactionExtraTools({
     {draft.recorrencia === 'fixo' ? <CreateTool id="finance-fixed" icon="event_repeat" label="Recorrência" summary={`Dia ${draft.dia_mes || Number(today.slice(8))}`} color="var(--ds-mint-fg)" open={open} setOpen={setOpen}>
       <div className="mai-finance-tool-grid">
         <label><span>Dia do mês</span><input type="number" min="1" max="31" value={draft.dia_mes || Number(today.slice(8))} onChange={event => patch({ dia_mes: Number(event.target.value) })}/></label>
-        <label><span>Início</span><input type="month" value={String(draft.mes_inicio || month).slice(0, 7)} onChange={event => patch({ mes_inicio: event.target.value })}/></label>
-        <label><span>Fim opcional</span><input type="month" value={String(draft.mes_fim || '').slice(0, 7)} onChange={event => patch({ mes_fim: event.target.value })}/></label>
+        <div><span>Início</span><MonthStepper value={String(draft.mes_inicio || month).slice(0, 7)} onChange={value => patch({ mes_inicio: value })} /></div>
+        <div><span>Fim opcional</span><MonthStepper clearable value={String(draft.mes_fim || '').slice(0, 7)} onChange={value => patch({ mes_fim: value })} /></div>
         <button type="button" className="mai-finance-tool-switch" data-active={draft.ativo !== false} onClick={() => patch({ ativo: draft.ativo === false })}><MaiIcon name={draft.ativo !== false ? 'toggle_on' : 'toggle_off'} size={20}/><span>{draft.ativo !== false ? 'Ativo' : 'Pausado'}</span></button>
         {draft._persisted && editFixedOccurrence && ignoreFixed ? <><button type="button" className="mai-finance-tool-action" onClick={editFixedOccurrence}><MaiIcon name="edit_calendar" size={18}/><span>Alterar somente este mês</span></button><button type="button" className="mai-finance-tool-action" onClick={ignoreFixed}><MaiIcon name="event_busy" size={18}/><span>Ignorar neste mês</span></button></> : null}
       </div>
@@ -111,7 +112,7 @@ export function FinanceTransactionExtraTools({
     <CreateTool id="finance-payments" icon="account_balance_wallet" label="Pagamentos" summary={paymentSummary} color="var(--ds-teal-fg)" open={open} setOpen={setOpen}>
       <div className="mai-finance-tool-payments">
         <div className="mai-finance-tool-payment-summary"><span>Pago</span><strong>{money.format(draftPayment?.paid || 0)}</strong><span>Restante</span><strong>{money.format(draftPayment?.remaining || 0)}</strong></div>
-        {draftPayment && draftPayment.remaining > 0 ? <div className="mai-finance-tool-payment-entry"><label><span>Valor</span><input inputMode="decimal" placeholder={draftPayment.remaining.toFixed(2).replace('.', ',')} value={paymentAmount} onChange={event => setPaymentAmount(event.target.value)}/></label><label><span>Data</span><input type="date" value={paymentDate} onChange={event => setPaymentDate(event.target.value)}/></label><button type="button" className="mai-finance-tool-primary" onClick={appendPayment}><MaiIcon name="add" size={18}/><span>Registrar</span></button></div> : <div className="mai-finance-tool-note"><MaiIcon name="check_circle" size={18}/><span>Lançamento quitado.</span></div>}
+        {draftPayment && draftPayment.remaining > 0 ? <div className="mai-finance-tool-payment-entry"><label><span>Valor</span><input inputMode="decimal" placeholder={draftPayment.remaining.toFixed(2).replace('.', ',')} value={paymentAmount} onChange={event => setPaymentAmount(event.target.value)}/></label><div><span>Data</span><button type="button" className="mai-finance-tool-action" onClick={() => setPayCal(open => !open)}>{naturalDate(paymentDate, today)}</button>{payCal ? <CreateCalendarPicker value={paymentDate} today={today} onChange={value => { setPaymentDate(value); setPayCal(false) }} close={() => setPayCal(false)} /> : null}</div><button type="button" className="mai-finance-tool-primary" onClick={appendPayment}><MaiIcon name="add" size={18}/><span>Registrar</span></button></div> : <div className="mai-finance-tool-note"><MaiIcon name="check_circle" size={18}/><span>Lançamento quitado.</span></div>}
         <div className="mai-finance-tool-payment-list">{payments.map((payment, index) => <div key={String(payment.id || index)}><span>{naturalDate(dateKey(payment.data), today)}</span><strong>{money.format(clampMoney(payment.valor))}</strong><button type="button" title="Remover pagamento" onClick={() => removePayment(index)}><MaiIcon name="close" size={16}/></button></div>)}{!payments.length ? <small>Nenhum pagamento registrado.</small> : null}</div>
       </div>
     </CreateTool>

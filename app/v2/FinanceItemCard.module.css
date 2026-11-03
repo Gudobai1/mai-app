@@ -88,3 +88,17 @@
 .field small, .field input, .field select, .field > :not(.rowIcon) { grid-column: 2; }
 
 .commentsSlot { margin-top: auto; padding-top: 12px; }
+
+.stepper { display: inline-flex; align-items: center; gap: 4px; border: 1px solid var(--ds-line); border-radius: 14px; padding: 2px 4px; font-size: 12.5px; }
+.stepper button { appearance: none; border: 0; background: transparent; font: inherit; color: var(--ds-muted); cursor: pointer; padding: 2px 8px; border-radius: 10px; }
+.stepper button:hover { background: var(--ds-surface-hover); color: var(--ds-text); }
+.stepper span { min-width: 74px; text-align: center; text-transform: capitalize; }
+.chips button { appearance: none; border: 1px solid var(--ds-line); background: transparent; font: inherit; font-size: 12px; color: var(--ds-text); padding: 4px 10px; border-radius: 14px; cursor: pointer; }
+
+.hints { display: flex; flex-wrap: wrap; gap: 6px; margin: -4px 0 8px; }
+.hints button { display: inline-flex; align-items: center; gap: 6px; border: 1px solid color-mix(in srgb, var(--ds-line) 70%, transparent); background: transparent; color: inherit; border-radius: 999px; padding: 4px 10px; font: inherit; font-size: 12px; cursor: pointer; }
+.hints button:hover { background: var(--ds-surface-hover); }
+.hints i { display: inline-flex; font-style: normal; }
+.swatches { display: flex; flex-wrap: wrap; gap: 8px; padding: 8px 2px 2px; }
+.swatches button { width: 20px; height: 20px; border-radius: 50%; border: 2px solid transparent; padding: 0; cursor: pointer; }
+.swatches button[data-active] { outline: 2px solid var(--ds-muted); outline-offset: 2px; }

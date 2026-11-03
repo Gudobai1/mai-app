@@ -168,3 +168,6 @@
 .cancel.cancel, .confirm.confirm { height: 38px; border-radius: 6px; font-size: 14px; }
 .cancel.cancel { background: transparent; border: 1px solid var(--ds-line); color: var(--ds-text); }
 .cancel.cancel:hover { background: transparent; border-color: var(--ds-line-strong); }
+
+.field { width: 100%; box-sizing: border-box; margin: 4px 0 8px; padding: 9px 12px; font: inherit; font-size: 15px; color: var(--ds-text); background: var(--ds-surface); border: 1px solid var(--ds-line); border-radius: var(--ds-r-md); outline: none; }
+.field:focus { border-color: var(--ds-accent); }
