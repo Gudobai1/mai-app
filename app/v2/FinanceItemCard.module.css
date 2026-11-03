@@ -132,3 +132,11 @@
 .inlineStepper .inlineStepperValue { width: 112px; font: inherit; font-size: 13.5px; font-weight: var(--ds-fw-medium); color: var(--ds-text); }
 .cardHead .payButton { appearance: none; border: 1px solid var(--ds-line); background: transparent; color: var(--ds-text); font: inherit; font-size: 13px; font-weight: var(--ds-fw-medium); padding: 6px 14px; border-radius: 8px; cursor: pointer; }
 .cardHead .payButton:hover { background: var(--ds-surface-hover); }
+
+.headTop { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; width: 100%; }
+.valueBlock { display: grid; gap: 2px; justify-items: start; }
+.valueSub { color: var(--ds-muted); font-size: 12.5px; }
+.payRow { display: flex; gap: 8px; }
+.payRow .payButton, .cardHead .payButton { appearance: none; border: 1px solid var(--ds-line); background: transparent; color: var(--ds-text); font: inherit; font-size: 13px; font-weight: var(--ds-fw-medium); padding: 6px 14px; border-radius: 8px; cursor: pointer; }
+.payRow .payButton:hover { background: var(--ds-surface-hover); }
+.cardHead { width: 100%; }
