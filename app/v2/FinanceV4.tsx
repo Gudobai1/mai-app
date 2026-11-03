@@ -15,6 +15,10 @@ import { parseNatural } from '../../lib/v2/nlp'
 import { AutoEditor, RentEditor, TaxEditor, applyInvestmentAutomation, autoSummary, firstApplication, redeemPreview, rentSummary, taxSummary } from './FinanceInvestmentTools'
 import { DraftButtons } from './shell/DraftFooter'
 import { ItemAttachments } from './ItemAttachments'
+import { CommentsSection, type Comment } from './detail/Comments'
+import { QuickAdd } from './shell/QuickAdd'
+import { useQuickMenu, type QuickMenuConfig } from './shell/QuickMenu'
+import { addDays } from '../../lib/v2/planner'
 import { MAI_ENTITY_ICONS, MaiIcon } from './MaiIcons'
 import { useManualDraft } from './useManualDraft'
 import { askConfirm } from './shell/ConfirmDialog'
@@ -151,6 +155,8 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
   const [draft, setDraft] = useState<Row | null>(null)
   const [kind, setKind] = useState<DraftKind>('transaction')
   const [createTool, setCreateTool] = useState('')
+  const quick = useQuickMenu()
+  const [quickAdding, setQuickAdding] = useState(false)
   const [redeem, setRedeem] = useState<{ amount: number; date: string; conta: string; junto: boolean } | null>(null)
   const [categoryDraftName, setCategoryDraftName] = useState('')
 
@@ -677,8 +683,37 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
     for (const char of name) hash = (hash * 31 + char.charCodeAt(0)) >>> 0
     return categoryPalette[hash % categoryPalette.length]
   }
-  const transactionRow = (item: Row) => <FinanceTransactionCard
-    key={`${item._isFixed ? 'fix' : 'tx'}-${String(item.id)}`}
+  const nextMonday = (() => { const date = new Date(`${today}T12:00:00`); const add = ((8 - date.getDay()) % 7) || 7; return addDays(today, add) })()
+  const dateChoices = [{ label: 'Hoje', icon: 'today', value: today }, { label: 'Amanhã', icon: 'wb_sunny', value: addDays(today, 1) }, { label: 'Próx. semana', icon: 'date_range', value: nextMonday }]
+  function financeMenu(item: Row): QuickMenuConfig {
+    const id = String(item.id)
+    const due = dateKey(item.data)
+    const income = item.tipo === 'receita'
+    const payment = paymentState(item)
+    const paid = payment.status === 'pago'
+    const title = String(item.titulo || 'Lançamento')
+    const moveTo = (value: string) => {
+      if (item._isFixed) updateOccurrence({ ...item, occurrenceKey: `${id}|${month}` }, { data_override: value })
+      else commit(current => ({ ...current, finance: { ...current.finance, transactions: rows(current.finance.transactions).map(row => String(row.id) === id ? { ...row, data: value, dia_mes: Number(value.slice(8)) } : row) } }))
+    }
+    return {
+      title,
+      subtitle: `${income ? '+' : '−'}${money.format(payment.remaining || clampMoney(item.valor))} · ${naturalDate(due, today)}`,
+      groups: [
+        { label: 'Vencimento', inline: true, options: dateChoices.map(choice => ({ label: choice.label, icon: choice.icon, active: due === choice.value, onSelect: () => moveTo(choice.value) })) },
+        { options: [
+          { label: paid ? 'Marcar como pendente' : income ? 'Marcar como recebido' : 'Marcar como pago', icon: paid ? 'undo' : 'check_circle', onSelect: () => togglePaid(item) },
+          { label: 'Abrir detalhes', icon: 'open_in_full', onSelect: () => openTransaction(item) },
+          { label: item._isFixed ? 'Ignorar neste mês' : 'Excluir', icon: 'delete', tone: 'danger', onSelect: async () => {
+            if (item._isFixed) { await ignoreFixed(item); return }
+            if (!(await askConfirm({ title: 'Excluir lançamento?', message: `“${title}” será excluído. Não dá para desfazer.` }))) return
+            commit(current => ({ ...current, finance: { ...current.finance, transactions: rows(current.finance.transactions).filter(row => String(row.id) !== id) } }))
+          } },
+        ] },
+      ],
+    }
+  }
+  const transactionRow = (item: Row) => <div key={`${item._isFixed ? 'fix' : 'tx'}-${String(item.id)}`} {...quick.bind(() => financeMenu(item))}><FinanceTransactionCard
     item={item}
     accounts={accounts}
     cards={cards}
@@ -687,7 +722,7 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
     color={categoryColor(item)}
     onOpen={() => openTransaction(item)}
     onTogglePaid={() => togglePaid(item)}
-  />
+  /></div>
 
   const tabs: { id: Tab; label: string }[] = [
     { id: 'transactions', label: 'Lançamentos' }, { id: 'accounts', label: 'Contas' }, { id: 'cards', label: 'Cartões' }, { id: 'boxes', label: 'Caixinhas' }, { id: 'investments', label: 'Investimentos' }, { id: 'reports', label: 'Relatórios' },
@@ -734,7 +769,7 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
       <div className={fm.listHead}><span>{filtered.length} {filtered.length === 1 ? 'lançamento' : 'lançamentos'} em {monthLabel(month).split(' de ')[0]}</span><span>{pendingCount} {pendingCount === 1 ? 'pendente' : 'pendentes'}</span></div>
       <div className={fm.list}>{filtered.map(transactionRow)}</div>
       {!filtered.length ? <div className={fm.empty}>Nenhum lançamento encontrado.</div> : null}
-      {addRow('Adicionar lançamento', () => openNew('transaction'))}
+      {quickAdding ? <QuickAdd inline kinds={['finance']} initial="finance" state={state} today={today} defaultDate={today} commit={commit} onFinance={() => undefined} onClose={() => setQuickAdding(false)} /> : addRow('Adicionar lançamento', () => setQuickAdding(true))}
     </> : null}
 
     {tab === 'accounts' ? <>
@@ -772,6 +807,7 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
       {reportBlocks.map(barBlock)}
     </> : null}
 
+    {quick.element}
     {draft ? (() => {
       const crumbKind = kind === 'transaction' ? 'Lançamentos' : kind === 'account' ? 'Contas' : kind === 'card' ? 'Cartões' : kind === 'box' ? 'Caixinhas' : 'Investimentos'
       const lineTone = (item: Row) => item.tipo === 'receita' ? 'in' : 'out'
@@ -799,11 +835,12 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
       const fieldIcons: Record<string, [string, string]> = { 'Saldo inicial': ['account_balance', '#75808b'], 'Limite total': ['credit_card', '#4f7cac'], 'Fechamento (dia)': ['event', '#b27a35'], 'Vencimento (dia)': ['event_available', '#c85b52'], Meta: ['flag', '#4b8b6c'], Aplicado: ['savings', '#4b8b6c'], 'Valor atual': ['payments', '#4b8b6c'] }
       const numberField = (label: string, key: string, step = '0.01') => <SideField label={label} icon={fieldIcons[label]?.[0]} color={fieldIcons[label]?.[1]}><input type="number" step={step} value={draft[key] || 0} onChange={event => setDraft({ ...draft, [key]: Number(event.target.value) })} /></SideField>
 
+      const extras = <><ItemAttachments attachments={rows(draft.anexos)} onChange={anexos => setDraft({ ...draft, anexos })} /><CommentsSection comments={rows(draft.comentarios) as Comment[]} onChange={comentarios => setDraft({ ...draft, comentarios })} /></>
       const content = kind === 'transaction' ? <>
         {title}
         <textarea className={ic.desc} rows={2} value={draft.observacao || ''} placeholder="Descrição" onChange={event => setDraft({ ...draft, observacao: event.target.value })} />
         {history.length ? listSection('Histórico', history.length, history.map(txLine), '') : null}
-        <ItemAttachments attachments={rows(draft.anexos)} onChange={anexos => setDraft({ ...draft, anexos })} />
+        {extras}
       </> : <>
         {title}
         {kind === 'account' && draft._persisted ? <div className={ic.headValue}><strong>{money.format(accountBalance(draft))}</strong><span>saldo atual</span></div> : null}
@@ -823,6 +860,7 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
         {kind === 'card' ? listSection('Lançamentos da fatura', cardTx.length, cardTx.map(txLine), 'Nenhuma compra na fatura deste mês.') : null}
         {kind === 'box' ? listSection('Lançamentos', rows(draft.movimentos).length, rows(draft.movimentos).map(mov => moveLine(mov, mov.tipo === 'entrada')), 'Nenhuma movimentação ainda.') : null}
         {kind === 'investment' ? listSection('Lançamentos', rows(draft.movimentos).length, rows(draft.movimentos).map(mov => moveLine(mov, mov.tipo === 'aporte')), 'Nenhum aporte ainda.') : null}
+        {extras}
       </>
 
       const side = kind === 'transaction' ? <>
