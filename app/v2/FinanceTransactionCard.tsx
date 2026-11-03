@@ -43,6 +43,7 @@ export function FinanceTransactionCard({
   today,
   onOpen,
   onTogglePaid,
+  compact = false,
 }: {
   item: Row
   accounts: Row[]
@@ -50,6 +51,7 @@ export function FinanceTransactionCard({
   today: string
   onOpen: () => void
   onTogglePaid: () => void
+  compact?: boolean
 }) {
   const incomeItem = item.tipo === 'receita'
   const payment = financeCardPaymentState(item)
@@ -71,10 +73,10 @@ export function FinanceTransactionCard({
         <span className="mai-item-titleline-v2"><strong>{title}</strong></span>
         <span className="mai-item-subline-v2">
           <span>{naturalDate(dateKey(item.data), today)}</span>
-          <span>·</span>
+          {compact ? null : <><span>·</span>
           <span>{item.categoria || 'Sem categoria'}</span>
           {item.conta_id ? <><span>·</span><span>{originName(item.conta_id, accounts, cards)}</span></> : null}
-          {item.ajuste_fatura ? <><span>·</span><span>Fatura ajustada</span></> : item._isFixed ? <><span>·</span><span>Fixo</span></> : item.lote_id ? <><span>·</span><span>Parcela {item.parcela_numero}/{item.parcelas_total}</span></> : null}
+          {item.ajuste_fatura ? <><span>·</span><span>Fatura ajustada</span></> : item._isFixed ? <><span>·</span><span>Fixo</span></> : item.lote_id ? <><span>·</span><span>Parcela {item.parcela_numero}/{item.parcelas_total}</span></> : null}</>}
         </span>
       </span>
       <span className="mai-finance-v4-value" data-income={incomeItem}>
