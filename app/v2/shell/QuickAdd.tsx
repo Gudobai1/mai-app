@@ -12,6 +12,7 @@ import { CategoryManager } from '../detail/CategoryManager'
 import { eventCategories, withEventCategory, type EventCategory } from '../../../lib/v2/event-categories'
 import { fold, parseNatural, replaceRange, type NlKind } from '../../../lib/v2/nlp'
 import { financeTagSuggestions, parseFinanceTags } from '../../../lib/v2/financeTags'
+import { INTERVAL_CHOICES, intervalChoice, intervalDays, intervalLabel, shiftInstallment } from '../../../lib/v2/financeInstallments'
 import { PALETTE } from '../../../lib/v2/palette'
 import styles from './QuickAdd.module.css'
 
@@ -78,17 +79,7 @@ const plusHour = (time: string) => {
   return `${String(Math.min(23, h + 1)).padStart(2, '0')}:${String(m || 0).padStart(2, '0')}`
 }
 
-function shiftInstallment(key: string, index: number, interval: string) {
-  const date = new Date(`${key}T12:00:00`)
-  const day = date.getDate()
-  if (interval === 'semanal') date.setDate(day + index * 7)
-  else if (interval === 'quinzenal') date.setDate(day + index * 15)
-  else if (interval === 'anual') date.setFullYear(date.getFullYear() + index)
-  else { date.setDate(1); date.setMonth(date.getMonth() + index); date.setDate(Math.min(day, new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate())) }
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
-}
-
-type Picker = '' | 'ftype' | 'account' | 'date' | 'time' | 'reminder' | 'priority' | 'project' | 'repeat' | 'start' | 'end' | 'category' | 'fcat' | 'finstall'
+type Picker = '' | 'ftype' | 'account' | 'date' | 'time' | 'reminder' | 'priority' | 'project' | 'repeat' | 'start' | 'end' | 'category' | 'fcat' | 'finstall' | 'fstatus'
 
 export function QuickAdd({ kinds, initial, state, today, defaultProjectId, defaultDate, defaultSection, commit, onFinance, onClose, inline, parentId }: Props) {
   const [kind, setKind] = useState<QuickAddKind>(initial)
@@ -112,7 +103,8 @@ export function QuickAdd({ kinds, initial, state, today, defaultProjectId, defau
   const [finType, setFinType] = useState<'despesa' | 'receita'>('despesa')
   const [accountId, setAccountId] = useState('')
   const [finCategory, setFinCategory] = useState('')
-  const [installS, setInstallS] = useState<{ count: number; interval: 'mensal' | 'semanal' | 'quinzenal' | 'anual' } | null>(null)
+  const [installS, setInstallS] = useState<{ count: number; interval: string } | null>(null)
+  const [finPaid, setFinPaid] = useState(false)
   const [picker, setPicker] = useState<Picker>('')
   const anchor = useRef<HTMLElement | null>(null)
   const open = (which: Picker) => (event: ReactMouseEvent<HTMLElement>) => { anchor.current = event.currentTarget; setPicker(which) }
@@ -237,8 +229,10 @@ export function QuickAdd({ kinds, initial, state, today, defaultProjectId, defau
         categoria: finCategoryNow, conta_id: originNow, cartao_id: originNow.startsWith('card|') ? originNow.slice(5) : '', anexos: [], pagamentos: [], ignorar_calculo: false, recorrencia: 'unico',
       }
       const known = finCategoryNow && finCtx.categories.some(item => String(item.nome) === finCategoryNow)
+      const paidFields: Row = { status: 'pago', valor_pago: value, pagamentos: [{ id: uid('pay'), data: today, valor: value }] }
+      if (!installments && finPaid) Object.assign(entry, paidFields)
       const lot = installments ? uid('lote') : ''
-      const entries: Row[] = installments ? Array.from({ length: installments.count }, (_, index) => ({ ...entry, id: index === 0 ? entry.id : uid('fin'), lote_id: lot, parcela_numero: index + 1, parcelas_total: installments.count, titulo: `${name} (${index + 1}/${installments.count})`, data: shiftInstallment(date || today, index, installments.interval) })) : [entry]
+      const entries: Row[] = installments ? Array.from({ length: installments.count }, (_, index) => ({ ...entry, id: index === 0 ? entry.id : uid('fin'), lote_id: lot, parcela_numero: index + 1, parcelas_total: installments.count, titulo: `${name} (${index + 1}/${installments.count})`, data: shiftInstallment(date || today, index, installments.interval), ...(index === 0 && finPaid ? paidFields : {}) })) : [entry]
       commit(current => ({ ...current, finance: { ...current.finance, categories: finCategoryNow && !known ? [...rows(current.finance.categories), { id: uid('cat'), nome: finCategoryNow, cor: PALETTE[rows(current.finance.categories).length % PALETTE.length].color }] : current.finance.categories, transactions: [...entries, ...rows(current.finance.transactions)] } }))
     } else if (kind === 'task') {
       const task: Row = {
@@ -352,7 +346,10 @@ export function QuickAdd({ kinds, initial, state, today, defaultProjectId, defau
                   </button>
                 ) : null}
                 <button type="button" className={styles.chip} data-set={installments || undefined} style={{ '--chip-color': 'var(--ds-lilac-fg)' } as CSSProperties} onClick={open('finstall')}>
-                  <Icon name="splitscreen" size={16} filled={false} />{installments ? `${installments.count}x ${installments.interval === 'mensal' ? 'por mês' : installments.interval === 'semanal' ? 'por semana' : installments.interval === 'quinzenal' ? 'por quinzena' : 'por ano'}` : 'Único'}{fromNl('installments') ? <span className={styles.chipX} role="button" aria-label="Desfazer" title="Desfazer" onClick={undoNl('installments')}>×</span> : null}
+                  <Icon name="splitscreen" size={16} filled={false} />{installments ? `${installments.count}x ${intervalLabel(installments.interval)}` : 'Único'}{fromNl('installments') ? <span className={styles.chipX} role="button" aria-label="Desfazer" title="Desfazer" onClick={undoNl('installments')}>×</span> : null}
+                </button>
+                <button type="button" className={styles.chip} data-set style={{ '--chip-color': finPaid ? 'var(--ds-success)' : 'var(--ds-warn)' } as CSSProperties} onClick={open('fstatus')}>
+                  <Icon name={finPaid ? 'check_circle' : 'schedule'} size={16} filled={false} />{finPaid ? 'Pago' : 'Em aberto'}
                 </button>
               </>
             ) : kind === 'task' ? (
@@ -408,10 +405,25 @@ export function QuickAdd({ kinds, initial, state, today, defaultProjectId, defau
           <DatePicker value={kind === 'event' ? eventDate : kind === 'finance' ? (date || today) : date} today={today} allowEmpty={false} onSelect={value => done(() => setDate(value))} />
         </Floating>
       ) : null}
+      {picker === 'fstatus' ? (
+        <Floating anchor={anchor} title="Situação" width={220} onClose={() => setPicker('')}>
+          <OptionList options={[{ value: 'aberto', label: 'Em aberto', icon: 'schedule', color: 'var(--ds-warn)' }, { value: 'pago', label: 'Pago', icon: 'check_circle', color: 'var(--ds-success)' }]} value={finPaid ? 'pago' : 'aberto'} onSelect={value => done(() => setFinPaid(value === 'pago'))} />
+        </Floating>
+      ) : null}
       {picker === 'finstall' ? (
-        <Floating anchor={anchor} title="Forma" width={260} onClose={() => setPicker('')}>
-          <OptionList options={[{ value: '0', label: 'Único', icon: 'looks_one' }, ...[2, 3, 4, 5, 6, 10, 12].map(count => ({ value: String(count), label: `${count} parcelas`, icon: 'splitscreen' }))]} value={installments ? String(installments.count) : '0'} onSelect={value => done(() => { mute('installments'); setInstallS(Number(value) >= 2 ? { count: Number(value), interval: installments?.interval || 'mensal' } : null) })} />
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, padding: '8px 12px 12px' }}>{(['mensal', 'semanal', 'quinzenal', 'anual'] as const).map(interval => <button key={interval} type="button" className={styles.chip} data-set={installments?.interval === interval || undefined} onClick={() => { mute('installments'); setInstallS({ count: installments?.count || 2, interval }) }}>{interval[0].toUpperCase() + interval.slice(1)}</button>)}</div>
+        <Floating anchor={anchor} title="Forma" width={280} onClose={() => setPicker('')}>
+          <OptionList options={[{ value: '0', label: 'Único', icon: 'looks_one' }, ...[2, 3, 4, 6, 10, 12].map(count => ({ value: String(count), label: `${count} parcelas`, icon: 'splitscreen' }))]} value={installments && [2, 3, 4, 6, 10, 12].includes(installments.count) ? String(installments.count) : installments ? 'x' : '0'} onSelect={value => done(() => { mute('installments'); setInstallS(Number(value) >= 2 ? { count: Number(value), interval: installments?.interval || 'mensal' } : null) })} />
+          <div style={{ display: 'grid', gap: 8, padding: '8px 12px 12px' }}>
+            <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, fontSize: 13 }}>Personalizado: parcelas
+              <input type="number" min={2} max={360} value={installments?.count || ''} placeholder="2" style={{ width: 70 }} onChange={event => { mute('installments'); const count = Number(event.target.value); setInstallS(count >= 2 ? { count: Math.min(360, count), interval: installments?.interval || 'mensal' } : null) }} />
+            </label>
+            {installments ? <>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>{INTERVAL_CHOICES.map(choice => <button key={choice.value} type="button" className={styles.chip} data-set={intervalChoice(installments.interval) === choice.value || undefined} onClick={() => { mute('installments'); setInstallS({ count: installments.count, interval: choice.value === 'custom' ? 'dias:10' : choice.value }) }}>{choice.label}</button>)}</div>
+              {intervalDays(installments.interval) ? <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, fontSize: 13 }}>A cada quantos dias
+                <input type="number" min={1} max={365} value={intervalDays(installments.interval)} style={{ width: 70 }} onChange={event => { mute('installments'); setInstallS({ count: installments.count, interval: `dias:${Math.max(1, Number(event.target.value) || 1)}` }) }} />
+              </label> : null}
+            </> : null}
+          </div>
         </Floating>
       ) : null}
       {picker === 'ftype' ? (
