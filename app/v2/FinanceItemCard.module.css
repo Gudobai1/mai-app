@@ -86,3 +86,5 @@
 .rowButton small, .rowButton span { grid-column: 2; }
 .field { grid-template-columns: 22px minmax(0, 1fr); column-gap: 10px; align-items: center; }
 .field small, .field input, .field select, .field > :not(.rowIcon) { grid-column: 2; }
+
+.commentsSlot { margin-top: auto; padding-top: 12px; }
