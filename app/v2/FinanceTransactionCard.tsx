@@ -70,7 +70,7 @@ export function FinanceTransactionCard({
     const tone = paid ? undefined : due && due < today ? 'late' : due === today ? 'today' : 'future'
     const repeatLabel = item.ajuste_fatura ? 'Fatura' : item._isFixed ? 'Todo mês' : item.lote_id ? `${item.parcela_numero}/${item.parcelas_total}` : ''
     return <div className={cs.card} data-done={paid || undefined}>
-      <button type="button" className={cs.check} style={color ? ({ '--check-color': incomeItem ? 'var(--ds-success)' : color } as React.CSSProperties) : undefined} data-done={paid || undefined} data-partial={payment.status === 'parcial' || undefined} data-late={tone === 'late' || undefined} title={paid ? 'Marcar como pendente' : 'Marcar como pago'} aria-label={paid ? 'Marcar como pendente' : 'Marcar como pago'} onClick={onTogglePaid}>
+      <button type="button" className={cs.check} style={{ '--check-color': incomeItem ? 'var(--ds-success)' : 'var(--ds-danger)' } as React.CSSProperties} data-done={paid || undefined} data-partial={payment.status === 'parcial' || undefined} data-late={tone === 'late' || undefined} title={paid ? 'Marcar como pendente' : 'Marcar como pago'} aria-label={paid ? 'Marcar como pendente' : 'Marcar como pago'} onClick={onTogglePaid}>
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>
       </button>
       <button type="button" className={cs.main} onClick={onOpen}>

@@ -30,3 +30,20 @@ export function SideRow({ id, icon, color, label, summary, open, setOpen, childr
 export function SideField({ label, icon, color, children }: { label: string; icon?: string; color?: string; children: ReactNode }) {
   return <div className={s.row}><label className={s.field}>{icon ? <i className={s.rowIcon} style={{ color }}><MaiIcon name={icon} size={18} /></i> : null}<small>{label}</small>{children}</label></div>
 }
+
+/** Escolha de mês no padrão do app (sem o seletor do navegador). */
+export function MonthStepper({ value, onChange, clearable = false, empty = 'Sem fim' }: { value: string; onChange: (value: string) => void; clearable?: boolean; empty?: string }) {
+  const label = value ? new Date(`${value}-15T12:00:00`).toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' }).replace('.', '') : empty
+  const move = (amount: number) => {
+    const base = value || new Date().toISOString().slice(0, 7)
+    const date = new Date(`${base}-15T12:00:00`)
+    date.setMonth(date.getMonth() + amount)
+    onChange(`${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`)
+  }
+  return <div className={s.stepper}><button type="button" onClick={() => move(-1)} aria-label="Mês anterior">‹</button><span>{label}</span><button type="button" onClick={() => move(1)} aria-label="Próximo mês">›</button>{clearable && value ? <button type="button" onClick={() => onChange('')} aria-label="Limpar">×</button> : null}</div>
+}
+
+/** Escolha entre poucas opções, em botões do app. */
+export function Chips({ value, options, onChange }: { value: string; options: { value: string; label: string }[]; onChange: (value: string) => void }) {
+  return <div className={s.chips}>{options.map(option => <button key={option.value} type="button" data-active={value === option.value} onClick={() => onChange(option.value)}>{option.label}</button>)}</div>
+}
