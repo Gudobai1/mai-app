@@ -158,7 +158,7 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
   const [cardAdding, setCardAdding] = useState(false)
   const [popupMonth, setPopupMonth] = useState<string | null>(null)
   useEffect(() => { if (!draft) setPopupMonth(null) }, [draft === null]) // eslint-disable-line react-hooks/exhaustive-deps
-  const [moveForm, setMoveForm] = useState<{ type: 'in' | 'out'; amount: string; date: string; cal: boolean; done: boolean; editId?: string } | null>(null)
+  const [moveForm, setMoveForm] = useState<{ type: 'in' | 'out'; amount: string; date: string; cal: boolean; done: boolean; editId?: string; titulo?: string } | null>(null)
   const [showDone, setShowDone] = useState(false)
   useEffect(() => { setMoveForm(null); setShowDone(false) }, [draft?.id])
   const [trail, setTrail] = useState<{ kind: Exclude<DraftKind, 'transaction'>; id: string; label: string }[]>([])
@@ -983,7 +983,7 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
         setDraft({ ...base, movimentos: rows(draft.movimentos).filter(item => String(item.id) !== String(mov.id)) })
         setMoveForm(null)
       }
-      const editMove = (mov: Row) => { if (!editableMove(mov)) return; setMoveForm({ type: mov.tipo === 'entrada' || mov.tipo === 'aporte' ? 'in' : 'out', amount: String(clampMoney(mov.valor)).replace('.', ','), date: dateKey(mov.data) || today, cal: false, done: isDone(mov), editId: String(mov.id) }) }
+      const editMove = (mov: Row) => { if (!editableMove(mov)) return; setMoveForm({ type: mov.tipo === 'entrada' || mov.tipo === 'aporte' ? 'in' : 'out', amount: String(clampMoney(mov.valor)).replace('.', ','), date: dateKey(mov.data) || today, cal: false, done: isDone(mov), editId: String(mov.id), titulo: String(mov.titulo || '') }) }
       const moveLine = (mov: Row, plus: boolean) => { const done = isDone(mov); const editable = editableMove(mov); return <div key={String(mov.id)} className={ic.line} {...quick.bind(() => ({ title: plus ? (kind === 'box' ? 'Guardado' : 'Aporte') : (kind === 'box' ? 'Retirada' : 'Resgate'), subtitle: `${plus ? '+' : '−'}${money.format(clampMoney(mov.valor))}`, groups: [{ options: editable ? [{ label: done ? 'Marcar como pendente' : 'Marcar como efetivado', icon: done ? 'undo' : 'check_circle', onSelect: () => toggleMove(mov) }, { label: 'Editar', icon: 'edit', onSelect: () => editMove(mov) }, { label: 'Excluir', icon: 'delete', tone: 'danger' as const, onSelect: () => deleteMove(mov) }] : [{ label: 'Excluir', icon: 'delete', tone: 'danger' as const, onSelect: () => deleteMove(mov) }] }] }))}><button type="button" className={ic.lineCheck} data-paid={done} disabled={!editable} title={done ? 'Marcar como pendente' : 'Marcar como efetivado'} style={done ? undefined : { borderColor: plus ? 'var(--ds-success)' : 'var(--ds-danger)' }} onClick={() => toggleMove(mov)}>{done ? '✓' : ''}</button><button type="button" className={ic.lineBody} disabled={!editable} onClick={() => editMove(mov)}><span className={ic.lineText}><b>{plus ? (kind === 'box' ? 'Guardado' : 'Aporte') : (kind === 'box' ? 'Retirada' : 'Resgate')}</b><small>{new Date(mov.data).toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' })}{done ? '' : ' · pendente'}</small></span><span className={ic.lineValue} data-tone={plus ? 'in' : 'out'}>{plus ? '+' : '−'} {money.format(clampMoney(mov.valor))}</span></button></div> }
       const listSection = (title: string, count: number, children: ReactNode, _empty?: string) => !count ? null : <section className={ic.section}><h3>{title}<small>{count}</small></h3>{children}</section>
       const draftId = String(draft.id)
@@ -1025,21 +1025,21 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
       const commentsField = kind === 'card' ? 'comentarios_faturas' : 'comentarios_meses'
       const monthLabelShort = new Date(`${viewMonth}-15T12:00:00`).toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' }).replace(/^./, c => c.toUpperCase())
       const monthStepper = <div className={ic.inlineStepper}><button type="button" onClick={() => { setCardAdding(false); setPopupMonth(shiftMonth(viewMonth, -1)) }} aria-label="Mês anterior"><MaiIcon name="chevron_left" size={22} /></button><button type="button" className={ic.inlineStepperValue} onClick={() => { setCardAdding(false); setPopupMonth(today.slice(0, 7)) }} title="Voltar ao mês atual">{monthLabelShort}</button><button type="button" onClick={() => { setCardAdding(false); setPopupMonth(shiftMonth(viewMonth, 1)) }} aria-label="Próximo mês"><MaiIcon name="chevron_right" size={22} /></button></div>
-      const submitMove = () => {
+      const submitMove = (input: { type: 'in' | 'out'; valor: number; data: string; done: boolean; titulo: string }) => {
         if (!moveForm || !permanent) return
-        const value = parseMoneyInput(moveForm.amount)
+        const value = input.valor
         if (!(value > 0)) return
-        if (kind === 'investment' && moveForm.type === 'out' && !moveForm.editId) {
-          setRedeem({ amount: Math.min(value, clampMoney(draft.valor_atual)), date: moveForm.date, conta: '', junto: true })
+        if (kind === 'investment' && input.type === 'out' && !moveForm.editId) {
+          setRedeem({ amount: Math.min(value, clampMoney(draft.valor_atual)), date: input.data, conta: '', junto: true })
           setMoveForm(null)
           return
         }
-        const into = moveForm.type === 'in'
-        const mov: Row = { id: moveForm.editId || uid('mov'), data: `${moveForm.date}T12:00:00.000Z`, tipo: kind === 'box' ? (into ? 'entrada' : 'retirada') : 'aporte', valor: value, efetivado: moveForm.done }
+        const into = input.type === 'in'
+        const mov: Row = { id: moveForm.editId || uid('mov'), data: `${input.data}T12:00:00.000Z`, tipo: kind === 'box' ? (into ? 'entrada' : 'retirada') : 'aporte', valor: value, efetivado: input.done, ...(input.titulo ? { titulo: input.titulo } : {}) }
         let base: Row = draft
         const old = moveForm.editId ? rows(draft.movimentos).find(item => String(item.id) === moveForm.editId) : undefined
         if (old && isDone(old)) base = moveEffect(base, old, -1)
-        if (moveForm.done) base = moveEffect(base, mov, 1)
+        if (input.done) base = moveEffect(base, mov, 1)
         setDraft({ ...base, movimentos: moveForm.editId ? rows(base.movimentos).map(item => String(item.id) === moveForm.editId ? { ...item, ...mov } : item) : [mov, ...rows(base.movimentos)] })
         setMoveForm(null)
       }
@@ -1067,21 +1067,13 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
         {kind === 'card' ? <>{listSection('Lançamentos', cardTx.length, cardTx.map(txLine), 'Nenhuma compra na fatura deste mês.')}{draft._persisted ? (cardAdding ? <QuickAdd key={`${draftId}-${viewMonth}`} inline kinds={['finance']} initial="finance" state={state} today={today} defaultDate={viewMonth === today.slice(0, 7) ? today : `${viewMonth}-01`} defaultAccount={`card|${draftId}`} commit={commit} onFinance={() => undefined} onClose={() => setCardAdding(false)} /> : <button type="button" className={fm.addRow} onClick={() => setCardAdding(true)}><MaiIcon name="add" size={18} />Adicionar lançamento</button>) : null}</> : null}
         {permanent ? (() => { const all = rows(draft.movimentos); const doneCount = all.filter(isDone).length; const visible = all.filter(mov => showDone || !isDone(mov)); return all.length ? <section className={ic.section}><h3>Lançamentos<small>{visible.length}</small>{doneCount ? <button type="button" className={ic.toggleDone} onClick={() => setShowDone(!showDone)}><MaiIcon name={showDone ? 'visibility_off' : 'visibility'} size={15} />{showDone ? 'Ocultar efetivados' : `Mostrar efetivados (${doneCount})`}</button> : null}</h3>{visible.map(mov => moveLine(mov, kind === 'box' ? mov.tipo === 'entrada' : mov.tipo === 'aporte'))}</section> : null })() : null}
 
-        {permanent && draft._persisted ? (moveForm ? <div className={ic.moveForm}>
-          <Chips value={moveForm.type} onChange={value => setMoveForm({ ...moveForm, type: value as 'in' | 'out' })} options={[{ value: 'in', label: kind === 'box' ? 'Guardar' : 'Aportar' }, { value: 'out', label: kind === 'box' ? 'Retirar' : 'Resgatar' }]} />
-          <Chips value={moveForm.done ? 'done' : 'open'} onChange={value => setMoveForm({ ...moveForm, done: value === 'done' })} options={[{ value: 'done', label: 'Efetivado' }, { value: 'open', label: 'Pendente' }]} />
-          <MoneyInput className={ic.moveInput} autoFocus value={parseMoneyInput(moveForm.amount) || 0} onChange={value => setMoveForm({ ...moveForm, amount: value ? value.toFixed(2).replace('.', ',') : '' })} />
-          <div className={ic.hints}>
-            {quickChip('Hoje', 'today', 'var(--ds-warn)', moveForm.date === today, () => setMoveForm({ ...moveForm, date: today, cal: false }))}
-            {quickChip('Amanhã', 'wb_sunny', 'var(--ds-warn)', moveForm.date === addDays(today, 1), () => setMoveForm({ ...moveForm, date: addDays(today, 1), cal: false }))}
-            {quickChip(moveForm.date === today || moveForm.date === addDays(today, 1) ? 'Outra data' : naturalDate(moveForm.date, today), 'calendar_today', 'var(--ds-sky-fg)', moveForm.cal, () => setMoveForm({ ...moveForm, cal: !moveForm.cal }))}
-          </div>
-          {moveForm.cal ? <CreateCalendarPicker allowEmpty={false} showQuick={false} value={moveForm.date} today={today} onChange={value => setMoveForm({ ...moveForm, date: value, cal: false })} close={() => undefined} /> : null}
-          <div className={ic.payRow}>
-            <button type="button" className={ic.payButton} onClick={() => setMoveForm(null)}>Cancelar</button>{moveForm.editId ? <button type="button" className={ic.payButton} onClick={() => { const mov = rows(draft.movimentos).find(item => String(item.id) === moveForm.editId); if (mov) void deleteMove(mov) }}>Excluir</button> : null}
-            <button type="button" className={ic.payButton} data-primary="true" disabled={!(parseMoneyInput(moveForm.amount) > 0)} onClick={() => submitMove()}>{moveForm.editId ? 'Salvar' : moveForm.type === 'out' && kind === 'investment' ? 'Continuar' : 'Adicionar'}</button>
-          </div>
-        </div> : <button type="button" className={fm.addRow} onClick={() => setMoveForm({ type: 'in', amount: '', date: today, cal: false, done: false })}><MaiIcon name="add" size={18} />Adicionar lançamento</button>) : null}
+        {permanent && draft._persisted ? (moveForm ? <QuickAdd key={moveForm.editId || 'novo-movimento'} inline kinds={['finance']} initial="finance" state={state} today={today} defaultDate={moveForm.date} commit={commit} onFinance={() => undefined} onClose={() => setMoveForm(null)} movement={{
+          types: [{ value: 'in', label: kind === 'box' ? 'Guardar' : 'Aportar', icon: 'trending_up', color: 'var(--ds-success)' }, { value: 'out', label: kind === 'box' ? 'Retirar' : 'Resgatar', icon: 'trending_down', color: 'var(--ds-danger)' }],
+          submitLabel: moveForm.editId ? 'Salvar' : kind === 'box' ? 'Adicionar lançamento' : 'Adicionar lançamento',
+          initial: { type: moveForm.type, valor: parseMoneyInput(moveForm.amount) || 0, data: moveForm.date, done: moveForm.done, titulo: moveForm.titulo },
+          onSubmit: submitMove,
+          onDelete: moveForm.editId ? () => { const mov = rows(draft.movimentos).find(item => String(item.id) === moveForm.editId); if (mov) void deleteMove(mov) } : undefined,
+        }} /> : <button type="button" className={fm.addRow} onClick={() => setMoveForm({ type: 'in', amount: '', date: today, cal: false, done: false })}><MaiIcon name="add" size={18} />Adicionar lançamento</button>) : null}
         {extras}
       </>
 

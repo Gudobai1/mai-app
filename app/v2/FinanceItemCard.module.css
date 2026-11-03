@@ -158,3 +158,6 @@
 .lineCheck:disabled { cursor: default; }
 .section h3 .toggleDone { appearance: none; margin-left: auto; display: inline-flex; align-items: center; gap: 6px; border: 0; background: transparent; color: var(--ds-muted); font: inherit; font-size: 12px; font-weight: var(--ds-fw-medium); cursor: pointer; padding: 2px 6px; border-radius: 6px; }
 .section h3 .toggleDone:hover { color: var(--ds-text); background: var(--ds-surface-hover); }
+
+.field [data-money] { font-size: 13.5px; font-weight: var(--ds-fw-medium); }
+.field [data-money][data-empty] { color: var(--ds-muted); }
