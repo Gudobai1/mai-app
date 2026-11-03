@@ -10,6 +10,8 @@ import { FinanceTransactionCard } from './FinanceTransactionCard'
 import { FinanceTransactionExtraTools } from './FinanceTransactionExtraTools'
 import { FinanceItemShell, SideField, SideRow } from './FinanceItemCard'
 import ic from './FinanceItemCard.module.css'
+import footerStyles from './shell/DraftFooter.module.css'
+import { AutoEditor, RentEditor, TaxEditor, applyInvestmentAutomation, autoSummary, firstApplication, redeemPreview, rentSummary, taxSummary } from './FinanceInvestmentTools'
 import { DraftButtons } from './shell/DraftFooter'
 import { ItemAttachments } from './ItemAttachments'
 import { MAI_ENTITY_ICONS, MaiIcon } from './MaiIcons'
@@ -148,6 +150,7 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
   const [draft, setDraft] = useState<Row | null>(null)
   const [kind, setKind] = useState<DraftKind>('transaction')
   const [createTool, setCreateTool] = useState('')
+  const [redeem, setRedeem] = useState<{ amount: number; date: string; conta: string; junto: boolean } | null>(null)
   const [categoryDraftName, setCategoryDraftName] = useState('')
 
   const paidAmount = (item: Row) => paymentState(item).paid
@@ -333,6 +336,26 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
   }
 
   useEffect(() => { if (createRequest?.startsWith('finance:')) openNew('transaction') }, [createRequest, today])
+
+  useEffect(() => {
+    const updated = investments.map(item => applyInvestmentAutomation(item, today))
+    if (!updated.some(Boolean)) return
+    commit(current => ({ ...current, finance: { ...current.finance, investments: rows(current.finance.investments).map(item => { const index = investments.findIndex(entry => String(entry.id) === String(item.id)); return index >= 0 && updated[index] ? updated[index] as Row : item }) } }))
+  }, [today, state.finance?.investments])
+
+  function confirmRedeem() {
+    if (!draft || kind !== 'investment' || !redeem) return
+    const preview = redeemPreview(draft, redeem.amount, today)
+    if (preview.value <= 0) return
+    const name = String(draft.nome || 'Investimento')
+    const nextInvestment: Row = { ...draft, aportado: Math.max(0, Math.round((clampMoney(draft.aportado) - preview.principal) * 100) / 100), valor_atual: Math.max(0, Math.round((clampMoney(draft.valor_atual) - preview.value) * 100) / 100), movimentos: [{ id: uid('mov'), data: `${redeem.date}T12:00:00.000Z`, tipo: 'resgate', valor: preview.value, imposto: redeem.junto ? preview.taxTotal : 0 }, ...rows(draft.movimentos)] }
+    const entry = (title: string, value: number, type: 'receita' | 'despesa', category: string): Row => ({ id: uid('fin'), titulo: title, observacao: '', valor: value, valor_pago: value, tipo: type, data: redeem.date, status: 'pago', categoria: category, conta_id: redeem.conta, cartao_id: '', anexos: [], pagamentos: [{ id: uid('pay'), data: redeem.date, valor: value }], ignorar_calculo: false, recorrencia: 'unico' })
+    const created = [entry(`Resgate — ${name}`, preview.value, 'receita', 'Resgate'), ...(redeem.junto && preview.taxTotal > 0 ? [entry(`Imposto — ${name}`, preview.taxTotal, 'despesa', 'Impostos')] : [])]
+    const { _persisted: _flag, ...stored } = nextInvestment
+    commit(current => ({ ...current, finance: { ...current.finance, investments: rows(current.finance.investments).map(item => String(item.id) === String(stored.id) ? stored : item), transactions: [...created, ...rows(current.finance.transactions)] } }))
+    setDraft(nextInvestment)
+    setRedeem(null)
+  }
 
   function addCategoryFromLaunch() {
     if (!draft || kind !== 'transaction') return
@@ -767,11 +790,12 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
         {kind === 'card' && draft._persisted ? <div className={ic.headValue}><strong>{money.format(cardInvoice(draft))}</strong><span>fatura de {monthLabel(month).split(' de ')[0]}</span></div> : null}
         {kind === 'box' ? <div className={ic.headValue}><strong>{money.format(clampMoney(draft.saldo))}</strong><span>{clampMoney(draft.meta) ? `de ${money.format(clampMoney(draft.meta))} · ${Math.round(Math.min(100, clampMoney(draft.saldo) / clampMoney(draft.meta) * 100))}%` : 'sem meta definida'}</span></div> : null}
         {kind === 'investment' ? <div className={ic.headValue}><strong>{money.format(clampMoney(draft.valor_atual))}</strong><span><span className={clampMoney(draft.valor_atual) >= clampMoney(draft.aportado) ? fm.pos : fm.neg}>{signedMoney(clampMoney(draft.valor_atual) - clampMoney(draft.aportado))} · {clampMoney(draft.aportado) ? ((clampMoney(draft.valor_atual) - clampMoney(draft.aportado)) / clampMoney(draft.aportado) * 100).toFixed(1).replace('.', ',') : '0,0'}%</span></span></div> : null}
+        {kind === 'investment' && clampMoney(draft.rent_taxa) > 0 ? <p className={ic.note}>Valor estimado pela taxa configurada; você pode corrigir quando quiser.</p> : null}
         {draft._persisted ? <div className={ic.actions}>
           {kind === 'account' ? <><button type="button" onClick={() => reconcile(draft)}>Ajustar saldo</button><button type="button" onClick={() => showOrigin(draftId)}>Ver extrato</button></> : null}
           {kind === 'card' ? <><button type="button" data-primary="true" onClick={() => payInvoice(draft)}>Pagar fatura</button><button type="button" onClick={() => showOrigin(`card|${draftId}`)}>Ver faturas</button></> : null}
           {kind === 'box' ? <><button type="button" data-primary="true" onClick={() => moveBoxValue('in')}>Guardar</button><button type="button" onClick={() => moveBoxValue('out')}>Retirar</button></> : null}
-          {kind === 'investment' ? <><button type="button" data-primary="true" onClick={() => moveInvestmentValue('in')}>Aportar</button><button type="button" onClick={() => moveInvestmentValue('out')}>Resgatar</button></> : null}
+          {kind === 'investment' ? <><button type="button" data-primary="true" onClick={() => moveInvestmentValue('in')}>Aportar</button><button type="button" onClick={() => setRedeem({ amount: clampMoney(draft.valor_atual), date: today, conta: '', junto: true })}>Resgatar</button></> : null}
         </div> : null}
         {photo}
         {iconPicker}
@@ -793,8 +817,34 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
       : kind === 'account' ? <>{numberField('Saldo inicial', 'saldo_inicial')}{colorRow}</>
       : kind === 'card' ? <>{numberField('Limite total', 'limite')}<SideField label="Disponível"><input readOnly value={money.format(Math.max(0, clampMoney(draft.limite) - cardInvoice(draft)))} /></SideField>{numberField('Fechamento (dia)', 'fechamento', '1')}{numberField('Vencimento (dia)', 'vencimento', '1')}<SideField label="Pagar com"><select value={draft.conta_id || ''} onChange={event => setDraft({ ...draft, conta_id: event.target.value })}>{accountOptions}</select></SideField>{colorRow}</>
       : kind === 'box' ? <>{numberField('Meta', 'meta')}<SideField label="Data limite"><input type="date" value={dateKey(draft.prazo)} onChange={event => setDraft({ ...draft, prazo: event.target.value })} /></SideField><SideField label="Guardar de"><select value={draft.conta_id || ''} onChange={event => setDraft({ ...draft, conta_id: event.target.value })}>{accountOptions}</select></SideField>{colorRow}</>
-      : <><SideField label="Tipo"><select value={draft.tipo || 'ETF'} onChange={event => setDraft({ ...draft, tipo: event.target.value })}><option>ETF</option><option>Ações</option><option>FIIs</option><option>Renda fixa</option><option>Cripto</option><option>Previdência</option><option>Outro</option></select></SideField><SideField label="Instituição"><input value={draft.instituicao || ''} onChange={event => setDraft({ ...draft, instituicao: event.target.value })} /></SideField>{numberField('Aplicado', 'aportado')}{numberField('Valor atual', 'valor_atual')}{colorRow}</>
+      : <><SideField label="Tipo"><select value={draft.tipo || 'ETF'} onChange={event => setDraft({ ...draft, tipo: event.target.value })}><option>ETF</option><option>Ações</option><option>FIIs</option><option>Renda fixa</option><option>Cripto</option><option>Previdência</option><option>Outro</option></select></SideField><SideField label="Instituição"><input value={draft.instituicao || ''} onChange={event => setDraft({ ...draft, instituicao: event.target.value })} /></SideField>{numberField('Aplicado', 'aportado')}{numberField('Valor atual', 'valor_atual')}<SideField label="Primeira aplicação"><input type="date" value={firstApplication(draft)} onChange={event => setDraft({ ...draft, data_inicio: event.target.value })} /></SideField><SideRow id="inv-rent" label="Rentabilidade" summary={rentSummary(draft)} open={createTool} setOpen={setCreateTool}><RentEditor draft={draft} setDraft={setDraft} /></SideRow><SideRow id="inv-auto" label="Aporte automático" summary={autoSummary(draft)} open={createTool} setOpen={setCreateTool}><AutoEditor draft={draft} setDraft={setDraft} /></SideRow><SideRow id="inv-tax" label="Impostos" summary={taxSummary(draft)} open={createTool} setOpen={setCreateTool}><TaxEditor draft={draft} setDraft={setDraft} /></SideRow>{colorRow}</>
 
+      if (redeem && kind === 'investment') {
+        const preview = redeemPreview(draft, redeem.amount, today)
+        const current = clampMoney(draft.valor_atual)
+        const pct = current ? Math.round(redeem.amount / current * 100) : 0
+        const setAmount = (value: number) => setRedeem({ ...redeem, amount: Math.min(current, Math.max(0, value)) })
+        const redeemContent = <>
+          <h2 className={ic.title} style={{ margin: 0 }}>Resgatar</h2>
+          <div><input className={ic.bigInput} type="number" step="0.01" min="0" max={current} value={redeem.amount} onChange={event => setAmount(Number(event.target.value))} /><span className={ic.note}>de {money.format(current)}</span></div>
+          <div className={ic.pctRow}>{[25, 50].map(value => <button key={value} type="button" data-active={pct === value} onClick={() => setAmount(Math.round(current * value) / 100)}>{value}%</button>)}<button type="button" data-active={pct !== 25 && pct !== 50 && pct !== 100}>Parcial</button><button type="button" data-active={pct === 100} onClick={() => setAmount(current)}>Tudo</button></div>
+          <section className={ic.section}><h3>Resumo do resgate</h3><div className={ic.summaryBox}>
+            <div><span>Valor resgatado</span><b>{money.format(preview.value)}</b></div>
+            <div><span>Rendimento neste resgate</span><b>+ {money.format(preview.gain)}</b></div>
+            {preview.lines.map(line => <div key={line.id}><span>{line.nome} · {String(line.aliquota).replace('.', ',')}% sobre o rendimento</span><b>− {money.format(line.valor)}</b></div>)}
+            {!preview.lines.length ? <div><span>Impostos</span><b>isento</b></div> : null}
+            <div className={ic.total}><span>Entra na conta</span><b>{money.format(redeem.junto ? preview.net : preview.value)}</b></div>
+          </div>{redeem.junto && preview.taxTotal > 0 ? <p className={ic.note} style={{ marginTop: 8 }}>Cria o lançamento “Imposto — {String(draft.nome || 'Investimento')}” de {money.format(preview.taxTotal)}, na categoria Impostos.</p> : null}</section>
+        </>
+        const redeemSide = <>
+          <SideField label="Valor"><input type="number" step="0.01" min="0" max={current} value={redeem.amount} onChange={event => setAmount(Number(event.target.value))} /></SideField>
+          <SideField label="Data"><input type="date" value={redeem.date} onChange={event => setRedeem({ ...redeem, date: event.target.value || today })} /></SideField>
+          <SideField label="Receber em"><select value={redeem.conta} onChange={event => setRedeem({ ...redeem, conta: event.target.value })}>{accountOptions}</select></SideField>
+          <div className={ic.row}><div className={ic.field}><small>Pagar impostos junto</small><button type="button" className={ic.switch} data-on={redeem.junto} onClick={() => setRedeem({ ...redeem, junto: !redeem.junto })}>{redeem.junto ? 'Ligado' : 'Desligado'}</button></div></div>
+          <SideRow id="inv-tax" label="Impostos" summary={taxSummary(draft)} open={createTool} setOpen={setCreateTool}><TaxEditor draft={draft} setDraft={setDraft} /></SideRow>
+        </>
+        return <FinanceItemShell crumb={`Investimentos › ${String(draft.nome || 'Investimento')}`} onClose={() => setRedeem(null)} content={redeemContent} side={redeemSide} footer={<><span /><button type="button" className={footerStyles.cancel} onClick={() => setRedeem(null)}>Cancelar</button><button type="button" className={footerStyles.save} disabled={preview.value <= 0} onClick={confirmRedeem}>Resgatar {money.format(preview.value)}</button></>} />
+      }
       return <FinanceItemShell crumb={`Financeiro › ${crumbKind}`} onClose={closeDraft} content={content} side={side} footer={<>{draft._persisted ? <button type="button" className="mai-finance-v4-delete" onClick={removeDraft}><MaiIcon name="delete" size={18} />Excluir</button> : <span />}<DraftButtons dirty={dirty} canSave onSave={() => void saveDraft()} onCancel={closeDraft} /></>} />
     })() : null}
   </div>
