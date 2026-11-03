@@ -4,8 +4,6 @@
 .check { appearance: none; flex-shrink: 0; width: 20px; height: 20px; margin-top: 1px; padding: 0; display: grid; place-items: center; border: 2px solid var(--check-color, var(--ds-line-strong)); border-radius: 50%; background: color-mix(in srgb, var(--check-color, transparent) 14%, transparent); color: var(--check-color, var(--ds-muted)); cursor: pointer; }
 .check > * { opacity: 0; transform: scale(0.4); transition: opacity 140ms ease, transform 180ms cubic-bezier(0.2, 0.8, 0.2, 1); }
 .check:hover > * { opacity: 0.9; transform: none; }
-.check[data-late] { border-color: var(--ds-danger); color: var(--ds-danger); }
-.check[data-partial] { border-color: var(--ds-warn); color: var(--ds-warn); }
 .check[data-done] { border-color: var(--ds-muted); background: var(--ds-muted); color: var(--ds-bg); }
 .check[data-done] > * { opacity: 1; transform: none; }
 .main { appearance: none; flex: 1; min-width: 0; display: flex; align-items: flex-start; gap: 12px; padding: 0; border: 0; background: transparent; color: var(--ds-text); font: inherit; text-align: left; cursor: pointer; }
