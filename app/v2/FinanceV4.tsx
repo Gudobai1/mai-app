@@ -261,22 +261,28 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
   const initialBalance = accounts.reduce((sum, account) => sum + Number(account.saldo_inicial || 0), 0)
   const looseCashBalance = transactions.filter(item => !item.ignorar_calculo && !String(item.conta_id || '').startsWith('card|') && !item.cartao_id).reduce((sum, item) => sum + signed(item, paidAmountThrough(item, today)), 0) + fixedCashTotalThrough(today)
   const realBalance = accounts.length ? accounts.reduce((sum, account) => sum + accountBalance(account), 0) : looseCashBalance
-  const projectedTransactionsTotal = transactions.filter(item => {
-    if (item.ignorar_calculo) return false
-    const itemMonth = dateKey(item.data).slice(0, 7)
-    return /^\d{4}-\d{2}$/.test(itemMonth) && itemMonth <= month
-  }).reduce((sum, item) => sum + signed(item, clampMoney(item.valor)), 0)
-  const projectedFixedTotal = fixed.reduce((total, rule) => {
-    if (rule.ativo === false || rule.ignorar_calculo) return total
-    const ruleStart = String(rule.mes_inicio || dateKey(rule.data).slice(0, 7) || today.slice(0, 7)).slice(0, 7)
-    const configuredEnd = String(rule.mes_fim || '').slice(0, 7)
-    const ruleEnd = configuredEnd && configuredEnd < month ? configuredEnd : month
-    return total + monthSequence(ruleStart, ruleEnd).reduce((sum, monthKey) => {
-      const item = fixedRuleAtMonth(rule, monthKey)
-      return item && !item.ignorar_calculo ? sum + signed(item, clampMoney(item.valor)) : sum
+  /** Saldo previsto ao fim de um mês: saldo inicial das contas + tudo o que está lançado até lá. */
+  const projectedThrough = (limitMonth: string) => {
+    const transactionsTotal = transactions.filter(item => {
+      if (item.ignorar_calculo) return false
+      const itemMonth = dateKey(item.data).slice(0, 7)
+      return /^\d{4}-\d{2}$/.test(itemMonth) && itemMonth <= limitMonth
+    }).reduce((sum, item) => sum + signed(item, clampMoney(item.valor)), 0)
+    const fixedTotal = fixed.reduce((total, rule) => {
+      if (rule.ativo === false || rule.ignorar_calculo) return total
+      const ruleStart = String(rule.mes_inicio || dateKey(rule.data).slice(0, 7) || today.slice(0, 7)).slice(0, 7)
+      const configuredEnd = String(rule.mes_fim || '').slice(0, 7)
+      const ruleEnd = configuredEnd && configuredEnd < limitMonth ? configuredEnd : limitMonth
+      if (ruleStart > ruleEnd) return total
+      return total + monthSequence(ruleStart, ruleEnd).reduce((sum, monthKey) => {
+        const item = fixedRuleAtMonth(rule, monthKey)
+        return item && !item.ignorar_calculo ? sum + signed(item, clampMoney(item.valor)) : sum
+      }, 0)
     }, 0)
-  }, 0)
-  const projectedBalance = initialBalance + projectedTransactionsTotal + projectedFixedTotal
+    return initialBalance + transactionsTotal + fixedTotal
+  }
+  const projectedBalance = projectedThrough(month)
+  const monthStartBalance = projectedThrough(shiftMonth(month, -1))
   const totalBoxes = boxes.reduce((sum, item) => sum + clampMoney(item.saldo), 0)
   const totalBoxTarget = boxes.reduce((sum, item) => sum + clampMoney(item.meta), 0)
   const totalBoxProgress = totalBoxTarget ? Math.min(100, totalBoxes / totalBoxTarget * 100) : 0
@@ -824,7 +830,7 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
     </div>
 
     <div className={fm.balance}>
-      <div><small>Saldo inicial</small><b>{money.format(initialBalance)}</b></div><i />
+      <div><small>Saldo inicial</small><b>{money.format(monthStartBalance)}</b></div><i />
       <button type="button" className={fm.balanceMain} onClick={resetView} title="Voltar ao início (mês atual, sem filtros)"><small>Saldo atual</small><strong data-negative={realBalance < 0}>{money.format(realBalance)}</strong></button><i />
       <div className={fm.balanceEnd}><small>Saldo previsto</small><b>{money.format(projectedBalance)}</b></div>
     </div>
@@ -884,7 +890,7 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
     {draft ? (() => {
       const crumbKind = kind === 'transaction' ? 'Lançamentos' : kind === 'account' ? 'Contas' : kind === 'card' ? 'Cartões' : kind === 'box' ? 'Caixinhas' : 'Investimentos'
       const lineTone = (item: Row) => item.tipo === 'receita' ? 'in' : 'out'
-      const txLine = (item: Row) => { const paid = paymentState(item).status === 'pago'; return <button type="button" key={`${item._isFixed ? 'f' : 't'}-${String(item.id)}-${dateKey(item.data)}`} className={ic.line} onClick={() => void openFromParent(item)}><span className={ic.lineCheck} data-paid={paid} style={paid ? undefined : { borderColor: item.tipo === 'receita' ? 'var(--ds-success)' : 'var(--ds-danger)' }}>{paid ? '✓' : ''}</span><span className={ic.lineText}><b>{String(item.titulo || 'Lançamento')}</b><small style={!paid && dateKey(item.data) < today ? { color: 'var(--ds-danger)' } : !paid && dateKey(item.data) === today ? { color: 'var(--ds-warn)' } : undefined}>{naturalDate(dateKey(item.data), today)}</small></span><span className={ic.lineValue} data-tone={lineTone(item)}>{item.tipo === 'receita' ? '+' : '−'} {money.format(clampMoney(item.valor))}</span></button> }
+      const txLine = (item: Row) => { const paid = paymentState(item).status === 'pago'; return <button type="button" key={`${item._isFixed ? 'f' : 't'}-${String(item.id)}-${dateKey(item.data)}`} className={ic.line} {...quick.bind(() => financeMenu(item))} onClick={() => void openFromParent(item)}><span className={ic.lineCheck} data-paid={paid} style={paid ? undefined : { borderColor: item.tipo === 'receita' ? 'var(--ds-success)' : 'var(--ds-danger)' }}>{paid ? '✓' : ''}</span><span className={ic.lineText}><b>{String(item.titulo || 'Lançamento')}</b><small style={!paid && dateKey(item.data) < today ? { color: 'var(--ds-danger)' } : !paid && dateKey(item.data) === today ? { color: 'var(--ds-warn)' } : undefined}>{naturalDate(dateKey(item.data), today)}</small></span><span className={ic.lineValue} data-tone={lineTone(item)}>{item.tipo === 'receita' ? '+' : '−'} {money.format(clampMoney(item.valor))}</span></button> }
       const moveLine = (mov: Row, plus: boolean) => <div key={String(mov.id)} className={ic.line} style={{ cursor: 'default' }}><span className={ic.lineCheck} data-paid="true">✓</span><span className={ic.lineText}><b>{plus ? (kind === 'box' ? 'Guardado' : 'Aporte') : (kind === 'box' ? 'Retirada' : 'Resgate')}</b><small>{new Date(mov.data).toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' })}</small></span><span className={ic.lineValue} data-tone={plus ? 'in' : 'out'}>{plus ? '+' : '−'} {money.format(clampMoney(mov.valor))}</span></div>
       const listSection = (title: string, count: number, children: ReactNode, _empty?: string) => !count ? null : <section className={ic.section}><h3>{title}<small>{count}</small></h3>{children}</section>
       const draftId = String(draft.id)
