@@ -46,6 +46,11 @@ export function MonthStepper({ value, onChange, clearable = false, empty = 'Sem 
   return <div className={s.stepper}><button type="button" onClick={() => move(-1)} aria-label="Mês anterior">‹</button>{onLabel ? <button type="button" className={s.stepperLabel} onClick={onLabel} title="Voltar ao mês atual">{label}</button> : <span>{label}</span>}<button type="button" onClick={() => move(1)} aria-label="Próximo mês">›</button>{clearable && value ? <button type="button" onClick={() => onChange('')} aria-label="Limpar">×</button> : null}</div>
 }
 
+/** Linha da lateral com setas (mês anterior/próximo); clicar no nome volta para o atual. */
+export function SideStepper({ icon, color, label, value, onPrev, onNext, onReset }: { icon?: string; color?: string; label: string; value: string; onPrev: () => void; onNext: () => void; onReset: () => void }) {
+  return <div className={s.row}><div className={s.rowStatic}>{icon ? <i className={s.rowIcon} style={{ color }}><MaiIcon name={icon} size={18} /></i> : null}<small>{label}</small><div className={s.rowStepper}><button type="button" onClick={onPrev} aria-label="Anterior">‹</button><button type="button" className={s.rowStepperValue} onClick={onReset} title="Voltar ao atual">{value}</button><button type="button" onClick={onNext} aria-label="Próximo">›</button></div></div></div>
+}
+
 /** Escolha entre poucas opções, em botões do app. */
 export function Chips({ value, options, onChange }: { value: string; options: { value: string; label: string }[]; onChange: (value: string) => void }) {
   return <div className={s.chips}>{options.map(option => <button key={option.value} type="button" data-active={value === option.value} onClick={() => onChange(option.value)}>{option.label}</button>)}</div>
