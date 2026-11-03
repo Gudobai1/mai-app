@@ -1,7 +1,7 @@
 'use client'
 
 import { ColorField } from './detail/ColorField'
-import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import type { MaiState } from '../../lib/v2/state'
 import type { InspectableItem } from './ContextDrawer'
 import { CreateCalendarPicker, CreateNumberEditor, CreateOptionList, createNaturalDate } from './CreateDrawerTools'
@@ -155,6 +155,12 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
   const quick = useQuickMenu()
   const [quickAdding, setQuickAdding] = useState(false)
   const [cardAdding, setCardAdding] = useState(false)
+  // Navegar entre meses dentro de uma conta/cartão não muda o mês geral: ao fechar, volta o que estava.
+  const baseMonth = useRef<string | null>(null)
+  useEffect(() => {
+    if (draft && (kind === 'account' || kind === 'card')) { if (baseMonth.current === null) baseMonth.current = month }
+    else if (!draft && baseMonth.current !== null) { setMonth(baseMonth.current); baseMonth.current = null }
+  }, [draft === null, kind]) // eslint-disable-line react-hooks/exhaustive-deps
   const [moveForm, setMoveForm] = useState<{ type: 'in' | 'out'; amount: string; date: string; cal: boolean } | null>(null)
   useEffect(() => { setMoveForm(null) }, [draft?.id])
   const [trail, setTrail] = useState<{ kind: Exclude<DraftKind, 'transaction'>; id: string; label: string }[]>([])

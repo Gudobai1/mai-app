@@ -1,9 +1,9 @@
 .page { max-width: 760px; margin: 0 auto; padding: 8px 4px 80px; color: var(--ds-text); }
 .top { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 4px; }
 .month { display: inline-flex; align-items: center; gap: 2px; }
-.month button { border: 0; background: transparent; color: var(--ds-muted); font: inherit; cursor: pointer; border-radius: 6px; padding: 4px 8px; }
+.month button { border: 0; background: transparent; color: var(--ds-muted); font: inherit; cursor: pointer; border-radius: 6px; padding: 4px 0; width: 36px; flex: none; font-size: 22px; line-height: 1; }
 .month button:hover { color: var(--ds-text); background: var(--ds-surface-hover); }
-.month .label { font-size: 20px; font-weight: 650; letter-spacing: -0.02em; color: var(--ds-text); padding: 2px 6px; }
+.month .label { font-size: 20px; font-weight: 650; letter-spacing: -0.02em; color: var(--ds-text); padding: 4px 0; width: 9.5em; flex: none; text-align: center; white-space: nowrap; }
 .month .label::first-letter { text-transform: uppercase; }
 .add { display: inline-flex; align-items: center; gap: 6px; border: 0; background: transparent; color: var(--ds-accent); font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; border-radius: 6px; padding: 6px 8px; }
 .add:hover { background: color-mix(in srgb, var(--ds-accent) 10%, transparent); }
