@@ -107,3 +107,13 @@ html body .mai-finance-v4-row .mai-item-subline-v2 { text-decoration: none; }
 }
 .mai-finance-v4-row:hover .mai-item-subline-v2,
 .mai-finance-v4-row:hover .mai-item-subline-v2 span { text-decoration: none; }
+
+/* Finanças: o sublinhado nunca é cortado (o título tem overflow oculto) e fica só no título. */
+html body .mai-item-row-v2 .mai-item-titleline-v2 > strong { padding-bottom: 3px !important; line-height: 1.45 !important; }
+html body .mai-finance-v4-row:hover .mai-item-titleline-v2 > strong { text-decoration: underline !important; text-underline-offset: 3px; text-decoration-thickness: 1px; }
+
+/* Finanças em Hoje/Em breve (botão .itemButton): título sublinhado, data e resto não. */
+html body [class*="itemButton"]:hover > [class*="taskBody"],
+html body [class*="itemButton"]:hover [class*="taskSub"],
+html body [class*="itemButton"]:hover [class*="dateTag"] { text-decoration: none !important; }
+html body [class*="itemButton"]:hover [class*="taskTitle"] { text-decoration: underline !important; text-underline-offset: 3px; text-decoration-thickness: 1px; }
