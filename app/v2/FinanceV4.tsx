@@ -1,7 +1,7 @@
 'use client'
 
 import { ColorField } from './detail/ColorField'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import type { MaiState } from '../../lib/v2/state'
 import type { InspectableItem } from './ContextDrawer'
 import { CreateCalendarPicker, CreateNumberEditor, CreateOptionList, CreateTool, createNaturalDate } from './CreateDrawerTools'
@@ -115,7 +115,7 @@ function paymentState(item: Row, value: unknown = item.pagamentos) {
   return { payments, paid: legacyPaid, remaining: Math.max(0, total - legacyPaid), status: total > 0 && legacyPaid >= total ? 'pago' : legacyPaid > 0 ? 'parcial' : 'pendente' }
 }
 
-export function FinanceV4({ state, today, commit, createRequest, inspect: _inspect }: { state: MaiState; today: string; commit: Commit; createRequest?: string; inspect: (item: InspectableItem) => void }) {
+export function FinanceV4({ state, today, commit, createRequest, inspect: _inspect, options }: { options?: ReactNode; state: MaiState; today: string; commit: Commit; createRequest?: string; inspect: (item: InspectableItem) => void }) {
   const savedTabs = state.configs.areaTabs && typeof state.configs.areaTabs === 'object' ? state.configs.areaTabs as Record<string, string> : {}
   const savedTab = String(savedTabs.finance || 'overview')
   const allowedTabs: Tab[] = ['transactions', 'accounts', 'cards', 'boxes', 'investments', 'reports']
@@ -630,7 +630,10 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
   return <div className={`mai-v3-area-page mai-v4-finance ${fm.page}`}>
     <div className={fm.top}>
       <h1 className={fm.title}>Financeiro</h1>
+      <div className={fm.topRight}>
       {rangeMode ? <div className={fm.month}><span className={fm.label}>{periodRange}</span></div> : <div className={fm.month}><button type="button" onClick={() => moveMonth(-1)} aria-label="Mês anterior">‹</button><button type="button" className={fm.label} aria-label="Voltar ao mês atual" title="Voltar ao mês atual" onClick={() => setMonth(today.slice(0, 7))}>{monthLabel(month)}</button><button type="button" onClick={() => moveMonth(1)} aria-label="Próximo mês">›</button></div>}
+        {options ? <div className={fm.options}>{options}</div> : null}
+      </div>
     </div>
 
     <div className={fm.balance}>
