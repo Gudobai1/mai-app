@@ -1,6 +1,7 @@
 'use client'
 
 import { CSSProperties, ReactNode, useState } from 'react'
+import { MoneyInput } from './MoneyInput'
 
 type ToolProps = {
   id: string
@@ -71,7 +72,8 @@ export function CreateTimePicker({ value, onChange, close }: { value: string; on
   </div>
 }
 
-export function CreateNumberEditor({ value, onChange, suffix }: { value: number; onChange: (value: number) => void; suffix?: string }) {
+export function CreateNumberEditor({ value, onChange, suffix, money }: { value: number; onChange: (value: number) => void; suffix?: string; money?: boolean }) {
+  if (money) return <div className="mai-task-v4-time-custom"><MoneyInput value={value} onChange={onChange} autoFocus /></div>
   return <div className="mai-task-v4-time-custom"><input type="number" step="any" value={value} onChange={event => onChange(Number(event.target.value))}/>{suffix ? <span>{suffix}</span> : null}</div>
 }
 

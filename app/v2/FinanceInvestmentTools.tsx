@@ -1,6 +1,7 @@
 'use client'
 
 import type { Dispatch, SetStateAction } from 'react'
+import { MoneyInput } from './MoneyInput'
 import s from './FinanceItemCard.module.css'
 import { Chips } from './FinanceItemCard'
 
@@ -122,7 +123,7 @@ export function RentEditor({ draft, setDraft }: EditorProps) {
 export function AutoEditor({ draft, setDraft }: EditorProps) {
   const patch = patchOf(setDraft)
   return <div className={s.mini}>
-    <label><span>Valor do aporte</span><input type="number" step="0.01" min="0" value={draft.aporte_auto_valor || 0} onChange={event => patch({ aporte_auto_valor: Number(event.target.value) })} /></label>
+    <label><span>Valor do aporte</span><MoneyInput value={Number(draft.aporte_auto_valor) || 0} onChange={value => patch({ aporte_auto_valor: value })} /></label>
     <label><span>Dia do mês</span><input type="number" min="1" max="31" value={draft.aporte_auto_dia || 1} onChange={event => patch({ aporte_auto_dia: Number(event.target.value) })} /></label>
     <p className={s.note}>Use valor 0 para desligar. O aporte entra na lista de lançamentos no dia escolhido.</p>
   </div>
