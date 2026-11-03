@@ -76,3 +76,8 @@
 .bigInput { font: inherit; font-size: 28px; font-weight: 700; letter-spacing: -0.03em; border: 0; outline: none; background: transparent; color: var(--ds-text); width: 100%; padding: 0; }
 .switch { appearance: none; border: 0; background: transparent; font: inherit; font-size: 13.5px; font-weight: var(--ds-fw-medium); color: var(--ds-text); padding: 0; cursor: pointer; text-align: left; }
 .switch[data-on='true'] { color: #2e8b57; }
+
+.titleWrap { position: relative; }
+.mirror { position: absolute; inset: 0; white-space: pre; overflow: hidden; color: transparent; pointer-events: none; font-size: 23px; font-weight: var(--ds-fw-heavy); line-height: 1.25; letter-spacing: -0.02em; font-family: inherit; }
+.mirror mark { background: var(--ds-accent-soft); color: transparent; border-radius: 3px; }
+.titleWrap .title { position: relative; }

@@ -11,6 +11,7 @@ import { FinanceTransactionExtraTools } from './FinanceTransactionExtraTools'
 import { FinanceItemShell, SideField, SideRow } from './FinanceItemCard'
 import ic from './FinanceItemCard.module.css'
 import footerStyles from './shell/DraftFooter.module.css'
+import { parseNatural } from '../../lib/v2/nlp'
 import { AutoEditor, RentEditor, TaxEditor, applyInvestmentAutomation, autoSummary, firstApplication, redeemPreview, rentSummary, taxSummary } from './FinanceInvestmentTools'
 import { DraftButtons } from './shell/DraftFooter'
 import { ItemAttachments } from './ItemAttachments'
@@ -667,6 +668,15 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
   const filtersActive = typeFilter !== 'all' || statusFilter !== 'all' || categoryFilter !== 'all' || originFilter !== 'all'
   const accountSummary = draft ? originName(draft.conta_id, accounts, cards) : 'Sem origem'
 
+  const categoryPalette = ['#b8693d', '#e0a04a', '#6c8fa8', '#7a6fd0', '#c94f45', '#8a05be', '#4f7cac', '#2e8b57']
+  const categoryColor = (item: Row) => {
+    const name = String(item.categoria || '')
+    const own = categories.find(category => String(category.nome || '') === name)?.cor
+    if (own) return String(own)
+    let hash = 0
+    for (const char of name) hash = (hash * 31 + char.charCodeAt(0)) >>> 0
+    return categoryPalette[hash % categoryPalette.length]
+  }
   const transactionRow = (item: Row) => <FinanceTransactionCard
     key={`${item._isFixed ? 'fix' : 'tx'}-${String(item.id)}`}
     item={item}
@@ -674,6 +684,7 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
     cards={cards}
     today={today}
     compact
+    color={categoryColor(item)}
     onOpen={() => openTransaction(item)}
     onTogglePaid={() => togglePaid(item)}
   />
@@ -772,7 +783,15 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
       const cardTx = kind === 'card' ? monthItems.filter(item => !item.ajuste_fatura && item.tipo !== 'receita' && (String(item.conta_id || '') === `card|${draftId}` || String(item.cartao_id || '') === draftId)).sort((x, y) => String(x.data).localeCompare(String(y.data))) : []
       const history = kind === 'transaction' && draft._persisted ? [...transactions.filter(item => String(item.id) !== draftId && String(item.titulo || '').replace(/\s+\(\d+\/\d+\)$/, '') === String(draft.titulo || '').replace(/\s+\(\d+\/\d+\)$/, '')), ...(draft._isFixed ? [-1, -2, -3].flatMap(delta => { const rule = fixed.find(item => String(item.id) === draftId); const entry = rule ? fixedRuleAtMonth(rule, shiftMonth(month, delta)) : null; return entry ? [entry] : [] }) : [])].sort((x, y) => String(y.data).localeCompare(String(x.data))).slice(0, 6) : []
       const dueLabel = (key: string) => naturalDate(key, today)
-      const title = kind === 'transaction' ? <input className={ic.title} autoFocus value={draft.titulo || ''} placeholder="Nome do lançamento" onChange={event => setDraft({ ...draft, titulo: event.target.value })} /> : <input className={ic.title} autoFocus value={draft.nome || ''} placeholder={kind === 'account' ? 'Nome da conta' : kind === 'card' ? 'Nome do cartão' : kind === 'box' ? 'Ex.: Meu carro' : 'Ex.: ETFs globais'} onChange={event => setDraft({ ...draft, nome: event.target.value })} />
+      const nlResult = kind === 'transaction' ? parseNatural(String(draft.titulo || ''), { today, kinds: ['date', 'amount', 'repeat'] }) : null
+      const applyNl = () => {
+        if (!nlResult || !nlResult.tokens.length) return
+        const date = nlResult.date || dateKey(draft.data)
+        const monthly = nlResult.repeat === 'mensalmente'
+        setDraft({ ...draft, titulo: nlResult.title, data: date, dia_mes: Number(date.slice(8)) || draft.dia_mes, mes_inicio: draft.mes_inicio || date.slice(0, 7), valor: nlResult.amount ?? draft.valor, ...(monthly ? { recorrencia: 'fixo', _isFixed: true } : {}) })
+      }
+      const mirror = (() => { const text = String(draft.titulo || ''); const parts: ReactNode[] = []; let cursor = 0; (nlResult?.tokens || []).forEach((token, index) => { parts.push(<span key={`p${index}`}>{text.slice(cursor, token.start)}</span>, <mark key={`m${index}`}>{text.slice(token.start, token.end)}</mark>); cursor = token.end }); parts.push(<span key="end">{text.slice(cursor)}</span>); return parts })()
+      const title = kind === 'transaction' ? <div className={ic.titleWrap}><div className={ic.mirror} aria-hidden="true">{mirror}</div><input className={ic.title} autoFocus value={draft.titulo || ''} placeholder="Ex.: Aluguel dia 5 R$ 1800 todo mês" onChange={event => setDraft({ ...draft, titulo: event.target.value })} onBlur={applyNl} onKeyDown={event => { if (event.key === 'Enter') { event.preventDefault(); applyNl() } }} /></div> : <input className={ic.title} autoFocus value={draft.nome || ''} placeholder={kind === 'account' ? 'Nome da conta' : kind === 'card' ? 'Nome do cartão' : kind === 'box' ? 'Ex.: Meu carro' : 'Ex.: ETFs globais'} onChange={event => setDraft({ ...draft, nome: event.target.value })} />
       const photo = kind === 'transaction' ? null : <FinanceEntityPhotoPicker value={String(draft.foto || '')} fallbackIcon={kind === 'account' ? 'account_balance' : kind === 'card' ? 'credit_card' : String(draft.icone || (kind === 'box' ? 'savings' : 'trending_up'))} color={String(draft.cor || '#718269')} onChange={foto => setDraft({ ...draft, foto })} />
       const iconPicker = kind === 'box' || kind === 'investment' ? <div className="mai-finance-v4-icon-picker">{financeIcons.map(icon => <button key={icon} type="button" data-active={!draft.foto && draft.icone === icon} onClick={() => setDraft({ ...draft, icone: icon, foto: '' })}><MaiIcon name={icon} size={19} /></button>)}</div> : null
       const accountOptions = <><option value="">Nenhuma</option>{accounts.map(account => <option key={String(account.id)} value={String(account.id)}>{String(account.nome || 'Conta')}</option>)}</>
