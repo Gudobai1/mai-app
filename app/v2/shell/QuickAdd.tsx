@@ -31,6 +31,8 @@ type Props = {
   today: string
   defaultProjectId?: string
   defaultDate?: string
+  /** Conta ou `card|id` já escolhida (lançamentos). */
+  defaultAccount?: string
   defaultSection?: string
   commit: (change: (current: MaiState) => MaiState) => void
   onFinance: () => void
@@ -81,7 +83,7 @@ const plusHour = (time: string) => {
 
 type Picker = '' | 'ftype' | 'account' | 'date' | 'time' | 'reminder' | 'priority' | 'project' | 'repeat' | 'start' | 'end' | 'category' | 'fcat' | 'finstall' | 'fstatus'
 
-export function QuickAdd({ kinds, initial, state, today, defaultProjectId, defaultDate, defaultSection, commit, onFinance, onClose, inline, parentId }: Props) {
+export function QuickAdd({ kinds, initial, state, today, defaultProjectId, defaultDate, defaultAccount, defaultSection, commit, onFinance, onClose, inline, parentId }: Props) {
   const [kind, setKind] = useState<QuickAddKind>(initial)
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
@@ -101,7 +103,7 @@ export function QuickAdd({ kinds, initial, state, today, defaultProjectId, defau
   const [category, setCategory] = useState<EventCategory | null>(null)
   const [amountS, setAmountS] = useState('')
   const [finType, setFinType] = useState<'despesa' | 'receita'>('despesa')
-  const [accountId, setAccountId] = useState('')
+  const [accountId, setAccountId] = useState(defaultAccount || '')
   const [finCategory, setFinCategory] = useState('')
   const [installS, setInstallS] = useState<{ count: number; interval: string } | null>(null)
   const [finPaid, setFinPaid] = useState(false)

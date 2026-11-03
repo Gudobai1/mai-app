@@ -102,3 +102,6 @@
 .swatches { display: flex; flex-wrap: wrap; gap: 8px; padding: 8px 2px 2px; }
 .swatches button { width: 20px; height: 20px; border-radius: 50%; border: 2px solid transparent; padding: 0; cursor: pointer; }
 .swatches button[data-active] { outline: 2px solid var(--ds-muted); outline-offset: 2px; }
+
+.addLine { align-self: flex-start; appearance: none; border: 0; background: transparent; color: var(--ds-muted); font: inherit; font-size: 13px; padding: 6px 0; cursor: pointer; }
+.addLine:hover { color: var(--ds-text); }

@@ -151,6 +151,7 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
   const [createTool, setCreateTool] = useState('')
   const quick = useQuickMenu()
   const [quickAdding, setQuickAdding] = useState(false)
+  const [cardAdding, setCardAdding] = useState(false)
   const [redeem, setRedeem] = useState<{ amount: number; date: string; conta: string; junto: boolean } | null>(null)
   const [categoryDraftName, setCategoryDraftName] = useState('')
   const [categoryDraftColor, setCategoryDraftColor] = useState('')
@@ -853,7 +854,7 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
     {draft ? (() => {
       const crumbKind = kind === 'transaction' ? 'Lançamentos' : kind === 'account' ? 'Contas' : kind === 'card' ? 'Cartões' : kind === 'box' ? 'Caixinhas' : 'Investimentos'
       const lineTone = (item: Row) => item.tipo === 'receita' ? 'in' : 'out'
-      const txLine = (item: Row) => { const paid = paymentState(item).status === 'pago'; return <button type="button" key={`${item._isFixed ? 'f' : 't'}-${String(item.id)}-${dateKey(item.data)}`} className={ic.line} onClick={() => openTransaction(item)}><span className={ic.lineCheck} data-paid={paid}>{paid ? '✓' : ''}</span><span className={ic.lineText}><b>{String(item.titulo || 'Lançamento')}</b><small>{naturalDate(dateKey(item.data), today)}</small></span><span className={ic.lineValue} data-tone={lineTone(item)}>{item.tipo === 'receita' ? '+' : '−'} {money.format(clampMoney(item.valor))}</span></button> }
+      const txLine = (item: Row) => { const paid = paymentState(item).status === 'pago'; return <button type="button" key={`${item._isFixed ? 'f' : 't'}-${String(item.id)}-${dateKey(item.data)}`} className={ic.line} onClick={() => openTransaction(item)}><span className={ic.lineCheck} data-paid={paid} style={paid ? undefined : { borderColor: item.tipo === 'receita' ? 'var(--ds-success)' : 'var(--ds-danger)' }}>{paid ? '✓' : ''}</span><span className={ic.lineText}><b>{String(item.titulo || 'Lançamento')}</b><small style={!paid && dateKey(item.data) < today ? { color: 'var(--ds-danger)' } : !paid && dateKey(item.data) === today ? { color: 'var(--ds-warn)' } : undefined}>{naturalDate(dateKey(item.data), today)}</small></span><span className={ic.lineValue} data-tone={lineTone(item)}>{item.tipo === 'receita' ? '+' : '−'} {money.format(clampMoney(item.valor))}</span></button> }
       const moveLine = (mov: Row, plus: boolean) => <div key={String(mov.id)} className={ic.line} style={{ cursor: 'default' }}><span className={ic.lineCheck} data-paid="true">✓</span><span className={ic.lineText}><b>{plus ? (kind === 'box' ? 'Guardado' : 'Aporte') : (kind === 'box' ? 'Retirada' : 'Resgate')}</b><small>{new Date(mov.data).toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' })}</small></span><span className={ic.lineValue} data-tone={plus ? 'in' : 'out'}>{plus ? '+' : '−'} {money.format(clampMoney(mov.valor))}</span></div>
       const listSection = (title: string, count: number, children: ReactNode, empty: string) => <section className={ic.section}><h3>{title}<small>{count}</small></h3>{count ? children : <div className={ic.empty}>{empty}</div>}</section>
       const draftId = String(draft.id)
@@ -897,7 +898,7 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
       </> : <>
         {title}
         {kind === 'account' && draft._persisted ? <div className={ic.headValue}><strong>{money.format(accountBalance(draft))}</strong><span>saldo atual</span></div> : null}
-        {kind === 'card' && draft._persisted ? <div className={ic.headValue}><strong>{money.format(cardInvoice(draft))}</strong><span>fatura de {monthLabel(month).split(' de ')[0]}</span></div> : null}
+        {kind === 'card' && draft._persisted ? <div className={ic.headValue}><strong>{money.format(cardInvoice(draft))}</strong><span>fatura de {monthLabel(month)}</span><MonthStepper value={month} onChange={value => { setCardAdding(false); setMonth(value) }} /></div> : null}
         {kind === 'box' ? <div className={ic.headValue}><strong>{money.format(clampMoney(draft.saldo))}</strong><span>{clampMoney(draft.meta) ? `de ${money.format(clampMoney(draft.meta))} · ${Math.round(Math.min(100, clampMoney(draft.saldo) / clampMoney(draft.meta) * 100))}%` : 'sem meta definida'}</span></div> : null}
         {kind === 'investment' ? <div className={ic.headValue}><strong>{money.format(clampMoney(draft.valor_atual))}</strong><span><span className={clampMoney(draft.valor_atual) >= clampMoney(draft.aportado) ? fm.pos : fm.neg}>{signedMoney(clampMoney(draft.valor_atual) - clampMoney(draft.aportado))} · {clampMoney(draft.aportado) ? ((clampMoney(draft.valor_atual) - clampMoney(draft.aportado)) / clampMoney(draft.aportado) * 100).toFixed(1).replace('.', ',') : '0,0'}%</span></span></div> : null}
         {kind === 'investment' && clampMoney(draft.rent_taxa) > 0 ? <p className={ic.note}>Valor estimado pela taxa configurada; você pode corrigir quando quiser.</p> : null}
@@ -908,7 +909,7 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
           {kind === 'investment' ? <><button type="button" data-primary="true" onClick={() => moveInvestmentValue('in')}>Aportar</button><button type="button" onClick={() => setRedeem({ amount: clampMoney(draft.valor_atual), date: today, conta: '', junto: true })}>Resgatar</button></> : null}
         </div> : null}
         {kind === 'account' ? listSection('Lançamentos', accountTx.length, accountTx.map(txLine), 'Nenhum lançamento nesta conta.') : null}
-        {kind === 'card' ? listSection('Lançamentos da fatura', cardTx.length, cardTx.map(txLine), 'Nenhuma compra na fatura deste mês.') : null}
+        {kind === 'card' ? <>{listSection(`Lançamentos da fatura de ${monthLabel(month).split(' de ')[0]}`, cardTx.length, cardTx.map(txLine), 'Nenhuma compra na fatura deste mês.')}{draft._persisted ? (cardAdding ? <QuickAdd key={`${draftId}-${month}`} inline kinds={['finance']} initial="finance" state={state} today={today} defaultDate={month === today.slice(0, 7) ? today : `${month}-01`} defaultAccount={`card|${draftId}`} commit={commit} onFinance={() => undefined} onClose={() => setCardAdding(false)} /> : <button type="button" className={ic.addLine} onClick={() => setCardAdding(true)}>+ Lançar na fatura</button>) : null}</> : null}
         {kind === 'box' ? listSection('Lançamentos', rows(draft.movimentos).length, rows(draft.movimentos).map(mov => moveLine(mov, mov.tipo === 'entrada')), 'Nenhuma movimentação ainda.') : null}
         {kind === 'investment' ? listSection('Lançamentos', rows(draft.movimentos).length, rows(draft.movimentos).map(mov => moveLine(mov, mov.tipo === 'aporte')), 'Nenhum aporte ainda.') : null}
         {extras}
