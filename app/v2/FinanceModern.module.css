@@ -126,3 +126,12 @@
 .summary > button:first-child { padding-left: 0; }
 .summary > button:hover { background: var(--v3-sidebar); }
 .summary > button:hover span { color: var(--v3-text); }
+
+/* meio-termo: largura total, só afastado das bordas */
+.balance { max-width: none; margin-left: 0; margin-right: 0; padding: 0 16px; }
+.summary { max-width: none; margin-left: 0; margin-right: 0; }
+.summary > button:first-child { padding-left: 16px; }
+.summary > button:last-child { padding-right: 16px; }
+button.balanceMain { border: 0; background: transparent; font: inherit; color: inherit; cursor: pointer; padding: 4px 10px; border-radius: 8px; }
+button.balanceMain:hover { background: var(--v3-sidebar); }
+@media (max-width: 640px) { .balance { padding: 0 6px; } .summary > button:first-child { padding-left: 6px; } }

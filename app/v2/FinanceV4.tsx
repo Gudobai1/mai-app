@@ -292,6 +292,19 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
     })
   }
 
+  function resetView() {
+    setMonth(today.slice(0, 7))
+    setPeriod('month')
+    setPeriodMenu(false)
+    commit(current => {
+      const areaTabs = current.configs.areaTabs && typeof current.configs.areaTabs === 'object' ? current.configs.areaTabs as Record<string, string> : {}
+      const filters = current.configs.moduleFilters && typeof current.configs.moduleFilters === 'object' ? current.configs.moduleFilters as Record<string, Row> : {}
+      const controls = current.configs.moduleControls && typeof current.configs.moduleControls === 'object' ? current.configs.moduleControls as Record<string, Row> : {}
+      const { sort: _sort, ...financeControl } = controls.finance || {}
+      return { ...current, configs: { ...current.configs, areaTabs: { ...areaTabs, finance: 'transactions' }, moduleFilters: { ...filters, finance: {} }, moduleControls: { ...controls, finance: financeControl } } }
+    })
+  }
+
   function newDraft(type: DraftKind): Row {
     if (type === 'transaction') return { id: uid('fin'), titulo: '', observacao: '', valor: 0, valor_pago: 0, tipo: 'despesa', data: today, status: 'pendente', categoria: '', conta_id: '', cartao_id: '', anexos: [], pagamentos: [], ignorar_calculo: false, recorrencia: 'unico', parcelas: 2, intervalo_parcelas: 'mensal', dividir_total: true, dia_mes: Number(today.slice(8)), mes_inicio: today.slice(0, 7), mes_fim: '', ativo: true, ocultar_inicio: false, _persisted: false }
     if (type === 'account') return { id: uid('cta'), nome: '', saldo_inicial: 0, cor: '#718269', foto: '', _persisted: false }
@@ -648,7 +661,7 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
 
     <div className={fm.balance}>
       <div><small>Saldo inicial</small><b>{money.format(initialBalance)}</b></div><i />
-      <div className={fm.balanceMain}><small>Saldo atual</small><strong data-negative={realBalance < 0}>{money.format(realBalance)}</strong></div><i />
+      <button type="button" className={fm.balanceMain} onClick={resetView} title="Voltar ao início (mês atual, sem filtros)"><small>Saldo atual</small><strong data-negative={realBalance < 0}>{money.format(realBalance)}</strong></button><i />
       <div className={fm.balanceEnd}><small>Saldo previsto</small><b>{money.format(projectedBalance)}</b></div>
     </div>
 
