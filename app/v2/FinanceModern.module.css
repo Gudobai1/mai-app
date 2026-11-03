@@ -150,4 +150,5 @@ button.balanceMain:hover { background: var(--ds-surface-hover); }
 .entityRow .neg { color: var(--ds-danger); }
 .addRow { padding: 12px 6px; }
 
-.ring { flex: none; width: 20px; height: 20px; border-radius: 50%; box-sizing: border-box; border: 2px solid var(--ring, var(--ds-accent)); background: color-mix(in srgb, var(--ring, var(--ds-accent)) 30%, transparent); }
+/* bolinha colorida (sem aro) */
+.ring { flex: none; width: 14px; height: 14px; border-radius: 50%; background: var(--ring, var(--ds-accent)); }
