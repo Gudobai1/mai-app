@@ -124,3 +124,11 @@
 
 .headValue .payButton { appearance: none; border: 1px solid var(--ds-line); background: transparent; color: var(--ds-text); font: inherit; font-size: 13px; font-weight: var(--ds-fw-medium); padding: 5px 12px; border-radius: 8px; cursor: pointer; align-self: center; }
 .headValue .payButton:hover { background: var(--ds-surface-hover); }
+
+.cardHead { display: grid; gap: 10px; justify-items: start; }
+.inlineStepper { display: inline-flex; align-items: center; gap: 2px; }
+.inlineStepper button { appearance: none; border: 0; background: transparent; width: 34px; height: 34px; display: grid; place-items: center; border-radius: 8px; color: var(--ds-text-2, var(--ds-muted)); cursor: pointer; }
+.inlineStepper button:hover { background: var(--ds-surface-hover); color: var(--ds-text); }
+.inlineStepper .inlineStepperValue { width: 112px; font: inherit; font-size: 13.5px; font-weight: var(--ds-fw-medium); color: var(--ds-text); }
+.cardHead .payButton { appearance: none; border: 1px solid var(--ds-line); background: transparent; color: var(--ds-text); font: inherit; font-size: 13px; font-weight: var(--ds-fw-medium); padding: 6px 14px; border-radius: 8px; cursor: pointer; }
+.cardHead .payButton:hover { background: var(--ds-surface-hover); }
