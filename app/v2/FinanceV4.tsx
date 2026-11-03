@@ -282,6 +282,16 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
     commit(current => ({ ...current, configs: { ...current.configs, areaTabs: { ...(current.configs.areaTabs && typeof current.configs.areaTabs === 'object' ? current.configs.areaTabs as Record<string, string> : {}), finance: next } } }))
   }
 
+  function openSummary(target: Tab, type?: 'income' | 'expense') {
+    commit(current => {
+      const areaTabs = current.configs.areaTabs && typeof current.configs.areaTabs === 'object' ? current.configs.areaTabs as Record<string, string> : {}
+      const filters = current.configs.moduleFilters && typeof current.configs.moduleFilters === 'object' ? current.configs.moduleFilters as Record<string, Row> : {}
+      const currentType = String((filters.finance || {}).type || 'all')
+      const moduleFilters = type ? { ...filters, finance: { ...(filters.finance || {}), type: currentType === type ? 'all' : type } } : filters
+      return { ...current, configs: { ...current.configs, areaTabs: { ...areaTabs, finance: target }, moduleFilters } }
+    })
+  }
+
   function newDraft(type: DraftKind): Row {
     if (type === 'transaction') return { id: uid('fin'), titulo: '', observacao: '', valor: 0, valor_pago: 0, tipo: 'despesa', data: today, status: 'pendente', categoria: '', conta_id: '', cartao_id: '', anexos: [], pagamentos: [], ignorar_calculo: false, recorrencia: 'unico', parcelas: 2, intervalo_parcelas: 'mensal', dividir_total: true, dia_mes: Number(today.slice(8)), mes_inicio: today.slice(0, 7), mes_fim: '', ativo: true, ocultar_inicio: false, _persisted: false }
     if (type === 'account') return { id: uid('cta'), nome: '', saldo_inicial: 0, cor: '#718269', foto: '', _persisted: false }
@@ -643,10 +653,10 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
     </div>
 
     <div className={fm.summary}>
-      <div><span>Receitas</span><strong data-tone="in">{money.format(stripIncome)}</strong></div>
-      <div><span>Despesas</span><strong data-tone="neg">{money.format(stripExpense)}</strong></div>
-      <div><span>Cartões de crédito</span><strong data-tone="card">{money.format(stripInvoice)}</strong></div>
-      <div><span>Economia mensal</span><strong data-tone={stripSaving < 0 ? 'neg' : 'in'}>{signedMoney(stripSaving)} <small>{stripPercent > 0 ? '+' : ''}{stripPercent}%</small></strong></div>
+      <button type="button" onClick={() => openSummary('transactions', 'income')} title="Ver só as receitas"><span>Receitas</span><strong data-tone="in">{money.format(stripIncome)}</strong></button>
+      <button type="button" onClick={() => openSummary('transactions', 'expense')} title="Ver só as despesas"><span>Despesas</span><strong data-tone="neg">{money.format(stripExpense)}</strong></button>
+      <button type="button" onClick={() => openSummary('cards')} title="Ver os cartões"><span>Cartões de crédito</span><strong data-tone="card">{money.format(stripInvoice)}</strong></button>
+      <button type="button" onClick={() => openSummary('reports')} title="Ver os relatórios"><span>Economia mensal</span><strong data-tone={stripSaving < 0 ? 'neg' : 'in'}>{signedMoney(stripSaving)} <small>{stripPercent > 0 ? '+' : ''}{stripPercent}%</small></strong></button>
     </div>
 
     <div className={fm.tabs} role="tablist">{tabs.map(item => <button key={item.id} role="tab" aria-selected={tab === item.id} data-active={tab === item.id} onClick={() => setTab(item.id)}>{item.label}</button>)}</div>
