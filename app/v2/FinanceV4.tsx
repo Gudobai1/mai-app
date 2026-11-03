@@ -558,9 +558,33 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
     if (Math.abs(diff) < 0.01) return
     commit(current => ({ ...current, finance: { ...current.finance, transactions: [{ id: uid('fin'), titulo: 'Ajuste de saldo', valor: Math.abs(diff), valor_pago: Math.abs(diff), tipo: diff >= 0 ? 'receita' : 'despesa', categoria: 'Ajuste', conta_id: account.id, cartao_id: '', data: today, status: 'pago', observacao: 'Conciliação bancária', pagamentos: [{ id: uid('pay'), data: today, valor: Math.abs(diff) }], anexos: [], ignorar_calculo: false, recorrencia: 'unico' }, ...rows(current.finance.transactions)] } }))
   }
-  function payInvoice(card: Row) {
-    const value = cardInvoice(card, monthItems)
-    if (!value) return
+  async function adjustInvoice(card: Row) {
+    const current = cardInvoice(card, monthItems)
+    const answer = await askText({ title: `Valor da fatura de ${monthLabel(month).split(' de ')[0]}`, message: 'Troque o valor calculado pelo que veio no banco.', icon: 'credit_card', tone: 'default', input: { kind: 'money', value: current.toFixed(2).replace('.', ',') } })
+    if (answer === null) return
+    const value = parseMoneyInput(answer)
+    if (!Number.isFinite(value) || value < 0) { void notify('Digite um valor válido.'); return }
+    const cardId = String(card.id)
+    const dueDate = monthDateForDay(month, Number(card.vencimento || 10))
+    commit(currentState => {
+      const list = rows(currentState.finance.transactions)
+      const existing = list.find(item => item.ajuste_fatura === true && String(item.ajuste_fatura_card_id || item.cartao_id || '') === cardId && String(item.competencia_fatura || dateKey(item.data).slice(0, 7)) === month)
+      const paid = existing ? Math.min(value, clampMoney(existing.valor_pago)) : 0
+      const next: Row = { ...(existing || {}), id: existing?.id || uid('invoice'), titulo: `Fatura ${String(card.nome || 'Cartão')}`, valor: value, valor_pago: paid, tipo: 'despesa', data: existing?.data || dueDate, status: value > 0 && paid >= value ? 'pago' : paid > 0 ? 'parcial' : 'pendente', categoria: 'Fatura do cartão', conta_id: `card|${cardId}`, cartao_id: cardId, conta_pagamento_id: String(card.conta_id || ''), anexos: rows(existing?.anexos), pagamentos: existing ? rows(existing.pagamentos) : [], ignorar_calculo: true, recorrencia: 'unico', ajuste_fatura: true, ajuste_fatura_card_id: cardId, competencia_fatura: month }
+      return { ...currentState, finance: { ...currentState.finance, transactions: existing ? list.map(item => String(item.id) === String(existing.id) ? next : item) : [next, ...list] } }
+    })
+  }
+  async function resetInvoice(card: Row) {
+    const cardId = String(card.id)
+    commit(currentState => ({ ...currentState, finance: { ...currentState.finance, transactions: rows(currentState.finance.transactions).filter(item => !(item.ajuste_fatura === true && String(item.ajuste_fatura_card_id || item.cartao_id || '') === cardId && String(item.competencia_fatura || dateKey(item.data).slice(0, 7)) === month && item.status !== 'pago')) } }))
+  }
+  async function payInvoice(card: Row) {
+    const calculated = cardInvoice(card, monthItems)
+    if (!calculated) return
+    const answer = await askText({ title: `Pagar fatura de ${String(card.nome || 'cartão')}`, message: 'Confirme o valor da fatura.', icon: 'credit_card', tone: 'default', confirmLabel: 'Pagar', input: { kind: 'money', value: calculated.toFixed(2).replace('.', ',') } })
+    if (answer === null) return
+    const value = parseMoneyInput(answer)
+    if (!Number.isFinite(value) || value <= 0) { void notify('Digite um valor válido.'); return }
     const cardId = String(card.id)
     const dueDate = monthDateForDay(month, Number(card.vencimento || 10))
     commit(current => {
@@ -607,7 +631,7 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
     return true
   }
 
-  const filtered = useMemo(() => monthItems.filter(matchesFilters).sort((a, b) => {
+  const filtered = useMemo(() => monthItems.filter(item => item.ajuste_fatura === true || !(String(item.conta_id || '').startsWith('card|') || item.cartao_id)).filter(matchesFilters).sort((a, b) => {
     if (order === 'pending_first') {
       const rank = (item: Row) => String(item.status || 'pendente') === 'pendente' ? 0 : String(item.status || '') === 'parcial' ? 1 : 2
       const statusDiff = rank(a) - rank(b)
@@ -724,6 +748,7 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
       title: name,
       groups: [{ options: [
         { label: 'Abrir detalhes', icon: 'open_in_full', onSelect: () => openExisting(type, item) },
+        ...(type === 'card' ? [{ label: 'Alterar valor da fatura', icon: 'edit', onSelect: () => adjustInvoice(item) }] : []),
         { label: 'Excluir', icon: 'delete', tone: 'danger', onSelect: async () => {
           if (!(await askConfirm({ title: 'Excluir registro?', message: `“${name}” será excluído. Não dá para desfazer.` }))) return
           commit(current => ({ ...current, finance: { ...current.finance, [key]: rows((current.finance as Row)[key]).filter(row => String(row.id) !== String(item.id)) } }))
@@ -878,7 +903,7 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
         {kind === 'investment' && clampMoney(draft.rent_taxa) > 0 ? <p className={ic.note}>Valor estimado pela taxa configurada; você pode corrigir quando quiser.</p> : null}
         {draft._persisted ? <div className={ic.actions}>
           {kind === 'account' ? <><button type="button" onClick={() => reconcile(draft)}>Ajustar saldo</button><button type="button" onClick={() => showOrigin(draftId)}>Ver extrato</button></> : null}
-          {kind === 'card' ? <><button type="button" data-primary="true" onClick={() => payInvoice(draft)}>Pagar fatura</button><button type="button" onClick={() => showOrigin(`card|${draftId}`)}>Ver faturas</button></> : null}
+          {kind === 'card' ? <><button type="button" data-primary="true" onClick={() => void payInvoice(draft)}>Pagar fatura</button><button type="button" onClick={() => void adjustInvoice(draft)}>Alterar valor</button>{monthItems.some(item => item.ajuste_fatura === true && String(item.ajuste_fatura_card_id || item.cartao_id || '') === draftId && item.status !== 'pago') ? <button type="button" onClick={() => void resetInvoice(draft)}>Usar valor calculado</button> : null}<button type="button" onClick={() => showOrigin(`card|${draftId}`)}>Ver faturas</button></> : null}
           {kind === 'box' ? <><button type="button" data-primary="true" onClick={() => moveBoxValue('in')}>Guardar</button><button type="button" onClick={() => moveBoxValue('out')}>Retirar</button></> : null}
           {kind === 'investment' ? <><button type="button" data-primary="true" onClick={() => moveInvestmentValue('in')}>Aportar</button><button type="button" onClick={() => setRedeem({ amount: clampMoney(draft.valor_atual), date: today, conta: '', junto: true })}>Resgatar</button></> : null}
         </div> : null}
