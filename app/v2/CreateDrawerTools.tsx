@@ -35,7 +35,7 @@ export function CreateOptionList({ options, value, onChange, close }: { options:
   </button>)}</div>
 }
 
-export function CreateCalendarPicker({ value, today, onChange, close }: { value: string; today: string; onChange: (value: string) => void; close: () => void }) {
+export function CreateCalendarPicker({ value, today, onChange, close, allowEmpty = true }: { value: string; today: string; onChange: (value: string) => void; close: () => void; allowEmpty?: boolean }) {
   const initial = value || today
   const [cursor, setCursor] = useState(initial.slice(0, 7))
   const first = new Date(`${cursor}-01T12:00:00`)
@@ -58,7 +58,7 @@ export function CreateCalendarPicker({ value, today, onChange, close }: { value:
     <div className="mai-task-v4-calendar-nav"><button type="button" onClick={() => moveMonth(-1)}>‹</button><strong>{first.toLocaleDateString('pt-BR', { month:'long', year:'numeric' })}</strong><button type="button" onClick={() => moveMonth(1)}>›</button></div>
     <div className="mai-task-v4-calendar-week"><span>S</span><span>T</span><span>Q</span><span>Q</span><span>S</span><span>S</span><span>D</span></div>
     <div className="mai-task-v4-calendar-grid">{cells.map(cell => <button type="button" key={cell.key} data-outside={!cell.inMonth || undefined} data-today={cell.key === today || undefined} data-selected={cell.key === value || undefined} onClick={() => { onChange(cell.key); close() }}>{cell.day}</button>)}</div>
-    <div className="mai-task-v4-quick-row"><button type="button" onClick={() => { onChange(today); close() }}>Hoje</button><button type="button" onClick={() => { onChange(moveDay(1)); close() }}>Amanhã</button><button type="button" onClick={() => { onChange(''); close() }}>Sem data</button></div>
+    <div className="mai-task-v4-quick-row"><button type="button" onClick={() => { onChange(today); close() }}>Hoje</button><button type="button" onClick={() => { onChange(moveDay(1)); close() }}>Amanhã</button>{allowEmpty ? <button type="button" onClick={() => { onChange(''); close() }}>Sem data</button> : null}</div>
   </div>
 }
 

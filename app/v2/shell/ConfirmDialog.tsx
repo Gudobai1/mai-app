@@ -102,7 +102,7 @@ export function ConfirmHost() {
         <span className={styles.icon} data-danger={danger || undefined}><Icon name={icon} size={22} /></span>
         <h2 id="mai-confirm-title" className={styles.title}>{request.title}</h2>
         {request.message ? <p id="mai-confirm-message" className={styles.message}>{request.message}</p> : null}
-        {request.input?.kind === 'date' ? <CreateCalendarPicker value={text} today={request.input.today || text} onChange={value => finish(value)} close={() => undefined} /> : request.input ? <input className={styles.field} autoFocus value={text} inputMode={request.input.kind === 'money' ? 'decimal' : 'text'} placeholder={request.input.placeholder} onChange={event => setText(event.target.value)} onKeyDown={event => { if (event.key === 'Enter') { event.preventDefault(); finish(text) } }} /> : null}
+        {request.input?.kind === 'date' ? <CreateCalendarPicker allowEmpty={false} value={text} today={request.input.today || text} onChange={value => finish(value)} close={() => undefined} /> : request.input ? <input className={styles.field} autoFocus value={text} inputMode={request.input.kind === 'money' ? 'decimal' : 'text'} placeholder={request.input.placeholder} onChange={event => setText(event.target.value)} onKeyDown={event => { if (event.key === 'Enter') { event.preventDefault(); finish(text) } }} /> : null}
         <div className={styles.buttons}>
           {request.cancelLabel === null ? null : <button type="button" className={styles.cancel} onClick={() => finish(false)}>{request.cancelLabel || 'Cancelar'}</button>}
           {request.extraLabel ? <button type="button" className={styles.cancel} data-extra="" onClick={() => finish('extra')}>{request.extraLabel}</button> : null}

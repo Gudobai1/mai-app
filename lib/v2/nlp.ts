@@ -11,7 +11,7 @@ import { addDays } from './planner'
 
 type Row = Record<string, any>
 
-export type NlKind = 'date' | 'time' | 'end' | 'priority' | 'repeat' | 'reminder' | 'project' | 'amount' | 'range'
+export type NlKind = 'date' | 'time' | 'end' | 'priority' | 'repeat' | 'reminder' | 'project' | 'amount' | 'installments' | 'range'
 
 export type NlToken = { kind: NlKind; start: number; end: number; text: string; value: string }
 
@@ -27,6 +27,8 @@ export type NlResult = {
   projectId?: string
   section?: string
   amount?: number
+  /** Lançamentos: "4 vezes", "3x por semana". */
+  installments?: { count: number; interval: 'mensal' | 'semanal' | 'quinzenal' | 'anual' }
   /** Só na busca: "esta semana", "este mês". */
   range?: { from: string; to: string }
   overdue?: boolean
@@ -182,9 +184,30 @@ export function parseNatural(text: string, options: NlOptions): NlResult {
       const number = Number(String(match[1]).replace(/\./g, '').replace(',', '.'))
       if (Number.isFinite(number) && add('amount', start, end, String(number))) { result.amount = number; return true }
     }
-    scan(folded, `${B}r\\$\\s*(\\d[\\d.]*(?:,\\d{1,2})?)`, take)
-    if (result.amount === undefined) scan(folded, `${B}(\\d+(?:\\.\\d{3})*,\\d{2})${E}`, take)
-    if (result.amount === undefined) scan(folded, `${B}(\\d+(?:,\\d{1,2})?)\\s*reais${E}`, take)
+    scan(folded, `(?:${B}de\\s+)?${B}r\\$\\s*(\\d[\\d.]*(?:,\\d{1,2})?)`, take)
+    if (result.amount === undefined) scan(folded, `(?:${B}de\\s+)?${B}(\\d+(?:\\.\\d{3})*,\\d{2})${E}`, take)
+    if (result.amount === undefined) scan(folded, `(?:${B}de\\s+)?${B}(\\d+(?:,\\d{1,2})?)\\s*reais${E}`, take)
+    // Só o número: 1.000 · 1025 · "de 850" (não pega datas nem "dia 25")
+    if (result.amount === undefined) scan(folded, `(?:${B}de\\s+)?(?<![/\\d.,])${B}(\\d{1,3}(?:\\.\\d{3})+(?:,\\d{1,2})?|\\d{3,}(?:,\\d{1,2})?)(?![/\\d])${E}`, take)
+    if (result.amount === undefined) scan(folded, `${B}de\\s+(\\d+(?:,\\d{1,2})?)(?!\\s*(?:vezes|vez|x|parcelas?|dias?|semanas?|mes|meses|anos?))${E}`, take)
+  }
+
+  // ---- Parcelas (lançamentos): 4 vezes · em 3x · 6 parcelas · 4 vezes por mês · 3x por semana
+  if (kinds.has('installments')) {
+    const unit = (word: string): 'mensal' | 'semanal' | 'quinzenal' | 'anual' => word.startsWith('sem') ? 'semanal' : word.startsWith('quin') ? 'quinzenal' : word.startsWith('an') ? 'anual' : 'mensal'
+    scan(folded, `${B}(?:em\\s+)?(\\d{1,3})\\s*(?:vezes|vez|x|parcelas?)(?:\\s+(?:por|ao|a|de)\\s+(mes|semana|quinzena|ano)|\\s+(mensais|semanais|quinzenais|anuais))?${E}`, (match, start, end) => {
+      const count = Number(match[1])
+      if (count < 2 || count > 360) return
+      const interval = unit(match[2] || match[3] || 'mes')
+      if (add('installments', start, end, `${count}:${interval}`)) { result.installments = { count, interval }; return true }
+    })
+    // "4 vezes de 1.000 dia 25 por mês": a unidade pode vir depois
+    if (result.installments && !tokens.some(token => token.kind === 'installments' && /(mes|semana|quinzena|ano|mensais|semanais|quinzenais|anuais)/.test(fold(token.text)))) {
+      scan(folded, `${B}(?:por|ao|a cada)\\s+(mes|semana|quinzena|ano)${E}`, (match, start, end) => {
+        const interval = unit(match[1])
+        if (add('installments', start, end, `${result.installments!.count}:${interval}`)) { result.installments = { count: result.installments!.count, interval }; return true }
+      })
+    }
   }
 
   // ---- Repetir
@@ -320,7 +343,7 @@ export function parseNatural(text: string, options: NlOptions): NlResult {
       if (!match[3] && key < today) key = monthKey(year + 1, month, day)
       return date(key, start, end)
     })
-    if (!result.date) scan(folded, `${B}dia\\s+(\\d{1,2})${E}`, (match, start, end) => {
+    if (!result.date) scan(folded, `(?:${B}(?:no|em|para)\\s+)?${B}dia\\s+(\\d{1,2})${E}`, (match, start, end) => {
       const day = Number(match[1])
       if (day < 1 || day > 31) return
       let year = Number(today.slice(0, 4))

@@ -78,7 +78,17 @@ const plusHour = (time: string) => {
   return `${String(Math.min(23, h + 1)).padStart(2, '0')}:${String(m || 0).padStart(2, '0')}`
 }
 
-type Picker = '' | 'ftype' | 'account' | 'date' | 'time' | 'reminder' | 'priority' | 'project' | 'repeat' | 'start' | 'end' | 'category' | 'fcat'
+function shiftInstallment(key: string, index: number, interval: string) {
+  const date = new Date(`${key}T12:00:00`)
+  const day = date.getDate()
+  if (interval === 'semanal') date.setDate(day + index * 7)
+  else if (interval === 'quinzenal') date.setDate(day + index * 15)
+  else if (interval === 'anual') date.setFullYear(date.getFullYear() + index)
+  else { date.setDate(1); date.setMonth(date.getMonth() + index); date.setDate(Math.min(day, new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate())) }
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+}
+
+type Picker = '' | 'ftype' | 'account' | 'date' | 'time' | 'reminder' | 'priority' | 'project' | 'repeat' | 'start' | 'end' | 'category' | 'fcat' | 'finstall'
 
 export function QuickAdd({ kinds, initial, state, today, defaultProjectId, defaultDate, defaultSection, commit, onFinance, onClose, inline, parentId }: Props) {
   const [kind, setKind] = useState<QuickAddKind>(initial)
@@ -102,6 +112,7 @@ export function QuickAdd({ kinds, initial, state, today, defaultProjectId, defau
   const [finType, setFinType] = useState<'despesa' | 'receita'>('despesa')
   const [accountId, setAccountId] = useState('')
   const [finCategory, setFinCategory] = useState('')
+  const [installS, setInstallS] = useState<{ count: number; interval: 'mensal' | 'semanal' | 'quinzenal' | 'anual' } | null>(null)
   const [picker, setPicker] = useState<Picker>('')
   const anchor = useRef<HTMLElement | null>(null)
   const open = (which: Picker) => (event: ReactMouseEvent<HTMLElement>) => { anchor.current = event.currentTarget; setPicker(which) }
@@ -114,7 +125,7 @@ export function QuickAdd({ kinds, initial, state, today, defaultProjectId, defau
   const [muted, setMuted] = useState<Set<NlKind>>(new Set())
   const [caret, setCaret] = useState(0)
   const [suggestIndex, setSuggestIndex] = useState(0)
-  const nl = useMemo(() => parseNatural(title, { today, projects, ignore: muted, kinds: kind === 'task' ? ['date', 'time', 'priority', 'repeat', 'reminder', 'project'] : kind === 'event' ? ['date', 'time', 'end', 'repeat'] : ['date', 'amount'] }), [title, today, projects, muted, kind]) // eslint-disable-line react-hooks/exhaustive-deps
+  const nl = useMemo(() => parseNatural(title, { today, projects, ignore: muted, kinds: kind === 'task' ? ['date', 'time', 'priority', 'repeat', 'reminder', 'project'] : kind === 'event' ? ['date', 'time', 'end', 'repeat']   : ['date', 'amount', 'installments'] }), [title, today, projects, muted, kind]) // eslint-disable-line react-hooks/exhaustive-deps
   const mute = (which: NlKind) => setMuted(current => (current.has(which) ? current : new Set(current).add(which)))
   const fromNl = (which: NlKind) => nl.tokens.some(token => token.kind === which)
   /** O ×: desfaz o que foi entendido (a palavra volta ao nome). */
@@ -144,10 +155,13 @@ export function QuickAdd({ kinds, initial, state, today, defaultProjectId, defau
   const setAmount = (value: string) => { setAmountS(value); mute('amount') }
   const finCtx = useMemo(() => ({ categories: rows((state.finance as Row | undefined)?.categories), accounts: rows((state.finance as Row | undefined)?.accounts), cards: rows((state.finance as Row | undefined)?.cards) }), [state.finance])
   const tags = useMemo(() => kind === 'finance' ? parseFinanceTags(nl.title, finCtx) : null, [kind, nl.title, finCtx])
+  const installments = kind === 'finance' ? (nl.installments ?? installS) : null
   const finTypeNow = tags?.type ?? finType
   const finCategoryNow = tags?.category ?? finCategory
   const originNow = tags?.origin ?? accountId
   const cleanTitle = (tags ? tags.title : nl.title).trim() || title.trim()
+  const finCategoryColor = (() => { if (!finCategoryNow) return ''; const found = finCtx.categories.find(item => String(item.nome) === finCategoryNow); return found?.cor ? String(found.cor) : found ? '' : PALETTE[finCtx.categories.length % PALETTE.length].color })()
+  const originColor = (() => { if (!originNow) return ''; const found = originNow.startsWith('card|') ? finCtx.cards.find(item => String(item.id) === originNow.slice(5)) : accounts.find(item => String(item.id) === originNow); return found?.cor ? String(found.cor) : '' })()
   const project = projects.find(item => String(item.id) === projectId)
 
   // Sugestões ao digitar #, ! ou @.
@@ -223,7 +237,9 @@ export function QuickAdd({ kinds, initial, state, today, defaultProjectId, defau
         categoria: finCategoryNow, conta_id: originNow, cartao_id: originNow.startsWith('card|') ? originNow.slice(5) : '', anexos: [], pagamentos: [], ignorar_calculo: false, recorrencia: 'unico',
       }
       const known = finCategoryNow && finCtx.categories.some(item => String(item.nome) === finCategoryNow)
-      commit(current => ({ ...current, finance: { ...current.finance, categories: finCategoryNow && !known ? [...rows(current.finance.categories), { id: uid('cat'), nome: finCategoryNow, cor: PALETTE[rows(current.finance.categories).length % PALETTE.length].color }] : current.finance.categories, transactions: [entry, ...rows(current.finance.transactions)] } }))
+      const lot = installments ? uid('lote') : ''
+      const entries: Row[] = installments ? Array.from({ length: installments.count }, (_, index) => ({ ...entry, id: index === 0 ? entry.id : uid('fin'), lote_id: lot, parcela_numero: index + 1, parcelas_total: installments.count, titulo: `${name} (${index + 1}/${installments.count})`, data: shiftInstallment(date || today, index, installments.interval) })) : [entry]
+      commit(current => ({ ...current, finance: { ...current.finance, categories: finCategoryNow && !known ? [...rows(current.finance.categories), { id: uid('cat'), nome: finCategoryNow, cor: PALETTE[rows(current.finance.categories).length % PALETTE.length].color }] : current.finance.categories, transactions: [...entries, ...rows(current.finance.transactions)] } }))
     } else if (kind === 'task') {
       const task: Row = {
         id: uid('t'), titulo: name, descricao: description.trim(), data_vencimento: date ? `${date}${taskTime ? `T${taskTime}` : ''}` : '', prioridade: priority, concluida: false,
@@ -326,15 +342,18 @@ export function QuickAdd({ kinds, initial, state, today, defaultProjectId, defau
                   <Icon name={finTypeNow === 'receita' ? 'trending_up' : 'trending_down'} size={16} filled={false} />{finTypeNow === 'receita' ? 'Receita' : 'Despesa'}
                 </button>
                 {(finCategories.length || finCategoryNow) ? (
-                  <button type="button" className={styles.chip} data-set={finCategoryNow || undefined} onClick={open('fcat')}>
+                  <button type="button" className={styles.chip} data-set={finCategoryNow || undefined} style={finCategoryColor ? ({ '--chip-color': finCategoryColor } as CSSProperties) : undefined} onClick={open('fcat')}>
                     <Icon name="sell" size={16} filled={false} /><span>{finCategoryNow || 'Categoria'}</span>
                   </button>
                 ) : null}
                 {(accounts.length || finCtx.cards.length) ? (
-                  <button type="button" className={styles.chip} data-set={originNow || undefined} onClick={open('account')}>
+                  <button type="button" className={styles.chip} data-set={originNow || undefined} style={originColor ? ({ '--chip-color': originColor } as CSSProperties) : undefined} onClick={open('account')}>
                     <Icon name={originNow.startsWith('card|') ? 'credit_card' : 'account_balance'} size={16} filled={false} /><span>{String(originNow.startsWith('card|') ? finCtx.cards.find(item => String(item.id) === originNow.slice(5))?.nome : accounts.find(item => String(item.id) === originNow)?.nome || 'Conta')}</span>
                   </button>
                 ) : null}
+                <button type="button" className={styles.chip} data-set={installments || undefined} style={{ '--chip-color': 'var(--ds-lilac-fg)' } as CSSProperties} onClick={open('finstall')}>
+                  <Icon name="splitscreen" size={16} filled={false} />{installments ? `${installments.count}x ${installments.interval === 'mensal' ? 'por mês' : installments.interval === 'semanal' ? 'por semana' : installments.interval === 'quinzenal' ? 'por quinzena' : 'por ano'}` : 'Único'}{fromNl('installments') ? <span className={styles.chipX} role="button" aria-label="Desfazer" title="Desfazer" onClick={undoNl('installments')}>×</span> : null}
+                </button>
               </>
             ) : kind === 'task' ? (
               <>
@@ -386,7 +405,13 @@ export function QuickAdd({ kinds, initial, state, today, defaultProjectId, defau
 
       {picker === 'date' ? (
         <Floating anchor={anchor} title="Data" width={300} onClose={() => setPicker('')}>
-          <DatePicker value={kind === 'event' ? eventDate : kind === 'finance' ? (date || today) : date} today={today} allowEmpty={kind === 'task'} onSelect={value => done(() => setDate(value))} />
+          <DatePicker value={kind === 'event' ? eventDate : kind === 'finance' ? (date || today) : date} today={today} allowEmpty={false} onSelect={value => done(() => setDate(value))} />
+        </Floating>
+      ) : null}
+      {picker === 'finstall' ? (
+        <Floating anchor={anchor} title="Forma" width={260} onClose={() => setPicker('')}>
+          <OptionList options={[{ value: '0', label: 'Único', icon: 'looks_one' }, ...[2, 3, 4, 5, 6, 10, 12].map(count => ({ value: String(count), label: `${count} parcelas`, icon: 'splitscreen' }))]} value={installments ? String(installments.count) : '0'} onSelect={value => done(() => { mute('installments'); setInstallS(Number(value) >= 2 ? { count: Number(value), interval: installments?.interval || 'mensal' } : null) })} />
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, padding: '8px 12px 12px' }}>{(['mensal', 'semanal', 'quinzenal', 'anual'] as const).map(interval => <button key={interval} type="button" className={styles.chip} data-set={installments?.interval === interval || undefined} onClick={() => { mute('installments'); setInstallS({ count: installments?.count || 2, interval }) }}>{interval[0].toUpperCase() + interval.slice(1)}</button>)}</div>
         </Floating>
       ) : null}
       {picker === 'ftype' ? (
@@ -396,12 +421,12 @@ export function QuickAdd({ kinds, initial, state, today, defaultProjectId, defau
       ) : null}
       {picker === 'fcat' ? (
         <Floating anchor={anchor} title="Categoria" width={240} onClose={() => setPicker('')}>
-          <OptionList options={[{ value: '', label: 'Sem categoria', icon: 'horizontal_rule' }, ...finCategories.map(item => ({ value: String(item.nome), label: String(item.nome), icon: 'sell' }))]} value={finCategory} onSelect={value => done(() => setFinCategory(value))} />
+          <OptionList options={[{ value: '', label: 'Sem categoria', icon: 'horizontal_rule' }, ...finCategories.map(item => ({ value: String(item.nome), label: String(item.nome), icon: 'sell', color: item.cor ? String(item.cor) : undefined }))]} value={finCategory} onSelect={value => done(() => setFinCategory(value))} />
         </Floating>
       ) : null}
       {picker === 'account' ? (
         <Floating anchor={anchor} title="Conta" width={240} onClose={() => setPicker('')}>
-          <OptionList options={[{ value: '', label: 'Sem conta', icon: 'horizontal_rule' }, ...accounts.map(item => ({ value: String(item.id), label: String(item.nome || 'Conta'), icon: 'account_balance' })), ...finCtx.cards.map(item => ({ value: `card|${String(item.id)}`, label: String(item.nome || 'Cartão'), icon: 'credit_card' }))]} value={originNow} onSelect={value => done(() => { setAccountId(value) })} />
+          <OptionList options={[{ value: '', label: 'Sem conta', icon: 'horizontal_rule' }, ...accounts.map(item => ({ value: String(item.id), label: String(item.nome || 'Conta'), icon: 'account_balance', color: item.cor ? String(item.cor) : undefined })), ...finCtx.cards.map(item => ({ value: `card|${String(item.id)}`, label: String(item.nome || 'Cartão'), icon: 'credit_card', color: item.cor ? String(item.cor) : undefined }))]} value={originNow} onSelect={value => done(() => { setAccountId(value) })} />
         </Floating>
       ) : null}
       {picker === 'priority' ? (
