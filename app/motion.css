@@ -117,3 +117,15 @@ html body [class*="itemButton"]:hover > [class*="taskBody"],
 html body [class*="itemButton"]:hover [class*="taskSub"],
 html body [class*="itemButton"]:hover [class*="dateTag"] { text-decoration: none !important; }
 html body [class*="itemButton"]:hover [class*="taskTitle"] { text-decoration: underline !important; text-underline-offset: 3px; text-decoration-thickness: 1px; }
+
+/* Finanças: círculo de pagamento igual ao das tarefas — vazio com check no hover; pago = anel cinza com check pequeno. */
+html body .mai-finance-v4-status { position: relative; }
+html body .mai-finance-v4-status:not([data-paid="true"]):not([data-partial="true"])::after {
+  content: ''; position: absolute; inset: 0; margin: auto; width: 12px; height: 12px;
+  background: var(--v3-faint, #8a918a);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 12.5l5 5L20 6.5'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 12.5l5 5L20 6.5'/%3E%3C/svg%3E") center / contain no-repeat;
+  opacity: 0; transform: scale(0.4); transition: opacity 140ms ease, transform 180ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+html body .mai-finance-v4-status:not([data-paid="true"]):not([data-partial="true"]):hover::after { opacity: 0.8; transform: none; }
+html body .mai-finance-v4-status[data-paid="true"] { background: transparent; border-color: var(--v3-faint, #8a918a); color: var(--v3-faint, #8a918a); }
