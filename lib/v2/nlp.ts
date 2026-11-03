@@ -28,7 +28,7 @@ export type NlResult = {
   section?: string
   amount?: number
   /** Lançamentos: "4 vezes", "3x por semana". */
-  installments?: { count: number; interval: 'mensal' | 'semanal' | 'quinzenal' | 'anual' }
+  installments?: { count: number; interval: string }
   /** Só na busca: "esta semana", "este mês". */
   range?: { from: string; to: string }
   overdue?: boolean
@@ -192,19 +192,19 @@ export function parseNatural(text: string, options: NlOptions): NlResult {
     if (result.amount === undefined) scan(folded, `${B}de\\s+(\\d+(?:,\\d{1,2})?)(?!\\s*(?:vezes|vez|x|parcelas?|dias?|semanas?|mes|meses|anos?))${E}`, take)
   }
 
-  // ---- Parcelas (lançamentos): 4 vezes · em 3x · 6 parcelas · 4 vezes por mês · 3x por semana
+  // ---- Parcelas (lançamentos): 4 vezes · em 3x · 6 parcelas · 4 vezes por mês/semana/dia · a cada 15 dias
   if (kinds.has('installments')) {
-    const unit = (word: string): 'mensal' | 'semanal' | 'quinzenal' | 'anual' => word.startsWith('sem') ? 'semanal' : word.startsWith('quin') ? 'quinzenal' : word.startsWith('an') ? 'anual' : 'mensal'
-    scan(folded, `${B}(?:em\\s+)?(\\d{1,3})\\s*(?:vezes|vez|x|parcelas?)(?:\\s+(?:por|ao|a|de)\\s+(mes|semana|quinzena|ano)|\\s+(mensais|semanais|quinzenais|anuais))?${E}`, (match, start, end) => {
+    const unit = (word: string): string => /^dia|^diari/.test(word) ? 'diario' : word.startsWith('sem') ? 'semanal' : word.startsWith('quin') ? 'quinzenal' : word.startsWith('an') ? 'anual' : 'mensal'
+    scan(folded, `${B}(?:em\\s+)?(\\d{1,3})\\s*(?:vezes|vez|x|parcelas?)(?:\\s+a cada\\s+(\\d{1,3})\\s*dias?|\\s+(?:por|ao|a|de)\\s+(mes|semana|quinzena|ano|dia)|\\s+(mensal|mensais|semanal|semanais|quinzenal|quinzenais|anual|anuais|diarias?|diarios?))?${E}`, (match, start, end) => {
       const count = Number(match[1])
       if (count < 2 || count > 360) return
-      const interval = unit(match[2] || match[3] || 'mes')
+      const interval = match[2] ? `dias:${Number(match[2])}` : unit(match[3] || match[4] || 'mes')
       if (add('installments', start, end, `${count}:${interval}`)) { result.installments = { count, interval }; return true }
     })
     // "4 vezes de 1.000 dia 25 por mês": a unidade pode vir depois
-    if (result.installments && !tokens.some(token => token.kind === 'installments' && /(mes|semana|quinzena|ano|mensais|semanais|quinzenais|anuais)/.test(fold(token.text)))) {
-      scan(folded, `${B}(?:por|ao|a cada)\\s+(mes|semana|quinzena|ano)${E}`, (match, start, end) => {
-        const interval = unit(match[1])
+    if (result.installments && !tokens.some(token => token.kind === 'installments' && /(mes|semana|quinzena|ano|dia|mensa|semana|quinzena|anua|diari|cada)/.test(fold(token.text).replace(/^\d+\s*(vezes|vez|x|parcelas?)\s*$/, '')))) {
+      scan(folded, `${B}(?:a cada\\s+(\\d{1,3})\\s*dias?|(?:por|ao|a)\\s+(mes|semana|quinzena|ano|dia)|(mensalmente|semanalmente|quinzenalmente|anualmente|diariamente))${E}`, (match, start, end) => {
+        const interval = match[1] ? `dias:${Number(match[1])}` : unit(match[2] || match[3])
         if (add('installments', start, end, `${result.installments!.count}:${interval}`)) { result.installments = { count: result.installments!.count, interval }; return true }
       })
     }

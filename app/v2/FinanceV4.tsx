@@ -21,6 +21,7 @@ import { addDays } from '../../lib/v2/planner'
 import { MAI_ENTITY_ICONS, MaiIcon } from './MaiIcons'
 import { useManualDraft } from './useManualDraft'
 import { askConfirm, askText, notify } from './shell/ConfirmDialog'
+import { shiftInstallment } from '../../lib/v2/financeInstallments'
 import { financeTagSuggestions, parseFinanceTags } from '../../lib/v2/financeTags'
 import fm from './FinanceModern.module.css'
 
@@ -54,14 +55,7 @@ const originName = (value: unknown, accounts: Row[], cards: Row[]) => {
 }
 const financeIcons = MAI_ENTITY_ICONS
 
-function moveDateForInstallment(key: string, index: number, interval: string) {
-  const date = new Date(`${key}T12:00:00`)
-  if (interval === 'semanal') date.setDate(date.getDate() + index * 7)
-  else if (interval === 'quinzenal') date.setDate(date.getDate() + index * 15)
-  else if (interval === 'anual') date.setFullYear(date.getFullYear() + index)
-  else date.setMonth(date.getMonth() + index)
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
-}
+const moveDateForInstallment = shiftInstallment
 
 function monthDateForDay(month: string, rawDay: number) {
   const year = Number(month.slice(0, 4))
@@ -710,7 +704,7 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
       title,
       subtitle: `${income ? '+' : '−'}${money.format(payment.remaining || clampMoney(item.valor))} · ${naturalDate(due, today)}`,
       groups: [
-        { label: 'Vencimento', inline: true, options: [...dateChoices.map(choice => ({ label: choice.label, icon: choice.icon, active: due === choice.value, onSelect: () => moveTo(choice.value) })), { label: 'Calendário', icon: 'calendar_today', onSelect: async () => { const picked = await askText({ title: 'Vencimento', icon: 'calendar_today', tone: 'default', input: { kind: 'date', today, value: due || today } }); if (picked) moveTo(picked) } }] },
+        { label: 'Vencimento', inline: true, options: dateChoices.map(choice => ({ label: choice.label, icon: choice.icon, active: due === choice.value, onSelect: () => moveTo(choice.value) })), calendar: { value: due || today, today, onSelect: moveTo } },
         { options: [
           { label: paid ? 'Marcar como pendente' : income ? 'Marcar como recebido' : 'Marcar como pago', icon: paid ? 'undo' : 'check_circle', onSelect: () => togglePaid(item) },
           { label: 'Abrir detalhes', icon: 'open_in_full', onSelect: () => openTransaction(item) },

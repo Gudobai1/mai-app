@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent } from 'react'
 import { createPortal } from 'react-dom'
 import { Icon } from '../../ds'
+import { CreateCalendarPicker } from '../CreateDrawerTools'
 import styles from './QuickMenu.module.css'
 
 /**
@@ -21,7 +22,7 @@ export type QuickOption = {
 }
 
 /** Grupo em linha (datas, prioridade) ou lista de ações. */
-export type QuickGroup = { label?: string; inline?: boolean; options: QuickOption[] }
+export type QuickGroup = { label?: string; inline?: boolean; options: QuickOption[]; /** Calendário já aberto abaixo das opções. */ calendar?: { value: string; today: string; onSelect: (value: string) => void | Promise<void> } }
 
 export type QuickMenuConfig = { title: string; subtitle?: string; groups: QuickGroup[] }
 
@@ -171,6 +172,7 @@ function QuickMenuView({ menu, onClose }: { menu: OpenMenu; onClose: () => void 
                 </button>
               ))}
             </div>
+            {group.calendar ? <CreateCalendarPicker allowEmpty={false} showQuick={false} value={group.calendar.value} today={group.calendar.today} onChange={value => { void group.calendar!.onSelect(value) }} close={onClose} /> : null}
           </div>
         ))}
       </div>

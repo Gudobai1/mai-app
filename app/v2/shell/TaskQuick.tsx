@@ -64,8 +64,7 @@ export function useTaskQuick(options: {
           { label: 'Hoje', icon: 'today', active: due === today, onSelect: () => patch(id, { data_vencimento: withDate(task, today) }) },
           { label: 'Amanhã', icon: 'wb_sunny', active: due === addDays(today, 1), onSelect: () => patch(id, { data_vencimento: withDate(task, addDays(today, 1)) }) },
           { label: 'Sem data', icon: 'event_busy', active: !due, onSelect: () => patch(id, { data_vencimento: '' }) },
-          { label: 'Calendário', icon: 'calendar_today', onSelect: ask('date') },
-        ] },
+        ], calendar: { value: due || today, today, onSelect: value => patch(id, { data_vencimento: withDate(task, value) }) } },
         { label: 'Prioridade', inline: true, options: [1, 2, 3, 4].map(level => ({ label: ['Alta', 'Média', 'Baixa', 'Nenhuma'][level - 1], icon: 'flag', color: PRIORITY_COLOR[level] || 'var(--ds-muted)', active: priority === level, onSelect: () => patch(id, { prioridade: level }) })) },
         { options: [
           { label: time ? `Horário: ${time}` : 'Horário', icon: 'schedule', onSelect: ask('time') },

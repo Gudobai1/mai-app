@@ -5,6 +5,7 @@ import type { Dispatch, SetStateAction } from 'react'
 import { CreateCalendarPicker, CreateTool as CreateToolBase } from './CreateDrawerTools'
 import { Chips, MonthStepper, SideRow } from './FinanceItemCard'
 import { MaiIcon } from './MaiIcons'
+import { INTERVAL_CHOICES, intervalChoice, intervalDays, intervalLabel } from '../../lib/v2/financeInstallments'
 
 type Row = Record<string, any>
 type PaymentState = { paid: number; remaining: number; status: string } | null
@@ -90,10 +91,10 @@ export function FinanceTransactionExtraTools({
       </div>
     </CreateTool>
 
-    {draft.recorrencia === 'parcelado' && !draft.lote_id ? <CreateTool id="finance-installments" icon="splitscreen" label="Parcelamento" summary={`${Math.max(2, Number(draft.parcelas || 2))}x · ${String(draft.intervalo_parcelas || 'mensal')}`} color="var(--ds-peach-fg)" open={open} setOpen={setOpen}>
+    {draft.recorrencia === 'parcelado' && !draft.lote_id ? <CreateTool id="finance-installments" icon="splitscreen" label="Parcelamento" summary={`${Math.max(2, Number(draft.parcelas || 2))}x · ${intervalLabel(String(draft.intervalo_parcelas || 'mensal'))}`} color="var(--ds-peach-fg)" open={open} setOpen={setOpen}>
       <div className="mai-finance-tool-grid">
         <label><span>Parcelas</span><input type="number" min="2" value={draft.parcelas || 2} onChange={event => patch({ parcelas: Number(event.target.value) })}/></label>
-        <div><span>Intervalo</span><Chips value={String(draft.intervalo_parcelas || 'mensal')} onChange={value => patch({ intervalo_parcelas: value })} options={[{ value: 'semanal', label: 'Semanal' }, { value: 'quinzenal', label: 'Quinzenal' }, { value: 'mensal', label: 'Mensal' }, { value: 'anual', label: 'Anual' }]} /></div>
+        <div><span>Intervalo</span><Chips value={intervalChoice(String(draft.intervalo_parcelas || 'mensal'))} onChange={value => patch({ intervalo_parcelas: value === 'custom' ? 'dias:10' : value })} options={INTERVAL_CHOICES} /></div>{intervalDays(String(draft.intervalo_parcelas || '')) ? <label><span>A cada quantos dias</span><input type="number" min="1" max="365" value={intervalDays(String(draft.intervalo_parcelas))} onChange={event => patch({ intervalo_parcelas: `dias:${Math.max(1, Number(event.target.value) || 1)}` })}/></label> : null}
         <button type="button" className="mai-finance-tool-switch" data-active={draft.dividir_total !== false} onClick={() => patch({ dividir_total: draft.dividir_total === false })}><MaiIcon name={draft.dividir_total !== false ? 'check_box' : 'check_box_outline_blank'} size={18}/><span>Dividir valor total</span></button>
         <button type="button" className="mai-finance-tool-primary" onClick={() => { generateInstallments(); setOpen('') }}><MaiIcon name="splitscreen" size={18}/><span>Gerar parcelas</span></button>
       </div>
