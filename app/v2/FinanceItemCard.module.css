@@ -118,3 +118,5 @@
 .rowArrows { grid-column: 3; grid-row: 1 / span 2; display: flex; gap: 2px; }
 .rowArrows button { appearance: none; border: 0; background: transparent; width: 34px; height: 34px; display: grid; place-items: center; border-radius: 8px; color: var(--ds-text-2, var(--ds-muted)); cursor: pointer; }
 .rowArrows button:hover { background: var(--ds-surface-hover); color: var(--ds-text); }
+.crumbLink { appearance: none; border: 0; background: transparent; padding: 0; font: inherit; color: inherit; cursor: pointer; }
+.crumbLink:hover { color: var(--ds-text); text-decoration: underline; text-underline-offset: 3px; }
