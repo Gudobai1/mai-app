@@ -48,7 +48,15 @@ export function MonthStepper({ value, onChange, clearable = false, empty = 'Sem 
 
 /** Linha da lateral com setas (mês anterior/próximo); clicar no nome volta para o atual. */
 export function SideStepper({ icon, color, label, value, onPrev, onNext, onReset }: { icon?: string; color?: string; label: string; value: string; onPrev: () => void; onNext: () => void; onReset: () => void }) {
-  return <div className={s.row}><div className={s.rowStatic}>{icon ? <i className={s.rowIcon} style={{ color }}><MaiIcon name={icon} size={18} /></i> : null}<small>{label}</small><div className={s.rowStepper}><button type="button" onClick={onPrev} aria-label="Anterior">‹</button><button type="button" className={s.rowStepperValue} onClick={onReset} title="Voltar ao atual">{value}</button><button type="button" onClick={onNext} aria-label="Próximo">›</button></div></div></div>
+  return <div className={s.row}><div className={s.rowStatic}>
+    {icon ? <i className={s.rowIcon} style={{ color }}><MaiIcon name={icon} size={18} /></i> : null}
+    <small>{label}</small>
+    <button type="button" className={s.rowStepperValue} onClick={onReset} title="Voltar ao atual">{value}</button>
+    <div className={s.rowArrows}>
+      <button type="button" onClick={onPrev} aria-label="Anterior"><MaiIcon name="chevron_left" size={22} /></button>
+      <button type="button" onClick={onNext} aria-label="Próximo"><MaiIcon name="chevron_right" size={22} /></button>
+    </div>
+  </div></div>
 }
 
 /** Escolha entre poucas opções, em botões do app. */
