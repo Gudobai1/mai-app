@@ -76,7 +76,7 @@ const plusHour = (time: string) => {
   return `${String(Math.min(23, h + 1)).padStart(2, '0')}:${String(m || 0).padStart(2, '0')}`
 }
 
-type Picker = '' | 'ftype' | 'account' | 'date' | 'time' | 'reminder' | 'priority' | 'project' | 'repeat' | 'start' | 'end' | 'category'
+type Picker = '' | 'ftype' | 'account' | 'date' | 'time' | 'reminder' | 'priority' | 'project' | 'repeat' | 'start' | 'end' | 'category' | 'fcat'
 
 export function QuickAdd({ kinds, initial, state, today, defaultProjectId, defaultDate, defaultSection, commit, onFinance, onClose, inline, parentId }: Props) {
   const [kind, setKind] = useState<QuickAddKind>(initial)
@@ -99,12 +99,14 @@ export function QuickAdd({ kinds, initial, state, today, defaultProjectId, defau
   const [amountS, setAmountS] = useState('')
   const [finType, setFinType] = useState<'despesa' | 'receita'>('despesa')
   const [accountId, setAccountId] = useState('')
+  const [finCategory, setFinCategory] = useState('')
   const [picker, setPicker] = useState<Picker>('')
   const anchor = useRef<HTMLElement | null>(null)
   const open = (which: Picker) => (event: ReactMouseEvent<HTMLElement>) => { anchor.current = event.currentTarget; setPicker(which) }
 
   const projects = rows(state.projects).filter(item => item.ativo !== false)
   const accounts = rows((state.finance as Row | undefined)?.accounts)
+  const finCategories = rows((state.finance as Row | undefined)?.categories)
 
   // Linguagem natural: o que for digitado no nome vira data, horário, prioridade etc.
   const [muted, setMuted] = useState<Set<NlKind>>(new Set())
@@ -210,7 +212,7 @@ export function QuickAdd({ kinds, initial, state, today, defaultProjectId, defau
       const value = Math.abs(Number(String(amount).replace(',', '.')) || 0)
       const entry: Row = {
         id: uid('fin'), titulo: name, observacao: '', valor: value, valor_pago: 0, tipo: finType, data: date || today, status: 'pendente',
-        categoria: '', conta_id: accountId, cartao_id: '', anexos: [], pagamentos: [], ignorar_calculo: false, recorrencia: 'unico',
+        categoria: finCategory, conta_id: accountId, cartao_id: '', anexos: [], pagamentos: [], ignorar_calculo: false, recorrencia: 'unico',
       }
       commit(current => ({ ...current, finance: { ...current.finance, transactions: [entry, ...rows(current.finance.transactions)] } }))
     } else if (kind === 'task') {
@@ -314,6 +316,11 @@ export function QuickAdd({ kinds, initial, state, today, defaultProjectId, defau
                 <button type="button" className={styles.chip} data-set style={{ '--chip-color': finType === 'receita' ? 'var(--ds-success)' : 'var(--ds-danger)' } as CSSProperties} onClick={open('ftype')}>
                   <Icon name={finType === 'receita' ? 'trending_up' : 'trending_down'} size={16} filled={false} />{finType === 'receita' ? 'Receita' : 'Despesa'}
                 </button>
+                {finCategories.length ? (
+                  <button type="button" className={styles.chip} data-set={finCategory || undefined} onClick={open('fcat')}>
+                    <Icon name="sell" size={16} filled={false} /><span>{finCategory || 'Categoria'}</span>
+                  </button>
+                ) : null}
                 {accounts.length ? (
                   <button type="button" className={styles.chip} data-set={accountId || undefined} onClick={open('account')}>
                     <Icon name="account_balance" size={16} filled={false} /><span>{String(accounts.find(item => String(item.id) === accountId)?.nome || 'Conta')}</span>
@@ -376,6 +383,11 @@ export function QuickAdd({ kinds, initial, state, today, defaultProjectId, defau
       {picker === 'ftype' ? (
         <Floating anchor={anchor} title="Tipo" width={220} onClose={() => setPicker('')}>
           <OptionList options={[{ value: 'despesa', label: 'Despesa', icon: 'trending_down', color: 'var(--ds-danger)' }, { value: 'receita', label: 'Receita', icon: 'trending_up', color: 'var(--ds-success)' }]} value={finType} onSelect={value => done(() => setFinType(value === 'receita' ? 'receita' : 'despesa'))} />
+        </Floating>
+      ) : null}
+      {picker === 'fcat' ? (
+        <Floating anchor={anchor} title="Categoria" width={240} onClose={() => setPicker('')}>
+          <OptionList options={[{ value: '', label: 'Sem categoria', icon: 'horizontal_rule' }, ...finCategories.map(item => ({ value: String(item.nome), label: String(item.nome), icon: 'sell' }))]} value={finCategory} onSelect={value => done(() => setFinCategory(value))} />
         </Floating>
       ) : null}
       {picker === 'account' ? (

@@ -68,7 +68,6 @@ export function FinanceTransactionCard({
     const due = dateKey(item.data)
     const paid = payment.status === 'pago'
     const tone = paid ? undefined : due && due < today ? 'late' : due === today ? 'today' : 'future'
-    const origin = String(item.conta_id || '')
     const repeatLabel = item.ajuste_fatura ? 'Fatura' : item._isFixed ? 'Todo mês' : item.lote_id ? `${item.parcela_numero}/${item.parcelas_total}` : ''
     return <div className={cs.card} data-done={paid || undefined}>
       <button type="button" className={cs.check} style={color ? ({ '--check-color': incomeItem ? 'var(--ds-success)' : color } as React.CSSProperties) : undefined} data-done={paid || undefined} data-partial={payment.status === 'parcial' || undefined} data-late={tone === 'late' || undefined} title={paid ? 'Marcar como pendente' : 'Marcar como pago'} aria-label={paid ? 'Marcar como pendente' : 'Marcar como pago'} onClick={onTogglePaid}>
@@ -80,7 +79,6 @@ export function FinanceTransactionCard({
           <span className={cs.meta}>
             <span data-tone={tone}><MaiIcon name="calendar_today" size={12} />{naturalDate(due, today)}</span>
             {repeatLabel ? <span><MaiIcon name="repeat" size={12} />{repeatLabel}</span> : null}
-            {origin ? <span><MaiIcon name={origin.startsWith('card|') ? 'credit_card' : 'account_balance'} size={12} />{originName(origin, accounts, cards)}</span> : null}
           </span>
         </span>
         <span className={cs.value} data-income={incomeItem}>{incomeItem ? '+' : '−'} {money.format(visibleValue)}{payment.status === 'parcial' ? <small>restante</small> : null}</span>

@@ -79,7 +79,7 @@ export function FinanceTransactionExtraTools({
   void _legacyAddPayment
 
   return <>
-    <CreateTool id="finance-recurrence" icon="repeat" label="Forma" summary={recurrenceLabel(draft)} color="#7b6f9d" open={open} setOpen={setOpen}>
+    <CreateTool id="finance-recurrence" icon="repeat" label="Forma" summary={recurrenceLabel(draft)} color="var(--ds-lilac-fg)" open={open} setOpen={setOpen}>
       <div className="mai-task-v4-option-list">
         {!draft.lote_id ? <>
           <button type="button" data-selected={draft.recorrencia === 'unico' || undefined} onClick={() => patch({ recorrencia: 'unico', _isFixed: false })}><MaiIcon name="looks_one" size={18}/><span>Único</span>{draft.recorrencia === 'unico' ? <MaiIcon name="check" size={18}/> : <span/>}</button>
@@ -89,7 +89,7 @@ export function FinanceTransactionExtraTools({
       </div>
     </CreateTool>
 
-    {draft.recorrencia === 'parcelado' && !draft.lote_id ? <CreateTool id="finance-installments" icon="splitscreen" label="Parcelamento" summary={`${Math.max(2, Number(draft.parcelas || 2))}x · ${String(draft.intervalo_parcelas || 'mensal')}`} color="#87725e" open={open} setOpen={setOpen}>
+    {draft.recorrencia === 'parcelado' && !draft.lote_id ? <CreateTool id="finance-installments" icon="splitscreen" label="Parcelamento" summary={`${Math.max(2, Number(draft.parcelas || 2))}x · ${String(draft.intervalo_parcelas || 'mensal')}`} color="var(--ds-peach-fg)" open={open} setOpen={setOpen}>
       <div className="mai-finance-tool-grid">
         <label><span>Parcelas</span><input type="number" min="2" value={draft.parcelas || 2} onChange={event => patch({ parcelas: Number(event.target.value) })}/></label>
         <label><span>Intervalo</span><select value={draft.intervalo_parcelas || 'mensal'} onChange={event => patch({ intervalo_parcelas: event.target.value })}><option value="semanal">Semanal</option><option value="quinzenal">Quinzenal</option><option value="mensal">Mensal</option><option value="anual">Anual</option></select></label>
@@ -98,7 +98,7 @@ export function FinanceTransactionExtraTools({
       </div>
     </CreateTool> : null}
 
-    {draft.recorrencia === 'fixo' ? <CreateTool id="finance-fixed" icon="event_repeat" label="Recorrência" summary={`Dia ${draft.dia_mes || Number(today.slice(8))}`} color="#66806c" open={open} setOpen={setOpen}>
+    {draft.recorrencia === 'fixo' ? <CreateTool id="finance-fixed" icon="event_repeat" label="Recorrência" summary={`Dia ${draft.dia_mes || Number(today.slice(8))}`} color="var(--ds-mint-fg)" open={open} setOpen={setOpen}>
       <div className="mai-finance-tool-grid">
         <label><span>Dia do mês</span><input type="number" min="1" max="31" value={draft.dia_mes || Number(today.slice(8))} onChange={event => patch({ dia_mes: Number(event.target.value) })}/></label>
         <label><span>Início</span><input type="month" value={String(draft.mes_inicio || month).slice(0, 7)} onChange={event => patch({ mes_inicio: event.target.value })}/></label>
@@ -108,7 +108,7 @@ export function FinanceTransactionExtraTools({
       </div>
     </CreateTool> : null}
 
-    <CreateTool id="finance-payments" icon="account_balance_wallet" label="Pagamentos" summary={paymentSummary} color="#4f7f75" open={open} setOpen={setOpen}>
+    <CreateTool id="finance-payments" icon="account_balance_wallet" label="Pagamentos" summary={paymentSummary} color="var(--ds-teal-fg)" open={open} setOpen={setOpen}>
       <div className="mai-finance-tool-payments">
         <div className="mai-finance-tool-payment-summary"><span>Pago</span><strong>{money.format(draftPayment?.paid || 0)}</strong><span>Restante</span><strong>{money.format(draftPayment?.remaining || 0)}</strong></div>
         {draftPayment && draftPayment.remaining > 0 ? <div className="mai-finance-tool-payment-entry"><label><span>Valor</span><input inputMode="decimal" placeholder={draftPayment.remaining.toFixed(2).replace('.', ',')} value={paymentAmount} onChange={event => setPaymentAmount(event.target.value)}/></label><label><span>Data</span><input type="date" value={paymentDate} onChange={event => setPaymentDate(event.target.value)}/></label><button type="button" className="mai-finance-tool-primary" onClick={appendPayment}><MaiIcon name="add" size={18}/><span>Registrar</span></button></div> : <div className="mai-finance-tool-note"><MaiIcon name="check_circle" size={18}/><span>Lançamento quitado.</span></div>}
@@ -116,7 +116,7 @@ export function FinanceTransactionExtraTools({
       </div>
     </CreateTool>
 
-    <CreateTool id="finance-home-visibility" icon={hiddenFromHome ? 'visibility_off' : 'visibility'} label="Tela inicial" summary={hiddenFromHome ? 'Oculto' : 'Visível'} color="#75808b" open={open} setOpen={setOpen}>
+    <CreateTool id="finance-home-visibility" icon={hiddenFromHome ? 'visibility_off' : 'visibility'} label="Tela inicial" summary={hiddenFromHome ? 'Oculto' : 'Visível'} color="var(--ds-muted)" open={open} setOpen={setOpen}>
       <div className="mai-task-v4-option-list">
         <button type="button" data-selected={!hiddenFromHome || undefined} onClick={() => { patch({ ocultar_inicio: false, ocultar_home: false }); setOpen('') }}><MaiIcon name="visibility" size={18}/><span>Mostrar na tela inicial</span>{!hiddenFromHome ? <MaiIcon name="check" size={18}/> : <span/>}</button>
         <button type="button" data-selected={hiddenFromHome || undefined} onClick={() => { patch({ ocultar_inicio: true, ocultar_home: false }); setOpen('') }}><MaiIcon name="visibility_off" size={18}/><span>Ocultar da tela inicial</span>{hiddenFromHome ? <MaiIcon name="check" size={18}/> : <span/>}</button>
