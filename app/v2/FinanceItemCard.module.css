@@ -121,3 +121,6 @@
 .crumbLink { appearance: none; border: 0; background: transparent; padding: 0; font: inherit; color: inherit; cursor: pointer; }
 .crumbLink:hover { color: var(--ds-text); text-decoration: underline; text-underline-offset: 3px; }
 .hints button[data-active] { background: var(--ds-surface-hover); border-color: var(--ds-line-strong, var(--ds-line)); }
+
+.headValue .payButton { appearance: none; border: 1px solid var(--ds-line); background: transparent; color: var(--ds-text); font: inherit; font-size: 13px; font-weight: var(--ds-fw-medium); padding: 5px 12px; border-radius: 8px; cursor: pointer; align-self: center; }
+.headValue .payButton:hover { background: var(--ds-surface-hover); }
