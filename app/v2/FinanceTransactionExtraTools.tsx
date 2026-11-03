@@ -2,7 +2,8 @@
 
 import { useState } from 'react'
 import type { Dispatch, SetStateAction } from 'react'
-import { CreateTool } from './CreateDrawerTools'
+import { CreateTool as CreateToolBase } from './CreateDrawerTools'
+import { SideRow } from './FinanceItemCard'
 import { MaiIcon } from './MaiIcons'
 
 type Row = Record<string, any>
@@ -36,6 +37,7 @@ export function FinanceTransactionExtraTools({
   generateInstallments,
   editFixedOccurrence,
   ignoreFixed,
+  asRows = false,
 }: {
   draft: Row
   setDraft: Dispatch<SetStateAction<Row | null>>
@@ -49,7 +51,9 @@ export function FinanceTransactionExtraTools({
   generateInstallments: () => void
   editFixedOccurrence?: () => void
   ignoreFixed?: () => void
+  asRows?: boolean
 }) {
+  const CreateTool = (asRows ? SideRow : CreateToolBase) as typeof CreateToolBase
   const payments = rows(draft.pagamentos)
   const hiddenFromHome = draft.ocultar_inicio === true || draft.ocultar_home === true
   const [paymentAmount, setPaymentAmount] = useState('')
