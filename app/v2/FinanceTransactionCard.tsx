@@ -1,5 +1,7 @@
 'use client'
 
+import cs from './FinanceCards.module.css'
+
 type Row = Record<string, any>
 
 const rows = (value: unknown): Row[] => Array.isArray(value) ? value as Row[] : []
@@ -57,6 +59,24 @@ export function FinanceTransactionCard({
   const payment = financeCardPaymentState(item)
   const visibleValue = payment.status === 'parcial' ? payment.remaining : payment.total
   const title = String(item.titulo || item.descricao || item.nome || item.categoria || 'Lançamento')
+
+  if (compact) {
+    const due = dateKey(item.data)
+    const paid = payment.status === 'pago'
+    const tone = paid ? undefined : due && due < today ? 'late' : due === today ? 'today' : 'future'
+    return <div className={cs.card} data-done={paid || undefined}>
+      <button type="button" className={cs.check} data-done={paid || undefined} data-partial={payment.status === 'parcial' || undefined} data-late={tone === 'late' || undefined} title={paid ? 'Marcar como pendente' : 'Marcar como pago'} aria-label={paid ? 'Marcar como pendente' : 'Marcar como pago'} onClick={onTogglePaid}>
+        {paid ? <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg> : null}
+      </button>
+      <button type="button" className={cs.main} onClick={onOpen}>
+        <span className={cs.copy}>
+          <span className={cs.title}>{title}</span>
+          <span className={cs.meta}><span data-tone={tone}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="2.5" /><path d="M3.5 10h17M8 3v4M16 3v4" /></svg>{naturalDate(due, today)}</span></span>
+        </span>
+        <span className={cs.value} data-income={incomeItem}>{incomeItem ? '+' : '−'} {money.format(visibleValue)}{payment.status === 'parcial' ? <small>restante</small> : null}</span>
+      </button>
+    </div>
+  }
 
   return <article className="mai-finance-v4-row mai-item-row-v2" data-status={payment.status}>
     <button
