@@ -779,13 +779,45 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
       if (item._isFixed) updateOccurrence({ ...item, occurrenceKey: `${id}|${month}` }, { data_override: value })
       else commit(current => ({ ...current, finance: { ...current.finance, transactions: rows(current.finance.transactions).map(row => String(row.id) === id ? { ...row, data: value, dia_mes: Number(value.slice(8)) } : row) } }))
     }
+    const patchTx = (patch: Row) => commit(current => ({ ...current, finance: { ...current.finance, transactions: rows(current.finance.transactions).map(row => String(row.id) === id ? { ...row, ...patch } : row) } }))
     return {
       title,
       subtitle: `${income ? '+' : '−'}${money.format(payment.remaining || clampMoney(item.valor))} · ${naturalDate(due, today)}`,
       groups: [
         { label: 'Vencimento', inline: true, options: dateChoices.map(choice => ({ label: choice.label, icon: choice.icon, active: due === choice.value, onSelect: () => moveTo(choice.value) })), calendar: { value: due || today, today, onSelect: moveTo } },
+        { label: 'Situação', inline: true, options: [
+          { label: 'Em aberto', icon: 'schedule', color: 'var(--ds-warn)', active: !paid, onSelect: () => { if (paid) return togglePaid(item) } },
+          { label: income ? 'Recebido' : 'Pago', icon: 'check_circle', color: 'var(--ds-success)', active: paid, onSelect: () => { if (!paid) return togglePaid(item) } },
+        ] },
+        ...(item._isFixed ? [] : [
+          { label: 'Tipo', inline: true, options: [
+            { label: 'Despesa', icon: 'trending_down', color: 'var(--ds-danger)', active: !income, onSelect: () => patchTx({ tipo: 'despesa' }) },
+            { label: 'Receita', icon: 'trending_up', color: 'var(--ds-success)', active: income, onSelect: () => patchTx({ tipo: 'receita' }) },
+          ] },
+          ...(categories.length ? [{ label: 'Categoria', inline: true, options: [
+            ...categories.slice(0, 12).map(category => { const name = String(category.nome || ''); return { label: name, swatch: categoryColorOf(name, categories), active: String(item.categoria || '') === name, onSelect: () => patchTx({ categoria: String(item.categoria || '') === name ? '' : name }) } }),
+          ] }] : []),
+          ...(accounts.length || cards.length ? [{ label: 'Conta ou cartão', inline: true, options: [
+            ...accounts.map(account => ({ label: String(account.nome || 'Conta'), swatch: String(account.cor || '#4073FF'), active: String(item.conta_id || '') === String(account.id), onSelect: () => patchTx({ conta_id: String(account.id), cartao_id: '' }) })),
+            ...cards.map(card => ({ label: String(card.nome || 'Cartão'), swatch: String(card.cor || '#4073FF'), active: String(item.conta_id || '') === `card|${card.id}`, onSelect: () => patchTx({ conta_id: `card|${card.id}`, cartao_id: String(card.id) }) })),
+          ] }] : []),
+        ]),
         { options: [
-          { label: paid ? 'Marcar como pendente' : income ? 'Marcar como recebido' : 'Marcar como pago', icon: paid ? 'undo' : 'check_circle', onSelect: () => togglePaid(item) },
+          ...(item._isFixed ? [] : [
+            { label: 'Alterar valor', icon: 'payments', hint: money.format(clampMoney(item.valor)), onSelect: async () => {
+              const answer = await askText({ title: 'Valor do lançamento', icon: 'payments', tone: 'default', input: { kind: 'money', value: clampMoney(item.valor).toFixed(2).replace('.', ',') } })
+              if (answer === null) return
+              const value = parseMoneyInput(answer)
+              if (!Number.isFinite(value) || value <= 0) { void notify('Digite um valor válido.'); return }
+              patchTx({ valor: value })
+            } },
+            { label: 'Renomear', icon: 'edit', onSelect: async () => {
+              const answer = await askText({ title: 'Nome do lançamento', icon: 'edit', tone: 'default', input: { kind: 'text', value: title } })
+              if (answer === null || !answer.trim()) return
+              patchTx({ titulo: answer.trim() })
+            } },
+            { label: 'Duplicar', icon: 'content_copy', onSelect: () => commit(current => ({ ...current, finance: { ...current.finance, transactions: [{ ...item, id: uid('fin'), status: 'pendente', valor_pago: 0, pagamentos: [], lote_id: undefined }, ...rows(current.finance.transactions)] } })) },
+          ]),
           { label: 'Abrir detalhes', icon: 'open_in_full', onSelect: () => openTransaction(item) },
           { label: item._isFixed ? 'Ignorar neste mês' : 'Excluir', icon: 'delete', tone: 'danger', onSelect: async () => {
             if (item._isFixed) { await ignoreFixed(item); return }
@@ -799,16 +831,43 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
   function entityMenu(type: Exclude<DraftKind, 'transaction'>, item: Row): QuickMenuConfig {
     const key = type === 'account' ? 'accounts' : type === 'card' ? 'cards' : type === 'box' ? 'boxes' : 'investments'
     const name = String(item.nome || 'Registro')
+    const itemId = String(item.id)
+    const patchItem = (patch: Row) => commit(current => ({ ...current, finance: { ...current.finance, [key]: rows((current.finance as Row)[key]).map(row => String(row.id) === itemId ? { ...row, ...patch } : row) } }))
+    const askValue = async (title: string, field: string, icon: string) => {
+      const answer = await askText({ title, icon, tone: 'default', input: { kind: 'money', value: clampMoney(item[field]).toFixed(2).replace('.', ',') } })
+      if (answer === null) return
+      const value = parseMoneyInput(answer)
+      if (!Number.isFinite(value) || value < 0) { void notify('Digite um valor válido.'); return }
+      patchItem({ [field]: value })
+    }
+    const valueOption = type === 'account' ? { label: 'Saldo inicial', icon: 'payments', hint: money.format(clampMoney(item.saldo_inicial)), onSelect: () => askValue('Saldo inicial da conta', 'saldo_inicial', 'account_balance') }
+      : type === 'card' ? { label: 'Limite total', icon: 'payments', hint: money.format(clampMoney(item.limite)), onSelect: () => askValue('Limite do cartão', 'limite', 'credit_card') }
+      : type === 'box' ? { label: 'Meta', icon: 'flag', hint: clampMoney(item.meta) ? money.format(clampMoney(item.meta)) : 'Sem meta', onSelect: () => askValue('Meta da caixinha', 'meta', 'savings') }
+      : { label: 'Valor atual', icon: 'payments', hint: money.format(clampMoney(item.valor_atual)), onSelect: () => askValue('Valor atual do investimento', 'valor_atual', 'trending_up') }
     return {
       title: name,
-      groups: [{ options: [
-        { label: 'Abrir detalhes', icon: 'open_in_full', onSelect: () => openExisting(type, item) },
-        ...(type === 'card' ? [{ label: 'Alterar valor da fatura', icon: 'edit', onSelect: () => adjustInvoice(item) }] : []),
-        { label: 'Excluir', icon: 'delete', tone: 'danger', onSelect: async () => {
-          if (!(await askConfirm({ title: 'Excluir registro?', message: `“${name}” será excluído. Não dá para desfazer.` }))) return
-          commit(current => ({ ...current, finance: { ...current.finance, [key]: rows((current.finance as Row)[key]).filter(row => String(row.id) !== String(item.id)) } }))
-        } },
-      ] }],
+      subtitle: type === 'card' ? `Fatura ${money.format(cardInvoice(item, monthItems, month))}` : type === 'account' ? 'Conta' : type === 'box' ? 'Caixinha' : 'Investimento',
+      groups: [
+        { label: 'Cor', inline: true, options: PALETTE.slice(0, 20).map(color => ({ label: color.label, swatch: color.color, active: String(item.cor || '').toLowerCase() === color.color.toLowerCase(), onSelect: () => patchItem({ cor: color.color }) })).map(option => ({ ...option, compact: true })) },
+        { options: [
+          { label: 'Renomear', icon: 'edit', onSelect: async () => {
+            const answer = await askText({ title: 'Nome', icon: 'edit', tone: 'default', input: { kind: 'text', value: name } })
+            if (answer === null || !answer.trim()) return
+            patchItem({ nome: answer.trim() })
+          } },
+          valueOption,
+          ...(type === 'card' ? [
+            { label: 'Alterar valor da fatura', icon: 'receipt_long', onSelect: () => adjustInvoice(item) },
+            { label: 'Pagar fatura', icon: 'task_alt', onSelect: () => payInvoice(item) },
+          ] : []),
+          { label: 'Duplicar', icon: 'content_copy', onSelect: () => commit(current => ({ ...current, finance: { ...current.finance, [key]: [...rows((current.finance as Row)[key]), { ...item, id: uid(type === 'account' ? 'cta' : type === 'card' ? 'crd' : type === 'box' ? 'box' : 'inv'), nome: `${name} (cópia)` }] } })) },
+          { label: 'Abrir detalhes', icon: 'open_in_full', onSelect: () => openExisting(type, item) },
+          { label: 'Excluir', icon: 'delete', tone: 'danger', onSelect: async () => {
+            if (!(await askConfirm({ title: 'Excluir registro?', message: `“${name}” será excluído. Não dá para desfazer.` }))) return
+            commit(current => ({ ...current, finance: { ...current.finance, [key]: rows((current.finance as Row)[key]).filter(row => String(row.id) !== itemId) } }))
+          } },
+        ] },
+      ],
     }
   }
   const transactionRow = (item: Row) => <div key={`${item._isFixed ? 'fix' : 'tx'}-${String(item.id)}`} {...quick.bind(() => financeMenu(item))}><FinanceTransactionCard
@@ -986,17 +1045,9 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
       }
       const valueBlock = (label: ReactNode, tip: string, onClick: () => void, sub?: ReactNode, caption?: string) => <div className={ic.valueBlock}>{caption ? <span className={ic.valueCaption}>{caption}</span> : null}<button type="button" className={ic.valueButton} title={tip} onClick={onClick}>{label}<MaiIcon name="edit" size={16} /></button>{sub ? <span className={ic.valueSub}>{sub}</span> : null}</div>
       const extras = <>{rows(draft.anexos).length ? <ItemAttachments attachments={rows(draft.anexos)} onChange={anexos => setDraft({ ...draft, anexos })} /> : null}<div className={ic.commentsSlot}><CommentsSection key={kind === 'transaction' || permanent ? 'c' : viewMonth} comments={(kind === 'transaction' || permanent ? rows(draft.comentarios) : rows((draft[commentsField] || {})[viewMonth])) as Comment[]} onChange={comentarios => setDraft(kind === 'transaction' || permanent ? { ...draft, comentarios } : { ...draft, [commentsField]: { ...(draft[commentsField] || {}), [viewMonth]: comentarios } })} /></div></>
-      const setQuickDate = (value: string) => setDraft({ ...draft, data: value, dia_mes: Number(value.slice(8)), mes_inicio: draft.mes_inicio || value.slice(0, 7) })
       const quickChip = (label: string, icon: string, color: string, active: boolean, onClick: () => void) => <button key={label} type="button" data-active={active || undefined} onClick={onClick}><i style={{ color }}><MaiIcon name={icon} size={14} /></i>{label}</button>
-      const quickBar = kind === 'transaction' ? <div className={ic.hints}>
-        {quickChip('Hoje', 'today', 'var(--ds-warn)', dateKey(draft.data) === today, () => setQuickDate(today))}
-        {quickChip('Amanhã', 'wb_sunny', 'var(--ds-warn)', dateKey(draft.data) === addDays(today, 1), () => setQuickDate(addDays(today, 1)))}
-        {quickChip(draft.status === 'pago' ? 'Pago' : 'Em aberto', draft.status === 'pago' ? 'check_circle' : 'schedule', draft.status === 'pago' ? 'var(--ds-success)' : 'var(--ds-warn)', draft.status === 'pago', () => setDraftPaymentStatus(draft.status === 'pago' ? 'pendente' : 'pago'))}
-        {quickChip(draft.tipo === 'receita' ? 'Receita' : 'Despesa', draft.tipo === 'receita' ? 'trending_up' : 'trending_down', draft.tipo === 'receita' ? 'var(--ds-success)' : 'var(--ds-danger)', false, () => setDraft({ ...draft, tipo: draft.tipo === 'receita' ? 'despesa' : 'receita' }))}
-      </div> : null
       const content = kind === 'transaction' ? <>
         {title}
-        {quickBar}
         <textarea className={ic.desc} rows={2} value={draft.observacao || ''} placeholder="Descrição" onChange={event => setDraft({ ...draft, observacao: event.target.value })} />
         {history.length ? listSection('Histórico', history.length, history.map(txLine), '') : null}
         {extras}

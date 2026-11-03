@@ -17,6 +17,12 @@ export type QuickOption = {
   icon?: string
   color?: string
   active?: boolean
+  /** Texto à direita (valor atual). */
+  hint?: string
+  /** Bolinha colorida no lugar do ícone (cores de categoria, conta etc.). */
+  swatch?: string
+  /** Só a bolinha/ícone, sem texto (o nome vira dica). */
+  compact?: boolean
   tone?: 'danger'
   onSelect: (point?: { x: number; y: number }) => void | Promise<void>
 }
@@ -165,10 +171,14 @@ function QuickMenuView({ menu, onClose }: { menu: OpenMenu; onClose: () => void 
                   role="menuitem"
                   className={`${group.inline ? styles.chip : styles.action} ${option.tone === 'danger' ? styles.danger : ''}`}
                   data-active={option.active || undefined}
+                  title={option.compact ? option.label : undefined}
+                  aria-label={option.label}
                   onClick={() => run(option)}
                 >
-                  {option.icon ? <Icon name={option.icon} size={group.inline ? 16 : 19} style={option.color ? { color: option.color } : undefined} /> : null}
-                  <span>{option.label}</span>
+                  {option.swatch ? <i className={styles.swatch} style={{ background: option.swatch }} aria-hidden="true" /> : option.icon ? <Icon name={option.icon} size={group.inline ? 16 : 19} style={option.color ? { color: option.color } : undefined} /> : null}
+                  {option.compact ? null : <span className={styles.label}>{option.label}</span>}
+                  {option.hint ? <span className={styles.hint}>{option.hint}</span> : null}
+                  {!group.inline && option.active ? <Icon name="check" size={18} style={{ color: 'var(--ds-accent)' }} /> : null}
                 </button>
               ))}
             </div>
