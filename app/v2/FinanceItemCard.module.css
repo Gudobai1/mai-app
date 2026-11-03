@@ -140,3 +140,9 @@
 .payRow .payButton, .cardHead .payButton { appearance: none; border: 1px solid var(--ds-line); background: transparent; color: var(--ds-text); font: inherit; font-size: 13px; font-weight: var(--ds-fw-medium); padding: 6px 14px; border-radius: 8px; cursor: pointer; }
 .payRow .payButton:hover { background: var(--ds-surface-hover); }
 .cardHead { width: 100%; }
+
+.moveForm { display: grid; gap: 10px; padding: 12px; border: 1px solid var(--ds-line); border-radius: 10px; }
+.moveInput { font: inherit; font-size: 15px; color: var(--ds-text); background: transparent; border: 0; border-bottom: 1px solid var(--ds-line); padding: 6px 0; outline: none; width: 100%; box-sizing: border-box; }
+.moveInput:focus { border-bottom-color: var(--ds-accent); }
+.payRow .payButton[data-primary] { background: var(--ds-accent); color: var(--ds-on-accent, #fff); border-color: transparent; }
+.payRow .payButton:disabled { opacity: .45; cursor: default; }
