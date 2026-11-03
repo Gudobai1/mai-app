@@ -6,10 +6,12 @@ import { MaiIcon } from './MaiIcons'
 import s from './FinanceItemCard.module.css'
 
 /** Casca do cartão de item financeiro: conteúdo à esquerda, configurações à direita. */
-export function FinanceItemShell({ crumb, onClose, content, side, footer }: { crumb: string; onClose: () => void; content: ReactNode; side: ReactNode; footer: ReactNode }) {
+export type Crumb = { label: string; onClick?: () => void }
+
+export function FinanceItemShell({ crumb, onClose, content, side, footer }: { crumb: string | Crumb[]; onClose: () => void; content: ReactNode; side: ReactNode; footer: ReactNode }) {
   const layer = <div className={s.layer} onMouseDown={onClose}>
-    <div className={s.panel} role="dialog" aria-label={crumb} onMouseDown={event => event.stopPropagation()}>
-      <header className={s.header}><span className={s.crumb}>{crumb}</span><button type="button" className={s.close} onClick={onClose} aria-label="Fechar"><MaiIcon name="close" size={18} /></button></header>
+    <div className={s.panel} role="dialog" aria-label={typeof crumb === 'string' ? crumb : crumb.map(item => item.label).join(' › ')} onMouseDown={event => event.stopPropagation()}>
+      <header className={s.header}><span className={s.crumb}>{typeof crumb === 'string' ? crumb : crumb.map((item, index) => <span key={index}>{index ? ' › ' : ''}{item.onClick ? <button type="button" className={s.crumbLink} onClick={item.onClick}>{item.label}</button> : item.label}</span>)}</span><button type="button" className={s.close} onClick={onClose} aria-label="Fechar"><MaiIcon name="close" size={18} /></button></header>
       <div className={s.body}><div className={s.content}>{content}</div><aside className={s.side}>{side}</aside></div>
       <footer className={s.footer}>{footer}</footer>
     </div>

@@ -11,6 +11,7 @@ import type { MaiState } from './state'
  * Se mudar uma regra lá, mude aqui também.
  */
 
+import { invoiceValue } from './financeInvoice'
 type Row = Record<string, any>
 
 const rows = (value: unknown): Row[] => (Array.isArray(value) ? (value as Row[]) : [])
@@ -134,8 +135,8 @@ export function financeSummary(state: MaiState, today: string): FinanceSummary {
   const monthInvoice = cards.reduce((sum, card) => {
     const cardId = String(card.id)
     const manual = monthItems.find(item => item.ajuste_fatura === true && String(item.ajuste_fatura_card_id || item.cartao_id || '') === cardId && String(item.competencia_fatura || dateKey(item.data).slice(0, 7)) === month)
-    if (manual) return sum + clampMoney(manual.valor)
-    return sum + calc.filter(item => !item.ajuste_fatura && item.tipo !== 'receita' && (String(item.conta_id || '') === `card|${cardId}` || String(item.cartao_id || '') === cardId)).reduce((cardSum, item) => cardSum + clampMoney(item.valor), 0)
+    const purchases = calc.filter(item => !item.ajuste_fatura && item.tipo !== 'receita' && (String(item.conta_id || '') === `card|${cardId}` || String(item.cartao_id || '') === cardId)).reduce((cardSum, item) => cardSum + clampMoney(item.valor), 0)
+    return sum + (manual ? invoiceValue(manual, purchases) : purchases)
   }, 0)
   const knownCardIds = new Set(cards.map(card => String(card.id)))
   const monthNonCardExpense = calc.filter(item => item.tipo !== 'receita' && !String(item.conta_id || '').startsWith('card|') && !item.cartao_id).reduce((sum, item) => sum + clampMoney(item.valor), 0)

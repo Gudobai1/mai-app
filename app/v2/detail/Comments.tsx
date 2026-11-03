@@ -88,13 +88,14 @@ function when(value: string) {
 }
 
 /** Caixa de escrita com formatação e anexos: serve para comentar e para editar. */
-function CommentEditor({ initialHtml = '', initialFiles = [], submitLabel, onSubmit, onCancel }: { initialHtml?: string; initialFiles?: Row[]; submitLabel: string; onSubmit: (html: string, files: Row[]) => void; onCancel: () => void }) {
+function CommentEditor({ initialHtml = '', initialFiles = [], submitLabel, onSubmit, onCancel, pickFile = false }: { pickFile?: boolean; initialHtml?: string; initialFiles?: Row[]; submitLabel: string; onSubmit: (html: string, files: Row[]) => void; onCancel: () => void }) {
   const [hasText, setHasText] = useState(Boolean(initialHtml))
   const [files, setFiles] = useState<Row[]>(initialFiles)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const area = useRef<HTMLDivElement | null>(null)
   const input = useRef<HTMLInputElement | null>(null)
+  useEffect(() => { if (pickFile) input.current?.click() }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     const el = area.current
@@ -196,6 +197,7 @@ function CommentEditor({ initialHtml = '', initialFiles = [], submitLabel, onSub
 export function CommentsSection({ comments, onChange }: { comments: Comment[]; onChange: (comments: Comment[]) => void }) {
   const [open, setOpen] = useState(false)
   const [editing, setEditing] = useState('')
+  const [pick, setPick] = useState(false)
   const [preview, setPreview] = useState<Row | null>(null)
 
   async function removeComment(id: string) {
@@ -251,13 +253,15 @@ export function CommentsSection({ comments, onChange }: { comments: Comment[]; o
         <div className={styles.box} data-open={open || undefined}>
           {open ? (
             <CommentEditor
+              pickFile={pick}
               submitLabel="Comentar"
               onCancel={() => setOpen(false)}
               onSubmit={(texto, anexos) => { onChange([...comments, { id: `c-${crypto.randomUUID()}`, texto, anexos, criado_em: new Date().toISOString() }]); setOpen(false) }}
             />
           ) : (
             <div className={styles.closed}>
-              <button type="button" className={styles.placeholder} onClick={() => { setEditing(''); setOpen(true) }}>Comentar</button>
+              <button type="button" className={styles.placeholder} onClick={() => { setEditing(''); setPick(false); setOpen(true) }}>Comentar</button>
+              <button type="button" className={styles.tool} aria-label="Anexar arquivo" title="Anexar arquivo" onClick={() => { setEditing(''); setPick(true); setOpen(true) }}><Icon name="attach_file" size={18} filled={false} /></button>
             </div>
           )}
         </div>

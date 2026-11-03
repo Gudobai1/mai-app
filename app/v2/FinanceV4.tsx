@@ -7,7 +7,7 @@ import type { InspectableItem } from './ContextDrawer'
 import { CreateCalendarPicker, CreateNumberEditor, CreateOptionList, createNaturalDate } from './CreateDrawerTools'
 import { FinanceTransactionCard } from './FinanceTransactionCard'
 import { FinanceTransactionExtraTools } from './FinanceTransactionExtraTools'
-import { FinanceItemShell, MonthStepper, SideField, SideRow, SideStepper } from './FinanceItemCard'
+import { FinanceItemShell, type Crumb, MonthStepper, SideField, SideRow, SideStepper } from './FinanceItemCard'
 import ic from './FinanceItemCard.module.css'
 import footerStyles from './shell/DraftFooter.module.css'
 import { parseNatural } from '../../lib/v2/nlp'
@@ -22,6 +22,7 @@ import { MAI_ENTITY_ICONS, MaiIcon } from './MaiIcons'
 import { useManualDraft } from './useManualDraft'
 import { askConfirm, askText, notify } from './shell/ConfirmDialog'
 import { PALETTE, colorName } from '../../lib/v2/palette'
+import { invoiceValue } from '../../lib/v2/financeInvoice'
 import { shiftInstallment } from '../../lib/v2/financeInstallments'
 import { financeTagSuggestions, parseFinanceTags } from '../../lib/v2/financeTags'
 import fm from './FinanceModern.module.css'
@@ -153,6 +154,7 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
   const quick = useQuickMenu()
   const [quickAdding, setQuickAdding] = useState(false)
   const [cardAdding, setCardAdding] = useState(false)
+  const [trail, setTrail] = useState<{ kind: Exclude<DraftKind, 'transaction'>; id: string; label: string }[]>([])
   const [redeem, setRedeem] = useState<{ amount: number; date: string; conta: string; junto: boolean } | null>(null)
   const [categoryDraftName, setCategoryDraftName] = useState('')
   const [categoryDraftColor, setCategoryDraftColor] = useState('')
@@ -229,15 +231,21 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
   }
 
   const monthFixed = fixedForMonthAt(month)
-  const monthTx = transactions.filter(item => dateKey(item.data).slice(0, 7) === month)
+  const monthTxRaw = transactions.filter(item => dateKey(item.data).slice(0, 7) === month)
+  const monthTx = monthTxRaw.map(item => {
+    if (item.ajuste_fatura !== true || item.ajuste_delta === undefined) return item
+    const cardId = String(item.ajuste_fatura_card_id || item.cartao_id || '')
+    const purchases = [...monthTxRaw, ...monthFixed].filter(row => !row.ajuste_fatura && !row.ignorar_calculo && row.tipo !== 'receita' && (String(row.conta_id || '') === `card|${cardId}` || String(row.cartao_id || '') === cardId)).reduce((sum, row) => sum + clampMoney(row.valor), 0)
+    return { ...item, valor: invoiceValue(item, purchases) }
+  })
   const monthItems: Row[] = [...monthTx, ...monthFixed]
   const monthCalculationItems = monthItems.filter(item => !item.ignorar_calculo)
   const monthIncome = monthCalculationItems.filter(item => item.tipo === 'receita').reduce((sum, item) => sum + clampMoney(item.valor), 0)
   const monthInvoice = cards.reduce((sum, card) => {
     const cardId = String(card.id)
     const manual = monthItems.find(item => item.ajuste_fatura === true && String(item.ajuste_fatura_card_id || item.cartao_id || '') === cardId && String(item.competencia_fatura || dateKey(item.data).slice(0, 7)) === month)
-    if (manual) return sum + clampMoney(manual.valor)
-    return sum + monthCalculationItems.filter(item => !item.ajuste_fatura && item.tipo !== 'receita' && (String(item.conta_id || '') === `card|${cardId}` || String(item.cartao_id || '') === cardId)).reduce((cardSum, item) => cardSum + clampMoney(item.valor), 0)
+    const purchases = monthCalculationItems.filter(item => !item.ajuste_fatura && item.tipo !== 'receita' && (String(item.conta_id || '') === `card|${cardId}` || String(item.cartao_id || '') === cardId)).reduce((cardSum, item) => cardSum + clampMoney(item.valor), 0)
+    return sum + (manual ? invoiceValue(manual, purchases) : purchases)
   }, 0)
   const knownCardIds = new Set(cards.map(card => String(card.id)))
   const monthNonCardExpense = monthCalculationItems.filter(item => item.tipo !== 'receita' && !String(item.conta_id || '').startsWith('card|') && !item.cartao_id).reduce((sum, item) => sum + clampMoney(item.valor), 0)
@@ -279,8 +287,8 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
   function cardInvoice(card: Row, source: Row[] = monthItems) {
     const cardId = String(card.id)
     const manual = source.find(item => item.ajuste_fatura === true && String(item.ajuste_fatura_card_id || item.cartao_id || '') === cardId && String(item.competencia_fatura || dateKey(item.data).slice(0, 7)) === month)
-    if (manual) return clampMoney(manual.valor)
-    return source.filter(item => !item.ajuste_fatura && (String(item.conta_id || '') === `card|${cardId}` || String(item.cartao_id || '') === cardId) && !item.ignorar_calculo && item.tipo !== 'receita').reduce((sum, item) => sum + clampMoney(item.valor), 0)
+    const purchases = source.filter(item => !item.ajuste_fatura && (String(item.conta_id || '') === `card|${cardId}` || String(item.cartao_id || '') === cardId) && !item.ignorar_calculo && item.tipo !== 'receita').reduce((sum, item) => sum + clampMoney(item.valor), 0)
+    return manual ? invoiceValue(manual, purchases) : purchases
   }
   function moveMonth(amount: number) {
     const date = new Date(`${month}-15T12:00:00`)
@@ -322,18 +330,21 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
     return { id: uid('inv'), nome: '', icone: 'trending_up', cor: '#4073FF', foto: '', tipo: 'ETF', instituicao: '', aportado: 0, valor_atual: 0, observacao: '', movimentos: [], _persisted: false }
   }
   function openNew(type: DraftKind) {
+    setTrail([])
     setKind(type)
     setDraft(newDraft(type))
     setCreateTool('')
     setCategoryDraftName('')
   }
-  function openTransaction(item: Row) {
+  function openTransaction(item: Row, keepTrail = false) {
+    if (!keepTrail) setTrail([])
     setKind('transaction')
     setDraft({ ...item, recorrencia: item._isFixed ? 'fixo' : item.recorrencia || 'unico', dia_mes: item.dia_mes || Number(dateKey(item.data).slice(8)) || Number(today.slice(8)), mes_inicio: item.mes_inicio || dateKey(item.data).slice(0, 7) || month, mes_fim: item.mes_fim || '', anexos: rows(item.anexos), pagamentos: cleanPayments(item.pagamentos, dateKey(item.data)), _persisted: true, _isFixed: item._isFixed === true })
     setCreateTool('')
     setCategoryDraftName('')
   }
-  function openExisting(type: Exclude<DraftKind, 'transaction'>, item: Row) {
+  function openExisting(type: Exclude<DraftKind, 'transaction'>, item: Row, keepTrail = false) {
+    if (!keepTrail) setTrail([])
     setKind(type)
     setDraft({ ...item, movimentos: rows(item.movimentos), _persisted: true })
     setCreateTool('')
@@ -435,8 +446,25 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
   }
 
   const { dirty, saveNow, requestClose } = useManualDraft({ value: draft, identity: `${kind}:${String(draft?.id || '')}`, enabled: Boolean(draft), save: persistDraft, what: kind === 'transaction' ? 'lançamento' : 'registro' })
-  const closeDraft = () => void requestClose(() => setDraft(null))
-  const saveDraft = async () => { await saveNow(); setDraft(null) }
+  const closeDraft = () => void requestClose(() => { setTrail([]); setDraft(null) })
+  /** Abre um lançamento de dentro de uma conta/cartão, guardando o caminho para voltar. */
+  async function openFromParent(item: Row) {
+    if (!draft || kind === 'transaction') { openTransaction(item); return }
+    if (dirty) await saveNow()
+    const parentKind = kind as Exclude<DraftKind, 'transaction'>
+    setTrail(current => [...current, { kind: parentKind, id: String(draft.id), label: String(draft.nome || 'Registro') }])
+    openTransaction(item, true)
+  }
+  function goBack(index: number) {
+    const target = trail[index]
+    if (!target) return
+    const source = target.kind === 'account' ? accounts : target.kind === 'card' ? cards : target.kind === 'box' ? boxes : investments
+    const found = source.find(row => String(row.id) === target.id)
+    setTrail(trail.slice(0, index))
+    if (found) openExisting(target.kind, found, true)
+    else setDraft(null)
+  }
+  const saveDraft = async () => { await saveNow(); setTrail([]); setDraft(null) }
 
   async function removeDraft() {
     if (!draft?._persisted) return
@@ -560,36 +588,48 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
     if (Math.abs(diff) < 0.01) return
     commit(current => ({ ...current, finance: { ...current.finance, transactions: [{ id: uid('fin'), titulo: 'Ajuste de saldo', valor: Math.abs(diff), valor_pago: Math.abs(diff), tipo: diff >= 0 ? 'receita' : 'despesa', categoria: 'Ajuste', conta_id: account.id, cartao_id: '', data: today, status: 'pago', observacao: 'Conciliação bancária', pagamentos: [{ id: uid('pay'), data: today, valor: Math.abs(diff) }], anexos: [], ignorar_calculo: false, recorrencia: 'unico' }, ...rows(current.finance.transactions)] } }))
   }
+  const invoicePurchases = (cardId: string) => monthItems.filter(item => !item.ajuste_fatura && !item.ignorar_calculo && item.tipo !== 'receita' && (String(item.conta_id || '') === `card|${cardId}` || String(item.cartao_id || '') === cardId)).reduce((sum, item) => sum + clampMoney(item.valor), 0)
+  const invoiceRow = (list: Row[], cardId: string) => list.find(item => item.ajuste_fatura === true && String(item.ajuste_fatura_card_id || item.cartao_id || '') === cardId && String(item.competencia_fatura || dateKey(item.data).slice(0, 7)) === month)
+  const invoiceBase = (card: Row, existing?: Row): Row => ({ ...(existing || {}), id: existing?.id || uid('invoice'), titulo: `Fatura ${String(card.nome || 'Cartão')}`, tipo: 'despesa', data: existing?.data || monthDateForDay(month, Number(card.vencimento || 10)), categoria: 'Fatura do cartão', conta_id: `card|${String(card.id)}`, cartao_id: String(card.id), conta_pagamento_id: String(card.conta_id || ''), anexos: rows(existing?.anexos), ignorar_calculo: true, recorrencia: 'unico', ajuste_fatura: true, ajuste_fatura_card_id: String(card.id), competencia_fatura: month })
+  const saveInvoice = (card: Row, change: (existing: Row | undefined) => Row) => commit(currentState => {
+    const list = rows(currentState.finance.transactions)
+    const existing = invoiceRow(list, String(card.id))
+    const next = change(existing)
+    return { ...currentState, finance: { ...currentState.finance, transactions: existing ? list.map(item => String(item.id) === String(existing.id) ? next : item) : [next, ...list] } }
+  })
+  const statusOf = (value: number, paid: number) => value > 0 && paid >= value - 0.005 ? 'pago' : paid > 0 ? 'parcial' : 'pendente'
+
   async function adjustInvoice(card: Row) {
     const current = cardInvoice(card, monthItems)
-    const answer = await askText({ title: `Valor da fatura de ${monthLabel(month).split(' de ')[0]}`, message: 'Troque o valor calculado pelo que veio no banco.', icon: 'credit_card', tone: 'default', input: { kind: 'money', value: current.toFixed(2).replace('.', ',') } })
+    const answer = await askText({ title: `Valor da fatura de ${monthLabel(month).split(' de ')[0]}`, message: 'Troque o valor calculado pelo que veio no banco. Novas compras continuam somando.', icon: 'credit_card', tone: 'default', input: { kind: 'money', value: current.toFixed(2).replace('.', ',') } })
     if (answer === null) return
     const value = parseMoneyInput(answer)
     if (!Number.isFinite(value) || value < 0) { void notify('Digite um valor válido.'); return }
-    const cardId = String(card.id)
-    const dueDate = monthDateForDay(month, Number(card.vencimento || 10))
-    commit(currentState => {
-      const list = rows(currentState.finance.transactions)
-      const existing = list.find(item => item.ajuste_fatura === true && String(item.ajuste_fatura_card_id || item.cartao_id || '') === cardId && String(item.competencia_fatura || dateKey(item.data).slice(0, 7)) === month)
-      const paid = existing ? Math.min(value, clampMoney(existing.valor_pago)) : 0
-      const next: Row = { ...(existing || {}), id: existing?.id || uid('invoice'), titulo: `Fatura ${String(card.nome || 'Cartão')}`, valor: value, valor_pago: paid, tipo: 'despesa', data: existing?.data || dueDate, status: value > 0 && paid >= value ? 'pago' : paid > 0 ? 'parcial' : 'pendente', categoria: 'Fatura do cartão', conta_id: `card|${cardId}`, cartao_id: cardId, conta_pagamento_id: String(card.conta_id || ''), anexos: rows(existing?.anexos), pagamentos: existing ? rows(existing.pagamentos) : [], ignorar_calculo: true, recorrencia: 'unico', ajuste_fatura: true, ajuste_fatura_card_id: cardId, competencia_fatura: month }
-      return { ...currentState, finance: { ...currentState.finance, transactions: existing ? list.map(item => String(item.id) === String(existing.id) ? next : item) : [next, ...list] } }
-    })
+    const delta = value - invoicePurchases(String(card.id))
+    saveInvoice(card, existing => { const base = invoiceBase(card, existing); const paid = Math.min(value, clampMoney(existing?.valor_pago)); return { ...base, ajuste_delta: delta, valor: value, valor_pago: paid, pagamentos: rows(existing?.pagamentos), status: statusOf(value, paid) } })
   }
   async function payInvoice(card: Row) {
-    const calculated = cardInvoice(card, monthItems)
-    if (!calculated) return
-    const answer = await askText({ title: `Pagar fatura de ${String(card.nome || 'cartão')}`, message: 'Confirme o valor da fatura.', icon: 'credit_card', tone: 'default', confirmLabel: 'Pagar', input: { kind: 'money', value: calculated.toFixed(2).replace('.', ',') } })
-    if (answer === null) return
-    const value = parseMoneyInput(answer)
-    if (!Number.isFinite(value) || value <= 0) { void notify('Digite um valor válido.'); return }
     const cardId = String(card.id)
-    const dueDate = monthDateForDay(month, Number(card.vencimento || 10))
-    commit(current => {
-      const list = rows(current.finance.transactions)
-      const existing = list.find(item => item.ajuste_fatura === true && String(item.ajuste_fatura_card_id || item.cartao_id || '') === cardId && String(item.competencia_fatura || dateKey(item.data).slice(0, 7)) === month)
-      const next: Row = { ...(existing || {}), id: existing?.id || uid('invoice'), titulo: `Fatura ${String(card.nome || 'Cartão')}`, valor: value, valor_pago: value, tipo: 'despesa', data: dueDate, status: 'pago', categoria: 'Fatura do cartão', conta_id: `card|${cardId}`, cartao_id: cardId, conta_pagamento_id: String(card.conta_id || ''), anexos: rows(existing?.anexos), pagamentos: [{ id: uid('pay'), data: today, valor: value }], ignorar_calculo: true, recorrencia: 'unico', ajuste_fatura: true, ajuste_fatura_card_id: cardId, competencia_fatura: month }
-      return { ...current, finance: { ...current.finance, transactions: existing ? list.map(item => String(item.id) === String(existing.id) ? next : item) : [next, ...list] } }
+    const total = cardInvoice(card, monthItems)
+    const paidBefore = clampMoney(invoiceRow(monthItems, cardId)?.valor_pago)
+    const remaining = Math.max(0, total - paidBefore)
+    if (remaining <= 0) { void notify('Esta fatura já está paga.'); return }
+    let amount = remaining
+    const full = await askConfirm({ title: `Pagar fatura de ${String(card.nome || 'cartão')}`, message: `${paidBefore > 0 ? `Falta pagar ${money.format(remaining)} de ${money.format(total)}.` : `Valor da fatura: ${money.format(total)}.`} Pagar tudo?`, confirmLabel: 'Pagar tudo', cancelLabel: 'Pagar parte', icon: 'credit_card', tone: 'default' })
+    if (!full) {
+      const answer = await askText({ title: 'Quanto vai pagar?', message: `Falta ${money.format(remaining)}.`, icon: 'payments', tone: 'default', confirmLabel: 'Pagar', input: { kind: 'money', value: '' } })
+      if (answer === null) return
+      const parsed = parseMoneyInput(answer)
+      if (!Number.isFinite(parsed) || parsed <= 0) { void notify('Digite um valor válido.'); return }
+      if (parsed - remaining > 0.005) { void notify(`O valor não pode passar de ${money.format(remaining)}.`); return }
+      amount = parsed
+    }
+    const delta = total - invoicePurchases(cardId)
+    saveInvoice(card, existing => {
+      const base = invoiceBase(card, existing)
+      const payments = [...rows(existing?.pagamentos), { id: uid('pay'), data: today, valor: amount }]
+      const paid = Math.min(total, payments.reduce((sum, payment) => sum + clampMoney(payment.valor), 0))
+      return { ...base, ajuste_delta: existing?.ajuste_delta ?? delta, valor: total, valor_pago: paid, pagamentos: payments, status: statusOf(total, paid) }
     })
   }
   function showOrigin(origin: string) {
@@ -649,8 +689,8 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
     const invoice = cards.reduce((sum, card) => {
       const cardId = String(card.id)
       const manual = items.find(item => item.ajuste_fatura === true && String(item.ajuste_fatura_card_id || item.cartao_id || '') === cardId && String(item.competencia_fatura || dateKey(item.data).slice(0, 7)) === key)
-      if (manual) return sum + clampMoney(manual.valor)
-      return sum + calc.filter(item => !item.ajuste_fatura && item.tipo !== 'receita' && (String(item.conta_id || '') === `card|${cardId}` || String(item.cartao_id || '') === cardId)).reduce((cardSum, item) => cardSum + clampMoney(item.valor), 0)
+      const purchases = calc.filter(item => !item.ajuste_fatura && item.tipo !== 'receita' && (String(item.conta_id || '') === `card|${cardId}` || String(item.cartao_id || '') === cardId)).reduce((cardSum, item) => cardSum + clampMoney(item.valor), 0)
+      return sum + (manual ? invoiceValue(manual, purchases) : purchases)
     }, 0)
     const orphan = calc.filter(item => {
       if (item.tipo === 'receita') return false
@@ -851,7 +891,7 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
     {draft ? (() => {
       const crumbKind = kind === 'transaction' ? 'Lançamentos' : kind === 'account' ? 'Contas' : kind === 'card' ? 'Cartões' : kind === 'box' ? 'Caixinhas' : 'Investimentos'
       const lineTone = (item: Row) => item.tipo === 'receita' ? 'in' : 'out'
-      const txLine = (item: Row) => { const paid = paymentState(item).status === 'pago'; return <button type="button" key={`${item._isFixed ? 'f' : 't'}-${String(item.id)}-${dateKey(item.data)}`} className={ic.line} onClick={() => openTransaction(item)}><span className={ic.lineCheck} data-paid={paid} style={paid ? undefined : { borderColor: item.tipo === 'receita' ? 'var(--ds-success)' : 'var(--ds-danger)' }}>{paid ? '✓' : ''}</span><span className={ic.lineText}><b>{String(item.titulo || 'Lançamento')}</b><small style={!paid && dateKey(item.data) < today ? { color: 'var(--ds-danger)' } : !paid && dateKey(item.data) === today ? { color: 'var(--ds-warn)' } : undefined}>{naturalDate(dateKey(item.data), today)}</small></span><span className={ic.lineValue} data-tone={lineTone(item)}>{item.tipo === 'receita' ? '+' : '−'} {money.format(clampMoney(item.valor))}</span></button> }
+      const txLine = (item: Row) => { const paid = paymentState(item).status === 'pago'; return <button type="button" key={`${item._isFixed ? 'f' : 't'}-${String(item.id)}-${dateKey(item.data)}`} className={ic.line} onClick={() => void openFromParent(item)}><span className={ic.lineCheck} data-paid={paid} style={paid ? undefined : { borderColor: item.tipo === 'receita' ? 'var(--ds-success)' : 'var(--ds-danger)' }}>{paid ? '✓' : ''}</span><span className={ic.lineText}><b>{String(item.titulo || 'Lançamento')}</b><small style={!paid && dateKey(item.data) < today ? { color: 'var(--ds-danger)' } : !paid && dateKey(item.data) === today ? { color: 'var(--ds-warn)' } : undefined}>{naturalDate(dateKey(item.data), today)}</small></span><span className={ic.lineValue} data-tone={lineTone(item)}>{item.tipo === 'receita' ? '+' : '−'} {money.format(clampMoney(item.valor))}</span></button> }
       const moveLine = (mov: Row, plus: boolean) => <div key={String(mov.id)} className={ic.line} style={{ cursor: 'default' }}><span className={ic.lineCheck} data-paid="true">✓</span><span className={ic.lineText}><b>{plus ? (kind === 'box' ? 'Guardado' : 'Aporte') : (kind === 'box' ? 'Retirada' : 'Resgate')}</b><small>{new Date(mov.data).toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' })}</small></span><span className={ic.lineValue} data-tone={plus ? 'in' : 'out'}>{plus ? '+' : '−'} {money.format(clampMoney(mov.valor))}</span></div>
       const listSection = (title: string, count: number, children: ReactNode, _empty?: string) => !count ? null : <section className={ic.section}><h3>{title}<small>{count}</small></h3>{children}</section>
       const draftId = String(draft.id)
@@ -952,7 +992,7 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
         </>
         return <FinanceItemShell crumb={`Investimentos › ${String(draft.nome || 'Investimento')}`} onClose={() => setRedeem(null)} content={redeemContent} side={redeemSide} footer={<><span /><button type="button" className={footerStyles.cancel} onClick={() => setRedeem(null)}>Cancelar</button><button type="button" className={footerStyles.save} disabled={preview.value <= 0} onClick={confirmRedeem}>Resgatar {money.format(preview.value)}</button></>} />
       }
-      return <FinanceItemShell crumb={`Financeiro › ${crumbKind}`} onClose={closeDraft} content={content} side={side} footer={<>{draft._persisted ? <button type="button" className="mai-finance-v4-delete" onClick={removeDraft}><MaiIcon name="delete" size={18} />Excluir</button> : <span />}<DraftButtons dirty={dirty} canSave onSave={() => void saveDraft()} onCancel={closeDraft} /></>} />
+      return <FinanceItemShell crumb={trail.length ? ([{ label: 'Financeiro' }, ...trail.map((entry, index) => ({ label: entry.label, onClick: () => goBack(index) })), { label: crumbKind }] as Crumb[]) : `Financeiro › ${crumbKind}`} onClose={closeDraft} content={content} side={side} footer={<>{draft._persisted ? <button type="button" className="mai-finance-v4-delete" onClick={removeDraft}><MaiIcon name="delete" size={18} />Excluir</button> : <span />}<DraftButtons dirty={dirty} canSave onSave={() => void saveDraft()} onCancel={closeDraft} /></>} />
     })() : null}
   </div>
 }
