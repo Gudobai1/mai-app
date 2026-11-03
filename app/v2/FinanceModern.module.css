@@ -135,16 +135,17 @@ button.balanceMain { border: 0; background: transparent; font: inherit; color: i
 button.balanceMain:hover { background: var(--v3-sidebar); }
 @media (max-width: 640px) { .balance { padding: 0 6px; } .summary > button:first-child { padding-left: 6px; } }
 
-/* cartões das abas no padrão do módulo de tarefas */
-.entityRow { padding: 12px 12px 12px 14px; border-radius: 6px; background: var(--ds-surface); box-shadow: var(--ds-shadow-1); transition: background-color var(--ds-dur-fast) var(--ds-ease); }
-.entityRow:hover { background: var(--ds-surface-hover); }
+/* itens das abas no modo lista do módulo de tarefas */
+.list { gap: 0; }
+.entityRow { padding: 12px 6px; border-radius: 0; background: transparent; box-shadow: none; border-bottom: 1px solid color-mix(in srgb, var(--ds-line) 70%, transparent); transition: background-color var(--ds-dur-fast) var(--ds-ease); }
+.entityRow:hover { background: color-mix(in srgb, var(--ds-surface) 55%, transparent); }
 .entityRow .entity { padding: 0; border-radius: 0; column-gap: 12px; }
-.entityRow .entity .name { font-size: 14px; font-weight: var(--ds-fw-bold); }
-.entityRow .entity .sub, .entityRow .subLine { font-size: 11.5px; font-weight: var(--ds-fw-bold); color: var(--ds-muted); }
-.entityRow .entity .amount b { font-size: 14px; font-weight: var(--ds-fw-bold); }
+.entityRow .entity .name { font-size: 15px; font-weight: var(--ds-fw-regular); }
+.entityRow .entity .sub, .entityRow .subLine { font-size: 12px; font-weight: var(--ds-fw-medium); color: var(--ds-muted); }
+.entityRow .entity .amount b { font-size: 14.5px; font-weight: var(--ds-fw-medium); }
 .entityRow .due[data-tone='late'] { color: var(--ds-danger); }
 .entityRow .due[data-tone='today'] { color: var(--ds-warn); }
 .entityRow .due[data-tone='future'] { color: var(--ds-success); }
 .entityRow .pos { color: var(--ds-success); }
 .entityRow .neg { color: var(--ds-danger); }
-.addRow { padding: 12px 14px; }
+.addRow { padding: 12px 6px; }

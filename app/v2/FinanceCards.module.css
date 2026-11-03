@@ -1,21 +1,24 @@
-/* Cartões de lançamento no padrão visual do módulo de tarefas. */
-.card { position: relative; display: flex; align-items: flex-start; gap: 12px; padding: 12px 12px 12px 14px; border-radius: 6px; background: var(--ds-surface); box-shadow: var(--ds-shadow-1); transition: background-color var(--ds-dur-fast) var(--ds-ease); }
-.card:hover { background: var(--ds-surface-hover); }
-.check { appearance: none; flex-shrink: 0; width: 20px; height: 20px; margin-top: 1px; padding: 0; display: grid; place-items: center; border: 2px solid var(--ds-line-strong); border-radius: 50%; background: transparent; color: var(--ds-on-accent); cursor: pointer; }
-.check:hover { border-color: var(--ds-accent); }
-.check[data-late] { border-color: var(--ds-danger); }
-.check[data-partial] { border-color: var(--ds-warn); }
-.check[data-done] { border-color: var(--ds-accent); background: var(--ds-accent); }
+/* Lançamentos no modo lista do módulo de tarefas: linha sem fundo, divisória fina, círculo na cor da categoria. */
+.card { position: relative; display: flex; align-items: flex-start; gap: 12px; padding: 12px 6px; border-radius: 0; background: transparent; box-shadow: none; border-bottom: 1px solid color-mix(in srgb, var(--ds-line) 70%, transparent); transition: background-color var(--ds-dur-fast) var(--ds-ease); }
+.card:hover { background: color-mix(in srgb, var(--ds-surface) 55%, transparent); }
+.check { appearance: none; flex-shrink: 0; width: 20px; height: 20px; margin-top: 1px; padding: 0; display: grid; place-items: center; border: 2px solid var(--check-color, var(--ds-line-strong)); border-radius: 50%; background: color-mix(in srgb, var(--check-color, transparent) 14%, transparent); color: var(--check-color, var(--ds-muted)); cursor: pointer; }
+.check > * { opacity: 0; transform: scale(0.4); transition: opacity 140ms ease, transform 180ms cubic-bezier(0.2, 0.8, 0.2, 1); }
+.check:hover > * { opacity: 0.9; transform: none; }
+.check[data-late] { border-color: var(--ds-danger); color: var(--ds-danger); }
+.check[data-partial] { border-color: var(--ds-warn); color: var(--ds-warn); }
+.check[data-done] { border-color: var(--ds-muted); background: var(--ds-muted); color: var(--ds-bg); }
+.check[data-done] > * { opacity: 1; transform: none; }
 .main { appearance: none; flex: 1; min-width: 0; display: flex; align-items: flex-start; gap: 12px; padding: 0; border: 0; background: transparent; color: var(--ds-text); font: inherit; text-align: left; cursor: pointer; }
 .copy { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
-.title { font-size: 14px; font-weight: var(--ds-fw-bold); line-height: 1.3; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.title { font-size: 15px; font-weight: var(--ds-fw-regular); line-height: 1.3; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .card[data-done] .title { color: var(--ds-muted); text-decoration: line-through; }
 .card[data-done] .meta { opacity: 0.6; }
-.meta { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; margin-top: 1px; font-size: 11.5px; font-weight: var(--ds-fw-bold); color: var(--ds-muted); }
+.meta { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; margin-top: 3px; min-height: 20px; font-size: 12px; font-weight: var(--ds-fw-medium); color: var(--ds-muted); }
 .meta > span { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
 .meta > span[data-tone='late'] { color: var(--ds-danger); }
 .meta > span[data-tone='today'] { color: var(--ds-warn); }
 .meta > span[data-tone='future'] { color: var(--ds-success); }
-.value { flex-shrink: 0; font-size: 14px; font-weight: var(--ds-fw-bold); font-variant-numeric: tabular-nums; line-height: 1.3; }
+.dot { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+.value { flex-shrink: 0; font-size: 14.5px; font-weight: var(--ds-fw-medium); font-variant-numeric: tabular-nums; line-height: 1.3; }
 .value[data-income='true'] { color: var(--ds-success); }
 .value small { display: block; font-size: 11px; font-weight: var(--ds-fw-medium); color: var(--ds-muted); text-align: right; }

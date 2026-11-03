@@ -1,6 +1,7 @@
 'use client'
 
 import cs from './FinanceCards.module.css'
+import { MaiIcon } from './MaiIcons'
 
 type Row = Record<string, any>
 
@@ -46,6 +47,7 @@ export function FinanceTransactionCard({
   onOpen,
   onTogglePaid,
   compact = false,
+  color,
 }: {
   item: Row
   accounts: Row[]
@@ -54,6 +56,8 @@ export function FinanceTransactionCard({
   onOpen: () => void
   onTogglePaid: () => void
   compact?: boolean
+  color?: string
+  categoryColor?: string
 }) {
   const incomeItem = item.tipo === 'receita'
   const payment = financeCardPaymentState(item)
@@ -64,14 +68,21 @@ export function FinanceTransactionCard({
     const due = dateKey(item.data)
     const paid = payment.status === 'pago'
     const tone = paid ? undefined : due && due < today ? 'late' : due === today ? 'today' : 'future'
+    const origin = String(item.conta_id || '')
+    const repeatLabel = item.ajuste_fatura ? 'Fatura' : item._isFixed ? 'Todo mês' : item.lote_id ? `${item.parcela_numero}/${item.parcelas_total}` : ''
     return <div className={cs.card} data-done={paid || undefined}>
-      <button type="button" className={cs.check} data-done={paid || undefined} data-partial={payment.status === 'parcial' || undefined} data-late={tone === 'late' || undefined} title={paid ? 'Marcar como pendente' : 'Marcar como pago'} aria-label={paid ? 'Marcar como pendente' : 'Marcar como pago'} onClick={onTogglePaid}>
-        {paid ? <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg> : null}
+      <button type="button" className={cs.check} style={color ? ({ '--check-color': incomeItem ? 'var(--ds-success)' : color } as React.CSSProperties) : undefined} data-done={paid || undefined} data-partial={payment.status === 'parcial' || undefined} data-late={tone === 'late' || undefined} title={paid ? 'Marcar como pendente' : 'Marcar como pago'} aria-label={paid ? 'Marcar como pendente' : 'Marcar como pago'} onClick={onTogglePaid}>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>
       </button>
       <button type="button" className={cs.main} onClick={onOpen}>
         <span className={cs.copy}>
           <span className={cs.title}>{title}</span>
-          <span className={cs.meta}><span data-tone={tone}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="2.5" /><path d="M3.5 10h17M8 3v4M16 3v4" /></svg>{naturalDate(due, today)}</span></span>
+          <span className={cs.meta}>
+            <span data-tone={tone}><MaiIcon name="calendar_today" size={12} />{naturalDate(due, today)}</span>
+            {repeatLabel ? <span><MaiIcon name="repeat" size={12} />{repeatLabel}</span> : null}
+            {item.categoria ? <span><i className={cs.dot} style={{ background: color || 'var(--ds-muted)' }} />{String(item.categoria)}</span> : null}
+            {origin ? <span><MaiIcon name={origin.startsWith('card|') ? 'credit_card' : 'account_balance'} size={12} />{originName(origin, accounts, cards)}</span> : null}
+          </span>
         </span>
         <span className={cs.value} data-income={incomeItem}>{incomeItem ? '+' : '−'} {money.format(visibleValue)}{payment.status === 'parcial' ? <small>restante</small> : null}</span>
       </button>
