@@ -12,6 +12,7 @@ import { CategoryManager } from '../detail/CategoryManager'
 import { eventCategories, withEventCategory, type EventCategory } from '../../../lib/v2/event-categories'
 import { fold, parseNatural, replaceRange, type NlKind } from '../../../lib/v2/nlp'
 import { financeTagSuggestions, parseFinanceTags } from '../../../lib/v2/financeTags'
+import { categoryColorOf } from '../../../lib/v2/financeColors'
 import { INTERVAL_CHOICES, intervalChoice, intervalDays, intervalLabel, shiftInstallment } from '../../../lib/v2/financeInstallments'
 import { PALETTE } from '../../../lib/v2/palette'
 import styles from './QuickAdd.module.css'
@@ -154,7 +155,7 @@ export function QuickAdd({ kinds, initial, state, today, defaultProjectId, defau
   const finCategoryNow = tags?.category ?? finCategory
   const originNow = tags?.origin ?? accountId
   const cleanTitle = (tags ? tags.title : nl.title).trim() || title.trim()
-  const finCategoryColor = (() => { if (!finCategoryNow) return ''; const found = finCtx.categories.find(item => String(item.nome) === finCategoryNow); return found?.cor ? String(found.cor) : found ? '' : PALETTE[finCtx.categories.length % PALETTE.length].color })()
+  const finCategoryColor = (() => { if (!finCategoryNow) return ''; const found = finCtx.categories.find(item => String(item.nome) === finCategoryNow); return found ? categoryColorOf(finCategoryNow, finCtx.categories) : PALETTE[finCtx.categories.length % PALETTE.length].color })()
   const originColor = (() => { if (!originNow) return ''; const found = originNow.startsWith('card|') ? finCtx.cards.find(item => String(item.id) === originNow.slice(5)) : accounts.find(item => String(item.id) === originNow); return found?.cor ? String(found.cor) : '' })()
   const project = projects.find(item => String(item.id) === projectId)
 
@@ -435,7 +436,7 @@ export function QuickAdd({ kinds, initial, state, today, defaultProjectId, defau
       ) : null}
       {picker === 'fcat' ? (
         <Floating anchor={anchor} title="Categoria" width={240} onClose={() => setPicker('')}>
-          <OptionList options={[{ value: '', label: 'Sem categoria', icon: 'horizontal_rule' }, ...finCategories.map(item => ({ value: String(item.nome), label: String(item.nome), icon: 'sell', color: item.cor ? String(item.cor) : undefined }))]} value={finCategory} onSelect={value => done(() => setFinCategory(value))} />
+          <OptionList options={[{ value: '', label: 'Sem categoria', icon: 'horizontal_rule' }, ...finCategories.map(item => ({ value: String(item.nome), label: String(item.nome), icon: 'sell', color: categoryColorOf(String(item.nome), finCategories) }))]} value={finCategory} onSelect={value => done(() => setFinCategory(value))} />
         </Floating>
       ) : null}
       {picker === 'account' ? (
