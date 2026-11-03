@@ -18,15 +18,15 @@ export function FinanceItemShell({ crumb, onClose, content, side, footer }: { cr
 type RowProps = { id: string; icon?: string; label: string; summary: string; color?: string; leading?: ReactNode; open: string; setOpen: (id: string) => void; children?: ReactNode }
 
 /** Linha da lateral: rótulo pequeno sobre o valor; ao clicar abre o editor logo abaixo. */
-export function SideRow({ id, label, summary, open, setOpen, children }: RowProps) {
+export function SideRow({ id, icon, color, label, summary, open, setOpen, children }: RowProps) {
   const active = open === id
   return <div className={s.row} data-open={active || undefined}>
-    <button type="button" className={s.rowButton} onClick={() => setOpen(active ? '' : id)}><small>{label}</small><span>{summary || 'Não selecionado'}</span></button>
+    <button type="button" className={s.rowButton} onClick={() => setOpen(active ? '' : id)}>{icon ? <i className={s.rowIcon} style={{ color }}><MaiIcon name={icon} size={18} /></i> : null}<small>{label}</small><span>{summary || 'Não selecionado'}</span></button>
     {active ? <div className={s.rowEditor}>{children}</div> : null}
   </div>
 }
 
 /** Linha da lateral com controle direto (campo, seleção, cor). */
-export function SideField({ label, children }: { label: string; children: ReactNode }) {
-  return <div className={s.row}><label className={s.field}><small>{label}</small>{children}</label></div>
+export function SideField({ label, icon, color, children }: { label: string; icon?: string; color?: string; children: ReactNode }) {
+  return <div className={s.row}><label className={s.field}>{icon ? <i className={s.rowIcon} style={{ color }}><MaiIcon name={icon} size={18} /></i> : null}<small>{label}</small>{children}</label></div>
 }

@@ -11,7 +11,7 @@
 .footer > :first-child { margin-right: auto; }
 
 .row { padding: 0 16px; border-bottom: 1px solid var(--ds-line); }
-.rowButton { appearance: none; width: 100%; display: grid; gap: 2px; padding: 10px 0; border: 0; background: transparent; font: inherit; color: inherit; text-align: left; cursor: pointer; }
+.rowButton { appearance: none; width: 100%; display: grid; grid-template-columns: 22px minmax(0, 1fr); column-gap: 10px; align-items: center; gap: 0 10px; padding: 10px 0; border: 0; background: transparent; font: inherit; color: inherit; text-align: left; cursor: pointer; }
 .rowButton small, .field small { font-size: 11.5px; color: var(--ds-muted); }
 .rowButton span { font-size: 13.5px; font-weight: var(--ds-fw-medium); }
 .rowButton:hover span { text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px; }
@@ -81,3 +81,8 @@
 .mirror { position: absolute; inset: 0; white-space: pre; overflow: hidden; color: transparent; pointer-events: none; font-size: 23px; font-weight: var(--ds-fw-heavy); line-height: 1.25; letter-spacing: -0.02em; font-family: inherit; }
 .mirror mark { background: var(--ds-accent-soft); color: transparent; border-radius: 3px; }
 .titleWrap .title { position: relative; }
+
+.rowIcon { grid-row: 1 / span 2; width: 22px; display: grid; place-items: center; font-style: normal; }
+.rowButton small, .rowButton span { grid-column: 2; }
+.field { grid-template-columns: 22px minmax(0, 1fr); column-gap: 10px; align-items: center; }
+.field small, .field input, .field select, .field > :not(.rowIcon) { grid-column: 2; }

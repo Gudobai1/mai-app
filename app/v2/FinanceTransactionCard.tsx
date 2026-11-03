@@ -80,7 +80,6 @@ export function FinanceTransactionCard({
           <span className={cs.meta}>
             <span data-tone={tone}><MaiIcon name="calendar_today" size={12} />{naturalDate(due, today)}</span>
             {repeatLabel ? <span><MaiIcon name="repeat" size={12} />{repeatLabel}</span> : null}
-            {item.categoria ? <span><i className={cs.dot} style={{ background: color || 'var(--ds-muted)' }} />{String(item.categoria)}</span> : null}
             {origin ? <span><MaiIcon name={origin.startsWith('card|') ? 'credit_card' : 'account_balance'} size={12} />{originName(origin, accounts, cards)}</span> : null}
           </span>
         </span>
