@@ -73,7 +73,7 @@ export function CreateTimePicker({ value, onChange, close }: { value: string; on
 }
 
 export function CreateNumberEditor({ value, onChange, suffix, money }: { value: number; onChange: (value: number) => void; suffix?: string; money?: boolean }) {
-  if (money) return <div className="mai-task-v4-time-custom"><MoneyInput value={value} onChange={onChange} autoFocus /></div>
+  if (money) return <div className="mai-task-v4-time-custom"><MoneyInput value={value} onChange={onChange} autoOpen /></div>
   return <div className="mai-task-v4-time-custom"><input type="number" step="any" value={value} onChange={event => onChange(Number(event.target.value))}/>{suffix ? <span>{suffix}</span> : null}</div>
 }
 

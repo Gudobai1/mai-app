@@ -15,6 +15,7 @@ import { financeTagSuggestions, parseFinanceTags } from '../../../lib/v2/finance
 import { categoryColorOf } from '../../../lib/v2/financeColors'
 import { INTERVAL_CHOICES, intervalChoice, intervalDays, intervalLabel, shiftInstallment } from '../../../lib/v2/financeInstallments'
 import { PALETTE } from '../../../lib/v2/palette'
+import { MoneyInput } from '../MoneyInput'
 import styles from './QuickAdd.module.css'
 
 /**
@@ -24,6 +25,15 @@ import styles from './QuickAdd.module.css'
  */
 
 export type QuickAddKind = 'task' | 'event' | 'finance'
+
+/** Lançamento dentro de caixinha/investimento: mesmo formulário, sem categoria/conta/parcelas. */
+export type MovementConfig = {
+  types: Array<{ value: 'in' | 'out'; label: string; icon: string; color: string }>
+  submitLabel: string
+  initial?: { type: 'in' | 'out'; valor: number; data: string; done: boolean; titulo?: string }
+  onSubmit: (movement: { type: 'in' | 'out'; valor: number; data: string; done: boolean; titulo: string }) => void
+  onDelete?: () => void
+}
 
 type Props = {
   kinds: QuickAddKind[]
@@ -42,6 +52,8 @@ type Props = {
   inline?: boolean
   /** Cria a tarefa como subtarefa desta. */
   parentId?: string
+  /** Modo lançamento de caixinha/investimento (guardar/retirar, aportar/resgatar). */
+  movement?: MovementConfig
 }
 
 const rows = (value: unknown): Row[] => (Array.isArray(value) ? (value as Row[]) : [])
@@ -84,11 +96,11 @@ const plusHour = (time: string) => {
 
 type Picker = '' | 'ftype' | 'account' | 'date' | 'time' | 'reminder' | 'priority' | 'project' | 'repeat' | 'start' | 'end' | 'category' | 'fcat' | 'finstall' | 'fstatus'
 
-export function QuickAdd({ kinds, initial, state, today, defaultProjectId, defaultDate, defaultAccount, defaultSection, commit, onFinance, onClose, inline, parentId }: Props) {
+export function QuickAdd({ kinds, initial, state, today, defaultProjectId, defaultDate, defaultAccount, defaultSection, commit, onFinance, onClose, inline, parentId, movement }: Props) {
   const [kind, setKind] = useState<QuickAddKind>(initial)
-  const [title, setTitle] = useState('')
+  const [title, setTitle] = useState(movement?.initial?.titulo ?? '')
   const [description, setDescription] = useState('')
-  const [dateS, setDateS] = useState(defaultDate ?? '')
+  const [dateS, setDateS] = useState(movement?.initial?.data ?? defaultDate ?? '')
   const [priorityS, setPriorityS] = useState(4)
   const [projectS, setProjectS] = useState(defaultProjectId || 'entrada')
   const [sectionS, setSectionS] = useState(defaultSection || '')
@@ -102,12 +114,13 @@ export function QuickAdd({ kinds, initial, state, today, defaultProjectId, defau
   const [endS, setEndS] = useState('10:00')
   const [place, setPlace] = useState('')
   const [category, setCategory] = useState<EventCategory | null>(null)
-  const [amountS, setAmountS] = useState('')
+  const [amountS, setAmountS] = useState(movement?.initial?.valor ? movement.initial.valor.toFixed(2).replace('.', ',') : '')
   const [finType, setFinType] = useState<'despesa' | 'receita'>('despesa')
+  const [movType, setMovType] = useState<'in' | 'out'>(movement?.initial?.type ?? 'in')
   const [accountId, setAccountId] = useState(defaultAccount || '')
   const [finCategory, setFinCategory] = useState('')
   const [installS, setInstallS] = useState<{ count: number; interval: string } | null>(null)
-  const [finPaid, setFinPaid] = useState(false)
+  const [finPaid, setFinPaid] = useState(movement?.initial?.done ?? false)
   const [picker, setPicker] = useState<Picker>('')
   const anchor = useRef<HTMLElement | null>(null)
   const open = (which: Picker) => (event: ReactMouseEvent<HTMLElement>) => { anchor.current = event.currentTarget; setPicker(which) }
@@ -155,6 +168,8 @@ export function QuickAdd({ kinds, initial, state, today, defaultProjectId, defau
   const finCategoryNow = tags?.category ?? finCategory
   const originNow = tags?.origin ?? accountId
   const cleanTitle = (tags ? tags.title : nl.title).trim() || title.trim()
+  const amountValue = Math.abs(Number(String(amount).replace(/\./g, '').replace(',', '.')) || 0)
+  const canSubmit = movement ? amountValue > 0 : Boolean(cleanTitle)
   const finCategoryColor = (() => { if (!finCategoryNow) return ''; const found = finCtx.categories.find(item => String(item.nome) === finCategoryNow); return found ? categoryColorOf(finCategoryNow, finCtx.categories) : PALETTE[finCtx.categories.length % PALETTE.length].color })()
   const originColor = (() => { if (!originNow) return ''; const found = originNow.startsWith('card|') ? finCtx.cards.find(item => String(item.id) === originNow.slice(5)) : accounts.find(item => String(item.id) === originNow); return found?.cor ? String(found.cor) : '' })()
   const project = projects.find(item => String(item.id) === projectId)
@@ -224,6 +239,12 @@ export function QuickAdd({ kinds, initial, state, today, defaultProjectId, defau
 
   const submit = () => {
     const name = cleanTitle
+    if (movement) {
+      if (!(amountValue > 0)) return
+      movement.onSubmit({ type: movType, valor: amountValue, data: date || today, done: finPaid, titulo: name })
+      onClose()
+      return
+    }
     if (!name) return
     if (kind === 'finance') {
       const value = Math.abs(Number(String(amount).replace(',', '.')) || 0)
@@ -295,7 +316,7 @@ export function QuickAdd({ kinds, initial, state, today, defaultProjectId, defau
               autoFocus
               className={styles.title}
               value={title}
-              placeholder={kind === 'task' ? (parentId ? 'Nome da subtarefa' : 'Nome da tarefa') : kind === 'finance' ? 'Nome do lançamento' : 'Nome do compromisso'}
+              placeholder={kind === 'task' ? (parentId ? 'Nome da subtarefa' : 'Nome da tarefa') : kind === 'finance' ? (movement ? 'Nome do lançamento (opcional)' : 'Nome do lançamento') : 'Nome do compromisso'}
               enterKeyHint="done"
               onChange={event => { setTitle(event.target.value); setCaret(event.target.selectionStart ?? event.target.value.length); setSuggestIndex(0) }}
               onSelect={event => setCaret(event.currentTarget.selectionStart ?? 0)}
@@ -313,10 +334,10 @@ export function QuickAdd({ kinds, initial, state, today, defaultProjectId, defau
           </div>
           <textarea className={styles.description} value={description} rows={inline ? 1 : 2} placeholder="Descrição" onChange={event => setDescription(event.target.value)} />
           {kind === 'finance' ? (
-            <label className={styles.place}>
+            <div className={styles.place}>
               <Icon name="payments" size={16} filled={false} />
-              <input value={amount} inputMode="decimal" placeholder="Valor (R$)" onChange={event => setAmount(event.target.value)} />
-            </label>
+              <MoneyInput value={amountValue} onChange={value => setAmount(value ? value.toFixed(2).replace('.', ',') : '')} placeholder="Valor (R$)" title={movement ? 'Valor do lançamento' : 'Valor'} />
+            </div>
           ) : null}
 
           {kind === 'event' ? (
@@ -335,24 +356,30 @@ export function QuickAdd({ kinds, initial, state, today, defaultProjectId, defau
 
             {kind === 'finance' ? (
               <>
+                {movement ? (() => { const current = movement.types.find(item => item.value === movType) || movement.types[0]; return (
+                  <button type="button" className={styles.chip} data-set style={{ '--chip-color': current.color } as CSSProperties} onClick={open('ftype')}>
+                    <Icon name={current.icon} size={16} filled={false} />{current.label}
+                  </button>
+                ) })() : (
                 <button type="button" className={styles.chip} data-set style={{ '--chip-color': finTypeNow === 'receita' ? 'var(--ds-success)' : 'var(--ds-danger)' } as CSSProperties} onClick={open('ftype')}>
                   <Icon name={finTypeNow === 'receita' ? 'trending_up' : 'trending_down'} size={16} filled={false} />{finTypeNow === 'receita' ? 'Receita' : 'Despesa'}
                 </button>
-                {(finCategories.length || finCategoryNow) ? (
+                )}
+                {movement ? null : (finCategories.length || finCategoryNow) ? (
                   <button type="button" className={styles.chip} data-set={finCategoryNow || undefined} style={finCategoryColor ? ({ '--chip-color': finCategoryColor } as CSSProperties) : undefined} onClick={open('fcat')}>
                     <Icon name="sell" size={16} filled={false} /><span>{finCategoryNow || 'Categoria'}</span>
                   </button>
                 ) : null}
-                {(accounts.length || finCtx.cards.length) ? (
+                {movement ? null : (accounts.length || finCtx.cards.length) ? (
                   <button type="button" className={styles.chip} data-set={originNow || undefined} style={originColor ? ({ '--chip-color': originColor } as CSSProperties) : undefined} onClick={open('account')}>
                     <Icon name={originNow.startsWith('card|') ? 'credit_card' : 'account_balance'} size={16} filled={false} /><span>{String(originNow.startsWith('card|') ? finCtx.cards.find(item => String(item.id) === originNow.slice(5))?.nome : accounts.find(item => String(item.id) === originNow)?.nome || 'Conta')}</span>
                   </button>
                 ) : null}
-                <button type="button" className={styles.chip} data-set={installments || undefined} style={{ '--chip-color': 'var(--ds-lilac-fg)' } as CSSProperties} onClick={open('finstall')}>
+                {movement ? null : <button type="button" className={styles.chip} data-set={installments || undefined} style={{ '--chip-color': 'var(--ds-lilac-fg)' } as CSSProperties} onClick={open('finstall')}>
                   <Icon name="splitscreen" size={16} filled={false} />{installments ? `${installments.count}x ${intervalLabel(installments.interval)}` : 'Único'}{fromNl('installments') ? <span className={styles.chipX} role="button" aria-label="Desfazer" title="Desfazer" onClick={undoNl('installments')}>×</span> : null}
-                </button>
+                </button>}
                 <button type="button" className={styles.chip} data-set style={{ '--chip-color': finPaid ? 'var(--ds-success)' : 'var(--ds-warn)' } as CSSProperties} onClick={open('fstatus')}>
-                  <Icon name={finPaid ? 'check_circle' : 'schedule'} size={16} filled={false} />{finPaid ? 'Pago' : 'Em aberto'}
+                  <Icon name={finPaid ? 'check_circle' : 'schedule'} size={16} filled={false} />{finPaid ? (movement ? 'Efetivado' : 'Pago') : (movement ? 'Pendente' : 'Em aberto')}
                 </button>
               </>
             ) : kind === 'task' ? (
@@ -398,7 +425,8 @@ export function QuickAdd({ kinds, initial, state, today, defaultProjectId, defau
           </div>
           <div className={styles.actions}>
           <button type="button" className={styles.ghost} onClick={onClose}>Cancelar</button>
-          <button type="button" className={styles.primary} disabled={!cleanTitle} onClick={submit}>{kind === 'task' ? (parentId ? 'Adicionar subtarefa' : 'Adicionar tarefa') : kind === 'finance' ? 'Adicionar lançamento' : 'Adicionar compromisso'}</button>
+          {movement?.onDelete ? <button type="button" className={styles.ghost} onClick={() => { movement.onDelete?.(); onClose() }}>Excluir</button> : null}
+          <button type="button" className={styles.primary} disabled={!canSubmit} onClick={submit}>{movement ? movement.submitLabel : kind === 'task' ? (parentId ? 'Adicionar subtarefa' : 'Adicionar tarefa') : kind === 'finance' ? 'Adicionar lançamento' : 'Adicionar compromisso'}</button>
           </div>
         </div>
       </div>
@@ -410,7 +438,7 @@ export function QuickAdd({ kinds, initial, state, today, defaultProjectId, defau
       ) : null}
       {picker === 'fstatus' ? (
         <Floating anchor={anchor} title="Situação" width={220} onClose={() => setPicker('')}>
-          <OptionList options={[{ value: 'aberto', label: 'Em aberto', icon: 'schedule', color: 'var(--ds-warn)' }, { value: 'pago', label: 'Pago', icon: 'check_circle', color: 'var(--ds-success)' }]} value={finPaid ? 'pago' : 'aberto'} onSelect={value => done(() => setFinPaid(value === 'pago'))} />
+          <OptionList options={[{ value: 'aberto', label: movement ? 'Pendente' : 'Em aberto', icon: 'schedule', color: 'var(--ds-warn)' }, { value: 'pago', label: movement ? 'Efetivado' : 'Pago', icon: 'check_circle', color: 'var(--ds-success)' }]} value={finPaid ? 'pago' : 'aberto'} onSelect={value => done(() => setFinPaid(value === 'pago'))} />
         </Floating>
       ) : null}
       {picker === 'finstall' ? (
@@ -431,7 +459,7 @@ export function QuickAdd({ kinds, initial, state, today, defaultProjectId, defau
       ) : null}
       {picker === 'ftype' ? (
         <Floating anchor={anchor} title="Tipo" width={220} onClose={() => setPicker('')}>
-          <OptionList options={[{ value: 'despesa', label: 'Despesa', icon: 'trending_down', color: 'var(--ds-danger)' }, { value: 'receita', label: 'Receita', icon: 'trending_up', color: 'var(--ds-success)' }]} value={finType} onSelect={value => done(() => setFinType(value === 'receita' ? 'receita' : 'despesa'))} />
+          <OptionList options={movement ? movement.types.map(item => ({ value: item.value, label: item.label, icon: item.icon, color: item.color })) : [{ value: 'despesa', label: 'Despesa', icon: 'trending_down', color: 'var(--ds-danger)' }, { value: 'receita', label: 'Receita', icon: 'trending_up', color: 'var(--ds-success)' }]} value={movement ? movType : finType} onSelect={value => done(() => { if (movement) setMovType(value === 'out' ? 'out' : 'in'); else setFinType(value === 'receita' ? 'receita' : 'despesa') })} />
         </Floating>
       ) : null}
       {picker === 'fcat' ? (
