@@ -1,6 +1,7 @@
 'use client'
 
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type CSSProperties, type ReactNode, type RefObject } from 'react'
+import { MoneyInput } from '../MoneyInput'
 import { createPortal } from 'react-dom'
 import { addDays } from '../../../lib/v2/planner'
 import type { MaiState } from '../../../lib/v2/state'
@@ -959,7 +960,7 @@ function FinanceDetail({ item, state, today, commit, register, close }: DetailPr
             <small>{payment.status === 'parcial' ? `Falta ${money.format(payment.remaining)}` : 'Valor'}</small>
             <label className={styles.moneyValue} data-income={income || undefined}>
               <span>{income ? '+' : '-'}R$</span>
-              <input type="number" inputMode="decimal" step="0.01" min={0} value={draft.valor} onChange={event => update({ valor: Number(event.target.value || 0) })} aria-label="Valor" />
+              <MoneyInput value={Number(draft.valor) || 0} onChange={value => update({ valor: value })} ariaLabel="Valor" />
             </label>
           </div>
           <button type="button" className={styles.payButton} data-paid={paid || undefined} onClick={togglePaid}>
