@@ -6,7 +6,7 @@
 .check:hover > * { opacity: 0.9; transform: none; }
 .check[data-done] { border-color: var(--ds-muted); background: var(--ds-muted); color: var(--ds-bg); }
 .check[data-done] > * { opacity: 1; transform: none; }
-.main { appearance: none; flex: 1; min-width: 0; display: flex; align-items: flex-start; gap: 12px; padding: 0; border: 0; background: transparent; color: var(--ds-text); font: inherit; text-align: left; cursor: pointer; }
+.main { appearance: none; flex: 1; min-width: 0; display: flex; align-items: center; gap: 12px; padding: 0; border: 0; background: transparent; color: var(--ds-text); font: inherit; text-align: left; cursor: pointer; }
 .copy { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
 .title { font-size: 15px; font-weight: var(--ds-fw-regular); line-height: 1.3; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .card[data-done] .title { color: var(--ds-muted); text-decoration: line-through; }
