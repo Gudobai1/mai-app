@@ -232,3 +232,12 @@ button.balanceMain:hover { background: var(--ds-surface-hover); }
 .legendItems span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .legendItems small { color: var(--ds-muted); font-size: 11.5px; }
 .legendItems b { font-weight: 600; font-variant-numeric: tabular-nums; }
+
+/* relatórios simples: total, barra única, lista */
+.reportHead { display: grid; gap: 2px; margin: 2px 6px 14px; }
+.reportHead small { color: var(--ds-muted); font-size: 12px; }
+.reportHead b { font-size: 26px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.reportHead b[data-tone='out'] { color: var(--ds-danger); }
+.reportHead b[data-tone='in'] { color: var(--ds-success); }
+.stack { display: flex; gap: 2px; height: 12px; margin: 0 6px 12px; border-radius: 7px; overflow: hidden; }
+.stack button { border: 0; padding: 0; min-width: 3px; cursor: pointer; transition: opacity .15s; }
