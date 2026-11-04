@@ -967,6 +967,10 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
   const calIcon = <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="2.5" /><path d="M3.5 10h17M8 3v4M16 3v4" /></svg>
   const dueTone = (key: string) => key < today ? 'late' : key === today ? 'today' : 'future'
   const periodOptions: { id: typeof period; label: string }[] = [{ id: 'month', label: 'Mensal' }, { id: '3', label: 'Últimos 3 meses' }, { id: '6', label: 'Últimos 6 meses' }, { id: 'year', label: 'Este ano' }, { id: 'custom', label: 'Personalizado' }]
+  const originalBlock = (block: typeof reportBlocks[number]) => <section className={fm.reportBlock} key={block.title}>
+    <div className={fm.reportTitle}><strong>{block.title}</strong><span>{money.format(block.total)}</span></div>
+    <div className={fm.barList}>{block.slices.map(slice => { const percent = block.total ? slice.value / block.total * 100 : 0; return <div className={fm.barRow} key={slice.name}><div className={fm.barTop}><span className={fm.barName}>{slice.name}</span><span className={fm.barPct}>{percent.toFixed(1).replace('.', ',')}%</span><span className={fm.barValue} data-tone={block.tone}>{money.format(slice.value)}</span></div><div className={fm.barTrack}><div style={{ width: `${percent}%`, background: slice.color }} /></div></div> })}{!block.slices.length ? <div className={fm.empty}>Sem dados no período.</div> : null}</div>
+  </section>
   const REPORT_TOP = 6
   const barBlock = (block: typeof reportBlocks[number]) => {
     const many = block.slices.length > REPORT_TOP + 1
@@ -1055,9 +1059,9 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
         const periodRows = period === 'month' ? filtered : transactions.filter(item => reportMonths.includes(itemMonth(item)) && (item.ajuste_fatura === true || !isCardOrigin(item))).sort((a, b) => String(b.data).localeCompare(String(a.data)))
         return <>
           <div className={fm.cols}>{generalBars.map(bar => <button type="button" key={bar.name} className={fm.col} onClick={() => { setReportView(bar.tab); setReportPick(null) }}><span className={fm.colValue}>{money.format(bar.value).replace(/,\d\d$/, '')}</span><span className={fm.colBar}><span style={{ height: `${biggest ? Math.max(4, Math.abs(bar.value) / biggest * 100) : 0}%`, background: bar.color }} /></span><span className={fm.colName}>{bar.name}</span></button>)}</div>
-          <div className={fm.listHead} style={{ marginTop: 18 }}><span>{periodRows.length} {periodRows.length === 1 ? 'lançamento' : 'lançamentos'}</span><span>{period === 'month' ? monthLabel(month).split(' de ')[0] : periodRange}</span></div>
-          <div className={fm.list}>{periodRows.map(transactionRow)}</div>
-          {!periodRows.length ? <div className={fm.empty}>Nenhum lançamento no período.</div> : null}
+          {reportBlocks.map(originalBlock)}
+          <div className={fm.reportListHead}><b>Lançamentos</b><small>{periodRows.length} {periodRows.length === 1 ? 'lançamento' : 'lançamentos'} · {period === 'month' ? monthLabel(month).split(' de ')[0] : periodRange}</small></div>
+          <div className={fm.reportList}>{periodRows.map(transactionRow)}{!periodRows.length ? <div className={fm.empty}>Nenhum lançamento no período.</div> : null}</div>
         </>
       })() : barBlock(tabBlocks[Math.min(reportView, tabBlocks.length) - 1])}
     </> : null}
