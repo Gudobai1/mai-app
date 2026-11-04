@@ -723,7 +723,9 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
     if (order === 'pending_first') {
       const rank = (item: Row) => String(item.status || 'pendente') === 'pendente' ? 0 : String(item.status || '') === 'parcial' ? 1 : 2
       const statusDiff = rank(a) - rank(b)
-      return statusDiff || String(b.data).localeCompare(String(a.data))
+      if (statusDiff) return statusDiff
+      // pendentes e parciais: do mais antigo ao mais novo; pagos: do mais recente ao mais antigo
+      return rank(a) < 2 ? String(a.data).localeCompare(String(b.data)) : String(b.data).localeCompare(String(a.data))
     }
     if (order === 'date_asc') return String(a.data).localeCompare(String(b.data))
     if (order === 'value_desc') return clampMoney(b.valor) - clampMoney(a.valor)
