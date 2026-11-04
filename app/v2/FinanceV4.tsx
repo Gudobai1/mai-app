@@ -28,7 +28,7 @@ import { invoiceValue } from '../../lib/v2/financeInvoice'
 import { shiftInstallment } from '../../lib/v2/financeInstallments'
 import { financeTagSuggestions, parseFinanceTags } from '../../lib/v2/financeTags'
 import fm from './FinanceModern.module.css'
-import { OpenFinancePanel, useOpenFinance } from './OpenFinance'
+import { OpenFinancePanel, bindOpenFinance, suggestedName, useOpenFinance } from './OpenFinance'
 
 type Row = Record<string, any>
 type Commit = (change: (current: MaiState) => MaiState) => void
@@ -459,10 +459,14 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
         }
       } else if (kind === 'account') {
         const next: Row = { ...clean, nome: label, saldo_inicial: Number(clean.saldo_inicial || 0), cor: clean.cor || '#4073FF' }
+        if (!next.pluggy_id) delete next.pluggy_id
         nextFinance.accounts = rows(nextFinance.accounts).some(item => String(item.id) === String(next.id)) ? rows(nextFinance.accounts).map(item => String(item.id) === String(next.id) ? next : item) : [...rows(nextFinance.accounts), next]
+        nextFinance.openFinance = bindOpenFinance(nextFinance, String(next.id), next.pluggy_id ? String(next.pluggy_id) : undefined)
       } else if (kind === 'card') {
         const next: Row = { ...clean, nome: label, limite: clampMoney(clean.limite), fechamento: Math.min(31, Math.max(1, Number(clean.fechamento || 1))), vencimento: Math.min(31, Math.max(1, Number(clean.vencimento || 10))), cor: clean.cor || '#4073FF' }
+        if (!next.pluggy_id) delete next.pluggy_id
         nextFinance.cards = rows(nextFinance.cards).some(item => String(item.id) === String(next.id)) ? rows(nextFinance.cards).map(item => String(item.id) === String(next.id) ? next : item) : [...rows(nextFinance.cards), next]
+        nextFinance.openFinance = bindOpenFinance(nextFinance, `card|${next.id}`, next.pluggy_id ? String(next.pluggy_id) : undefined)
       } else if (kind === 'box') {
         const next: Row = { ...clean, nome: label, meta: clampMoney(clean.meta), saldo: clampMoney(clean.saldo), icone: clean.icone || 'savings', cor: clean.cor || '#4073FF', movimentos: rows(clean.movimentos) }
         const list = rows(nextFinance.boxes)
@@ -892,6 +896,11 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
   const draftPayment = draft && kind === 'transaction' ? paymentState(draft) : null
 
   const addTarget: Record<Tab, { kind: DraftKind; label: string }> = { transactions: { kind: 'transaction', label: 'Lançamento' }, accounts: { kind: 'account', label: 'Conta' }, cards: { kind: 'card', label: 'Cartão' }, boxes: { kind: 'box', label: 'Caixinha' }, investments: { kind: 'investment', label: 'Investimento' }, reports: { kind: 'transaction', label: 'Lançamento' } }
+  const ofSubtitle = (pluggyId: string, type: 'account' | 'card') => {
+    const info = openFinance.info(pluggyId)
+    const when = info?.atualizado ? new Date(info.atualizado).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : ''
+    return `Open Finance${info ? ` · ${info.banco}` : ''}${type === 'account' && info ? ` · no banco ${money.format(info.saldo)}` : ''}${when ? ` · ${when}` : ''}`
+  }
   const signedMoney = (value: number) => `${value > 0 ? '+' : value < 0 ? '−' : ''}${money.format(Math.abs(value))}`
   const addRow = (label: string, onClick: () => void) => <button type="button" className={fm.addRow} onClick={onClick}><MaiIcon name="add" size={18} />{label}</button>
   const calIcon = <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="2.5" /><path d="M3.5 10h17M8 3v4M16 3v4" /></svg>
@@ -935,14 +944,14 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
 
     {tab === 'accounts' ? <>
       <div className={fm.listHead}><span>{accounts.length} {accounts.length === 1 ? 'conta' : 'contas'}</span><span>{money.format(realBalance)} no total</span></div>
-      <div className={fm.list}>{accounts.map(account => <div key={String(account.id)} className={fm.entityRow} {...quick.bind(() => entityMenu('account', account))}><button type="button" className={fm.entity} onClick={() => openExisting('account', account)}><i className={fm.ring} style={{ '--ring': String(account.cor || 'var(--ds-accent)') } as React.CSSProperties} /><span className={fm.copy}><span className={fm.name}>{account.nome}</span><span className={fm.sub}>Saldo inicial {money.format(Number(account.saldo_inicial || 0))}</span></span><span className={fm.amount}><b>{money.format(accountBalance(account))}</b></span></button></div>)}</div>
+      <div className={fm.list}>{accounts.map(account => <div key={String(account.id)} className={fm.entityRow} {...quick.bind(() => entityMenu('account', account))}><button type="button" className={fm.entity} onClick={() => openExisting('account', account)}><i className={fm.ring} style={{ '--ring': String(account.cor || 'var(--ds-accent)') } as React.CSSProperties} /><span className={fm.copy}><span className={fm.name}>{account.nome}</span><span className={fm.sub}>{account.pluggy_id ? ofSubtitle(String(account.pluggy_id), 'account') : `Saldo inicial ${money.format(Number(account.saldo_inicial || 0))}`}</span></span><span className={fm.amount}><b>{money.format(accountBalance(account))}</b></span></button></div>)}</div>
       {addRow('Adicionar conta', () => openNew('account'))}
       <OpenFinancePanel ctl={openFinance} />
     </> : null}
 
     {tab === 'cards' ? <>
       <div className={fm.listHead}><span>{cards.length} {cards.length === 1 ? 'cartão' : 'cartões'}</span><span>Faturas de {monthLabel(month).split(' de ')[0]} · {money.format(monthInvoice)}</span></div>
-      <div className={fm.list}>{cards.map(card => { const invoice = cardInvoice(card, monthItems, month); const openInvoice = Math.max(0, invoice - clampMoney(invoiceRow(monthItems, String(card.id))?.valor_pago)); const limit = clampMoney(card.limite); const dueKey = monthDateForDay(month, Number(card.vencimento || 10)); return <div key={String(card.id)} className={fm.entityRow} {...quick.bind(() => entityMenu('card', card))}><button type="button" className={fm.entity} onClick={() => openExisting('card', card)}><i className={fm.ring} style={{ '--ring': String(card.cor || 'var(--ds-accent)') } as React.CSSProperties} /><span className={fm.copy}><span className={fm.name}>{card.nome}</span><span className={fm.subLine}><span className={fm.due} data-tone={dueTone(dueKey)}>{calIcon}Vence {naturalDate(dueKey, today)}</span>{limit ? <span>{money.format(Math.max(0, limit - openInvoice))} de limite disponível</span> : null}</span></span><span className={fm.amount}><b>{money.format(invoice)}</b></span></button></div> })}</div>
+      <div className={fm.list}>{cards.map(card => { const invoice = cardInvoice(card, monthItems, month); const openInvoice = Math.max(0, invoice - clampMoney(invoiceRow(monthItems, String(card.id))?.valor_pago)); const limit = clampMoney(card.limite); const dueKey = monthDateForDay(month, Number(card.vencimento || 10)); return <div key={String(card.id)} className={fm.entityRow} {...quick.bind(() => entityMenu('card', card))}><button type="button" className={fm.entity} onClick={() => openExisting('card', card)}><i className={fm.ring} style={{ '--ring': String(card.cor || 'var(--ds-accent)') } as React.CSSProperties} /><span className={fm.copy}><span className={fm.name}>{card.nome}</span><span className={fm.subLine}>{card.pluggy_id ? <span>{ofSubtitle(String(card.pluggy_id), 'card')}</span> : null}<span className={fm.due} data-tone={dueTone(dueKey)}>{calIcon}Vence {naturalDate(dueKey, today)}</span>{limit ? <span>{money.format(Math.max(0, limit - openInvoice))} de limite disponível</span> : null}</span></span><span className={fm.amount}><b>{money.format(invoice)}</b></span></button></div> })}</div>
       {addRow('Adicionar cartão', () => openNew('card'))}
     </> : null}
 
@@ -1028,6 +1037,27 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
       const fieldIcons: Record<string, [string, string]> = { 'Saldo inicial': ['account_balance', 'var(--ds-muted)'], 'Limite total': ['credit_card', 'var(--ds-sky-fg)'], 'Fechamento (dia)': ['event', 'var(--ds-peach-fg)'], 'Vencimento (dia)': ['event_available', 'var(--ds-danger)'], Meta: ['flag', 'var(--ds-success)'], Aplicado: ['savings', 'var(--ds-success)'], 'Valor atual': ['payments', 'var(--ds-success)'] }
       const numberField = (label: string, key: string, step = '0.01') => <SideField label={label} icon={fieldIcons[label]?.[0]} color={fieldIcons[label]?.[1]}>{step === '1' ? <input type="number" step={step} value={draft[key] || 0} onChange={event => setDraft({ ...draft, [key]: Number(event.target.value) })} /> : <MoneyInput value={Number(draft[key]) || 0} onChange={value => setDraft({ ...draft, [key]: value })} />}</SideField>
 
+      /** Origem Open Finance: escolhida na criação (conta/cartão do banco ainda não no app ou conectar novo banco); nos itens do banco mostra os dados sincronizados. */
+      const ofType = kind === 'card' ? 'cartao' : 'conta'
+      const ofInfo = openFinance.info(String(draft.pluggy_id || ''))
+      const ofAvailable = openFinance.available(ofType)
+      const ofSource = (kind === 'account' || kind === 'card') && (!draft._persisted || draft.pluggy_id) ? <>
+        {pickRow('of-source', 'sync', 'var(--ds-accent)', 'Origem', draft.pluggy_id ? `of:${draft.pluggy_id}` : 'manual', [
+          { value: 'manual', label: draft._persisted ? 'Tornar manual' : 'Manual', icon: 'edit' },
+          ...(draft.pluggy_id && !ofAvailable.some(bank => bank.id === draft.pluggy_id) ? [{ value: `of:${draft.pluggy_id}`, label: `Open Finance${ofInfo ? ` · ${ofInfo.banco}` : ''}`, icon: 'sync' }] : []),
+          ...ofAvailable.map(bank => ({ value: `of:${bank.id}`, label: `Open Finance · ${suggestedName(bank, openFinance.data.contas)}`, icon: 'sync' })),
+          ...(!draft._persisted ? [{ value: 'connect', label: 'Conectar banco (Open Finance)…', icon: 'add_link' }] : []),
+        ], value => {
+          if (value === 'manual') { setDraft({ ...draft, pluggy_id: '' }); return }
+          if (value === 'connect') { setDraft(null); void openFinance.connect(); return }
+          const bank = openFinance.data.contas.find(item => `of:${item.id}` === value)
+          if (!bank) return
+          setDraft({ ...draft, pluggy_id: bank.id, nome: String(draft.nome || '').trim() ? draft.nome : suggestedName(bank, openFinance.data.contas), ...(kind === 'account' ? { saldo_inicial: 0 } : { limite: bank.limite || bank.limite_disponivel || 0 }) })
+        })}
+        {draft.pluggy_id ? <SideField label={kind === 'card' ? 'Limite no banco' : 'Saldo no banco'} icon="account_balance" color="var(--ds-accent)"><input readOnly value={ofInfo ? money.format(kind === 'card' ? ofInfo.limite : ofInfo.saldo) : 'Aguardando sincronização'} /></SideField> : null}
+        {draft.pluggy_id && ofInfo?.atualizado ? <SideField label="Atualizado" icon="schedule" color="var(--ds-muted)"><input readOnly value={new Date(ofInfo.atualizado).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })} /></SideField> : null}
+      </> : null
+
       const commentsField = kind === 'card' ? 'comentarios_faturas' : 'comentarios_meses'
       const monthLabelShort = new Date(`${viewMonth}-15T12:00:00`).toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' }).replace(/^./, c => c.toUpperCase())
       const monthStepper = <div className={ic.inlineStepper}><button type="button" onClick={() => { setCardAdding(false); setPopupMonth(shiftMonth(viewMonth, -1)) }} aria-label="Mês anterior"><MaiIcon name="chevron_left" size={22} /></button><button type="button" className={ic.inlineStepperValue} onClick={() => { setCardAdding(false); setPopupMonth(today.slice(0, 7)) }} title="Voltar ao mês atual">{monthLabelShort}</button><button type="button" onClick={() => { setCardAdding(false); setPopupMonth(shiftMonth(viewMonth, 1)) }} aria-label="Próximo mês"><MaiIcon name="chevron_right" size={22} /></button></div>
@@ -1092,8 +1122,8 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
         <FinanceTransactionExtraTools asRows draft={draft} setDraft={setDraft} today={today} month={month} open={createTool} setOpen={setCreateTool} draftPayment={draftPayment} addPayment={addPayment} removePayment={removePayment} generateInstallments={generateInstallments} editFixedOccurrence={() => editFixedOccurrence(draft)} ignoreFixed={() => ignoreFixed(draft)} />
         <SideRow id="finance-status" icon="task_alt" color="var(--ds-sky-fg)" label="Status" summary={statusLabel(draft.status)} open={createTool} setOpen={setCreateTool}><CreateOptionList value={draft.status === 'pago' ? 'pago' : 'pendente'} onChange={value => setDraftPaymentStatus(String(value))} close={() => setCreateTool('')} options={[{ value: 'pendente', label: 'Pendente / zerar pagamentos', icon: 'schedule' }, { value: 'pago', label: 'Pago integralmente', icon: 'check_circle' }]} /></SideRow>
       </>
-      : kind === 'account' ? <>{nameRow('Nome da conta', 'account_balance', 'Ex.: Conta corrente')}{numberField('Saldo inicial', 'saldo_inicial')}</>
-      : kind === 'card' ? <>{nameRow('Nome do cartão', 'credit_card', 'Ex.: Nubank')}{numberField('Limite total', 'limite')}<SideField label="Disponível" icon="account_balance_wallet" color="var(--ds-success)"><input readOnly value={money.format(Math.max(0, clampMoney(draft.limite) - Math.max(0, cardInvoice(draft) - clampMoney(invoiceRow(monthItems, String(draft.id))?.valor_pago))))} /></SideField>{numberField('Fechamento (dia)', 'fechamento', '1')}{numberField('Vencimento (dia)', 'vencimento', '1')}{pickRow('card-pay', 'account_balance', 'var(--ds-muted)', 'Pagar com', String(draft.conta_id || ''), accountChoices, value => setDraft({ ...draft, conta_id: value }))}</>
+      : kind === 'account' ? <>{ofSource}{nameRow('Nome da conta', 'account_balance', 'Ex.: Conta corrente')}{draft.pluggy_id ? null : numberField('Saldo inicial', 'saldo_inicial')}</>
+      : kind === 'card' ? <>{ofSource}{nameRow('Nome do cartão', 'credit_card', 'Ex.: Nubank')}{draft.pluggy_id ? null : numberField('Limite total', 'limite')}<SideField label="Disponível" icon="account_balance_wallet" color="var(--ds-success)"><input readOnly value={money.format(Math.max(0, clampMoney(draft.limite) - Math.max(0, cardInvoice(draft) - clampMoney(invoiceRow(monthItems, String(draft.id))?.valor_pago))))} /></SideField>{numberField('Fechamento (dia)', 'fechamento', '1')}{numberField('Vencimento (dia)', 'vencimento', '1')}{pickRow('card-pay', 'account_balance', 'var(--ds-muted)', 'Pagar com', String(draft.conta_id || ''), accountChoices, value => setDraft({ ...draft, conta_id: value }))}</>
       : kind === 'box' ? <>{nameRow('Nome da caixinha', 'savings', 'Ex.: Meu carro')}{numberField('Meta', 'meta')}{dateRow('box-deadline', 'Data limite', dateKey(draft.prazo), value => setDraft({ ...draft, prazo: value }))}{pickRow('box-from', 'account_balance', 'var(--ds-muted)', 'Guardar de', String(draft.conta_id || ''), accountChoices, value => setDraft({ ...draft, conta_id: value }))}</>
       : <>{nameRow('Nome do investimento', 'trending_up', 'Ex.: ETFs globais')}{pickRow('inv-type', 'category', 'var(--ds-lilac-fg)', 'Tipo', String(draft.tipo || 'ETF'), ['ETF', 'Ações', 'FIIs', 'Renda fixa', 'Cripto', 'Previdência', 'Outro'].map(label => ({ value: label, label, icon: 'category' })), value => setDraft({ ...draft, tipo: value }))}<SideField label="Instituição" icon="account_balance" color="var(--ds-muted)"><input value={draft.instituicao || ''} onChange={event => setDraft({ ...draft, instituicao: event.target.value })} /></SideField>{numberField('Aplicado', 'aportado')}{numberField('Valor atual', 'valor_atual')}{dateRow('inv-first', 'Primeira aplicação', firstApplication(draft), value => setDraft({ ...draft, data_inicio: value }))}<SideRow id="inv-rent" icon="trending_up" color="var(--ds-success)" label="Rentabilidade" summary={rentSummary(draft)} open={createTool} setOpen={setCreateTool}><RentEditor draft={draft} setDraft={setDraft} /></SideRow><SideRow id="inv-auto" icon="event_repeat" color="var(--ds-lilac-fg)" label="Aporte automático" summary={autoSummary(draft)} open={createTool} setOpen={setCreateTool}><AutoEditor draft={draft} setDraft={setDraft} /></SideRow><SideRow id="inv-tax" icon="receipt_long" color="var(--ds-peach-fg)" label="Impostos" summary={taxSummary(draft)} open={createTool} setOpen={setCreateTool}><TaxEditor draft={draft} setDraft={setDraft} /></SideRow></>
 
