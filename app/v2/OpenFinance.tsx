@@ -341,7 +341,7 @@ export function useOpenFinance(state: MaiState, commit: Commit) {
       if (bank.tipo === 'conta') {
         const account = accounts.find(a => String(a.id) === target)
         if (!account) continue
-        const manualSincePaid = Math.max(0, invoicePaid(account) - (account.pago_base === undefined ? invoicePaid(account) : num(account.pago_base))) // fatura paga à mão depois do último sync já sai do saldo
+        const manualSincePaid = invoicePaid(account) // fatura paga à mão depois do último sync já sai do saldo (o banco assume no próximo)
         const initial = cents(bank.saldo - manualSincePaid - withoutInitial(account))
         if (Math.abs(initial - num(account.saldo_inicial)) > 0.005) wantAccount.set(String(account.id), initial)
       } else if (bank.limite > 0) {
