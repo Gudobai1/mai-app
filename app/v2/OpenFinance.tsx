@@ -188,7 +188,9 @@ function applyCardBills(rows: Row[], cards: Row[], links: Record<string, string>
       // cópia manual antiga dessa mesma fatura, de um cartão que já não existe: era o mesmo valor, sai para não contar duas vezes
       nextRows = nextRows.filter(tx => !(tx.ajuste_fatura === true && !tx.pluggy_open && !tx.pluggy_bill && !cardIds.has(String(tx.ajuste_fatura_card_id || tx.cartao_id || '')) && String(tx.competencia_fatura || monthOf(String(tx.data))) === openMonth && (Math.abs(num(tx.valor) - net) < 0.015 || String(tx.titulo || '').toLowerCase().includes(String(card.nome || '#').toLowerCase().split(' ')[0]))))
     }
-    return card
+    // quanto já estava pago nas faturas quando o banco informou o limite disponível: pagamentos feitos depois somam ao disponível
+    const paidNow = nextRows.filter(tx => tx.ajuste_fatura === true && String(tx.ajuste_fatura_card_id || tx.cartao_id || '') === cardId).reduce((sum, tx) => sum + num(tx.valor_pago), 0)
+    return { ...card, limite_pago_base: cents(paidNow) }
   })
   return { cards: nextCards, transactions: nextRows }
 }
