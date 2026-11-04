@@ -254,6 +254,22 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
     return { ...item, valor: invoiceValue(item, purchases) }
   })
   const monthItems: Row[] = [...monthTx, ...monthFixed]
+
+  // limite disponível = limite total menos tudo que o cartão ainda deve (todas as faturas), não só a do mês aberto na tela
+  function cardAvailable(card: Row) {
+    const bank = card.pluggy_id ? openFinance.data.contas.find(item => item.id === String(card.pluggy_id)) : undefined
+    if (bank && bank.limite > 0 && bank.limite_disponivel > 0) return Math.min(bank.limite, bank.limite_disponivel)
+    const cardId = String(card.id)
+    const ofCard = (item: Row) => String(item.conta_id || '') === `card|${cardId}` || String(item.cartao_id || '') === cardId
+    const months = new Set(transactions.filter(ofCard).map(item => itemMonth(item)))
+    let owed = 0
+    months.forEach(m => {
+      const list = transactions.filter(item => itemMonth(item) === m)
+      const paid = clampMoney(list.find(item => item.ajuste_fatura === true && String(item.ajuste_fatura_card_id || item.cartao_id || '') === cardId)?.valor_pago)
+      owed += Math.max(0, cardInvoice(card, list, m) - paid)
+    })
+    return Math.max(0, clampMoney(card.limite) - owed)
+  }
   const monthCalculationItems = monthItems.filter(item => !item.ignorar_calculo)
   /** Mês e lançamentos do que está aberto no popup (independente do mês da página). */
   const viewMonth = popupMonth ?? month
@@ -954,7 +970,7 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
 
     {tab === 'cards' ? <>
       <div className={fm.listHead}><span>{cards.length} {cards.length === 1 ? 'cartão' : 'cartões'}</span><span>Faturas de {monthLabel(month).split(' de ')[0]} · {money.format(monthInvoice)}</span></div>
-      <div className={fm.list}>{cards.map(card => { const invoice = cardInvoice(card, monthItems, month); const openInvoice = Math.max(0, invoice - clampMoney(invoiceRow(monthItems, String(card.id))?.valor_pago)); const limit = clampMoney(card.limite); const dueKey = monthDateForDay(month, Number(card.vencimento || 10)); return <div key={String(card.id)} className={fm.entityRow} {...quick.bind(() => entityMenu('card', card))}><button type="button" className={fm.entity} onClick={() => openExisting('card', card)}><i className={fm.ring} style={{ '--ring': String(card.cor || 'var(--ds-accent)') } as React.CSSProperties} /><span className={fm.copy}><span className={fm.name}>{card.nome}</span><span className={fm.subLine}>{card.pluggy_id ? <span>{ofSubtitle(String(card.pluggy_id), 'card')}</span> : null}<span className={fm.due} data-tone={dueTone(dueKey)}>{calIcon}Vence {naturalDate(dueKey, today)}</span>{limit ? <span>{money.format(Math.max(0, limit - openInvoice))} de limite disponível</span> : null}</span></span><span className={fm.amount}><b>{money.format(invoice)}</b></span></button></div> })}</div>
+      <div className={fm.list}>{cards.map(card => { const invoice = cardInvoice(card, monthItems, month); const limit = clampMoney(card.limite); const dueKey = monthDateForDay(month, Number(card.vencimento || 10)); return <div key={String(card.id)} className={fm.entityRow} {...quick.bind(() => entityMenu('card', card))}><button type="button" className={fm.entity} onClick={() => openExisting('card', card)}><i className={fm.ring} style={{ '--ring': String(card.cor || 'var(--ds-accent)') } as React.CSSProperties} /><span className={fm.copy}><span className={fm.name}>{card.nome}</span><span className={fm.subLine}>{card.pluggy_id ? <span>{ofSubtitle(String(card.pluggy_id), 'card')}</span> : null}<span className={fm.due} data-tone={dueTone(dueKey)}>{calIcon}Vence {naturalDate(dueKey, today)}</span>{limit ? <span>{money.format(cardAvailable(card))} de limite disponível</span> : null}</span></span><span className={fm.amount}><b>{money.format(invoice)}</b></span></button></div> })}</div>
       {addRow('Adicionar cartão', () => openNew('card'))}
     </> : null}
 
@@ -1127,7 +1143,7 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
         <SideRow id="finance-status" icon="task_alt" color="var(--ds-sky-fg)" label="Status" summary={statusLabel(draft.status)} open={createTool} setOpen={setCreateTool}><CreateOptionList value={draft.status === 'pago' ? 'pago' : 'pendente'} onChange={value => setDraftPaymentStatus(String(value))} close={() => setCreateTool('')} options={[{ value: 'pendente', label: 'Pendente / zerar pagamentos', icon: 'schedule' }, { value: 'pago', label: 'Pago integralmente', icon: 'check_circle' }]} /></SideRow>
       </>
       : kind === 'account' ? <>{ofSource}{nameRow('Nome da conta', 'account_balance', 'Ex.: Conta corrente')}{draft.pluggy_id ? null : numberField('Saldo inicial', 'saldo_inicial')}</>
-      : kind === 'card' ? <>{ofSource}{nameRow('Nome do cartão', 'credit_card', 'Ex.: Nubank')}{draft.pluggy_id ? null : numberField('Limite total', 'limite')}<SideField label="Disponível" icon="account_balance_wallet" color="var(--ds-success)"><input readOnly value={money.format(Math.max(0, clampMoney(draft.limite) - Math.max(0, cardInvoice(draft) - clampMoney(invoiceRow(monthItems, String(draft.id))?.valor_pago))))} /></SideField>{numberField('Fechamento (dia)', 'fechamento', '1')}{numberField('Vencimento (dia)', 'vencimento', '1')}{pickRow('card-pay', 'account_balance', 'var(--ds-muted)', 'Pagar com', String(draft.conta_id || ''), accountChoices, value => setDraft({ ...draft, conta_id: value }))}</>
+      : kind === 'card' ? <>{ofSource}{nameRow('Nome do cartão', 'credit_card', 'Ex.: Nubank')}{draft.pluggy_id ? null : numberField('Limite total', 'limite')}<SideField label="Disponível" icon="account_balance_wallet" color="var(--ds-success)"><input readOnly value={money.format(cardAvailable(draft))} /></SideField>{numberField('Fechamento (dia)', 'fechamento', '1')}{numberField('Vencimento (dia)', 'vencimento', '1')}{pickRow('card-pay', 'account_balance', 'var(--ds-muted)', 'Pagar com', String(draft.conta_id || ''), accountChoices, value => setDraft({ ...draft, conta_id: value }))}</>
       : kind === 'box' ? <>{nameRow('Nome da caixinha', 'savings', 'Ex.: Meu carro')}{numberField('Meta', 'meta')}{dateRow('box-deadline', 'Data limite', dateKey(draft.prazo), value => setDraft({ ...draft, prazo: value }))}{pickRow('box-from', 'account_balance', 'var(--ds-muted)', 'Guardar de', String(draft.conta_id || ''), accountChoices, value => setDraft({ ...draft, conta_id: value }))}</>
       : <>{nameRow('Nome do investimento', 'trending_up', 'Ex.: ETFs globais')}{pickRow('inv-type', 'category', 'var(--ds-lilac-fg)', 'Tipo', String(draft.tipo || 'ETF'), ['ETF', 'Ações', 'FIIs', 'Renda fixa', 'Cripto', 'Previdência', 'Outro'].map(label => ({ value: label, label, icon: 'category' })), value => setDraft({ ...draft, tipo: value }))}<SideField label="Instituição" icon="account_balance" color="var(--ds-muted)"><input value={draft.instituicao || ''} onChange={event => setDraft({ ...draft, instituicao: event.target.value })} /></SideField>{numberField('Aplicado', 'aportado')}{numberField('Valor atual', 'valor_atual')}{dateRow('inv-first', 'Primeira aplicação', firstApplication(draft), value => setDraft({ ...draft, data_inicio: value }))}<SideRow id="inv-rent" icon="trending_up" color="var(--ds-success)" label="Rentabilidade" summary={rentSummary(draft)} open={createTool} setOpen={setCreateTool}><RentEditor draft={draft} setDraft={setDraft} /></SideRow><SideRow id="inv-auto" icon="event_repeat" color="var(--ds-lilac-fg)" label="Aporte automático" summary={autoSummary(draft)} open={createTool} setOpen={setCreateTool}><AutoEditor draft={draft} setDraft={setDraft} /></SideRow><SideRow id="inv-tax" icon="receipt_long" color="var(--ds-peach-fg)" label="Impostos" summary={taxSummary(draft)} open={createTool} setOpen={setCreateTool}><TaxEditor draft={draft} setDraft={setDraft} /></SideRow></>
 
