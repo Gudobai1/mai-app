@@ -152,6 +152,8 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
   const [month, setMonth] = useState(today.slice(0, 7))
   const [period, setPeriod] = useState<'month' | '3' | '6' | 'year' | 'custom'>('month')
   const [periodMenu, setPeriodMenu] = useState(false)
+  const [reportView, setReportView] = useState(0)
+  const [reportAll, setReportAll] = useState(false)
   const [customFrom, setCustomFrom] = useState(`${today.slice(0, 4)}-01`)
   const [customTo, setCustomTo] = useState(today.slice(0, 7))
   const [draft, setDraft] = useState<Row | null>(null)
@@ -948,10 +950,18 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
   const calIcon = <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="2.5" /><path d="M3.5 10h17M8 3v4M16 3v4" /></svg>
   const dueTone = (key: string) => key < today ? 'late' : key === today ? 'today' : 'future'
   const periodOptions: { id: typeof period; label: string }[] = [{ id: 'month', label: 'Mensal' }, { id: '3', label: 'Últimos 3 meses' }, { id: '6', label: 'Últimos 6 meses' }, { id: 'year', label: 'Este ano' }, { id: 'custom', label: 'Personalizado' }]
-  const barBlock = (block: typeof reportBlocks[number]) => <section className={fm.reportBlock} key={block.title}>
-    <div className={fm.reportTitle}><strong>{block.title}</strong><span>{money.format(block.total)}</span></div>
-    <div className={fm.barList}>{block.slices.map(slice => { const percent = block.total ? slice.value / block.total * 100 : 0; return <div className={fm.barRow} key={slice.name}><div className={fm.barTop}><span className={fm.barName}>{slice.name}</span><span className={fm.barPct}>{percent.toFixed(1).replace('.', ',')}%</span><span className={fm.barValue} data-tone={block.tone}>{money.format(slice.value)}</span></div><div className={fm.barTrack}><div style={{ width: `${percent}%`, background: slice.color }} /></div></div> })}{!block.slices.length ? <div className={fm.empty}>Sem dados no período.</div> : null}</div>
-  </section>
+  const REPORT_TOP = 6
+  const barBlock = (block: typeof reportBlocks[number]) => {
+    const many = block.slices.length > REPORT_TOP + 1
+    const head = many && !reportAll ? block.slices.slice(0, REPORT_TOP) : block.slices
+    const rest = many && !reportAll ? block.slices.slice(REPORT_TOP) : []
+    const shown: Slice[] = rest.length ? [...head, { name: `Outras (${rest.length})`, value: rest.reduce((sum, slice) => sum + slice.value, 0), color: 'var(--ds-muted)' }] : head
+    return <section className={fm.reportBlock} key={block.title}>
+      <div className={fm.reportTitle}><strong>{block.title}</strong><span>{money.format(block.total)}</span></div>
+      <div className={fm.barList}>{shown.map(slice => { const percent = block.total ? slice.value / block.total * 100 : 0; return <div className={fm.barRow} key={slice.name}><div className={fm.barTop}><span className={fm.barName}>{slice.name}</span><span className={fm.barValue} data-tone={block.tone}>{money.format(slice.value)}<small>{percent.toFixed(0)}%</small></span></div><div className={fm.barTrack}><div style={{ width: `${percent}%`, background: slice.color }} /></div></div> })}{!block.slices.length ? <div className={fm.empty}>Sem dados no período.</div> : null}</div>
+      {many ? <button type="button" className={fm.reportMore} onClick={() => setReportAll(value => !value)}>{reportAll ? 'Mostrar menos' : `Ver todas (${block.slices.length})`}</button> : null}
+    </section>
+  }
 
   return <div className={`mai-v3-area-page mai-v4-finance ${fm.page}`} onContextMenu={event => { const target = event.target as HTMLElement; if (!target.closest('input, textarea')) event.preventDefault() }}>
     <div className={fm.top}>
@@ -1017,7 +1027,8 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
           {periodMenu ? <div className={fm.periodMenu}>{periodOptions.map(option => <button key={option.id} type="button" data-active={period === option.id} onClick={() => { setPeriod(option.id); setPeriodMenu(false) }}>{option.label}{period === option.id ? <span>✓</span> : null}</button>)}</div> : null}
         </div>
       </div>
-      {reportBlocks.map(barBlock)}
+      <div className={fm.reportTabs} role="tablist">{reportBlocks.map((block, index) => <button key={block.title} type="button" role="tab" aria-selected={reportView === index} data-active={reportView === index} onClick={() => { setReportView(index); setReportAll(false) }}>{['Despesas', 'Receitas', 'Contas e cartões', 'Fixas × variáveis'][index] || block.title}</button>)}</div>
+      {barBlock(reportBlocks[Math.min(reportView, reportBlocks.length - 1)])}
     </> : null}
 
     {quick.element}
