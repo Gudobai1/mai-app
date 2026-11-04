@@ -112,24 +112,6 @@ function filteredStateForView(state: MaiState, view: AppView, today: string): Ma
     return { ...state, notes: rows(state.notes).filter(note => pinned === 'pinned' ? note.fixado === true : note.fixado !== true) }
   }
 
-  if (view === 'finance') {
-    const tabs = state.configs.areaTabs && typeof state.configs.areaTabs === 'object' ? state.configs.areaTabs as Record<string, string> : {}
-    if ((tabs.finance || 'overview') !== 'transactions') return state
-    const type = String(filters.type || 'all')
-    const status = String(filters.status || 'all')
-    const finance = state.finance || {}
-    const filtered = rows(finance.transactions).filter(item => {
-      const isIncome = String(item.tipo || '').toLocaleLowerCase('pt-BR') === 'receita'
-      if (type === 'income' && !isIncome) return false
-      if (type === 'expense' && isIncome) return false
-      const isPaid = completedStatus(item.status) || (Number(item.valor || 0) > 0 && Number(item.valor_pago || 0) >= Number(item.valor || 0))
-      if (status === 'paid' && !isPaid) return false
-      if (status === 'pending' && isPaid) return false
-      return true
-    })
-    return { ...state, finance: { ...finance, transactions: filtered } }
-  }
-
   if (view === 'completed') {
     const kind = String(filters.kind || 'all')
     if (kind === 'all') return state
