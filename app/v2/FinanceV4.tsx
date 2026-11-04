@@ -793,6 +793,16 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
   const stripInvoice = rangeMode ? reportInvoice : monthInvoice
   const stripSaving = stripIncome - stripExpense
   const stripPercent = stripIncome ? Math.round(stripSaving / stripIncome * 100) : 0
+  // efetuado × falta de cada item do topo (mês ou período do relatório)
+  const stripMonths = rangeMode ? reportMonths : [month]
+  const stripRows = [...transactions.filter(item => stripMonths.includes(itemMonth(item))), ...stripMonths.flatMap(m => fixedForMonthAt(m))].filter(item => !item.ignorar_calculo || item.ajuste_fatura === true)
+  const stripPaid = (item: Row) => Math.min(clampMoney(item.valor), paidAmountThrough(item, '9999-12-31'))
+  const stripIncomePaid = stripRows.filter(item => item.ajuste_fatura !== true && item.tipo === 'receita').reduce((sum, item) => sum + stripPaid(item), 0)
+  const stripInvoicePaid = Math.min(stripInvoice, stripRows.filter(item => item.ajuste_fatura === true).reduce((sum, item) => sum + Math.min(clampMoney(item.valor), clampMoney(item.valor_pago)), 0))
+  const stripCashExpensePaid = stripRows.filter(item => item.ajuste_fatura !== true && item.tipo !== 'receita' && !(String(item.conta_id || '').startsWith('card|') || item.cartao_id)).reduce((sum, item) => sum + stripPaid(item), 0)
+  const stripExpensePaid = Math.min(stripExpense, stripCashExpensePaid + stripInvoicePaid)
+  const stripSavingDone = stripIncomePaid - stripExpensePaid
+  const short = (value: number) => `${value < 0 ? '−' : ''}${money.format(Math.abs(value)).replace(/,\d\d$/, '')}`
   const palette = ['var(--ds-rose-fg)', 'var(--ds-peach-fg)', 'var(--ds-sky-fg)', 'var(--ds-lilac-fg)', 'var(--ds-mint-fg)', 'var(--ds-teal-fg)', 'var(--ds-accent)', 'var(--ds-success)']
   const greens = ['var(--ds-success)', 'var(--ds-success-bright)', 'var(--ds-mint-fg)', 'var(--ds-teal-fg)']
   type Slice = { name: string; value: number; color: string }
@@ -962,6 +972,7 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
     const when = info?.atualizado ? new Date(info.atualizado).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : ''
     return `Open Finance${info ? ` · ${info.banco}` : ''}${type === 'account' && info ? ` · no banco ${money.format(info.saldo)}` : ''}${when ? ` · ${when}` : ''}`
   }
+  const listTotal = (list: Row[]) => list.reduce((sum, item) => sum + (item.tipo === 'receita' ? 1 : -1) * clampMoney(item.valor), 0)
   const signedMoney = (value: number) => `${value > 0 ? '+' : value < 0 ? '−' : ''}${money.format(Math.abs(value))}`
   const addRow = (label: string, onClick: () => void) => <button type="button" className={fm.addRow} onClick={onClick}><MaiIcon name="add" size={18} />{label}</button>
   const calIcon = <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="2.5" /><path d="M3.5 10h17M8 3v4M16 3v4" /></svg>
@@ -984,7 +995,7 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
     return <section className={fm.reportBlock} key={block.title}>
       <div className={fm.reportHead}><b data-tone={block.tone}>{money.format(block.total)}</b><small>{block.title}{ofIncome !== null ? ` · ${ofIncome}% do que você recebeu` : ''}</small></div>
       {block.slices.length ? <div className={fm.cols}>{shown.map(slice => { const percent = block.total ? slice.value / block.total * 100 : 0; const height = top ? Math.max(4, slice.value / top * 100) : 0; return <button type="button" key={slice.name} className={fm.col} title={`${slice.name} · ${money.format(slice.value)} · ${percent.toFixed(0)}%`} data-active={reportPick === slice.name || undefined} data-dim={reportPick && reportPick !== slice.name ? 'true' : undefined} onClick={() => setReportPick(reportPick === slice.name ? null : slice.name)}><span className={fm.colValue}>{money.format(slice.value).replace(/,\d\d$/, '')}</span><span className={fm.colBar}><span style={{ height: `${height}%`, background: slice.color }} /></span><span className={fm.colName}>{slice.name}</span></button> })}</div> : <div className={fm.empty}>Sem dados no período.</div>}
-      {block.slices.length ? <div className={fm.reportListHead}><b>{picked ? picked.name : 'Todos os lançamentos'}</b><small>{listItems.length} {listItems.length === 1 ? 'lançamento' : 'lançamentos'}{picked ? <> · <button type="button" onClick={() => setReportPick(null)}>ver todos</button></> : null}</small></div> : null}
+      {block.slices.length ? <div className={fm.reportListHead}><b>{picked ? picked.name : 'Todos os lançamentos'} <span className={fm.listSum}>{signedMoney(listTotal(listItems))}</span></b><small>{listItems.length} {listItems.length === 1 ? 'lançamento' : 'lançamentos'}{picked ? <> · <button type="button" onClick={() => setReportPick(null)}>ver todos</button></> : null}</small></div> : null}
       <div className={fm.reportList}>{listItems.slice(0, 80).map(item => <button type="button" key={`${item._isFixed ? 'f' : 't'}-${String(item.id)}-${dateKey(item.data)}`} onClick={() => openTransaction(item)}><span className={fm.reportItemText}><b>{String(item.titulo || 'Lançamento')}</b><small>{naturalDate(dateKey(item.data), today)} · {originName(item.conta_id || (item.cartao_id ? `card|${item.cartao_id}` : ''), accounts, cards)}</small></span><span className={fm.reportItemValue} data-tone={block.tone}>{money.format(clampMoney(item.valor))}</span></button>)}{listItems.length > 80 ? <div className={fm.empty}>Mostrando os 80 mais recentes.</div> : null}</div>
     </section>
   }
@@ -1005,16 +1016,16 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
     </div>
 
     <div className={fm.summary}>
-      <button type="button" onClick={() => openSummary('transactions', 'income')} title="Ver só as receitas"><span>Receitas</span><strong data-tone="in">{money.format(stripIncome)}</strong></button>
-      <button type="button" onClick={() => openSummary('transactions', 'expense')} title="Ver só as despesas"><span>Despesas</span><strong data-tone="neg">{money.format(stripExpense)}</strong></button>
-      <button type="button" onClick={() => openSummary('cards')} title="Ver os cartões"><span>Cartões de crédito</span><strong data-tone="card">{money.format(stripInvoice)}</strong></button>
-      <button type="button" onClick={() => openSummary('reports')} title="Ver os relatórios"><span>Economia mensal</span><strong data-tone={stripSaving < 0 ? 'neg' : 'in'}>{signedMoney(stripSaving)} <small>{stripPercent > 0 ? '+' : ''}{stripPercent}%</small></strong></button>
+      <button type="button" onClick={() => openSummary('transactions', 'income')} title="Ver só as receitas"><span>Receitas</span><strong data-tone="in">{money.format(stripIncome)}</strong><em>{short(stripIncomePaid)} recebido · falta {short(Math.max(0, stripIncome - stripIncomePaid))}</em></button>
+      <button type="button" onClick={() => openSummary('transactions', 'expense')} title="Ver só as despesas"><span>Despesas</span><strong data-tone="neg">{money.format(stripExpense)}</strong><em>{short(stripExpensePaid)} pago · falta {short(Math.max(0, stripExpense - stripExpensePaid))}</em></button>
+      <button type="button" onClick={() => openSummary('cards')} title="Ver os cartões"><span>Cartões de crédito</span><strong data-tone="card">{money.format(stripInvoice)}</strong><em>{short(stripInvoicePaid)} pago · falta {short(Math.max(0, stripInvoice - stripInvoicePaid))}</em></button>
+      <button type="button" onClick={() => openSummary('reports')} title="Ver os relatórios"><span>Economia mensal</span><strong data-tone={stripSaving < 0 ? 'neg' : 'in'}>{signedMoney(stripSaving)} <small>{stripPercent > 0 ? '+' : ''}{stripPercent}%</small></strong><em>{short(stripSavingDone)} efetuado · falta {short(stripSaving - stripSavingDone)}</em></button>
     </div>
 
     <div className={fm.tabs} role="tablist">{tabs.map(item => <button key={item.id} role="tab" aria-selected={tab === item.id} data-active={tab === item.id} onClick={() => setTab(item.id)}>{item.label}</button>)}</div>
 
     {tab === 'transactions' ? <>
-      <div className={fm.listHead}><span>{filtered.length} {filtered.length === 1 ? 'lançamento' : 'lançamentos'} em {monthLabel(month).split(' de ')[0]}</span><span>{pendingCount} {pendingCount === 1 ? 'pendente' : 'pendentes'}</span></div>
+      <div className={fm.listHead}><span>{filtered.length} {filtered.length === 1 ? 'lançamento' : 'lançamentos'} em {monthLabel(month).split(' de ')[0]} · <b>{signedMoney(listTotal(filtered))}</b></span><span>{pendingCount} {pendingCount === 1 ? 'pendente' : 'pendentes'}</span></div>
       <div className={fm.list}>{filtered.map(transactionRow)}</div>
       {!filtered.length ? <div className={fm.empty}>Nenhum lançamento encontrado.</div> : null}
       {quickAdding ? <QuickAdd inline kinds={['finance']} initial="finance" state={state} today={today} defaultDate={today} commit={commit} onFinance={() => undefined} onClose={() => setQuickAdding(false)} /> : addRow('Adicionar lançamento', () => setQuickAdding(true))}
@@ -1060,7 +1071,7 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
         return <>
           <div className={fm.cols}>{generalBars.map(bar => <button type="button" key={bar.name} className={fm.col} onClick={() => { setReportView(bar.tab); setReportPick(null) }}><span className={fm.colValue}>{money.format(bar.value).replace(/,\d\d$/, '')}</span><span className={fm.colBar}><span style={{ height: `${biggest ? Math.max(4, Math.abs(bar.value) / biggest * 100) : 0}%`, background: bar.color }} /></span><span className={fm.colName}>{bar.name}</span></button>)}</div>
           {reportBlocks.map(originalBlock)}
-          <div className={fm.reportListHead}><b>Lançamentos</b><small>{periodRows.length} {periodRows.length === 1 ? 'lançamento' : 'lançamentos'} · {period === 'month' ? monthLabel(month).split(' de ')[0] : periodRange}</small></div>
+          <div className={fm.reportListHead}><b>Lançamentos <span className={fm.listSum}>{signedMoney(listTotal(periodRows))}</span></b><small>{periodRows.length} {periodRows.length === 1 ? 'lançamento' : 'lançamentos'} · {period === 'month' ? monthLabel(month).split(' de ')[0] : periodRange}</small></div>
           <div className={fm.reportList}>{periodRows.map(transactionRow)}{!periodRows.length ? <div className={fm.empty}>Nenhum lançamento no período.</div> : null}</div>
         </>
       })() : barBlock(tabBlocks[Math.min(reportView, tabBlocks.length) - 1])}
@@ -1088,7 +1099,7 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
       }
       const editMove = (mov: Row) => { if (!editableMove(mov)) return; setMoveForm({ type: mov.tipo === 'entrada' || mov.tipo === 'aporte' ? 'in' : 'out', amount: String(clampMoney(mov.valor)).replace('.', ','), date: dateKey(mov.data) || today, cal: false, done: isDone(mov), editId: String(mov.id), titulo: String(mov.titulo || '') }) }
       const moveLine = (mov: Row, plus: boolean) => { const done = isDone(mov); const editable = editableMove(mov); return <div key={String(mov.id)} className={ic.line} {...quick.bind(() => ({ title: plus ? (kind === 'box' ? 'Guardado' : 'Aporte') : (kind === 'box' ? 'Retirada' : 'Resgate'), subtitle: `${plus ? '+' : '−'}${money.format(clampMoney(mov.valor))}`, groups: [{ options: editable ? [{ label: done ? 'Marcar como pendente' : 'Marcar como efetivado', icon: done ? 'undo' : 'check_circle', onSelect: () => toggleMove(mov) }, { label: 'Editar', icon: 'edit', onSelect: () => editMove(mov) }, { label: 'Excluir', icon: 'delete', tone: 'danger' as const, onSelect: () => deleteMove(mov) }] : [{ label: 'Excluir', icon: 'delete', tone: 'danger' as const, onSelect: () => deleteMove(mov) }] }] }))}><button type="button" className={ic.lineCheck} data-paid={done} disabled={!editable} title={done ? 'Marcar como pendente' : 'Marcar como efetivado'} style={done ? undefined : { borderColor: plus ? 'var(--ds-success)' : 'var(--ds-danger)' }} onClick={() => toggleMove(mov)}>{done ? '✓' : ''}</button><button type="button" className={ic.lineBody} disabled={!editable} onClick={() => editMove(mov)}><span className={ic.lineText}><b>{plus ? (kind === 'box' ? 'Guardado' : 'Aporte') : (kind === 'box' ? 'Retirada' : 'Resgate')}</b><small>{new Date(mov.data).toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' })}{done ? '' : ' · pendente'}</small></span><span className={ic.lineValue} data-tone={plus ? 'in' : 'out'}>{plus ? '+' : '−'} {money.format(clampMoney(mov.valor))}</span></button></div> }
-      const listSection = (title: string, count: number, children: ReactNode, _empty?: string) => !count ? null : <section className={ic.section}><h3>{title}<small>{count}</small></h3>{children}</section>
+      const listSection = (title: string, count: number, children: ReactNode, _empty?: string, total?: number) => !count ? null : <section className={ic.section}><h3>{title}{total !== undefined ? <span style={{ marginLeft: 8, fontWeight: 600, opacity: 0.75 }}>{signedMoney(total)}</span> : null}<small>{count}</small></h3>{children}</section>
       const draftId = String(draft.id)
       const accountTx = kind === 'account' ? viewItems.filter(item => String(item.conta_id || '') === draftId || (item.ajuste_fatura === true && String(item.conta_pagamento_id || '') === draftId)).sort((x, y) => { const px = String(x.status || 'pendente') !== 'pago', py = String(y.status || 'pendente') !== 'pago'; if (px !== py) return px ? -1 : 1; return px ? String(x.data).localeCompare(String(y.data)) : String(y.data).localeCompare(String(x.data)) }) : [] // pendentes no topo (do mais antigo ao mais novo), depois do mais novo ao mais antigo
       const inMonth = (mov: Row) => dateKey(mov.data).slice(0, 7) === viewMonth
@@ -1174,7 +1185,7 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
       const content = kind === 'transaction' ? <>
         {title}
         <textarea className={ic.desc} rows={2} value={draft.observacao || ''} placeholder="Descrição" onChange={event => setDraft({ ...draft, observacao: event.target.value })} />
-        {history.length ? listSection('Histórico', history.length, history.map(txLine), '') : null}
+        {history.length ? listSection('Histórico', history.length, history.map(txLine), '', listTotal(history)) : null}
         {extras}
       </> : <>
         {draft._persisted ? <div className={ic.cardHead}>
@@ -1188,8 +1199,8 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
           {kind === 'card' ? <button type="button" className={ic.payButton} onClick={() => void payInvoice(draft)}>Pagar fatura</button> : null}
         </div> : null}
         {kind === 'investment' && clampMoney(draft.rent_taxa) > 0 ? <p className={ic.note}>Valor estimado pela taxa configurada; você pode corrigir quando quiser.</p> : null}
-        {kind === 'account' ? <>{listSection('Lançamentos', accountTx.length, accountTx.map(txLine), '')}{draft._persisted ? (cardAdding ? <QuickAdd key={`${draftId}-${viewMonth}`} inline kinds={['finance']} initial="finance" state={state} today={today} defaultDate={viewMonth === today.slice(0, 7) ? today : `${viewMonth}-01`} defaultAccount={draftId} commit={commit} onFinance={() => undefined} onClose={() => setCardAdding(false)} /> : <button type="button" className={fm.addRow} onClick={() => setCardAdding(true)}><MaiIcon name="add" size={18} />Adicionar lançamento</button>) : null}</> : null}
-        {kind === 'card' ? <>{listSection('Lançamentos', cardTx.length, cardTx.map(txLine), 'Nenhuma compra na fatura deste mês.')}{draft._persisted ? (cardAdding ? <QuickAdd key={`${draftId}-${viewMonth}`} inline kinds={['finance']} initial="finance" state={state} today={today} defaultDate={viewMonth === today.slice(0, 7) ? today : `${viewMonth}-01`} defaultAccount={`card|${draftId}`} commit={commit} onFinance={() => undefined} onClose={() => setCardAdding(false)} /> : <button type="button" className={fm.addRow} onClick={() => setCardAdding(true)}><MaiIcon name="add" size={18} />Adicionar lançamento</button>) : null}</> : null}
+        {kind === 'account' ? <>{listSection('Lançamentos', accountTx.length, accountTx.map(txLine), '', listTotal(accountTx))}{draft._persisted ? (cardAdding ? <QuickAdd key={`${draftId}-${viewMonth}`} inline kinds={['finance']} initial="finance" state={state} today={today} defaultDate={viewMonth === today.slice(0, 7) ? today : `${viewMonth}-01`} defaultAccount={draftId} commit={commit} onFinance={() => undefined} onClose={() => setCardAdding(false)} /> : <button type="button" className={fm.addRow} onClick={() => setCardAdding(true)}><MaiIcon name="add" size={18} />Adicionar lançamento</button>) : null}</> : null}
+        {kind === 'card' ? <>{listSection('Lançamentos', cardTx.length, cardTx.map(txLine), 'Nenhuma compra na fatura deste mês.', -cardTx.reduce((sum, item) => sum + clampMoney(item.valor), 0))}{draft._persisted ? (cardAdding ? <QuickAdd key={`${draftId}-${viewMonth}`} inline kinds={['finance']} initial="finance" state={state} today={today} defaultDate={viewMonth === today.slice(0, 7) ? today : `${viewMonth}-01`} defaultAccount={`card|${draftId}`} commit={commit} onFinance={() => undefined} onClose={() => setCardAdding(false)} /> : <button type="button" className={fm.addRow} onClick={() => setCardAdding(true)}><MaiIcon name="add" size={18} />Adicionar lançamento</button>) : null}</> : null}
         {permanent ? (() => { const all = rows(draft.movimentos); const doneCount = all.filter(isDone).length; const visible = all.filter(mov => showDone || !isDone(mov)); return all.length ? <section className={ic.section}><h3>Lançamentos<small>{visible.length}</small>{doneCount ? <button type="button" className={ic.toggleDone} onClick={() => setShowDone(!showDone)}><MaiIcon name={showDone ? 'visibility_off' : 'visibility'} size={15} />{showDone ? 'Ocultar efetivados' : `Mostrar efetivados (${doneCount})`}</button> : null}</h3>{visible.map(mov => moveLine(mov, kind === 'box' ? mov.tipo === 'entrada' : mov.tipo === 'aporte'))}</section> : null })() : null}
 
         {permanent && draft._persisted ? (moveForm ? <QuickAdd key={moveForm.editId || 'novo-movimento'} inline kinds={['finance']} initial="finance" state={state} today={today} defaultDate={moveForm.date} commit={commit} onFinance={() => undefined} onClose={() => setMoveForm(null)} movement={{

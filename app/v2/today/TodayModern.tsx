@@ -878,7 +878,7 @@ export function TodayModern({ state, today, commit, navigate, inspect, options, 
     ),
     finance: (
       <section className={styles.block} aria-label="Finanças">
-        {head('finance', 'Finanças')}
+        {head('finance', 'Finanças', financeMode !== 'summary' && transactions.length ? (() => { const total = transactions.reduce((sum, item) => sum + (String(item.tipo || '').toLocaleLowerCase('pt-BR') === 'receita' ? 1 : -1) * Number(item.valor || 0), 0); return `${total < 0 ? '−' : total > 0 ? '+' : ''}${money.format(Math.abs(total))}` })() : undefined)}
         {!collapsed.has('finance') ? (
           <div className={styles.financeStack}>
             {financeMode !== 'bills' ? (

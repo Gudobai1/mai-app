@@ -427,7 +427,7 @@ export function EmBreve({ state, today, commit, inspect, syncRange }: Props) {
 
   const [closedGroups, setClosedGroups] = useState<Set<string>>(new Set())
   const toggleGroup = (id: string) => setClosedGroups(current => { const next = new Set(current); if (next.has(id)) next.delete(id); else next.add(id); return next })
-  const group = (label: string, children: ReactNode, key: string, count: number, day: string, color?: string) => {
+  const group = (label: string, children: ReactNode, key: string, count: number, day: string, color?: string, total?: string) => {
     const id = `${day}|${key}`
     const closed = closedGroups.has(id)
     return (
@@ -435,6 +435,7 @@ export function EmBreve({ state, today, commit, inspect, syncRange }: Props) {
         <button type="button" className={styles.groupHead} aria-expanded={!closed} aria-label={`${closed ? 'Expandir' : 'Recolher'} ${label}`} onClick={() => toggleGroup(id)}>
           {color ? <i style={{ background: color }} /> : null}
           <h4>{label}</h4>
+          {total ? <span className={styles.groupCount}>{total}</span> : null}
           <span className={styles.groupCount}>{count}</span>
           <Icon name={closed ? 'chevron_right' : 'expand_more'} size={18} filled={false} />
         </button>
@@ -467,7 +468,7 @@ export function EmBreve({ state, today, commit, inspect, syncRange }: Props) {
         {events.length ? group('Compromissos', <div role="list">{events.map(renderEvent)}</div>, 'events', events.length, day) : null}
         {taskGroups.map(item => group(item.label, taskList(item.items), item.key, item.items.length, day, item.color))}
         {habits.length ? group('Hábitos', <div role="list">{habits.map(renderHabit)}</div>, 'habits', habits.length, day) : null}
-        {finance.length ? group('Finanças', <div role="list">{finance.map(renderFinance)}</div>, 'finance', finance.length, day) : null}
+        {finance.length ? group('Finanças', <div role="list">{finance.map(renderFinance)}</div>, 'finance', finance.length, day, undefined, (() => { const total = finance.reduce((sum, entry) => sum + (entry.financeType === 'receita' ? 1 : -1) * Math.abs(Number(entry.planner?.raw?.valor || 0)), 0); return `${total < 0 ? '−' : total > 0 ? '+' : ''}${new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Math.abs(total))}` })()) : null}
       </>
     )
   }
