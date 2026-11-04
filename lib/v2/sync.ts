@@ -48,6 +48,8 @@ async function refreshAccessToken() {
   return data.session.access_token
 }
 
+export async function authedFetch(path: string, init: RequestInit = {}) { return stateFetch(path, init) }
+
 async function stateFetch(path: string, init: RequestInit = {}) {
   let token = readSupabaseAccessToken()
   if (!token) return null
