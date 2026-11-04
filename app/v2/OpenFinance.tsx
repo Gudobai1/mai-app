@@ -121,6 +121,15 @@ export function useOpenFinance(state: MaiState, commit: Commit) {
     }
   }
 
+  function addItemId() {
+    const raw = window.prompt('Cole o Item ID do MeuPluggy (aparece em Connected Items, na página Demo do painel da Pluggy):')
+    const itemId = String(raw || '').trim()
+    if (!itemId) return
+    if (!/^[\w-]{8,64}$/.test(itemId)) { setMessage('Esse ID não parece válido.'); return }
+    patchOpenFinance(commit, current => ({ data: { ...current, itens: current.itens.some(i => i.itemId === itemId) ? current.itens : [...current.itens, { itemId, banco: 'MeuPluggy' }] } }))
+    void sync([itemId])
+  }
+
   function link(accountId: string, target: string) {
     patchOpenFinance(commit, current => ({ data: { ...current, vinculos: { ...current.vinculos, [accountId]: target } } }))
   }
@@ -181,13 +190,13 @@ export function useOpenFinance(state: MaiState, commit: Commit) {
     return () => { window.clearInterval(timer); document.removeEventListener('visibilitychange', tick) }
   }, [])
 
-  return { data, busy, message, sync, connect, link, importOne, ignore, disconnect, match }
+  return { data, busy, message, sync, connect, addItemId, link, importOne, ignore, disconnect, match }
 }
 
 export type OpenFinanceController = ReturnType<typeof useOpenFinance>
 
 export function OpenFinancePanel({ ctl, accounts, cards }: { ctl: OpenFinanceController; accounts: Row[]; cards: Row[] }) {
-  const { data, busy, message, sync, connect, link, importOne, ignore, disconnect, match } = ctl
+  const { data, busy, message, sync, connect, addItemId, link, importOne, ignore, disconnect, match } = ctl
   const readyPending = data.pendentes.filter(p => !(data.contas.find(c => c.id === p.accountId)?.tipo === 'cartao' && p.tipo === 'receita'))
   const targets = [...accounts.map(a => ({ id: String(a.id), label: String(a.nome) })), ...cards.map(c => ({ id: `card|${c.id}`, label: `${c.nome} (cartão)` }))]
   const last = data.itens.map(i => i.ultimaSync).filter(Boolean).sort().pop()
@@ -197,6 +206,7 @@ export function OpenFinancePanel({ ctl, accounts, cards }: { ctl: OpenFinanceCon
       <div><strong>Open Finance</strong><span>{data.itens.length ? `${data.itens.length} ${data.itens.length === 1 ? 'banco conectado' : 'bancos conectados'}${last ? ` · atualizado ${new Date(last).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}` : ''}` : 'Conecte seus bancos para importar movimentos automaticamente.'}</span></div>
       <div className={of.actions}>
         {data.itens.length ? <button type="button" disabled={busy !== ''} onClick={() => sync(data.itens.map(i => i.itemId))}>{busy === 'sync' ? 'Sincronizando…' : 'Sincronizar'}</button> : null}
+        <button type="button" disabled={busy !== ''} onClick={addItemId} title="Para contas reais no uso pessoal, via MeuPluggy">Usar ID do MeuPluggy</button>
         <button type="button" data-primary="true" disabled={busy !== ''} onClick={connect}>{busy === 'connect' ? 'Abrindo…' : 'Conectar banco'}</button>
       </div>
     </div>
