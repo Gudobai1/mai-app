@@ -165,13 +165,13 @@ function applyCardBills(rows: Row[], cards: Row[], links: Record<string, string>
     if (!billMonth.size || ![...billMonth.values()].includes(openMonth)) {
       const purchases = nextRows.filter(tx => tx.pluggy_id && !tx.ajuste_fatura && String(tx.cartao_id) === cardId && !tx.ignorar_calculo && tx.tipo !== 'receita' && tx.competencia_fatura === openMonth).reduce((sum, tx) => sum + num(tx.valor), 0)
       const previousTotals = bills.map(bill => cents(bill.total))
-      const credits = items.flatMap(item => item.transactions).filter(tx => tx.accountId === bankCard.id && tx.tipo === 'receita' && monthFor({ data: tx.data, billId: tx.billId }) === openMonth && !previousTotals.some(total => Math.abs(total - num(tx.valor)) < 0.015)).reduce((sum, tx) => sum + num(tx.valor), 0)
+      const credits = items.flatMap(item => item.transactions).filter(tx => tx.accountId === bankCard.id && tx.tipo === 'receita' && invoiceMonthOf(String(tx.data).slice(0, 10), closingDay, dueDay) === openMonth && !previousTotals.some(total => Math.abs(total - num(tx.valor)) < 0.015)).reduce((sum, tx) => sum + num(tx.valor), 0)
       const net = Math.max(0, cents(purchases - credits))
       const index = nextRows.findIndex(tx => tx.ajuste_fatura === true && String(tx.ajuste_fatura_card_id || tx.cartao_id || '') === cardId && String(tx.competencia_fatura || monthOf(String(tx.data))) === openMonth)
       if (index < 0) nextRows = [...nextRows, { id: uid('invoice'), pluggy_open: true, titulo: `Fatura ${String(card.nome || 'Cartão')}`, tipo: 'despesa', data: dueOf(openMonth, dueDay), valor: net, valor_pago: 0, status: 'pendente', pagamentos: [], categoria: 'Fatura do cartão', conta_id: `card|${cardId}`, cartao_id: cardId, conta_pagamento_id: String(card.conta_id || ''), anexos: [], ignorar_calculo: true, recorrencia: 'unico', ajuste_fatura: true, ajuste_fatura_card_id: cardId, competencia_fatura: openMonth }]
       else if (nextRows[index].pluggy_open) nextRows = nextRows.map((tx, i) => i === index ? { ...tx, valor: net, ajuste_delta: undefined } : tx)
       // cópia manual antiga dessa mesma fatura, de um cartão que já não existe: era o mesmo valor, sai para não contar duas vezes
-      nextRows = nextRows.filter(tx => !(tx.ajuste_fatura === true && !tx.pluggy_open && !tx.pluggy_bill && !cardIds.has(String(tx.ajuste_fatura_card_id || tx.cartao_id || '')) && String(tx.competencia_fatura || monthOf(String(tx.data))) === openMonth && Math.abs(num(tx.valor) - net) < 0.015))
+      nextRows = nextRows.filter(tx => !(tx.ajuste_fatura === true && !tx.pluggy_open && !tx.pluggy_bill && !cardIds.has(String(tx.ajuste_fatura_card_id || tx.cartao_id || '')) && String(tx.competencia_fatura || monthOf(String(tx.data))) === openMonth && (Math.abs(num(tx.valor) - net) < 0.015 || String(tx.titulo || '').toLowerCase().includes(String(card.nome || '#').toLowerCase().split(' ')[0]))))
     }
     return card
   })
