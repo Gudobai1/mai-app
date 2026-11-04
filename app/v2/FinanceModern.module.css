@@ -262,3 +262,18 @@ button.balanceMain:hover { background: var(--ds-surface-hover); }
 .reportItemValue { font-size: 13.5px; font-weight: 650; font-variant-numeric: tabular-nums; }
 .reportItemValue[data-tone='out'] { color: var(--ds-danger); }
 .reportItemValue[data-tone='in'] { color: var(--ds-success); }
+
+/* relatórios compactos: colunas verticais + lista com rolagem */
+.reportHead { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin: 0 6px 10px; }
+.reportHead b { font-size: 20px; }
+.cols { display: flex; align-items: stretch; gap: 4px; height: 132px; margin: 0 2px 6px; }
+.col { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; align-items: stretch; gap: 4px; border: 0; background: none; color: inherit; font: inherit; padding: 2px 0; border-radius: 8px; cursor: pointer; transition: opacity .15s; }
+.col:hover, .col[data-active] { background: color-mix(in srgb, var(--ds-text) 6%, transparent); }
+.col[data-dim] { opacity: .4; }
+.colValue { font-size: 10.5px; font-weight: 650; text-align: center; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.colBar { flex: 1; display: flex; align-items: flex-end; justify-content: center; }
+.colBar span { display: block; width: 62%; max-width: 34px; border-radius: 5px 5px 2px 2px; }
+.colName { font-size: 10.5px; color: var(--ds-muted); text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.reportListHead { margin-top: 10px; }
+.reportList { max-height: 300px; overflow-y: auto; }
+.reportList > button { padding: 8px 6px; }
