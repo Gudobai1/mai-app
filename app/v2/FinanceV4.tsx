@@ -1070,8 +1070,28 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
         const biggest = generalBars.reduce((max, bar) => Math.max(max, Math.abs(bar.value)), 0)
         return <>
           <div className={fm.cols}>{generalBars.map(bar => <button type="button" key={bar.name} className={fm.col} onClick={() => { setReportView(bar.tab); setReportPick(null) }}><span className={fm.colValue}>{money.format(bar.value).replace(/,\d\d$/, '')}</span><span className={fm.colBar}><span style={{ height: `${biggest ? Math.max(4, Math.abs(bar.value) / biggest * 100) : 0}%`, background: bar.color }} /></span><span className={fm.colName}>{bar.name}</span></button>)}</div>
+          <div className={fm.overview}>
+            <div className={fm.overviewTop}><span>{stripSaving >= 0 ? 'Sobrou' : 'Faltou'} no período</span><strong data-tone={stripSaving >= 0 ? 'in' : 'neg'}>{money.format(Math.abs(stripSaving))}</strong></div>
+            <div className={fm.overviewMeter} role="img" aria-label={`Gastou ${stripIncome ? Math.round(stripExpense / stripIncome * 100) : 0}% do que recebeu`}><span style={{ width: `${stripIncome ? Math.min(100, stripExpense / stripIncome * 100) : 0}%` }} /></div>
+            <small>{stripIncome ? `Gastou ${Math.round(stripExpense / stripIncome * 100)}% do que recebeu` : 'Sem receitas no período'}</small>
+            <div className={fm.overviewRows}>
+              <div><span>Receitas</span><b data-tone="in">{money.format(stripIncomePaid)}</b><em>de {money.format(stripIncome)} · falta {money.format(Math.max(0, stripIncome - stripIncomePaid))}</em></div>
+              <div><span>Despesas</span><b data-tone="neg">{money.format(stripExpensePaid)}</b><em>de {money.format(stripExpense)} · falta {money.format(Math.max(0, stripExpense - stripExpensePaid))}</em></div>
+              <div><span>Cartões</span><b data-tone="card">{money.format(stripInvoicePaid)}</b><em>de {money.format(stripInvoice)} · falta {money.format(Math.max(0, stripInvoice - stripInvoicePaid))}</em></div>
+            </div>
+          </div>
         </>
-      })() : <><button type="button" className={fm.reportBack} onClick={() => { setReportView(0); setReportPick(null) }}>‹ Visão geral</button>{barBlock(tabBlocks[Math.min(reportView, tabBlocks.length) - 1])}</>}
+      })() : (() => {
+        const block = tabBlocks[Math.min(reportView, tabBlocks.length) - 1]
+        return <>
+          <div className={fm.reportNav}>
+            <button type="button" className={fm.reportBack} onClick={() => { setReportView(0); setReportPick(null) }} aria-label="Voltar para a visão geral"><MaiIcon name="chevron_left" size={18} /><span>Visão geral</span></button>
+            <span className={fm.reportNavTitle}>{block.title}{reportPick ? <> <i>›</i> {String(reportPick)}</> : null}</span>
+            <b data-tone={block.tone}>{money.format(block.total)}</b>
+          </div>
+          {barBlock(block)}
+        </>
+      })()}
     </> : null}
 
     {quick.element}
