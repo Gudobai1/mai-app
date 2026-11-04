@@ -290,3 +290,5 @@ button.balanceMain:hover { background: var(--ds-surface-hover); }
 .ovLine span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ds-muted); }
 .ovLine b { font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
 @media (max-width: 560px) { .overview { grid-template-columns: minmax(0, 1fr); } }
+
+.reportBlock .cols, .cols { height: 150px; }
