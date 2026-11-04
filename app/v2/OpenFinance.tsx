@@ -47,8 +47,9 @@ const bankLabel = (nome: string) => /nu pagamentos|nubank/i.test(nome) ? 'Nubank
  * Vínculos antigos para itens manuais são desfeitos: o saldo inicial que o sync mexeu volta a 0 e o que foi importado migra para o item do banco.
  */
 function resolveLinks(links: Record<string, string>, bank: BankAccount[], finance: Row) {
-  const accounts: Row[] = [...((finance.accounts || []) as Row[])]
-  const cards: Row[] = [...((finance.cards || []) as Row[])]
+  const unsuffix = (item: Row) => item.pluggy_id && /\s\(Open Finance\)$/.test(String(item.nome)) ? { ...item, nome: String(item.nome).replace(/\s\(Open Finance\)$/, '') } : item
+  const accounts: Row[] = ((finance.accounts || []) as Row[]).map(unsuffix)
+  const cards: Row[] = ((finance.cards || []) as Row[]).map(unsuffix)
   const next = { ...links }
   const moved: Record<string, string> = {}
   const stale: Record<string, string> = {}
@@ -67,11 +68,11 @@ function resolveLinks(links: Record<string, string>, bank: BankAccount[], financ
     const id = uid(b.tipo === 'cartao' ? 'crd' : 'cta')
     if (b.tipo === 'cartao') {
       const base = shortName(b.nome)
-      const nome = `${/cart[aã]o/i.test(base) ? base : `${prefix(b)} ${base}`} (Open Finance)`
+      const nome = /cart[aã]o/i.test(base) ? base : `${prefix(b)} ${base}`
       cards.push({ id, pluggy_id: b.id, nome, limite: b.limite, fechamento: 1, vencimento: 10, conta_id: '', cor: '#4073FF', foto: '' })
       next[b.id] = `card|${id}`
     } else {
-      accounts.push({ id, pluggy_id: b.id, nome: `${bankLabel(b.nome)} (Open Finance)`, saldo_inicial: 0, cor: '#4073FF', foto: '' })
+      accounts.push({ id, pluggy_id: b.id, nome: bankLabel(b.nome), saldo_inicial: 0, cor: '#4073FF', foto: '' })
       next[b.id] = id
     }
     if (stale[Object.keys(stale).find(t => stale[t] === b.id) || '']) moved[Object.keys(stale).find(t => stale[t] === b.id) as string] = next[b.id]
@@ -276,29 +277,25 @@ export function useOpenFinance(state: MaiState, commit: Commit) {
 
 export type OpenFinanceController = ReturnType<typeof useOpenFinance>
 
+/** Linha discreta no fim das listas: as contas, cartões e investimentos do banco aparecem nas listas normais, iguais aos manuais. */
 export function OpenFinancePanel({ ctl }: { ctl: OpenFinanceController }) {
   const { data, busy, message, sync, connect, addItemId, disconnect } = ctl
   const last = data.itens.map(i => i.ultimaSync).filter(Boolean).sort().pop()
-  const waiting = data.pendentes.length
-  const status = !data.itens.length ? 'Conecte seu banco para lançar movimentos e atualizar saldos sozinho.'
-    : `${busy === 'sync' ? 'Sincronizando…' : last ? `Atualizado ${new Date(last).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}` : 'Aguardando a primeira sincronização'}${waiting ? ` · ${waiting} movimentos na fila` : ''}`
+  const status = !data.itens.length ? 'Open Finance: conecte seu banco para lançar e atualizar tudo sozinho'
+    : busy === 'sync' ? 'Open Finance · sincronizando…'
+    : `Open Finance · ${last ? `atualizado ${new Date(last).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}` : 'aguardando a primeira sincronização'}`
 
-  return <section className={of.panel}>
-    <div className={of.head}>
-      <div className={of.title}><strong>Open Finance</strong><span>{status}</span></div>
-      <div className={of.actions}>
-        {data.itens.length ? <button type="button" disabled={busy !== ''} onClick={() => sync(data.itens.map(i => i.itemId))}>Sincronizar</button> : null}
-        <button type="button" data-primary="true" disabled={busy !== ''} onClick={connect}>{data.itens.length ? 'Conectar outro' : 'Conectar banco'}</button>
-        <details className={of.more}><summary aria-label="Mais opções">⋯</summary><div><button type="button" onClick={addItemId}>Usar ID do MeuPluggy</button></div></details>
-      </div>
+  return <div className={of.line}>
+    <span className={of.status}>{status}</span>
+    <div className={of.actions}>
+      {data.itens.length ? <button type="button" disabled={busy !== ''} onClick={() => sync(data.itens.map(i => i.itemId))}>Sincronizar</button> : null}
+      {!data.itens.length ? <button type="button" data-primary="true" disabled={busy !== ''} onClick={connect}>Conectar banco</button> : null}
+      <details className={of.more}><summary aria-label="Mais opções">⋯</summary><div>
+        {data.itens.length ? <button type="button" disabled={busy !== ''} onClick={connect}>Conectar outro banco</button> : null}
+        <button type="button" onClick={addItemId}>Usar ID do MeuPluggy</button>
+        {data.itens.map(item => <button key={item.itemId} type="button" onClick={() => disconnect(item.itemId)}>Desconectar {shortName(item.banco)}</button>)}
+      </div></details>
     </div>
     {message ? <p className={of.message} role="status">{message}</p> : null}
-    {data.itens.map(item => <div key={item.itemId} className={of.bank}>
-      {data.contas.filter(c => c.itemId === item.itemId).map(account => { const linked = data.vinculos[account.id] || ''; return <div key={account.id} className={of.accountRow}>
-        <span className={of.accountName}>{bankLabel(account.nome)}<small>{account.tipo === 'cartao' ? `Cartão · limite ${money.format(account.limite || account.limite_disponivel)}` : `Conta · saldo ${money.format(account.saldo)}`}</small></span>
-        <span className={of.where}>{linked ? (account.tipo === 'cartao' ? 'Em Cartões' : 'Em Contas') : 'Aguardando'}</span>
-      </div> })}
-      <button type="button" className={of.disconnect} onClick={() => disconnect(item.itemId)}>Desconectar {shortName(item.banco)}</button>
-    </div>)}
-  </section>
+  </div>
 }
