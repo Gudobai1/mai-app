@@ -277,3 +277,16 @@ button.balanceMain:hover { background: var(--ds-surface-hover); }
 .reportListHead { margin-top: 10px; }
 .reportList { max-height: 300px; overflow-y: auto; }
 .reportList > button { padding: 8px 6px; }
+
+/* relatórios: visão geral única */
+.overview { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.ovCard { display: grid; align-content: start; gap: 6px; padding: 14px 16px; border-radius: 14px; background: color-mix(in srgb, var(--ds-text) 5%, transparent); min-width: 0; }
+.ovCard > small { color: var(--ds-muted); font-size: 12px; }
+.ovCard > b { font-size: 21px; font-weight: 700; font-variant-numeric: tabular-nums; margin-bottom: 4px; }
+.ovCard > b[data-tone='in'] { color: var(--ds-success); }
+.ovCard > b[data-tone='out'] { color: var(--ds-danger); }
+.ovCard > b[data-tone='card'] { color: var(--ds-sky-fg); }
+.ovLine { display: flex; justify-content: space-between; gap: 10px; font-size: 12.5px; padding-top: 6px; border-top: 1px solid color-mix(in srgb, var(--ds-text) 8%, transparent); }
+.ovLine span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ds-muted); }
+.ovLine b { font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
+@media (max-width: 560px) { .overview { grid-template-columns: minmax(0, 1fr); } }

@@ -1033,8 +1033,17 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
           {periodMenu ? <div className={fm.periodMenu}>{periodOptions.map(option => <button key={option.id} type="button" data-active={period === option.id} onClick={() => { setPeriod(option.id); setPeriodMenu(false) }}>{option.label}{period === option.id ? <span>✓</span> : null}</button>)}</div> : null}
         </div>
       </div>
-      <div className={fm.reportTabs} role="tablist">{reportBlocks.map((block, index) => <button key={block.title} type="button" role="tab" aria-selected={reportView === index} data-active={reportView === index} onClick={() => { setReportView(index); setReportPick(null) }}>{['Despesas', 'Receitas', 'Contas e cartões', 'Fixas × variáveis'][index] || block.title}</button>)}</div>
-      {barBlock(reportBlocks[Math.min(reportView, reportBlocks.length - 1)])}
+      {(() => {
+        const topOf = (index: number) => reportBlocks[index].slices.slice(0, 3)
+        const line = (name: string, value: string, key?: string) => <div className={fm.ovLine} key={key || name}><span>{name}</span><b>{value}</b></div>
+        const sub = (list: Slice[], tone: 'in' | 'out') => list.length ? list.map(slice => line(slice.name, money.format(slice.value))) : [<div className={fm.empty} key="empty">Sem dados no período.</div>]
+        return <div className={fm.overview}>
+          <section className={fm.ovCard}><small>Receitas</small><b data-tone="in">{money.format(reportIncome)}</b>{sub(topOf(1), 'in')}</section>
+          <section className={fm.ovCard}><small>Despesas</small><b data-tone="out">{money.format(reportExpense)}</b>{sub(topOf(0), 'out')}</section>
+          <section className={fm.ovCard}><small>Cartões</small><b data-tone="card">{money.format(reportInvoice)}</b>{cards.length ? cards.map(card => line(String(card.nome || 'Cartão'), clampMoney(card.limite) ? `${money.format(cardAvailable(card))} disp.` : money.format(cardInvoice(card, monthItems, month)))) : <div className={fm.empty}>Nenhum cartão.</div>}</section>
+          <section className={fm.ovCard}><small>Contas</small><b>{money.format(realBalance)}</b>{accounts.length ? accounts.map(account => line(String(account.nome || 'Conta'), money.format(accountBalance(account)))) : <div className={fm.empty}>Nenhuma conta.</div>}</section>
+        </div>
+      })()}
     </> : null}
 
     {quick.element}
