@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type { MaiState } from '../../lib/v2/state-model'
 import { authedFetch } from '../../lib/v2/sync'
 import fm from './FinanceModern.module.css'
@@ -54,7 +54,10 @@ function loadWidget() {
   return widgetLoading
 }
 
-export function OpenFinancePanel({ state, commit, accounts, cards }: { state: MaiState; commit: Commit; accounts: Row[]; cards: Row[] }) {
+const AUTO_MINUTES = 15
+
+/** Estado + ações do Open Finance. Roda no módulo inteiro: sincroniza sozinho, sem precisar abrir a aba Contas. */
+export function useOpenFinance(state: MaiState, commit: Commit) {
   const data = useMemo(() => readOpenFinance(state), [state])
   const [busy, setBusy] = useState<'' | 'connect' | 'sync'>('')
   const [message, setMessage] = useState('')
@@ -68,8 +71,8 @@ export function OpenFinancePanel({ state, commit, accounts, cards }: { state: Ma
     return json
   }
 
-  async function sync(itemIds: string[]) {
-    setBusy('sync'); setMessage('')
+  async function sync(itemIds: string[], silent = false) {
+    setBusy('sync'); if (!silent) setMessage('')
     try {
       const from = data.itens.some(item => item.ultimaSync) ? new Date(Date.now() - 14 * 86400_000).toISOString().slice(0, 10) : new Date(Date.now() - 90 * 86400_000).toISOString().slice(0, 10)
       const json = await api('/api/pluggy/sync', { itemIds, from })
@@ -84,9 +87,10 @@ export function OpenFinancePanel({ state, commit, accounts, cards }: { state: Ma
       })
       const waiting = items.filter(item => !['UPDATED', 'PARTIAL_SUCCESS'].includes(item.status))
       const count = items.reduce((sum, item) => sum + item.transactions.length, 0)
-      setMessage(json.errors?.length ? `Falha em ${json.errors.length} conexão(ões): ${json.errors[0].error}` : waiting.length ? 'O banco ainda está atualizando os dados. Tente de novo em instantes.' : `Sincronizado. ${count} movimentos lidos no período.`)
+      const text = json.errors?.length ? `Falha em ${json.errors.length} conexão(ões): ${json.errors[0].error}` : waiting.length ? 'O banco ainda está atualizando os dados. Tente de novo em instantes.' : `Sincronizado. ${count} movimentos lidos no período.`
+      if (!silent || json.errors?.length) setMessage(text)
     } catch (error: any) {
-      setMessage(error?.message || 'Falha ao sincronizar')
+      if (!silent) setMessage(error?.message || 'Falha ao sincronizar')
     } finally { setBusy('') }
   }
 
@@ -156,6 +160,34 @@ export function OpenFinancePanel({ state, commit, accounts, cards }: { state: Ma
     patchOpenFinance(commit, current => ({ data: { ...current, itens: current.itens.filter(i => i.itemId !== itemId), contas: current.contas.filter(c => c.itemId !== itemId), pendentes: current.pendentes.filter(p => p.itemId !== itemId) } }))
   }
 
+  // Sincronização automática: ao abrir, a cada 15 min e quando o app volta ao primeiro plano.
+  const latest = useRef({ data, busy, sync })
+  latest.current = { data, busy, sync }
+  const lastAttempt = useRef(0)
+  useEffect(() => {
+    const tick = () => {
+      const { data: current, busy: working, sync: run } = latest.current
+      if (working !== '' || !current.itens.length || document.visibilityState === 'hidden') return
+      const now = Date.now()
+      if (now - lastAttempt.current < 60_000) return // evita laço se o banco der erro
+      const stale = current.itens.some(item => !item.ultimaSync || now - Date.parse(item.ultimaSync) > AUTO_MINUTES * 60_000)
+      if (!stale) return
+      lastAttempt.current = now
+      void run(current.itens.map(item => item.itemId), true)
+    }
+    tick()
+    const timer = window.setInterval(tick, 60_000)
+    document.addEventListener('visibilitychange', tick)
+    return () => { window.clearInterval(timer); document.removeEventListener('visibilitychange', tick) }
+  }, [])
+
+  return { data, busy, message, sync, connect, link, importOne, ignore, disconnect, match }
+}
+
+export type OpenFinanceController = ReturnType<typeof useOpenFinance>
+
+export function OpenFinancePanel({ ctl, accounts, cards }: { ctl: OpenFinanceController; accounts: Row[]; cards: Row[] }) {
+  const { data, busy, message, sync, connect, link, importOne, ignore, disconnect, match } = ctl
   const readyPending = data.pendentes.filter(p => !(data.contas.find(c => c.id === p.accountId)?.tipo === 'cartao' && p.tipo === 'receita'))
   const targets = [...accounts.map(a => ({ id: String(a.id), label: String(a.nome) })), ...cards.map(c => ({ id: `card|${c.id}`, label: `${c.nome} (cartão)` }))]
   const last = data.itens.map(i => i.ultimaSync).filter(Boolean).sort().pop()
