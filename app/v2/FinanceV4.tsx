@@ -243,7 +243,7 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
   }
 
   // Open Finance: saldo das contas e limite dos cartões seguem o banco
-  useEffect(() => { openFinance.applyBalances(account => accountBalance(account) - Number(account.saldo_inicial || 0)) }) // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { openFinance.applyBalances(account => accountBalance(account) - Number(account.saldo_inicial || 0), account => transactions.filter(item => item.ajuste_fatura === true && String(item.conta_pagamento_id || '') === String(account.id)).reduce((sum, item) => sum + clampMoney(item.valor_pago), 0)) }) // eslint-disable-line react-hooks/exhaustive-deps
 
   const monthFixed = fixedForMonthAt(month)
   const monthTxRaw = transactions.filter(item => itemMonth(item) === month)
@@ -559,6 +559,10 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
     }
     if (item.status === 'pago') { applyPayments([], 0, 'pendente'); return }
     if (!total) return
+    if (item.ajuste_fatura === true) { // fatura: pagar pelo fluxo do cartão (pergunta o valor, debita a conta, atualiza limite)
+      const invoiceCard = cards.find(entry => String(entry.id) === String(item.ajuste_fatura_card_id || item.cartao_id || ''))
+      if (invoiceCard) { await payInvoice(invoiceCard, itemMonth(item)); return }
+    }
     let amount = current.remaining
     if (item.tipo === 'receita' && current.remaining > 0) {
       const full = await askConfirm({ title: 'Recebeu o valor todo?', message: `Valor a receber: ${money.format(current.remaining)}.`, confirmLabel: 'Sim, o valor todo', cancelLabel: 'Outro valor', icon: 'payments' })
@@ -640,12 +644,12 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
     if (Math.abs(diff) < 0.01) return
     commit(current => ({ ...current, finance: { ...current.finance, transactions: [{ id: uid('fin'), titulo: 'Ajuste de saldo', valor: Math.abs(diff), valor_pago: Math.abs(diff), tipo: diff >= 0 ? 'receita' : 'despesa', categoria: 'Ajuste', conta_id: account.id, cartao_id: '', data: today, status: 'pago', observacao: 'Conciliação bancária', pagamentos: [{ id: uid('pay'), data: today, valor: Math.abs(diff) }], anexos: [], ignorar_calculo: false, recorrencia: 'unico' }, ...rows(current.finance.transactions)] } }))
   }
-  const invoicePurchases = (cardId: string) => viewItems.filter(item => !item.ajuste_fatura && !item.ignorar_calculo && item.tipo !== 'receita' && (String(item.conta_id || '') === `card|${cardId}` || String(item.cartao_id || '') === cardId)).reduce((sum, item) => sum + clampMoney(item.valor), 0)
-  const invoiceRow = (list: Row[], cardId: string) => list.find(item => item.ajuste_fatura === true && String(item.ajuste_fatura_card_id || item.cartao_id || '') === cardId && String(item.competencia_fatura || dateKey(item.data).slice(0, 7)) === viewMonth)
-  const invoiceBase = (card: Row, existing?: Row): Row => ({ ...(existing || {}), id: existing?.id || uid('invoice'), titulo: `Fatura ${String(card.nome || 'Cartão')}`, tipo: 'despesa', data: existing?.data || monthDateForDay(viewMonth, Number(card.vencimento || 10)), categoria: 'Fatura do cartão', conta_id: `card|${String(card.id)}`, cartao_id: String(card.id), conta_pagamento_id: String(card.conta_id || ''), anexos: rows(existing?.anexos), ignorar_calculo: true, recorrencia: 'unico', ajuste_fatura: true, ajuste_fatura_card_id: String(card.id), competencia_fatura: viewMonth })
-  const saveInvoice = (card: Row, change: (existing: Row | undefined) => Row) => commit(currentState => {
+  const invoicePurchases = (cardId: string, source: Row[] = viewItems) => source.filter(item => !item.ajuste_fatura && !item.ignorar_calculo && item.tipo !== 'receita' && (String(item.conta_id || '') === `card|${cardId}` || String(item.cartao_id || '') === cardId)).reduce((sum, item) => sum + clampMoney(item.valor), 0)
+  const invoiceRow = (list: Row[], cardId: string, m: string = viewMonth) => list.find(item => item.ajuste_fatura === true && String(item.ajuste_fatura_card_id || item.cartao_id || '') === cardId && String(item.competencia_fatura || dateKey(item.data).slice(0, 7)) === m)
+  const invoiceBase = (card: Row, existing?: Row, m: string = viewMonth): Row => ({ ...(existing || {}), id: existing?.id || uid('invoice'), titulo: `Fatura ${String(card.nome || 'Cartão')}`, tipo: 'despesa', data: existing?.data || monthDateForDay(m, Number(card.vencimento || 10)), categoria: 'Fatura do cartão', conta_id: `card|${String(card.id)}`, cartao_id: String(card.id), conta_pagamento_id: String(card.conta_id || existing?.conta_pagamento_id || ''), anexos: rows(existing?.anexos), ignorar_calculo: true, recorrencia: 'unico', ajuste_fatura: true, ajuste_fatura_card_id: String(card.id), competencia_fatura: m })
+  const saveInvoice = (card: Row, change: (existing: Row | undefined) => Row, m: string = viewMonth) => commit(currentState => {
     const list = rows(currentState.finance.transactions)
-    const existing = invoiceRow(list, String(card.id))
+    const existing = invoiceRow(list, String(card.id), m)
     const next = change(existing)
     return { ...currentState, finance: { ...currentState.finance, transactions: existing ? list.map(item => String(item.id) === String(existing.id) ? next : item) : [next, ...list] } }
   })
@@ -660,10 +664,11 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
     const delta = value - invoicePurchases(String(card.id))
     saveInvoice(card, existing => { const base = invoiceBase(card, existing); const paid = Math.min(value, clampMoney(existing?.valor_pago)); return { ...base, ajuste_delta: delta, valor: value, valor_pago: paid, pagamentos: rows(existing?.pagamentos), status: statusOf(value, paid) } })
   }
-  async function payInvoice(card: Row) {
+  async function payInvoice(card: Row, m: string = viewMonth) {
     const cardId = String(card.id)
-    const total = cardInvoice(card, viewItems)
-    const paidBefore = clampMoney(invoiceRow(viewItems, cardId)?.valor_pago)
+    const list = m === viewMonth ? viewItems : transactions.filter(item => itemMonth(item) === m)
+    const total = cardInvoice(card, list, m)
+    const paidBefore = clampMoney(invoiceRow(list, cardId, m)?.valor_pago)
     const remaining = Math.max(0, total - paidBefore)
     if (remaining <= 0) { void notify('Esta fatura já está paga.'); return }
     let amount = remaining
@@ -676,13 +681,16 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
       if (parsed - remaining > 0.005) { void notify(`O valor não pode passar de ${money.format(remaining)}.`); return }
       amount = parsed
     }
-    const delta = total - invoicePurchases(cardId)
+    const delta = total - invoicePurchases(cardId, list)
+    // a conta que paga: a do cartão ("Pagar com") ou, se só existir uma conta, ela
+    const payAccount = String(card.conta_id || invoiceRow(list, cardId, m)?.conta_pagamento_id || (accounts.length === 1 ? accounts[0].id : ''))
+    if (!payAccount) void notify('Defina "Pagar com" no cartão para o pagamento sair do saldo de uma conta.')
     saveInvoice(card, existing => {
-      const base = invoiceBase(card, existing)
+      const base = { ...invoiceBase(card, existing, m), conta_pagamento_id: payAccount }
       const payments = [...rows(existing?.pagamentos), { id: uid('pay'), data: today, valor: amount }]
       const paid = Math.min(total, payments.reduce((sum, payment) => sum + clampMoney(payment.valor), 0))
       return { ...base, ajuste_delta: existing?.ajuste_delta ?? delta, valor: total, valor_pago: paid, pagamentos: payments, status: statusOf(total, paid) }
-    })
+    }, m)
   }
   function showOrigin(origin: string) {
     commit(current => {
