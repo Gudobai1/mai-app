@@ -38,7 +38,8 @@ export async function createConnectToken(updateItemId?: string) {
 
 type Paged<T> = { results: T[]; totalPages?: number; page?: number }
 type PluggyItem = { id: string; status?: string; connector?: { name?: string; imageUrl?: string }; lastUpdatedAt?: string }
-type PluggyAccount = { id: string; type?: string; subtype?: string; name?: string; number?: string; balance?: number; currencyCode?: string; creditData?: { availableCreditLimit?: number; creditLimit?: number } | null }
+type PluggyAccount = { id: string; type?: string; subtype?: string; name?: string; number?: string; balance?: number; currencyCode?: string; creditData?: { availableCreditLimit?: number; creditLimit?: number; balanceCloseDate?: string | null; balanceDueDate?: string | null } | null }
+type PluggyBill = { id: string; dueDate?: string | null; totalAmount?: number | null }
 type PluggyInvestment = { id: string; name?: string; type?: string; subtype?: string; balance?: number; value?: number; amount?: number; amountOriginal?: number | null; amountProfit?: number | null; institution?: { name?: string } | null; code?: string | null }
 type PluggyTransaction = { id: string; accountId: string; date: string; description?: string; descriptionRaw?: string | null; type?: 'DEBIT' | 'CREDIT'; amount: number; status?: string; category?: string | null; creditCardMetadata?: { installmentNumber?: number; totalInstallments?: number } | null }
 
@@ -46,7 +47,8 @@ export type SyncedItem = {
   itemId: string
   banco: string
   status: string
-  accounts: { id: string; nome: string; tipo: 'conta' | 'cartao'; saldo: number; limite: number; limite_disponivel: number }[]
+  accounts: { id: string; nome: string; tipo: 'conta' | 'cartao'; saldo: number; limite: number; limite_disponivel: number; vencimento_dia: number; fechamento_dia: number }[]
+  bills: { id: string; accountId: string; dueDate: string; total: number }[]
   investments: { id: string; nome: string; tipo: string; valor_atual: number; aportado: number }[]
   transactions: { id: string; accountId: string; data: string; titulo: string; valor: number; tipo: 'receita' | 'despesa'; pendente: boolean; categoria: string; parcela: string }[]
 }
@@ -81,7 +83,7 @@ async function allInvestments(itemId: string) {
 
 export async function syncItem(itemId: string, from: string): Promise<SyncedItem> {
   const item = await call<PluggyItem>(`/items/${encodeURIComponent(itemId)}`)
-  const base: SyncedItem = { itemId, banco: item.connector?.name || 'Banco', status: item.status || 'UNKNOWN', accounts: [], investments: [], transactions: [] }
+  const base: SyncedItem = { itemId, banco: item.connector?.name || 'Banco', status: item.status || 'UNKNOWN', accounts: [], bills: [], investments: [], transactions: [] }
   if (item.status && !['UPDATED', 'PARTIAL_SUCCESS'].includes(item.status)) return base
   try {
     for (const inv of await allInvestments(itemId)) {
@@ -100,7 +102,15 @@ export async function syncItem(itemId: string, from: string): Promise<SyncedItem
       saldo: Number(account.balance || 0),
       limite: Number(account.creditData?.creditLimit || 0),
       limite_disponivel: Number(account.creditData?.availableCreditLimit || 0),
+      vencimento_dia: Number(String(account.creditData?.balanceDueDate || '').slice(8, 10)) || 0,
+      fechamento_dia: Number(String(account.creditData?.balanceCloseDate || '').slice(8, 10)) || 0,
     })
+    if (credit) {
+      try {
+        const bills = await call<Paged<PluggyBill>>(`/bills?accountId=${encodeURIComponent(account.id)}`)
+        for (const bill of bills.results) if (bill.dueDate && bill.totalAmount != null) base.bills.push({ id: bill.id, accountId: account.id, dueDate: String(bill.dueDate).slice(0, 10), total: Math.abs(Number(bill.totalAmount)) })
+      } catch { /* faturas são opcionais: sem elas, a fatura aberta soma as compras da janela */ }
+    }
     for (const tx of await allTransactions(account.id, from)) {
       const credit_in = tx.type === 'CREDIT'
       // Em cartão a Pluggy manda compras como DEBIT; pagamentos/estornos como CREDIT.

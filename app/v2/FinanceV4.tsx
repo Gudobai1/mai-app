@@ -112,6 +112,9 @@ function cleanPayments(value: unknown, fallbackDate = '') {
   })).filter(payment => payment.valor > 0)
 }
 
+/** Mês em que o lançamento conta: compras de cartão do Open Finance seguem a fatura (começa no vencimento anterior); o resto, a data. */
+const itemMonth = (item: Row) => item.pluggy_id && !item.ajuste_fatura && item.competencia_fatura ? String(item.competencia_fatura) : dateKey(item.data).slice(0, 7)
+
 function paymentState(item: Row, value: unknown = item.pagamentos) {
   const total = clampMoney(item.valor)
   const payments = cleanPayments(value, dateKey(item.data))
@@ -243,7 +246,7 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
   useEffect(() => { openFinance.applyBalances(account => accountBalance(account) - Number(account.saldo_inicial || 0)) }) // eslint-disable-line react-hooks/exhaustive-deps
 
   const monthFixed = fixedForMonthAt(month)
-  const monthTxRaw = transactions.filter(item => dateKey(item.data).slice(0, 7) === month)
+  const monthTxRaw = transactions.filter(item => itemMonth(item) === month)
   const monthTx = monthTxRaw.map(item => {
     if (item.ajuste_fatura !== true || item.ajuste_delta === undefined) return item
     const cardId = String(item.ajuste_fatura_card_id || item.cartao_id || '')
@@ -257,7 +260,7 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
   const viewItems: Row[] = (() => {
     if (viewMonth === month) return monthItems
     const fx = fixedForMonthAt(viewMonth)
-    const raw = transactions.filter(item => dateKey(item.data).slice(0, 7) === viewMonth)
+    const raw = transactions.filter(item => itemMonth(item) === viewMonth)
     const tx = raw.map(item => {
       if (item.ajuste_fatura !== true || item.ajuste_delta === undefined) return item
       const cardId = String(item.ajuste_fatura_card_id || item.cartao_id || '')
@@ -717,7 +720,7 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
   }), [monthItems, typeFilter, statusFilter, categoryFilter, originFilter, order, today])
 
   function monthTotals(key: string) {
-    const items: Row[] = [...transactions.filter(item => dateKey(item.data).slice(0, 7) === key), ...fixedForMonthAt(key)]
+    const items: Row[] = [...transactions.filter(item => itemMonth(item) === key), ...fixedForMonthAt(key)]
     const calc = items.filter(item => !item.ignorar_calculo)
     const income = calc.filter(item => item.tipo === 'receita').reduce((sum, item) => sum + clampMoney(item.valor), 0)
     const invoice = cards.reduce((sum, card) => {
@@ -1055,6 +1058,7 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
           setDraft({ ...draft, pluggy_id: bank.id, nome: String(draft.nome || '').trim() ? draft.nome : suggestedName(bank, openFinance.data.contas), ...(kind === 'account' ? { saldo_inicial: 0 } : { limite: bank.limite || bank.limite_disponivel || 0 }) })
         })}
         {draft.pluggy_id ? <SideField label={kind === 'card' ? 'Limite no banco' : 'Saldo no banco'} icon="account_balance" color="var(--ds-accent)"><input readOnly value={ofInfo ? money.format(kind === 'card' ? ofInfo.limite : ofInfo.saldo) : 'Aguardando sincronização'} /></SideField> : null}
+        {draft.pluggy_id && ofInfo ? <SideField label="Sincronização" icon="sync" color="var(--ds-accent)"><button type="button" className={ic.inlineAction} disabled={openFinance.busy !== ''} onClick={() => void openFinance.sync([ofInfo.itemId])}>{openFinance.busy === 'sync' ? 'Sincronizando…' : 'Sincronizar agora'}</button></SideField> : null}
         {draft.pluggy_id && ofInfo?.atualizado ? <SideField label="Atualizado" icon="schedule" color="var(--ds-muted)"><input readOnly value={new Date(ofInfo.atualizado).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })} /></SideField> : null}
       </> : null
 
