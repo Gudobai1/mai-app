@@ -458,7 +458,7 @@ export function TodayModern({ state, today, commit, navigate, inspect, options, 
   const finance = state.finance || {}
   const transactions = rows(finance.transactions).filter(item => {
     const due = dateKey(item.data)
-    return Boolean(due) && (isToday ? due <= today : due === day) && !item.ignorar_calculo && !isPaid(item.status) && !(item.pluggy_id && item.status !== 'pendente') && item.ocultar_inicio !== true && item.ocultar_home !== true
+    return Boolean(due) && (isToday ? due <= today : due === day) && !item.ignorar_calculo && !isPaid(item.status) && !(item.pluggy_id && !item.of_linked) && item.ocultar_inicio !== true && item.ocultar_home !== true
   }).sort((a, b) => dateKey(a.data).localeCompare(dateKey(b.data)))
 
   function toggleFinancePaid(item: Row) {

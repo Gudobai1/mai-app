@@ -112,8 +112,10 @@ function importPending(list: Pending[], links: Record<string, string>, rows: Row
 
 /** Investimentos do banco viram investimentos normais do app (atualiza valor e aportado a cada sincronização). */
 function upsertInvestments(current: Row[], items: { banco: string; investments?: any[] }[]) {
-  const next = [...current]
+  // do banco, só o que tem saldo ou aporte: posições zeradas saem (e voltam sozinhas se ganharem saldo)
+  const next = current.filter(row => !row.pluggy_id || num(row.valor_atual) > 0.005 || num(row.aportado) > 0.005 || (Array.isArray(row.movimentos) && row.movimentos.length > 0))
   for (const item of items) for (const inv of item.investments || []) {
+    if (num(inv.valor_atual) <= 0.005 && num(inv.aportado) <= 0.005 && !next.some(row => row.pluggy_id === inv.id)) continue
     const index = next.findIndex(row => row.pluggy_id === inv.id)
     if (index >= 0) next[index] = { ...next[index], aportado: cents(num(inv.aportado)), valor_atual: cents(num(inv.valor_atual)) }
     else next.push({ id: uid('inv'), pluggy_id: inv.id, nome: inv.nome, tipo: inv.tipo, instituicao: shortName(item.banco), icone: 'trending_up', cor: '#4073FF', foto: '', aportado: cents(num(inv.aportado)), valor_atual: cents(num(inv.valor_atual)), observacao: 'Open Finance', movimentos: [] })
