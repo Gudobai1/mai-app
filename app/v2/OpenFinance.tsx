@@ -125,45 +125,55 @@ const monthOf = (date: string) => date.slice(0, 7)
 const nextMonth = (month: string) => { const [y, m] = month.split('-').map(Number); return m === 12 ? `${y + 1}-01` : `${y}-${String(m + 1).padStart(2, '0')}` }
 const dueOf = (month: string, day: number) => { const [y, m] = month.split('-').map(Number); return `${month}-${String(Math.min(day, new Date(y, m, 0).getDate())).padStart(2, '0')}` }
 
-/** Mês da fatura de uma compra: a fatura do mês começa no vencimento da anterior (janela (venc. anterior, venc.]). */
-function invoiceMonthOf(date: string, dues: string[], dueDay: number) {
-  const hit = dues.find(due => date <= due)
-  if (hit) return monthOf(hit)
-  let month = dues.length ? nextMonth(monthOf(dues[dues.length - 1])) : monthOf(date)
-  for (let guard = 0; guard < 36 && date > dueOf(month, dueDay); guard += 1) month = nextMonth(month)
-  return month
+/** Mês (do vencimento) da fatura de uma data. O ciclo vai do fechamento anterior (inclusive) ao fechamento (exclusive), como no extrato do banco. */
+function invoiceMonthOf(date: string, closingDay: number, dueDay: number) {
+  const closingMonth = Number(date.slice(8, 10)) >= closingDay ? nextMonth(monthOf(date)) : monthOf(date)
+  return dueDay > closingDay ? closingMonth : nextMonth(closingMonth)
 }
 
-/** Cartões do banco: valor da fatura vem direto da Pluggy (sem recalcular) e as compras caem na fatura certa. */
-function applyCardBills(rows: Row[], cards: Row[], links: Record<string, string>, bank: BankAccount[], items: { bills?: { id: string; accountId: string; dueDate: string; total: number }[] }[]) {
+type BillInfo = { id: string; accountId: string; dueDate: string; total: number }
+
+/**
+ * Cartões do banco: valor das faturas fechadas vem direto da Pluggy (sem recalcular); cada compra entra na fatura que o banco indica
+ * (ou, sem essa informação, no ciclo do fechamento). A fatura aberta não existe na Pluggy: vale compras do ciclo menos pagamentos já feitos nele.
+ */
+function applyCardBills(rows: Row[], cards: Row[], links: Record<string, string>, bank: BankAccount[], items: { bills?: BillInfo[]; transactions: any[] }[]) {
   let nextRows = rows
+  const cardIds = new Set(cards.map(card => String(card.id)))
   const nextCards = cards.map(card => {
     const bankCard = bank.find(b => b.tipo === 'cartao' && links[b.id] === `card|${card.id}`)
     if (!bankCard) return card
     const cardId = String(card.id)
+    const closingDay = Number(card.fechamento) || Number(bankCard.fechamento_dia) || 1
+    const dueDay = Number(card.vencimento) || Number(bankCard.vencimento_dia) || 10
     const bills = items.flatMap(item => item.bills || []).filter(bill => bill.accountId === bankCard.id).sort((a, b) => a.dueDate.localeCompare(b.dueDate))
-    const dueDay = Number(bankCard.vencimento_dia) || Number(card.vencimento) || 10
-    const dues = bills.map(bill => bill.dueDate)
     const billMonth = new Map(bills.map(bill => [bill.id, monthOf(bill.dueDate)]))
-    const linked = nextRows.some(tx => tx.pluggy_id && !tx.ajuste_fatura && String(tx.cartao_id) === cardId && tx.fatura_bill_id)
-    const lastBill = bills.length ? monthOf(bills[bills.length - 1].dueDate) : ''
-    // compra com fatura emitida: mês da fatura do banco. Sem fatura ainda (aberta): próxima fatura depois da última emitida. Sem vínculo nenhum: janela que começa no vencimento anterior.
-    const monthFor = (tx: Row) => {
-      const date = String(tx.data).slice(0, 10)
-      if (tx.fatura_bill_id && billMonth.has(tx.fatura_bill_id)) return billMonth.get(tx.fatura_bill_id) as string
-      if (!linked) return invoiceMonthOf(date, dues, dueDay)
-      let month = lastBill ? nextMonth(lastBill) : monthOf(date)
-      for (let guard = 0; guard < 36 && date > dueOf(month, dueDay); guard += 1) month = nextMonth(month)
-      return month
-    }
+    const monthFor = (tx: { data: string; fatura_bill_id?: string; billId?: string }) => billMonth.get(String(tx.fatura_bill_id || tx.billId || '')) || invoiceMonthOf(String(tx.data).slice(0, 10), closingDay, dueDay)
     nextRows = nextRows.map(tx => tx.pluggy_id && !tx.ajuste_fatura && String(tx.cartao_id) === cardId ? { ...tx, competencia_fatura: monthFor(tx) } : tx)
+
     for (const bill of bills) {
       const month = monthOf(bill.dueDate)
       const index = nextRows.findIndex(tx => tx.ajuste_fatura === true && String(tx.ajuste_fatura_card_id || tx.cartao_id || '') === cardId && String(tx.competencia_fatura || monthOf(String(tx.data))) === month)
       if (index >= 0) { nextRows = nextRows.map((tx, i) => i === index ? { ...tx, valor: cents(bill.total), pluggy_bill: bill.id, data: bill.dueDate, ajuste_delta: undefined } : tx); continue }
       nextRows = [...nextRows, { id: uid('invoice'), pluggy_bill: bill.id, titulo: `Fatura ${String(card.nome || 'Cartão')}`, tipo: 'despesa', data: bill.dueDate, valor: cents(bill.total), valor_pago: 0, status: 'pendente', pagamentos: [], categoria: 'Fatura do cartão', conta_id: `card|${cardId}`, cartao_id: cardId, conta_pagamento_id: String(card.conta_id || ''), anexos: [], ignorar_calculo: true, recorrencia: 'unico', ajuste_fatura: true, ajuste_fatura_card_id: cardId, competencia_fatura: month }]
     }
-    return { ...card, vencimento: dueDay, ...(bankCard.fechamento_dia ? { fechamento: bankCard.fechamento_dia } : {}) }
+
+    // fatura aberta: o banco ainda não emitiu
+    const today = new Date()
+    const todayKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
+    const openMonth = invoiceMonthOf(todayKey, closingDay, dueDay)
+    if (!billMonth.size || ![...billMonth.values()].includes(openMonth)) {
+      const purchases = nextRows.filter(tx => tx.pluggy_id && !tx.ajuste_fatura && String(tx.cartao_id) === cardId && !tx.ignorar_calculo && tx.tipo !== 'receita' && tx.competencia_fatura === openMonth).reduce((sum, tx) => sum + num(tx.valor), 0)
+      const previousTotals = bills.map(bill => cents(bill.total))
+      const credits = items.flatMap(item => item.transactions).filter(tx => tx.accountId === bankCard.id && tx.tipo === 'receita' && monthFor({ data: tx.data, billId: tx.billId }) === openMonth && !previousTotals.some(total => Math.abs(total - num(tx.valor)) < 0.015)).reduce((sum, tx) => sum + num(tx.valor), 0)
+      const net = Math.max(0, cents(purchases - credits))
+      const index = nextRows.findIndex(tx => tx.ajuste_fatura === true && String(tx.ajuste_fatura_card_id || tx.cartao_id || '') === cardId && String(tx.competencia_fatura || monthOf(String(tx.data))) === openMonth)
+      if (index < 0) nextRows = [...nextRows, { id: uid('invoice'), pluggy_open: true, titulo: `Fatura ${String(card.nome || 'Cartão')}`, tipo: 'despesa', data: dueOf(openMonth, dueDay), valor: net, valor_pago: 0, status: 'pendente', pagamentos: [], categoria: 'Fatura do cartão', conta_id: `card|${cardId}`, cartao_id: cardId, conta_pagamento_id: String(card.conta_id || ''), anexos: [], ignorar_calculo: true, recorrencia: 'unico', ajuste_fatura: true, ajuste_fatura_card_id: cardId, competencia_fatura: openMonth }]
+      else if (nextRows[index].pluggy_open) nextRows = nextRows.map((tx, i) => i === index ? { ...tx, valor: net, ajuste_delta: undefined } : tx)
+      // cópia manual antiga dessa mesma fatura, de um cartão que já não existe: era o mesmo valor, sai para não contar duas vezes
+      nextRows = nextRows.filter(tx => !(tx.ajuste_fatura === true && !tx.pluggy_open && !tx.pluggy_bill && !cardIds.has(String(tx.ajuste_fatura_card_id || tx.cartao_id || '')) && String(tx.competencia_fatura || monthOf(String(tx.data))) === openMonth && Math.abs(num(tx.valor) - net) < 0.015))
+    }
+    return card
   })
   return { cards: nextCards, transactions: nextRows }
 }
@@ -221,7 +231,12 @@ export function useOpenFinance(state: MaiState, commit: Commit) {
         const remote = new Map<string, Set<string>>()
         for (const item of items) for (const tx of item.transactions) { const set = remote.get(tx.accountId) || new Set<string>(); set.add(tx.id); remote.set(tx.accountId, set) }
         const linksNow = current.vinculos
-        const rows = cleaned.filter(tx => {
+        const remoteById = new Map<string, any>()
+        for (const item of items) for (const tx of item.transactions) remoteById.set(tx.id, tx)
+        const rows = cleaned.map(tx => {
+          const hit = tx.pluggy_id && tx.observacao === 'Open Finance' ? remoteById.get(String(tx.pluggy_id)) : null
+          return hit ? { ...tx, valor: hit.valor, data: hit.data, fatura_bill_id: hit.billId || '' } : tx
+        }).filter(tx => {
           if (!tx.pluggy_id || tx.observacao !== 'Open Finance' || String(tx.data).slice(0, 10) < from) return true
           const owner = Object.keys(linksNow).find(id => linksNow[id] === String(tx.conta_id) && remote.has(id))
           return !owner || remote.get(owner)!.has(String(tx.pluggy_id))

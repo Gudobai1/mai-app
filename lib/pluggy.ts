@@ -41,7 +41,7 @@ type PluggyItem = { id: string; status?: string; connector?: { name?: string; im
 type PluggyAccount = { id: string; type?: string; subtype?: string; name?: string; number?: string; balance?: number; currencyCode?: string; creditData?: { availableCreditLimit?: number; creditLimit?: number; balanceCloseDate?: string | null; balanceDueDate?: string | null } | null }
 type PluggyBill = { id: string; dueDate?: string | null; totalAmount?: number | null }
 type PluggyInvestment = { id: string; name?: string; type?: string; subtype?: string; balance?: number; value?: number; amount?: number; amountOriginal?: number | null; amountProfit?: number | null; institution?: { name?: string } | null; code?: string | null }
-type PluggyTransaction = { id: string; accountId: string; date: string; description?: string; descriptionRaw?: string | null; type?: 'DEBIT' | 'CREDIT'; amount: number; status?: string; category?: string | null; creditCardMetadata?: { installmentNumber?: number; totalInstallments?: number; billId?: string | null } | null }
+type PluggyTransaction = { id: string; accountId: string; date: string; description?: string; descriptionRaw?: string | null; type?: 'DEBIT' | 'CREDIT'; amount: number; amountInAccountCurrency?: number | null; status?: string; category?: string | null; creditCardMetadata?: { installmentNumber?: number; totalInstallments?: number; billId?: string | null } | null }
 
 export type SyncedItem = {
   itemId: string
@@ -119,7 +119,7 @@ export async function syncItem(itemId: string, from: string): Promise<SyncedItem
         accountId: account.id,
         data: String(tx.date).slice(0, 10),
         titulo: String(tx.description || tx.descriptionRaw || 'Sem descrição').trim(),
-        valor: Math.abs(Number(tx.amount || 0)),
+        valor: Math.abs(Number(tx.amountInAccountCurrency ?? tx.amount ?? 0)), // compra em dólar: vale o valor em reais que o banco cobrou
         tipo: credit_in ? 'receita' : 'despesa',
         pendente: tx.status === 'PENDING',
         categoria: String(tx.category || ''),
