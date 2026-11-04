@@ -984,19 +984,6 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
   const calIcon = <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="2.5" /><path d="M3.5 10h17M8 3v4M16 3v4" /></svg>
   const dueTone = (key: string) => key < today ? 'late' : key === today ? 'today' : 'future'
   const periodOptions: { id: typeof period; label: string }[] = [{ id: 'month', label: 'Mensal' }, { id: '3', label: 'Últimos 3 meses' }, { id: '6', label: 'Últimos 6 meses' }, { id: 'year', label: 'Este ano' }, { id: 'custom', label: 'Personalizado' }]
-  const originalBlock = (block: typeof reportBlocks[number]) => <section className={fm.reportBlock} key={block.title}>
-    <div className={fm.reportTitle}><strong>{block.title}</strong><span>{money.format(block.total)}</span></div>
-    <div className={fm.barList}>{block.slices.map(slice => {
-      const percent = block.total ? slice.value / block.total * 100 : 0
-      const pickKey = `${block.title}|${slice.name}`
-      const open = reportPick === pickKey
-      const sliceItems = open ? block.items.filter(item => block.keyOf(item) === slice.name).slice().sort((a, b) => String(b.data).localeCompare(String(a.data))) : []
-      return <div className={fm.barRow} key={slice.name}>
-        <button type="button" className={fm.barPick} aria-expanded={open} onClick={() => setReportPick(open ? null : pickKey)}><div className={fm.barTop}><span className={fm.barName}>{slice.name}</span><span className={fm.barPct}>{percent.toFixed(1).replace('.', ',')}%</span><span className={fm.barValue} data-tone={block.tone}>{money.format(slice.value)}</span></div><div className={fm.barTrack}><div style={{ width: `${percent}%`, background: slice.color }} /></div></button>
-        {open ? <div className={fm.reportList}>{sliceItems.slice(0, 80).map(item => <button type="button" key={`${item._isFixed ? 'f' : 't'}-${String(item.id)}-${dateKey(item.data)}`} onClick={() => openTransaction(item)}><span className={fm.reportItemText}><b>{String(item.titulo || 'Lançamento')}</b><small>{naturalDate(dateKey(item.data), today)} · {originName(item.conta_id || (item.cartao_id ? `card|${item.cartao_id}` : ''), accounts, cards)}</small></span><span className={fm.reportItemValue} data-tone={block.tone}>{money.format(clampMoney(item.valor))}</span></button>)}{sliceItems.length > 80 ? <div className={fm.empty}>Mostrando os 80 mais recentes.</div> : null}</div> : null}
-      </div>
-    })}{!block.slices.length ? <div className={fm.empty}>Sem dados no período.</div> : null}</div>
-  </section>
   const REPORT_TOP = 6
   const barBlock = (block: typeof reportBlocks[number]) => {
     const many = block.slices.length > REPORT_TOP + 1
@@ -1079,14 +1066,12 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
           {periodMenu ? <div className={fm.periodMenu}>{periodOptions.map(option => <button key={option.id} type="button" data-active={period === option.id} onClick={() => { setPeriod(option.id); setPeriodMenu(false) }}>{option.label}{period === option.id ? <span>✓</span> : null}</button>)}</div> : null}
         </div>
       </div>
-      <div className={fm.reportTabs} role="tablist">{['Geral', 'Receitas', 'Despesas', 'Cartões', 'Contas'].map((label, index) => <button key={label} type="button" role="tab" aria-selected={reportView === index} data-active={reportView === index} onClick={() => { setReportView(index); setReportPick(null) }}>{label}</button>)}</div>
       {reportView === 0 ? (() => {
         const biggest = generalBars.reduce((max, bar) => Math.max(max, Math.abs(bar.value)), 0)
         return <>
           <div className={fm.cols}>{generalBars.map(bar => <button type="button" key={bar.name} className={fm.col} onClick={() => { setReportView(bar.tab); setReportPick(null) }}><span className={fm.colValue}>{money.format(bar.value).replace(/,\d\d$/, '')}</span><span className={fm.colBar}><span style={{ height: `${biggest ? Math.max(4, Math.abs(bar.value) / biggest * 100) : 0}%`, background: bar.color }} /></span><span className={fm.colName}>{bar.name}</span></button>)}</div>
-          {reportBlocks.map(originalBlock)}
         </>
-      })() : barBlock(tabBlocks[Math.min(reportView, tabBlocks.length) - 1])}
+      })() : <><button type="button" className={fm.reportBack} onClick={() => { setReportView(0); setReportPick(null) }}>‹ Visão geral</button>{barBlock(tabBlocks[Math.min(reportView, tabBlocks.length) - 1])}</>}
     </> : null}
 
     {quick.element}
