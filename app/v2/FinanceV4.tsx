@@ -1025,7 +1025,7 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
     <div className={fm.tabs} role="tablist">{tabs.map(item => <button key={item.id} role="tab" aria-selected={tab === item.id} data-active={tab === item.id} onClick={() => setTab(item.id)}>{item.label}</button>)}</div>
 
     {tab === 'transactions' ? <>
-      <div className={fm.listHead}><span>{filtered.length} {filtered.length === 1 ? 'lançamento' : 'lançamentos'} em {monthLabel(month).split(' de ')[0]} · <b>{signedMoney(listTotal(filtered))}</b></span><span>{pendingCount} {pendingCount === 1 ? 'pendente' : 'pendentes'}</span></div>
+      <div className={fm.listHead}><span>{filtered.length} {filtered.length === 1 ? 'lançamento' : 'lançamentos'} em {monthLabel(month).split(' de ')[0]} · <b data-tone="in">{money.format(filtered.filter(item => item.tipo === 'receita').reduce((sum, item) => sum + clampMoney(item.valor), 0))}</b> receitas · <b data-tone="neg">{money.format(filtered.filter(item => item.tipo !== 'receita').reduce((sum, item) => sum + clampMoney(item.valor), 0))}</b> despesas</span><span>{pendingCount} {pendingCount === 1 ? 'pendente' : 'pendentes'}</span></div>
       <div className={fm.list}>{filtered.map(transactionRow)}</div>
       {!filtered.length ? <div className={fm.empty}>Nenhum lançamento encontrado.</div> : null}
       {quickAdding ? <QuickAdd inline kinds={['finance']} initial="finance" state={state} today={today} defaultDate={today} commit={commit} onFinance={() => undefined} onClose={() => setQuickAdding(false)} /> : addRow('Adicionar lançamento', () => setQuickAdding(true))}
