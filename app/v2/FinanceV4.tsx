@@ -1066,13 +1066,12 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
           {periodMenu ? <div className={fm.periodMenu}>{periodOptions.map(option => <button key={option.id} type="button" data-active={period === option.id} onClick={() => { setPeriod(option.id); setPeriodMenu(false) }}>{option.label}{period === option.id ? <span>✓</span> : null}</button>)}</div> : null}
         </div>
       </div>
-      <div className={fm.reportTabs} role="tablist">{['Geral', 'Receitas', 'Despesas', 'Cartões', 'Contas'].map((label, index) => <button key={label} type="button" role="tab" aria-selected={reportView === index} data-active={reportView === index} onClick={() => { setReportView(index); setReportPick(null) }}>{label}</button>)}</div>
       {reportView === 0 ? (() => {
         const biggest = generalBars.reduce((max, bar) => Math.max(max, Math.abs(bar.value)), 0)
         return <>
           <div className={fm.cols}>{generalBars.map(bar => <button type="button" key={bar.name} className={fm.col} onClick={() => { setReportView(bar.tab); setReportPick(null) }}><span className={fm.colValue}>{money.format(bar.value).replace(/,\d\d$/, '')}</span><span className={fm.colBar}><span style={{ height: `${biggest ? Math.max(4, Math.abs(bar.value) / biggest * 100) : 0}%`, background: bar.color }} /></span><span className={fm.colName}>{bar.name}</span></button>)}</div>
         </>
-      })() : barBlock(tabBlocks[Math.min(reportView, tabBlocks.length) - 1])}
+      })() : <><button type="button" className={fm.reportBack} onClick={() => { setReportView(0); setReportPick(null) }}>‹ Visão geral</button>{barBlock(tabBlocks[Math.min(reportView, tabBlocks.length) - 1])}</>}
     </> : null}
 
     {quick.element}
