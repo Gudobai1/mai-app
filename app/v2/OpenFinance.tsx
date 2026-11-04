@@ -144,6 +144,8 @@ function applyCardBills(rows: Row[], cards: Row[], links: Record<string, string>
     const bankCard = bank.find(b => b.tipo === 'cartao' && links[b.id] === `card|${card.id}`)
     if (!bankCard) return card
     const cardId = String(card.id)
+    const sameBankAccount = bank.find(b => b.itemId === bankCard.itemId && b.tipo === 'conta' && links[b.id] && !links[b.id].startsWith('card|'))
+    const payAccount = String(card.conta_id || '') || (sameBankAccount ? links[sameBankAccount.id] : '')
     const closingDay = Number(card.fechamento) || Number(bankCard.fechamento_dia) || 1
     const dueDay = Number(card.vencimento) || Number(bankCard.vencimento_dia) || 10
     const bills = items.flatMap(item => item.bills || []).filter(bill => bill.accountId === bankCard.id).sort((a, b) => a.dueDate.localeCompare(b.dueDate))
@@ -155,7 +157,7 @@ function applyCardBills(rows: Row[], cards: Row[], links: Record<string, string>
       const month = monthOf(bill.dueDate)
       const index = nextRows.findIndex(tx => tx.ajuste_fatura === true && String(tx.ajuste_fatura_card_id || tx.cartao_id || '') === cardId && String(tx.competencia_fatura || monthOf(String(tx.data))) === month)
       if (index >= 0) { nextRows = nextRows.map((tx, i) => i === index ? { ...tx, valor: cents(bill.total), pluggy_bill: bill.id, data: bill.dueDate, ajuste_delta: undefined } : tx); continue }
-      nextRows = [...nextRows, { id: uid('invoice'), pluggy_bill: bill.id, titulo: `Fatura ${String(card.nome || 'Cartão')}`, tipo: 'despesa', data: bill.dueDate, valor: cents(bill.total), valor_pago: 0, status: 'pendente', pagamentos: [], categoria: 'Fatura do cartão', conta_id: `card|${cardId}`, cartao_id: cardId, conta_pagamento_id: String(card.conta_id || ''), anexos: [], ignorar_calculo: true, recorrencia: 'unico', ajuste_fatura: true, ajuste_fatura_card_id: cardId, competencia_fatura: month }]
+      nextRows = [...nextRows, { id: uid('invoice'), pluggy_bill: bill.id, titulo: `Fatura ${String(card.nome || 'Cartão')}`, tipo: 'despesa', data: bill.dueDate, valor: cents(bill.total), valor_pago: 0, status: 'pendente', pagamentos: [], categoria: 'Fatura do cartão', conta_id: `card|${cardId}`, cartao_id: cardId, conta_pagamento_id: payAccount, anexos: [], ignorar_calculo: true, recorrencia: 'unico', ajuste_fatura: true, ajuste_fatura_card_id: cardId, competencia_fatura: month }]
     }
 
     // pagamento: o que você marcou à mão é respeitado; se o banco também mostra o pagamento da fatura, a fatura fecha como paga sem duplicar
@@ -170,7 +172,7 @@ function applyCardBills(rows: Row[], cards: Row[], links: Record<string, string>
         if (bankPay) { payments = [...payments, { id: uid('pay'), data: String(bankPay.data).slice(0, 10), valor: num(bankPay.valor) }]; paid = total }
       }
       const status = total > 0 && paid >= total - 0.015 ? 'pago' : paid > 0 ? 'parcial' : 'pendente'
-      return { ...tx, valor_pago: cents(paid), pagamentos: payments, status }
+      return { ...tx, valor_pago: cents(paid), pagamentos: payments, status, conta_pagamento_id: String(tx.conta_pagamento_id || '') || payAccount }
     })
 
     // fatura aberta: o banco ainda não emitiu
@@ -183,14 +185,14 @@ function applyCardBills(rows: Row[], cards: Row[], links: Record<string, string>
       const credits = items.flatMap(item => item.transactions).filter(tx => tx.accountId === bankCard.id && tx.tipo === 'receita' && invoiceMonthOf(String(tx.data).slice(0, 10), closingDay, dueDay) === openMonth && !previousTotals.some(total => Math.abs(total - num(tx.valor)) < 0.015)).reduce((sum, tx) => sum + num(tx.valor), 0)
       const net = Math.max(0, cents(purchases - credits))
       const index = nextRows.findIndex(tx => tx.ajuste_fatura === true && String(tx.ajuste_fatura_card_id || tx.cartao_id || '') === cardId && String(tx.competencia_fatura || monthOf(String(tx.data))) === openMonth)
-      if (index < 0) nextRows = [...nextRows, { id: uid('invoice'), pluggy_open: true, titulo: `Fatura ${String(card.nome || 'Cartão')}`, tipo: 'despesa', data: dueOf(openMonth, dueDay), valor: net, valor_pago: 0, status: 'pendente', pagamentos: [], categoria: 'Fatura do cartão', conta_id: `card|${cardId}`, cartao_id: cardId, conta_pagamento_id: String(card.conta_id || ''), anexos: [], ignorar_calculo: true, recorrencia: 'unico', ajuste_fatura: true, ajuste_fatura_card_id: cardId, competencia_fatura: openMonth }]
+      if (index < 0) nextRows = [...nextRows, { id: uid('invoice'), pluggy_open: true, titulo: `Fatura ${String(card.nome || 'Cartão')}`, tipo: 'despesa', data: dueOf(openMonth, dueDay), valor: net, valor_pago: 0, status: 'pendente', pagamentos: [], categoria: 'Fatura do cartão', conta_id: `card|${cardId}`, cartao_id: cardId, conta_pagamento_id: payAccount, anexos: [], ignorar_calculo: true, recorrencia: 'unico', ajuste_fatura: true, ajuste_fatura_card_id: cardId, competencia_fatura: openMonth }]
       else if (nextRows[index].pluggy_open) nextRows = nextRows.map((tx, i) => i === index ? { ...tx, valor: net, ajuste_delta: undefined } : tx)
       // cópia manual antiga dessa mesma fatura, de um cartão que já não existe: era o mesmo valor, sai para não contar duas vezes
       nextRows = nextRows.filter(tx => !(tx.ajuste_fatura === true && !tx.pluggy_open && !tx.pluggy_bill && !cardIds.has(String(tx.ajuste_fatura_card_id || tx.cartao_id || '')) && String(tx.competencia_fatura || monthOf(String(tx.data))) === openMonth && (Math.abs(num(tx.valor) - net) < 0.015 || String(tx.titulo || '').toLowerCase().includes(String(card.nome || '#').toLowerCase().split(' ')[0]))))
     }
     // quanto já estava pago nas faturas quando o banco informou o limite disponível: pagamentos feitos depois somam ao disponível
     const paidNow = nextRows.filter(tx => tx.ajuste_fatura === true && String(tx.ajuste_fatura_card_id || tx.cartao_id || '') === cardId).reduce((sum, tx) => sum + num(tx.valor_pago), 0)
-    return { ...card, limite_pago_base: cents(paidNow) }
+    return { ...card, conta_id: payAccount, limite_pago_base: cents(paidNow) }
   })
   return { cards: nextCards, transactions: nextRows }
 }
@@ -271,7 +273,7 @@ export function useOpenFinance(state: MaiState, commit: Commit) {
         added = imported.rows.length - migratedRows.length
         const itens = current.itens.map(link => { const hit = items.find(i => i.itemId === link.itemId); return hit ? { ...link, banco: hit.banco, ultimaSync: new Date().toISOString() } : link })
         return {
-          finance: { accounts: resolved.accounts, ...applyCardBills(imported.rows, resolved.cards, resolved.links, bank, items), investments: upsertInvestments((finance.investments || []) as Row[], items) },
+          finance: { ...(() => { const billed = applyCardBills(imported.rows, resolved.cards, resolved.links, bank, items); return { accounts: resolved.accounts.map((account: Row) => account.pluggy_id ? { ...account, pago_base: cents(billed.transactions.filter((tx: Row) => tx.ajuste_fatura === true && String(tx.conta_pagamento_id || '') === String(account.id)).reduce((sum: number, tx: Row) => sum + num(tx.valor_pago), 0)) } : account), ...billed } })(), investments: upsertInvestments((finance.investments || []) as Row[], items) },
           data: { ...current, itens, contas: bank, vinculos: resolved.links, dispensadas: resolved.dismissed, pendentes: imported.remaining, vistos: [...current.vistos, ...imported.skipped] },
         }
       })
@@ -327,7 +329,7 @@ export function useOpenFinance(state: MaiState, commit: Commit) {
   }
 
   /** Saldo da conta e limite do cartão seguem o banco. `withoutInitial` = saldo do app sem o saldo inicial. */
-  function applyBalances(withoutInitial: (account: Row) => number) {
+  function applyBalances(withoutInitial: (account: Row) => number, invoicePaid: (account: Row) => number = () => 0) {
     const finance = (state.finance || {}) as Row
     const accounts = (finance.accounts || []) as Row[]
     const cards = (finance.cards || []) as Row[]
@@ -339,7 +341,8 @@ export function useOpenFinance(state: MaiState, commit: Commit) {
       if (bank.tipo === 'conta') {
         const account = accounts.find(a => String(a.id) === target)
         if (!account) continue
-        const initial = cents(bank.saldo - withoutInitial(account))
+        const manualSincePaid = Math.max(0, invoicePaid(account) - (account.pago_base === undefined ? invoicePaid(account) : num(account.pago_base))) // fatura paga à mão depois do último sync já sai do saldo
+        const initial = cents(bank.saldo - manualSincePaid - withoutInitial(account))
         if (Math.abs(initial - num(account.saldo_inicial)) > 0.005) wantAccount.set(String(account.id), initial)
       } else if (bank.limite > 0) {
         const card = cards.find(c => `card|${c.id}` === target)

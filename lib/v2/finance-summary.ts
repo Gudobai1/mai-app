@@ -178,6 +178,8 @@ export function financeSummary(state: MaiState, today: string): FinanceSummary {
   const openItems = [...transactions.filter(item => dateKey(item.data) && dateKey(item.data) <= monthEnd), ...monthFixed]
     .filter(item => !item.ignorar_calculo && !isCardPurchase(item))
   const toPay = openItems.filter(item => item.tipo !== 'receita').reduce((sum, item) => sum + remaining(item), 0)
+    // faturas de cartão do mês que ainda faltam pagar
+    + transactions.filter(item => item.ajuste_fatura === true && dateKey(item.data).slice(0, 7) === month).reduce((sum, item) => sum + Math.max(0, clampMoney(item.valor) - clampMoney(item.valor_pago)), 0)
   const toReceive = openItems.filter(item => item.tipo === 'receita').reduce((sum, item) => sum + remaining(item), 0)
 
   return {
