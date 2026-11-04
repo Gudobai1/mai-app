@@ -242,8 +242,13 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
     return Number(account.saldo_inicial || 0) + regular + fixedCashTotalThrough(today, accountId)
   }
 
+  // Open Finance: faturas pagas à mão depois da última sincronização (o banco ainda não mostrou esse pagamento)
+  const ofLastSync = openFinance.data.itens.reduce((latest, link) => link.ultimaSync && link.ultimaSync > latest ? link.ultimaSync : latest, '')
+  function manualInvoicePaid(match: (item: Row) => boolean) {
+    return transactions.filter(item => item.ajuste_fatura === true && match(item)).reduce((sum, item) => sum + rows(item.pagamentos).filter(payment => payment.manual === true && String(payment.em || '') > ofLastSync).reduce((inner, payment) => inner + clampMoney(payment.valor), 0), 0)
+  }
   // Open Finance: saldo das contas e limite dos cartões seguem o banco
-  useEffect(() => { openFinance.applyBalances(account => accountBalance(account) - Number(account.saldo_inicial || 0), account => transactions.filter(item => item.ajuste_fatura === true && String(item.conta_pagamento_id || '') === String(account.id)).reduce((sum, item) => sum + clampMoney(item.valor_pago), 0)) }) // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { openFinance.applyBalances(account => accountBalance(account) - Number(account.saldo_inicial || 0), account => manualInvoicePaid(item => String(item.conta_pagamento_id || '') === String(account.id))) }) // eslint-disable-line react-hooks/exhaustive-deps
 
   const monthFixed = fixedForMonthAt(month)
   const monthTxRaw = transactions.filter(item => itemMonth(item) === month)
@@ -259,10 +264,8 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
   function cardAvailable(card: Row) {
     const bank = card.pluggy_id ? openFinance.data.contas.find(item => item.id === String(card.pluggy_id)) : undefined
     const cardId = String(card.id)
-    // o que você já pagou nas faturas (todas)
-    const paidTotal = transactions.filter(item => item.ajuste_fatura === true && String(item.ajuste_fatura_card_id || item.cartao_id || '') === cardId).reduce((sum, item) => sum + clampMoney(item.valor_pago), 0)
     // cartão do banco: o disponível do banco + pagamentos que você fez depois da última sincronização
-    if (bank && bank.limite > 0 && bank.limite_disponivel > 0) return Math.min(bank.limite, bank.limite_disponivel + Math.max(0, paidTotal - (card.limite_pago_base === undefined ? paidTotal : clampMoney(card.limite_pago_base))))
+    if (bank && bank.limite > 0 && bank.limite_disponivel > 0) return Math.min(bank.limite, bank.limite_disponivel + manualInvoicePaid(item => String(item.ajuste_fatura_card_id || item.cartao_id || '') === cardId))
     const ofCard = (item: Row) => String(item.conta_id || '') === `card|${cardId}` || String(item.cartao_id || '') === cardId
     const months = new Set(transactions.filter(ofCard).map(item => itemMonth(item)))
     let owed = 0
@@ -683,11 +686,13 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
     }
     const delta = total - invoicePurchases(cardId, list)
     // a conta que paga: a do cartão ("Pagar com") ou, se só existir uma conta, ela
-    const payAccount = String(card.conta_id || invoiceRow(list, cardId, m)?.conta_pagamento_id || (accounts.length === 1 ? accounts[0].id : ''))
+    const bankCard = card.pluggy_id ? openFinance.data.contas.find(item => item.id === String(card.pluggy_id)) : undefined
+    const bankAccount = bankCard ? openFinance.data.contas.find(item => item.itemId === bankCard.itemId && item.tipo === 'conta' && openFinance.data.vinculos[item.id] && !openFinance.data.vinculos[item.id].startsWith('card|')) : undefined
+    const payAccount = String(card.conta_id || invoiceRow(list, cardId, m)?.conta_pagamento_id || (bankAccount ? openFinance.data.vinculos[bankAccount.id] : '') || (accounts.length === 1 ? accounts[0].id : ''))
     if (!payAccount) void notify('Defina "Pagar com" no cartão para o pagamento sair do saldo de uma conta.')
     saveInvoice(card, existing => {
       const base = { ...invoiceBase(card, existing, m), conta_pagamento_id: payAccount }
-      const payments = [...rows(existing?.pagamentos), { id: uid('pay'), data: today, valor: amount }]
+      const payments = [...rows(existing?.pagamentos), { id: uid('pay'), data: today, valor: amount, manual: true, em: new Date().toISOString() }]
       const paid = Math.min(total, payments.reduce((sum, payment) => sum + clampMoney(payment.valor), 0))
       return { ...base, ajuste_delta: existing?.ajuste_delta ?? delta, valor: total, valor_pago: paid, pagamentos: payments, status: statusOf(total, paid) }
     }, m)
