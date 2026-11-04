@@ -54,9 +54,9 @@ function resolveLinks(links: Record<string, string>, bank: BankAccount[], financ
       const free = (kind === 'cartao' ? cards : accounts).filter(x => !taken.has(kind === 'cartao' ? `card|${x.id}` : String(x.id)))
       let target = ''
       if (free.length === 1 && unlinked.length === 1) target = kind === 'cartao' ? `card|${free[0].id}` : String(free[0].id)
-      else if (!(kind === 'cartao' ? cards : accounts).length) {
+      else {
         const id = uid(kind === 'cartao' ? 'crd' : 'cta')
-        if (kind === 'cartao') { cards.push({ id, nome: shortName(b.nome), limite: b.limite, fechamento: 1, vencimento: 10, conta_id: '', cor: '#4073FF', foto: '' }); target = `card|${id}` }
+        if (kind === 'cartao') { cards.push({ id, nome: /cart[aã]o/i.test(shortName(b.nome)) ? shortName(b.nome) : `Cartão ${shortName(b.nome)}`, limite: b.limite, fechamento: 1, vencimento: 10, conta_id: '', cor: '#4073FF', foto: '' }); target = `card|${id}` }
         else { accounts.push({ id, nome: shortName(b.nome), saldo_inicial: 0, cor: '#4073FF', foto: '' }); target = id }
       }
       if (target) { next[b.id] = target; taken.add(target) }
@@ -90,6 +90,17 @@ function importPending(list: Pending[], links: Record<string, string>, rows: Row
     })
   }
   return { rows: out, remaining, skipped }
+}
+
+/** Investimentos do banco viram investimentos normais do app (atualiza valor e aportado a cada sincronização). */
+function upsertInvestments(current: Row[], items: { banco: string; investments?: any[] }[]) {
+  const next = [...current]
+  for (const item of items) for (const inv of item.investments || []) {
+    const index = next.findIndex(row => row.pluggy_id === inv.id)
+    if (index >= 0) next[index] = { ...next[index], aportado: cents(num(inv.aportado)), valor_atual: cents(num(inv.valor_atual)) }
+    else next.push({ id: uid('inv'), pluggy_id: inv.id, nome: inv.nome, tipo: inv.tipo, instituicao: shortName(item.banco), icone: 'trending_up', cor: '#4073FF', foto: '', aportado: cents(num(inv.aportado)), valor_atual: cents(num(inv.valor_atual)), observacao: 'Open Finance', movimentos: [] })
+  }
+  return next
 }
 
 let widgetLoading: Promise<void> | null = null
@@ -127,7 +138,7 @@ export function useOpenFinance(state: MaiState, commit: Commit) {
       const first = !data.itens.some(item => item.ultimaSync)
       const from = new Date(Date.now() - (first ? 90 : 14) * 86400_000).toISOString().slice(0, 10)
       const json = await api('/api/pluggy/sync', { itemIds, from })
-      const items = (json.items || []) as { itemId: string; banco: string; status: string; accounts: any[]; transactions: any[] }[]
+      const items = (json.items || []) as { itemId: string; banco: string; status: string; accounts: any[]; investments?: any[]; transactions: any[] }[]
       let added = 0
       patchOpenFinance(commit, (current, finance) => {
         const rows = (finance.transactions || []) as Row[]
@@ -139,7 +150,7 @@ export function useOpenFinance(state: MaiState, commit: Commit) {
         added = imported.rows.length - rows.length
         const itens = current.itens.map(link => { const hit = items.find(i => i.itemId === link.itemId); return hit ? { ...link, banco: hit.banco, ultimaSync: new Date().toISOString() } : link })
         return {
-          finance: { accounts: resolved.accounts, cards: resolved.cards, transactions: imported.rows },
+          finance: { accounts: resolved.accounts, cards: resolved.cards, transactions: imported.rows, investments: upsertInvestments((finance.investments || []) as Row[], items) },
           data: { ...current, itens, contas: bank, vinculos: resolved.links, pendentes: imported.remaining, vistos: [...current.vistos, ...imported.skipped] },
         }
       })

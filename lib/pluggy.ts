@@ -39,6 +39,7 @@ export async function createConnectToken(updateItemId?: string) {
 type Paged<T> = { results: T[]; totalPages?: number; page?: number }
 type PluggyItem = { id: string; status?: string; connector?: { name?: string; imageUrl?: string }; lastUpdatedAt?: string }
 type PluggyAccount = { id: string; type?: string; subtype?: string; name?: string; number?: string; balance?: number; currencyCode?: string; creditData?: { availableCreditLimit?: number; creditLimit?: number } | null }
+type PluggyInvestment = { id: string; name?: string; type?: string; subtype?: string; balance?: number; value?: number; amount?: number; amountOriginal?: number | null; amountProfit?: number | null; institution?: { name?: string } | null; code?: string | null }
 type PluggyTransaction = { id: string; accountId: string; date: string; description?: string; descriptionRaw?: string | null; type?: 'DEBIT' | 'CREDIT'; amount: number; status?: string; category?: string | null; creditCardMetadata?: { installmentNumber?: number; totalInstallments?: number } | null }
 
 export type SyncedItem = {
@@ -46,6 +47,7 @@ export type SyncedItem = {
   banco: string
   status: string
   accounts: { id: string; nome: string; tipo: 'conta' | 'cartao'; saldo: number; limite: number; limite_disponivel: number }[]
+  investments: { id: string; nome: string; tipo: string; valor_atual: number; aportado: number }[]
   transactions: { id: string; accountId: string; data: string; titulo: string; valor: number; tipo: 'receita' | 'despesa'; pendente: boolean; categoria: string; parcela: string }[]
 }
 
@@ -65,10 +67,29 @@ async function allTransactions(accountId: string, from: string) {
   return out.filter(tx => String(tx.date).slice(0, 10) >= from)
 }
 
+const INVESTMENT_TYPE: Record<string, string> = { FIXED_INCOME: 'Renda fixa', MUTUAL_FUND: 'Fundo', EQUITY: 'Ações', ETF: 'ETF', COE: 'COE', SECURITY: 'Previdência', OTHER: 'Investimento' }
+
+async function allInvestments(itemId: string) {
+  const out: PluggyInvestment[] = []
+  for (let page = 1; page <= 10; page += 1) {
+    const data = await call<Paged<PluggyInvestment>>(`/investments?itemId=${encodeURIComponent(itemId)}&pageSize=500&page=${page}`)
+    out.push(...data.results)
+    if (page >= (data.totalPages || 1)) break
+  }
+  return out
+}
+
 export async function syncItem(itemId: string, from: string): Promise<SyncedItem> {
   const item = await call<PluggyItem>(`/items/${encodeURIComponent(itemId)}`)
-  const base: SyncedItem = { itemId, banco: item.connector?.name || 'Banco', status: item.status || 'UNKNOWN', accounts: [], transactions: [] }
+  const base: SyncedItem = { itemId, banco: item.connector?.name || 'Banco', status: item.status || 'UNKNOWN', accounts: [], investments: [], transactions: [] }
   if (item.status && !['UPDATED', 'PARTIAL_SUCCESS'].includes(item.status)) return base
+  try {
+    for (const inv of await allInvestments(itemId)) {
+      const atual = Number(inv.balance ?? inv.value ?? inv.amount ?? 0)
+      const aportado = Number(inv.amountOriginal ?? (inv.amountProfit != null ? atual - Number(inv.amountProfit) : atual))
+      base.investments.push({ id: inv.id, nome: String(inv.name || inv.code || 'Investimento'), tipo: INVESTMENT_TYPE[String(inv.type || '')] || 'Investimento', valor_atual: atual, aportado: aportado > 0 ? aportado : atual })
+    }
+  } catch { /* investimentos são opcionais: o banco pode não ter ou a Pluggy pode recusar */ }
   const accounts = await call<Paged<PluggyAccount>>(`/accounts?itemId=${encodeURIComponent(itemId)}`)
   for (const account of accounts.results) {
     const credit = account.type === 'CREDIT'
