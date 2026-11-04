@@ -22,7 +22,12 @@ async function apiKey() {
 
 async function call<T>(path: string, init: RequestInit = {}): Promise<T> {
   const response = await fetch(`${BASE}${path}`, { ...init, cache: 'no-store', headers: { 'content-type': 'application/json', 'X-API-KEY': await apiKey(), ...(init.headers || {}) } })
-  if (!response.ok) throw new Error(`Pluggy ${path.split('?')[0]} ${response.status}`)
+  if (!response.ok) {
+    const detail = await response.text().catch(() => '')
+    let message = ''
+    try { const parsed = JSON.parse(detail); message = String(parsed.message || parsed.error || parsed.code || '') } catch { message = detail }
+    throw new Error(`Pluggy ${path.split('?')[0]} ${response.status}${message ? `: ${message.slice(0, 160)}` : ''}`)
+  }
   return response.json() as Promise<T>
 }
 
@@ -45,13 +50,22 @@ export type SyncedItem = {
 }
 
 async function allTransactions(accountId: string, from: string) {
-  const out: PluggyTransaction[] = []
-  for (let page = 1; page <= 20; page += 1) {
-    const data = await call<Paged<PluggyTransaction>>(`/transactions?accountId=${encodeURIComponent(accountId)}&from=${from}&pageSize=500&page=${page}`)
-    out.push(...data.results)
-    if (page >= (data.totalPages || 1)) break
+  const id = encodeURIComponent(accountId)
+  // Tenta com período e página grande; se a Pluggy recusar, cai para consultas mais simples.
+  const variants = [`accountId=${id}&from=${from}&pageSize=500`, `accountId=${id}&from=${from}`, `accountId=${id}`]
+  let lastError: unknown
+  for (const query of variants) {
+    try {
+      const out: PluggyTransaction[] = []
+      for (let page = 1; page <= 20; page += 1) {
+        const data = await call<Paged<PluggyTransaction>>(`/transactions?${query}&page=${page}`)
+        out.push(...data.results)
+        if (page >= (data.totalPages || 1)) break
+      }
+      return out.filter(tx => String(tx.date).slice(0, 10) >= from)
+    } catch (error) { lastError = error }
   }
-  return out
+  throw lastError
 }
 
 export async function syncItem(itemId: string, from: string): Promise<SyncedItem> {
