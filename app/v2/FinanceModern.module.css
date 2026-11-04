@@ -188,3 +188,47 @@ button.balanceMain:hover { background: var(--ds-surface-hover); }
 .reportMore { margin: 8px 6px 0; border: 0; background: none; color: var(--ds-muted); font: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer; padding: 4px 0; }
 .reportMore:hover { color: var(--ds-text); }
 .reportBlock .barValue { width: auto; min-width: 120px; font-size: 12.5px; white-space: nowrap; }
+
+/* relatórios em rosca */
+.donutWrap { display: grid; grid-template-columns: 230px 1fr; gap: 28px; align-items: center; padding: 6px; }
+.donut { position: relative; width: 230px; height: 230px; }
+.donut svg { width: 100%; height: 100%; display: block; }
+.donut circle { cursor: default; }
+.donutCenter { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; gap: 2px; padding: 0 44px; pointer-events: none; }
+.donutCenter small { font-size: 11.5px; color: var(--ds-muted); line-height: 1.25; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.donutCenter b { font-size: 19px; font-weight: 680; font-variant-numeric: tabular-nums; }
+.donutCenter b[data-tone='out'] { color: var(--ds-danger); }
+.donutCenter b[data-tone='in'] { color: var(--ds-success); }
+.legend { display: grid; gap: 2px; min-width: 0; }
+.legendRow { display: grid; grid-template-columns: 10px 1fr auto auto; align-items: center; gap: 10px; padding: 7px 6px; border-radius: 8px; transition: opacity .15s; }
+.legendRow[data-dim='true'] { opacity: .35; }
+.legendRow i { width: 10px; height: 10px; border-radius: 50%; }
+.legendName { font-size: 13px; font-weight: 600; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.legendPct { font-size: 11.5px; color: var(--ds-muted); font-variant-numeric: tabular-nums; }
+.legendRow .barValue { width: auto; min-width: 84px; font-size: 12.5px; white-space: nowrap; }
+@media (max-width: 640px) { .donutWrap { grid-template-columns: 1fr; justify-items: center; } .donut { width: 210px; height: 210px; } .legend { width: 100%; } }
+
+/* relatórios em rosca */
+.donutWrap { position: relative; width: 210px; height: 210px; margin: 6px auto 14px; }
+.donut { width: 100%; height: 100%; }
+.donutBase { stroke: color-mix(in srgb, var(--ds-text) 7%, transparent); }
+.donutCenter { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; gap: 2px; pointer-events: none; padding: 0 44px; }
+.donutCenter small { font-size: 11.5px; color: var(--ds-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.donutCenter b { font-size: 17px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.donutCenter b[data-tone='out'] { color: var(--ds-danger); }
+.donutCenter b[data-tone='in'] { color: var(--ds-success); }
+.legend { display: grid; gap: 2px; }
+.legendRow { display: flex; align-items: center; gap: 10px; width: 100%; border: 0; background: none; color: inherit; font: inherit; font-size: 13px; padding: 8px 6px; border-radius: 8px; cursor: pointer; text-align: left; }
+.legendRow:hover, .legendRow[data-active] { background: color-mix(in srgb, var(--ds-text) 6%, transparent); }
+.legendRow i { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+.legendRow span { flex: 1; font-weight: 600; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.legendRow small { color: var(--ds-muted); font-size: 11.5px; }
+.legendRow b { font-weight: 650; font-variant-numeric: tabular-nums; min-width: 96px; text-align: right; }
+.legendRow b[data-tone='out'] { color: var(--ds-danger); }
+.legendRow b[data-tone='in'] { color: var(--ds-success); }
+.legendItems { display: grid; margin: 2px 0 8px 26px; border-left: 2px solid color-mix(in srgb, var(--ds-text) 10%, transparent); }
+.legendItems button { display: flex; align-items: baseline; gap: 10px; border: 0; background: none; color: inherit; font: inherit; font-size: 12.5px; padding: 6px 10px; cursor: pointer; text-align: left; border-radius: 6px; }
+.legendItems button:hover { background: color-mix(in srgb, var(--ds-text) 6%, transparent); }
+.legendItems span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.legendItems small { color: var(--ds-muted); font-size: 11.5px; }
+.legendItems b { font-weight: 600; font-variant-numeric: tabular-nums; }

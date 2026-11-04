@@ -153,7 +153,8 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
   const [period, setPeriod] = useState<'month' | '3' | '6' | 'year' | 'custom'>('month')
   const [periodMenu, setPeriodMenu] = useState(false)
   const [reportView, setReportView] = useState(0)
-  const [reportAll, setReportAll] = useState(false)
+  const [reportPick, setReportPick] = useState<string | null>(null)
+  const [reportHover, setReportHover] = useState('')
   const [customFrom, setCustomFrom] = useState(`${today.slice(0, 4)}-01`)
   const [customTo, setCustomTo] = useState(today.slice(0, 7))
   const [draft, setDraft] = useState<Row | null>(null)
@@ -807,11 +808,11 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
     const card = cards.find(item => String(item.nome) === name)
     return String((account || card)?.cor || '#4073FF')
   }
-  const reportBlocks: { title: string; total: number; tone: 'out' | 'in'; slices: Slice[] }[] = [
-    { title: 'Despesas por categoria', total: reportExpenses.reduce((sum, item) => sum + clampMoney(item.valor), 0), tone: 'out', slices: sumBy(reportExpenses, item => String(item.categoria || 'Sem categoria'), palette) },
-    { title: 'Receitas por categoria', total: reportIncomes.reduce((sum, item) => sum + clampMoney(item.valor), 0), tone: 'in', slices: sumBy(reportIncomes, item => String(item.categoria || 'Sem categoria'), greens) },
-    { title: 'Despesas por conta e cartão', total: reportExpenses.reduce((sum, item) => sum + clampMoney(item.valor), 0), tone: 'out', slices: sumBy(reportExpenses, item => originName(item.conta_id || (item.cartao_id ? `card|${item.cartao_id}` : ''), accounts, cards), originColor) },
-    { title: 'Despesas fixas e variáveis', total: reportExpenses.reduce((sum, item) => sum + clampMoney(item.valor), 0), tone: 'out', slices: sumBy(reportExpenses, item => item._isFixed ? 'Fixas' : 'Variáveis', name => name === 'Fixas' ? 'var(--ds-sky-fg)' : 'var(--ds-peach-fg)') },
+  const reportBlocks: { title: string; total: number; tone: 'out' | 'in'; slices: Slice[]; items: Row[]; keyOf: (item: Row) => string }[] = [
+    { title: 'Despesas por categoria', total: reportExpenses.reduce((sum, item) => sum + clampMoney(item.valor), 0), tone: 'out', slices: sumBy(reportExpenses, item => String(item.categoria || 'Sem categoria'), palette), items: reportExpenses, keyOf: item => String(item.categoria || 'Sem categoria') },
+    { title: 'Receitas por categoria', total: reportIncomes.reduce((sum, item) => sum + clampMoney(item.valor), 0), tone: 'in', slices: sumBy(reportIncomes, item => String(item.categoria || 'Sem categoria'), greens), items: reportIncomes, keyOf: item => String(item.categoria || 'Sem categoria') },
+    { title: 'Despesas por conta e cartão', total: reportExpenses.reduce((sum, item) => sum + clampMoney(item.valor), 0), tone: 'out', slices: sumBy(reportExpenses, item => originName(item.conta_id || (item.cartao_id ? `card|${item.cartao_id}` : ''), accounts, cards), originColor), items: reportExpenses, keyOf: item => originName(item.conta_id || (item.cartao_id ? `card|${item.cartao_id}` : ''), accounts, cards) },
+    { title: 'Despesas fixas e variáveis', total: reportExpenses.reduce((sum, item) => sum + clampMoney(item.valor), 0), tone: 'out', slices: sumBy(reportExpenses, item => item._isFixed ? 'Fixas' : 'Variáveis', name => name === 'Fixas' ? 'var(--ds-sky-fg)' : 'var(--ds-peach-fg)'), items: reportExpenses, keyOf: item => item._isFixed ? 'Fixas' : 'Variáveis' },
   ]
   const periodLabel = period === 'month' ? 'Mensal' : period === '3' ? 'Últimos 3 meses' : period === '6' ? 'Últimos 6 meses' : period === 'year' ? 'Este ano' : 'Personalizado'
   const periodRange = reportMonths.length ? (reportMonths.length === 1 ? monthLabel(reportMonths[0]) : `${monthLabel(reportMonths[0])} – ${monthLabel(reportMonths[reportMonths.length - 1])}`) : 'Período inválido'
@@ -950,16 +951,27 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
   const calIcon = <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="2.5" /><path d="M3.5 10h17M8 3v4M16 3v4" /></svg>
   const dueTone = (key: string) => key < today ? 'late' : key === today ? 'today' : 'future'
   const periodOptions: { id: typeof period; label: string }[] = [{ id: 'month', label: 'Mensal' }, { id: '3', label: 'Últimos 3 meses' }, { id: '6', label: 'Últimos 6 meses' }, { id: 'year', label: 'Este ano' }, { id: 'custom', label: 'Personalizado' }]
-  const REPORT_TOP = 6
+  const REPORT_TOP = 7
   const barBlock = (block: typeof reportBlocks[number]) => {
     const many = block.slices.length > REPORT_TOP + 1
-    const head = many && !reportAll ? block.slices.slice(0, REPORT_TOP) : block.slices
-    const rest = many && !reportAll ? block.slices.slice(REPORT_TOP) : []
-    const shown: Slice[] = rest.length ? [...head, { name: `Outras (${rest.length})`, value: rest.reduce((sum, slice) => sum + slice.value, 0), color: 'var(--ds-muted)' }] : head
+    const head = many ? block.slices.slice(0, REPORT_TOP) : block.slices
+    const rest = many ? block.slices.slice(REPORT_TOP) : []
+    const shown: (Slice & { names: string[] })[] = [...head.map(slice => ({ ...slice, names: [slice.name] })), ...(rest.length ? [{ name: `Outras (${rest.length})`, value: rest.reduce((sum, slice) => sum + slice.value, 0), color: 'var(--ds-muted)', names: rest.map(slice => slice.name) }] : [])]
+    const R = 46, C = 2 * Math.PI * R
+    let offset = 0
+    const picked = shown.find(slice => slice.name === reportPick)
+    const pickedItems = picked ? block.items.filter(item => picked.names.includes(block.keyOf(item))).sort((a, b) => String(b.data).localeCompare(String(a.data))) : []
     return <section className={fm.reportBlock} key={block.title}>
-      <div className={fm.reportTitle}><strong>{block.title}</strong><span>{money.format(block.total)}</span></div>
-      <div className={fm.barList}>{shown.map(slice => { const percent = block.total ? slice.value / block.total * 100 : 0; return <div className={fm.barRow} key={slice.name}><div className={fm.barTop}><span className={fm.barName}>{slice.name}</span><span className={fm.barValue} data-tone={block.tone}>{money.format(slice.value)}<small>{percent.toFixed(0)}%</small></span></div><div className={fm.barTrack}><div style={{ width: `${percent}%`, background: slice.color }} /></div></div> })}{!block.slices.length ? <div className={fm.empty}>Sem dados no período.</div> : null}</div>
-      {many ? <button type="button" className={fm.reportMore} onClick={() => setReportAll(value => !value)}>{reportAll ? 'Mostrar menos' : `Ver todas (${block.slices.length})`}</button> : null}
+      {block.slices.length ? <div className={fm.donutWrap}>
+        <svg className={fm.donut} viewBox="0 0 120 120" role="img" aria-label={block.title}>
+          <circle cx="60" cy="60" r={R} fill="none" strokeWidth="14" className={fm.donutBase} />
+          {shown.map(slice => { const part = block.total ? slice.value / block.total : 0; const length = Math.max(0, part * C - (shown.length > 1 ? 1.5 : 0)); const dash = `${length} ${C - length}`; const start = offset; offset += part * C; return <circle key={slice.name} cx="60" cy="60" r={R} fill="none" strokeWidth={reportPick === slice.name ? 18 : 14} strokeDasharray={dash} strokeDashoffset={-start} transform="rotate(-90 60 60)" style={{ stroke: slice.color, opacity: reportPick && reportPick !== slice.name ? 0.3 : 1, cursor: 'pointer', transition: 'opacity .15s' }} onClick={() => setReportPick(reportPick === slice.name ? null : slice.name)} /> })}
+        </svg>
+        <div className={fm.donutCenter}><small>{picked ? picked.name : block.title}</small><b data-tone={block.tone}>{money.format(picked ? picked.value : block.total)}</b>{picked ? <small>{(block.total ? picked.value / block.total * 100 : 0).toFixed(0)}%</small> : null}</div>
+      </div> : <div className={fm.empty}>Sem dados no período.</div>}
+      <div className={fm.legend}>{shown.map(slice => { const percent = block.total ? slice.value / block.total * 100 : 0; return <div key={slice.name}><button type="button" className={fm.legendRow} data-active={reportPick === slice.name || undefined} onClick={() => setReportPick(reportPick === slice.name ? null : slice.name)}><i style={{ background: slice.color }} /><span>{slice.name}</span><small>{percent.toFixed(0)}%</small><b data-tone={block.tone}>{money.format(slice.value)}</b></button>
+        {reportPick === slice.name ? <div className={fm.legendItems}>{pickedItems.map(item => <button type="button" key={`${item._isFixed ? 'f' : 't'}-${String(item.id)}-${dateKey(item.data)}`} onClick={() => openTransaction(item)}><span>{String(item.titulo || 'Lançamento')}</span><small>{naturalDate(dateKey(item.data), today)}</small><b>{money.format(clampMoney(item.valor))}</b></button>)}</div> : null}
+      </div> })}</div>
     </section>
   }
 
@@ -1027,7 +1039,7 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
           {periodMenu ? <div className={fm.periodMenu}>{periodOptions.map(option => <button key={option.id} type="button" data-active={period === option.id} onClick={() => { setPeriod(option.id); setPeriodMenu(false) }}>{option.label}{period === option.id ? <span>✓</span> : null}</button>)}</div> : null}
         </div>
       </div>
-      <div className={fm.reportTabs} role="tablist">{reportBlocks.map((block, index) => <button key={block.title} type="button" role="tab" aria-selected={reportView === index} data-active={reportView === index} onClick={() => { setReportView(index); setReportAll(false) }}>{['Despesas', 'Receitas', 'Contas e cartões', 'Fixas × variáveis'][index] || block.title}</button>)}</div>
+      <div className={fm.reportTabs} role="tablist">{reportBlocks.map((block, index) => <button key={block.title} type="button" role="tab" aria-selected={reportView === index} data-active={reportView === index} onClick={() => { setReportView(index); setReportPick(null) }}>{['Despesas', 'Receitas', 'Contas e cartões', 'Fixas × variáveis'][index] || block.title}</button>)}</div>
       {barBlock(reportBlocks[Math.min(reportView, reportBlocks.length - 1)])}
     </> : null}
 
