@@ -331,7 +331,18 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
     }, 0)
     return initialBalance + transactionsTotal + fixedTotal
   }
-  const projectedBalance = projectedThrough(month)
+  /** Saldo previsto = saldo atual + receitas pendentes − despesas pendentes até o fim do mês (faturas entram pelo que falta pagar; compras no cartão só pela fatura). */
+  const projectedFromPending = (m: string) => {
+    const end = `${m}-31`
+    const isCardPurchase = (item: Row) => !item.ajuste_fatura && (String(item.conta_id || '').startsWith('card|') || Boolean(item.cartao_id))
+    const open = [...transactions.filter(item => dateKey(item.data) && dateKey(item.data) <= end), ...fixedForMonthAt(m)].filter(item => !item.ignorar_calculo && !isCardPurchase(item))
+    const left = (item: Row) => Math.max(0, clampMoney(item.valor) - paidAmountThrough(item, '9999-12-31'))
+    const receive = open.filter(item => item.tipo === 'receita').reduce((sum, item) => sum + left(item), 0)
+    const pay = open.filter(item => item.tipo !== 'receita').reduce((sum, item) => sum + left(item), 0)
+    const invoicesLeft = transactions.filter(item => item.ajuste_fatura === true && dateKey(item.data) <= end && dateKey(item.data).slice(0, 7) >= shiftMonth(m, -1)).reduce((sum, item) => sum + Math.max(0, clampMoney(item.valor) - clampMoney(item.valor_pago)), 0)
+    return realBalance + receive - pay - invoicesLeft
+  }
+  const projectedBalance = projectedFromPending(month)
   const monthStartBalance = projectedThrough(shiftMonth(month, -1))
   const totalBoxes = boxes.reduce((sum, item) => sum + clampMoney(item.saldo), 0)
   const totalBoxTarget = boxes.reduce((sum, item) => sum + clampMoney(item.meta), 0)
