@@ -154,6 +154,7 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
   const [periodMenu, setPeriodMenu] = useState(false)
   const [reportView, setReportView] = useState(0)
   const [reportAll, setReportAll] = useState(false)
+  const [reportHover, setReportHover] = useState('')
   const [customFrom, setCustomFrom] = useState(`${today.slice(0, 4)}-01`)
   const [customTo, setCustomTo] = useState(today.slice(0, 7))
   const [draft, setDraft] = useState<Row | null>(null)
@@ -956,10 +957,24 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
     const head = many && !reportAll ? block.slices.slice(0, REPORT_TOP) : block.slices
     const rest = many && !reportAll ? block.slices.slice(REPORT_TOP) : []
     const shown: Slice[] = rest.length ? [...head, { name: `Outras (${rest.length})`, value: rest.reduce((sum, slice) => sum + slice.value, 0), color: 'var(--ds-muted)' }] : head
+    const radius = 44
+    const circumference = 2 * Math.PI * radius
+    let offset = 0
+    const arcs = shown.map(slice => { const fraction = block.total ? slice.value / block.total : 0; const length = Math.max(0, fraction * circumference - (shown.length > 1 ? 1.5 : 0)); const arc = { slice, length, offset }; offset += fraction * circumference; return arc })
+    const focus = shown.find(slice => slice.name === reportHover)
     return <section className={fm.reportBlock} key={block.title}>
-      <div className={fm.reportTitle}><strong>{block.title}</strong><span>{money.format(block.total)}</span></div>
-      <div className={fm.barList}>{shown.map(slice => { const percent = block.total ? slice.value / block.total * 100 : 0; return <div className={fm.barRow} key={slice.name}><div className={fm.barTop}><span className={fm.barName}>{slice.name}</span><span className={fm.barValue} data-tone={block.tone}>{money.format(slice.value)}<small>{percent.toFixed(0)}%</small></span></div><div className={fm.barTrack}><div style={{ width: `${percent}%`, background: slice.color }} /></div></div> })}{!block.slices.length ? <div className={fm.empty}>Sem dados no período.</div> : null}</div>
-      {many ? <button type="button" className={fm.reportMore} onClick={() => setReportAll(value => !value)}>{reportAll ? 'Mostrar menos' : `Ver todas (${block.slices.length})`}</button> : null}
+      {block.slices.length ? <div className={fm.donutWrap}>
+        <div className={fm.donut}>
+          <svg viewBox="0 0 120 120" role="img" aria-label={block.title}>
+            <circle cx="60" cy="60" r={radius} fill="none" strokeWidth="14" style={{ stroke: 'color-mix(in srgb, var(--ds-text) 8%, transparent)' }} />
+            <g transform="rotate(-90 60 60)">{arcs.map(arc => <circle key={arc.slice.name} cx="60" cy="60" r={radius} fill="none" strokeWidth={reportHover === arc.slice.name ? 17 : 14} strokeDasharray={`${arc.length} ${circumference}`} strokeDashoffset={-arc.offset} style={{ stroke: arc.slice.color, opacity: reportHover && reportHover !== arc.slice.name ? 0.3 : 1, transition: 'opacity .15s, stroke-width .15s' }} onMouseEnter={() => setReportHover(arc.slice.name)} onMouseLeave={() => setReportHover('')} />)}</g>
+          </svg>
+          <div className={fm.donutCenter}><small>{focus ? focus.name : block.title}</small><b data-tone={block.tone}>{money.format(focus ? focus.value : block.total)}</b>{focus && block.total ? <small>{(focus.value / block.total * 100).toFixed(1).replace('.', ',')}%</small> : null}</div>
+        </div>
+        <div className={fm.legend}>{shown.map(slice => { const percent = block.total ? slice.value / block.total * 100 : 0; return <div key={slice.name} className={fm.legendRow} data-dim={reportHover && reportHover !== slice.name ? 'true' : undefined} onMouseEnter={() => setReportHover(slice.name)} onMouseLeave={() => setReportHover('')}><i style={{ background: slice.color }} /><span className={fm.legendName}>{slice.name}</span><span className={fm.legendPct}>{percent.toFixed(0)}%</span><span className={fm.barValue} data-tone={block.tone}>{money.format(slice.value)}</span></div> })}
+          {many ? <button type="button" className={fm.reportMore} onClick={() => setReportAll(value => !value)}>{reportAll ? 'Mostrar menos' : `Ver todas (${block.slices.length})`}</button> : null}
+        </div>
+      </div> : <div className={fm.empty}>Sem dados no período.</div>}
     </section>
   }
 
