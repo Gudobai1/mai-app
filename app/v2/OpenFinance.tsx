@@ -10,7 +10,7 @@ type Commit = (change: (current: MaiState) => MaiState) => void
 
 type Link = { itemId: string; banco: string; ultimaSync?: string }
 type Pending = { id: string; accountId: string; itemId: string; data: string; titulo: string; valor: number; tipo: 'receita' | 'despesa'; pendente: boolean; categoria: string; parcela: string }
-export type BankAccount = { id: string; itemId: string; nome: string; tipo: 'conta' | 'cartao'; saldo: number; limite: number; limite_disponivel: number }
+export type BankAccount = { id: string; itemId: string; nome: string; tipo: 'conta' | 'cartao'; saldo: number; limite: number; limite_disponivel: number; vencimento_dia?: number; fechamento_dia?: number }
 export type OpenFinanceData = { itens: Link[]; contas: BankAccount[]; vinculos: Record<string, string>; pendentes: Pending[]; vistos: string[]; dispensadas: string[] }
 
 const money = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' })
@@ -121,6 +121,41 @@ function upsertInvestments(current: Row[], items: { banco: string; investments?:
   return next
 }
 
+const monthOf = (date: string) => date.slice(0, 7)
+const nextMonth = (month: string) => { const [y, m] = month.split('-').map(Number); return m === 12 ? `${y + 1}-01` : `${y}-${String(m + 1).padStart(2, '0')}` }
+const dueOf = (month: string, day: number) => { const [y, m] = month.split('-').map(Number); return `${month}-${String(Math.min(day, new Date(y, m, 0).getDate())).padStart(2, '0')}` }
+
+/** Mês da fatura de uma compra: a fatura do mês começa no vencimento da anterior (janela (venc. anterior, venc.]). */
+function invoiceMonthOf(date: string, dues: string[], dueDay: number) {
+  const hit = dues.find(due => date <= due)
+  if (hit) return monthOf(hit)
+  let month = dues.length ? nextMonth(monthOf(dues[dues.length - 1])) : monthOf(date)
+  for (let guard = 0; guard < 36 && date > dueOf(month, dueDay); guard += 1) month = nextMonth(month)
+  return month
+}
+
+/** Cartões do banco: valor da fatura vem direto da Pluggy (sem recalcular) e as compras caem na fatura certa. */
+function applyCardBills(rows: Row[], cards: Row[], links: Record<string, string>, bank: BankAccount[], items: { bills?: { id: string; accountId: string; dueDate: string; total: number }[] }[]) {
+  let nextRows = rows
+  const nextCards = cards.map(card => {
+    const bankCard = bank.find(b => b.tipo === 'cartao' && links[b.id] === `card|${card.id}`)
+    if (!bankCard) return card
+    const cardId = String(card.id)
+    const bills = items.flatMap(item => item.bills || []).filter(bill => bill.accountId === bankCard.id).sort((a, b) => a.dueDate.localeCompare(b.dueDate))
+    const dueDay = Number(bankCard.vencimento_dia) || Number(card.vencimento) || 10
+    const dues = bills.map(bill => bill.dueDate)
+    nextRows = nextRows.map(tx => tx.pluggy_id && !tx.ajuste_fatura && String(tx.cartao_id) === cardId ? { ...tx, competencia_fatura: invoiceMonthOf(String(tx.data).slice(0, 10), dues, dueDay) } : tx)
+    for (const bill of bills) {
+      const month = monthOf(bill.dueDate)
+      const index = nextRows.findIndex(tx => tx.ajuste_fatura === true && String(tx.ajuste_fatura_card_id || tx.cartao_id || '') === cardId && String(tx.competencia_fatura || monthOf(String(tx.data))) === month)
+      if (index >= 0) { nextRows = nextRows.map((tx, i) => i === index ? { ...tx, valor: cents(bill.total), pluggy_bill: bill.id, data: bill.dueDate, ajuste_delta: undefined } : tx); continue }
+      nextRows = [...nextRows, { id: uid('invoice'), pluggy_bill: bill.id, titulo: `Fatura ${String(card.nome || 'Cartão')}`, tipo: 'despesa', data: bill.dueDate, valor: cents(bill.total), valor_pago: 0, status: 'pendente', pagamentos: [], categoria: 'Fatura do cartão', conta_id: `card|${cardId}`, cartao_id: cardId, conta_pagamento_id: String(card.conta_id || ''), anexos: [], ignorar_calculo: true, recorrencia: 'unico', ajuste_fatura: true, ajuste_fatura_card_id: cardId, competencia_fatura: month }]
+    }
+    return { ...card, vencimento: dueDay, ...(bankCard.fechamento_dia ? { fechamento: bankCard.fechamento_dia } : {}) }
+  })
+  return { cards: nextCards, transactions: nextRows }
+}
+
 /** Registra (ou desfaz) o vínculo de um item do app com uma conta/cartão do banco, ao salvar o item. */
 export function bindOpenFinance(finance: Row, target: string, pluggyId?: string): OpenFinanceData {
   const data = readOpenFinance({ finance } as unknown as MaiState)
@@ -166,7 +201,7 @@ export function useOpenFinance(state: MaiState, commit: Commit) {
       const first = !data.itens.some(item => item.ultimaSync)
       const from = new Date(Date.now() - (first ? 90 : 14) * 86400_000).toISOString().slice(0, 10)
       const json = await api('/api/pluggy/sync', { itemIds, from })
-      const items = (json.items || []) as { itemId: string; banco: string; status: string; accounts: any[]; investments?: any[]; transactions: any[] }[]
+      const items = (json.items || []) as { itemId: string; banco: string; status: string; accounts: any[]; bills?: { id: string; accountId: string; dueDate: string; total: number }[]; investments?: any[]; transactions: any[] }[]
       let added = 0
       patchOpenFinance(commit, (current, finance) => {
         // lançamentos seus que a versão anterior casou com o banco voltam a ser só seus (o movimento do banco entra no item do banco)
@@ -183,7 +218,7 @@ export function useOpenFinance(state: MaiState, commit: Commit) {
         added = imported.rows.length - migratedRows.length
         const itens = current.itens.map(link => { const hit = items.find(i => i.itemId === link.itemId); return hit ? { ...link, banco: hit.banco, ultimaSync: new Date().toISOString() } : link })
         return {
-          finance: { accounts: resolved.accounts, cards: resolved.cards, transactions: imported.rows, investments: upsertInvestments((finance.investments || []) as Row[], items) },
+          finance: { accounts: resolved.accounts, ...applyCardBills(imported.rows, resolved.cards, resolved.links, bank, items), investments: upsertInvestments((finance.investments || []) as Row[], items) },
           data: { ...current, itens, contas: bank, vinculos: resolved.links, dispensadas: resolved.dismissed, pendentes: imported.remaining, vistos: [...current.vistos, ...imported.skipped] },
         }
       })
@@ -294,7 +329,7 @@ export function useOpenFinance(state: MaiState, commit: Commit) {
     const bank = pluggyId ? data.contas.find(c => c.id === pluggyId) : undefined
     if (!bank) return null
     const item = data.itens.find(i => i.itemId === bank.itemId)
-    return { banco: bankLabel(bank.nome), tipo: bank.tipo, saldo: bank.saldo, limite: bank.limite || bank.limite_disponivel, atualizado: item?.ultimaSync || '' }
+    return { itemId: bank.itemId, banco: bankLabel(bank.nome), tipo: bank.tipo, saldo: bank.saldo, limite: bank.limite || bank.limite_disponivel, atualizado: item?.ultimaSync || '' }
   }
   const available = (kind: 'conta' | 'cartao') => data.contas.filter(c => c.tipo === kind && !data.vinculos[c.id])
 

@@ -161,3 +161,6 @@
 
 .field [data-money] { font-size: 13.5px; font-weight: var(--ds-fw-medium); }
 .field [data-money][data-empty] { color: var(--ds-muted); }
+
+.inlineAction { border: 0; background: transparent; color: var(--ds-accent); font: inherit; font-weight: 600; cursor: pointer; padding: 0; text-align: left; }
+.inlineAction:disabled { opacity: .5; cursor: default; }
