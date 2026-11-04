@@ -148,7 +148,7 @@ function applyCardBills(rows: Row[], cards: Row[], links: Record<string, string>
     const dueDay = Number(card.vencimento) || Number(bankCard.vencimento_dia) || 10
     const bills = items.flatMap(item => item.bills || []).filter(bill => bill.accountId === bankCard.id).sort((a, b) => a.dueDate.localeCompare(b.dueDate))
     const billMonth = new Map(bills.map(bill => [bill.id, monthOf(bill.dueDate)]))
-    const monthFor = (tx: { data: string; fatura_bill_id?: string; billId?: string }) => billMonth.get(String(tx.fatura_bill_id || tx.billId || '')) || invoiceMonthOf(String(tx.data).slice(0, 10), closingDay, dueDay)
+    const monthFor = (tx: Row) => billMonth.get(String(tx.fatura_bill_id || tx.billId || '')) || invoiceMonthOf(String(tx.data).slice(0, 10), closingDay, dueDay)
     nextRows = nextRows.map(tx => tx.pluggy_id && !tx.ajuste_fatura && String(tx.cartao_id) === cardId ? { ...tx, competencia_fatura: monthFor(tx) } : tx)
 
     for (const bill of bills) {
