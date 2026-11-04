@@ -297,3 +297,10 @@ button.balanceMain:hover { background: var(--ds-surface-hover); }
 .reportList { max-height: 320px; overflow-y: auto; border: 1px solid color-mix(in srgb, var(--ds-text) 10%, transparent); border-radius: 14px; padding: 2px 10px; background: color-mix(in srgb, var(--ds-text) 3%, transparent); }
 .reportList > button:first-child { border-top: 0; }
 .reportListHead { margin-top: 20px; }
+
+/* topo: efetuado × falta, discreto */
+.summary > button em { font-style: normal; font-size: 11px; color: var(--ds-muted); font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.listHead b { font-weight: 650; color: var(--ds-text); font-variant-numeric: tabular-nums; }
+.listSum { margin-left: 6px; font-weight: 600; color: var(--ds-muted); font-variant-numeric: tabular-nums; }
+/* lançamentos dos relatórios: lista normal, sem caixa nem rolagem */
+.reportList { max-height: none !important; overflow: visible !important; border: 0 !important; border-radius: 0 !important; padding: 0 !important; background: none !important; }
