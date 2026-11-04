@@ -258,8 +258,11 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
   // limite disponível = limite total menos tudo que o cartão ainda deve (todas as faturas), não só a do mês aberto na tela
   function cardAvailable(card: Row) {
     const bank = card.pluggy_id ? openFinance.data.contas.find(item => item.id === String(card.pluggy_id)) : undefined
-    if (bank && bank.limite > 0 && bank.limite_disponivel > 0) return Math.min(bank.limite, bank.limite_disponivel)
     const cardId = String(card.id)
+    // o que você já pagou nas faturas (todas)
+    const paidTotal = transactions.filter(item => item.ajuste_fatura === true && String(item.ajuste_fatura_card_id || item.cartao_id || '') === cardId).reduce((sum, item) => sum + clampMoney(item.valor_pago), 0)
+    // cartão do banco: o disponível do banco + pagamentos que você fez depois da última sincronização
+    if (bank && bank.limite > 0 && bank.limite_disponivel > 0) return Math.min(bank.limite, bank.limite_disponivel + Math.max(0, paidTotal - (card.limite_pago_base === undefined ? paidTotal : clampMoney(card.limite_pago_base))))
     const ofCard = (item: Row) => String(item.conta_id || '') === `card|${cardId}` || String(item.cartao_id || '') === cardId
     const months = new Set(transactions.filter(ofCard).map(item => itemMonth(item)))
     let owed = 0
@@ -964,7 +967,7 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
 
     {tab === 'cards' ? <>
       <div className={fm.listHead}><span>{cards.length} {cards.length === 1 ? 'cartão' : 'cartões'}</span><span>Faturas de {monthLabel(month).split(' de ')[0]} · {money.format(monthInvoice)}</span></div>
-      <div className={fm.list}>{cards.map(card => { const invoice = cardInvoice(card, monthItems, month); const limit = clampMoney(card.limite); const dueKey = monthDateForDay(month, Number(card.vencimento || 10)); return <div key={String(card.id)} className={fm.entityRow} {...quick.bind(() => entityMenu('card', card))}><button type="button" className={fm.entity} onClick={() => openExisting('card', card)}><i className={fm.ring} style={{ '--ring': String(card.cor || 'var(--ds-accent)') } as React.CSSProperties} /><span className={fm.copy}><span className={fm.name}>{card.nome}</span><span className={fm.subLine}>{card.pluggy_id ? <span>{ofSubtitle(String(card.pluggy_id), 'card')}</span> : null}<span className={fm.due} data-tone={dueTone(dueKey)}>{calIcon}Vence {naturalDate(dueKey, today)}</span>{limit ? <span>{money.format(cardAvailable(card))} de limite disponível</span> : null}</span></span><span className={fm.amount}><b>{money.format(invoice)}</b></span></button></div> })}</div>
+      <div className={fm.list}>{cards.map(card => { const invoice = cardInvoice(card, monthItems, month); const limit = clampMoney(card.limite); const dueKey = monthDateForDay(month, Number(card.vencimento || 10)); return <div key={String(card.id)} className={fm.entityRow} {...quick.bind(() => entityMenu('card', card))}><button type="button" className={fm.entity} onClick={() => openExisting('card', card)}><i className={fm.ring} style={{ '--ring': String(card.cor || 'var(--ds-accent)') } as React.CSSProperties} /><span className={fm.copy}><span className={fm.name}>{card.nome}</span><span className={fm.subLine}>{card.pluggy_id ? <span>{ofSubtitle(String(card.pluggy_id), 'card')}</span> : null}<span className={fm.due} data-tone={dueTone(dueKey)}>{calIcon}Vence {naturalDate(dueKey, today)}</span>{clampMoney(invoiceRow(monthItems, String(card.id))?.valor_pago) > 0 ? <span>Pago {money.format(clampMoney(invoiceRow(monthItems, String(card.id))?.valor_pago))} · falta {money.format(Math.max(0, invoice - clampMoney(invoiceRow(monthItems, String(card.id))?.valor_pago)))}</span> : null}{limit ? <span>{money.format(cardAvailable(card))} de limite disponível</span> : null}</span></span><span className={fm.amount}><b>{money.format(invoice)}</b></span></button></div> })}</div>
       {addRow('Adicionar cartão', () => openNew('card'))}
     </> : null}
 
