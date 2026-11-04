@@ -41,7 +41,7 @@ type PluggyItem = { id: string; status?: string; connector?: { name?: string; im
 type PluggyAccount = { id: string; type?: string; subtype?: string; name?: string; number?: string; balance?: number; currencyCode?: string; creditData?: { availableCreditLimit?: number; creditLimit?: number; balanceCloseDate?: string | null; balanceDueDate?: string | null } | null }
 type PluggyBill = { id: string; dueDate?: string | null; totalAmount?: number | null }
 type PluggyInvestment = { id: string; name?: string; type?: string; subtype?: string; balance?: number; value?: number; amount?: number; amountOriginal?: number | null; amountProfit?: number | null; institution?: { name?: string } | null; code?: string | null }
-type PluggyTransaction = { id: string; accountId: string; date: string; description?: string; descriptionRaw?: string | null; type?: 'DEBIT' | 'CREDIT'; amount: number; status?: string; category?: string | null; creditCardMetadata?: { installmentNumber?: number; totalInstallments?: number } | null }
+type PluggyTransaction = { id: string; accountId: string; date: string; description?: string; descriptionRaw?: string | null; type?: 'DEBIT' | 'CREDIT'; amount: number; status?: string; category?: string | null; creditCardMetadata?: { installmentNumber?: number; totalInstallments?: number; billId?: string | null } | null }
 
 export type SyncedItem = {
   itemId: string
@@ -50,7 +50,7 @@ export type SyncedItem = {
   accounts: { id: string; nome: string; tipo: 'conta' | 'cartao'; saldo: number; limite: number; limite_disponivel: number; vencimento_dia: number; fechamento_dia: number }[]
   bills: { id: string; accountId: string; dueDate: string; total: number }[]
   investments: { id: string; nome: string; tipo: string; valor_atual: number; aportado: number }[]
-  transactions: { id: string; accountId: string; data: string; titulo: string; valor: number; tipo: 'receita' | 'despesa'; pendente: boolean; categoria: string; parcela: string }[]
+  transactions: { id: string; accountId: string; data: string; titulo: string; valor: number; tipo: 'receita' | 'despesa'; pendente: boolean; categoria: string; parcela: string; billId: string }[]
 }
 
 type CursorPage<T> = { results: T[]; next?: string | null }
@@ -123,6 +123,7 @@ export async function syncItem(itemId: string, from: string): Promise<SyncedItem
         tipo: credit_in ? 'receita' : 'despesa',
         pendente: tx.status === 'PENDING',
         categoria: String(tx.category || ''),
+        billId: String(tx.creditCardMetadata?.billId || ''),
         parcela: tx.creditCardMetadata?.totalInstallments ? `${tx.creditCardMetadata.installmentNumber || 1}/${tx.creditCardMetadata.totalInstallments}` : '',
       })
     }
