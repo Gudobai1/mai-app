@@ -102,12 +102,20 @@ function importPending(list: Pending[], links: Record<string, string>, rows: Row
     const settled = p.pendente ? { status: 'pendente', valor_pago: 0, pagamentos: [] as Row[] } : null
     out.push({
       id: uid('fin'), pluggy_id: p.id, titulo: (p.parcela ? `${p.titulo} (${p.parcela})` : p.titulo).replace(/\s*\|\s*/g, ' · '), observacao: 'Open Finance', valor: p.valor, tipo: p.tipo, data: p.data,
-      categoria: '', conta_id: target, cartao_id: isCard ? target.slice(5) : '', fatura_bill_id: p.billId || '', anexos: [], recorrencia: 'unico',
+      categoria: p.categoria || '', conta_id: target, cartao_id: isCard ? target.slice(5) : '', fatura_bill_id: p.billId || '', anexos: [], recorrencia: 'unico',
       ignorar_calculo: !isCard && FATURA.test(p.titulo),
       ...(settled || { status: 'pago', valor_pago: p.valor, pagamentos: [{ id: uid('pay'), data: p.data, valor: p.valor }] }),
     })
   }
   return { rows: out, remaining, skipped }
+}
+
+const CATEGORY_COLORS = ['var(--ds-rose-fg)', 'var(--ds-peach-fg)', 'var(--ds-sky-fg)', 'var(--ds-lilac-fg)', 'var(--ds-mint-fg)', 'var(--ds-teal-fg)', 'var(--ds-accent)']
+/** As categorias automáticas do banco passam a existir no app (com cor), para valerem nos relatórios e filtros. */
+function withBankCategories(categories: Row[], rows: Row[]) {
+  const have = new Set(categories.map(item => String(item.nome || '').trim().toLocaleLowerCase('pt-BR')))
+  const names = [...new Set(rows.filter(tx => tx.pluggy_id && !tx.ajuste_fatura && tx.categoria).map(tx => String(tx.categoria).trim()))].filter(name => name && !have.has(name.toLocaleLowerCase('pt-BR')))
+  return names.length ? [...categories, ...names.map((nome, index) => ({ id: uid('cat'), nome, cor: CATEGORY_COLORS[(categories.length + index) % CATEGORY_COLORS.length] }))] : categories
 }
 
 /** Investimentos do banco viram investimentos normais do app (atualiza valor e aportado a cada sincronização). */
@@ -257,7 +265,7 @@ export function useOpenFinance(state: MaiState, commit: Commit) {
         const rows = cleaned.map(tx => {
           const hit = tx.pluggy_id && (tx.observacao === 'Open Finance' || tx.of_linked) ? remoteById.get(String(tx.pluggy_id)) : null
           if (hit && tx.of_linked) return { ...tx, valor: hit.valor, fatura_bill_id: hit.billId || '' } // vinculado: o que é seu (título, categoria, pagamentos, data) fica
-          return hit ? { ...tx, valor: hit.valor, data: hit.data, fatura_bill_id: hit.billId || '' } : tx
+          return hit ? { ...tx, valor: hit.valor, data: hit.data, fatura_bill_id: hit.billId || '', categoria: tx.categoria || hit.categoria || '' } : tx
         }).filter(tx => {
           if (!tx.pluggy_id || tx.observacao !== 'Open Finance' || String(tx.data).slice(0, 10) < from) return true
           const owner = Object.keys(linksNow).find(id => linksNow[id] === String(tx.conta_id) && remote.has(id))
@@ -275,7 +283,7 @@ export function useOpenFinance(state: MaiState, commit: Commit) {
         added = imported.rows.length - migratedRows.length
         const itens = current.itens.map(link => { const hit = items.find(i => i.itemId === link.itemId); return hit ? { ...link, banco: hit.banco, ultimaSync: new Date().toISOString() } : link })
         return {
-          finance: { ...(() => { const billed = applyCardBills(imported.rows, resolved.cards, resolved.links, bank, items); return { accounts: resolved.accounts.map((account: Row) => account.pluggy_id ? { ...account, pago_base: cents(billed.transactions.filter((tx: Row) => tx.ajuste_fatura === true && String(tx.conta_pagamento_id || '') === String(account.id)).reduce((sum: number, tx: Row) => sum + num(tx.valor_pago), 0)) } : account), ...billed } })(), investments: upsertInvestments((finance.investments || []) as Row[], items) },
+          finance: { categories: withBankCategories((finance.categories || []) as Row[], imported.rows), ...(() => { const billed = applyCardBills(imported.rows, resolved.cards, resolved.links, bank, items); return { accounts: resolved.accounts.map((account: Row) => account.pluggy_id ? { ...account, pago_base: cents(billed.transactions.filter((tx: Row) => tx.ajuste_fatura === true && String(tx.conta_pagamento_id || '') === String(account.id)).reduce((sum: number, tx: Row) => sum + num(tx.valor_pago), 0)) } : account), ...billed } })(), investments: upsertInvestments((finance.investments || []) as Row[], items) },
           data: { ...current, itens, contas: bank, vinculos: resolved.links, dispensadas: resolved.dismissed, pendentes: imported.remaining, vistos: [...current.vistos, ...imported.skipped] },
         }
       })

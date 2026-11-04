@@ -20,6 +20,20 @@ async function apiKey() {
   return cached.key
 }
 
+/** Categorias automáticas do Pluggy, em português (cache do servidor por 12h). */
+let categoryCache: { map: Map<string, string>; exp: number } | null = null
+async function categoryNames(): Promise<Map<string, string>> {
+  if (categoryCache && categoryCache.exp > Date.now()) return categoryCache.map
+  const map = new Map<string, string>()
+  try {
+    const data = await call<any>('/categories?pageSize=500')
+    const list: any[] = Array.isArray(data) ? data : Array.isArray(data?.results) ? data.results : []
+    for (const item of list) { const name = String(item.descriptionTranslated || item.description || '').trim(); if (item.id && name) map.set(String(item.id), name) }
+  } catch { /* sem tradução: usa o nome que vem na transação */ }
+  categoryCache = { map, exp: Date.now() + (map.size ? 12 * 3600_000 : 5 * 60_000) }
+  return map
+}
+
 async function call<T>(path: string, init: RequestInit = {}): Promise<T> {
   const response = await fetch(`${BASE}${path}`, { ...init, cache: 'no-store', headers: { 'content-type': 'application/json', 'X-API-KEY': await apiKey(), ...(init.headers || {}) } })
   if (!response.ok) {
@@ -41,7 +55,7 @@ type PluggyItem = { id: string; status?: string; connector?: { name?: string; im
 type PluggyAccount = { id: string; type?: string; subtype?: string; name?: string; number?: string; balance?: number; currencyCode?: string; creditData?: { availableCreditLimit?: number; creditLimit?: number; balanceCloseDate?: string | null; balanceDueDate?: string | null } | null }
 type PluggyBill = { id: string; dueDate?: string | null; totalAmount?: number | null }
 type PluggyInvestment = { id: string; name?: string; type?: string; subtype?: string; balance?: number; value?: number; amount?: number; amountOriginal?: number | null; amountProfit?: number | null; institution?: { name?: string } | null; code?: string | null }
-type PluggyTransaction = { id: string; accountId: string; date: string; description?: string; descriptionRaw?: string | null; type?: 'DEBIT' | 'CREDIT'; amount: number; amountInAccountCurrency?: number | null; status?: string; category?: string | null; creditCardMetadata?: { installmentNumber?: number; totalInstallments?: number; billId?: string | null } | null }
+type PluggyTransaction = { categoryId?: string | null; id: string; accountId: string; date: string; description?: string; descriptionRaw?: string | null; type?: 'DEBIT' | 'CREDIT'; amount: number; amountInAccountCurrency?: number | null; status?: string; category?: string | null; creditCardMetadata?: { installmentNumber?: number; totalInstallments?: number; billId?: string | null } | null }
 
 export type SyncedItem = {
   itemId: string
@@ -85,6 +99,7 @@ export async function syncItem(itemId: string, from: string): Promise<SyncedItem
   const item = await call<PluggyItem>(`/items/${encodeURIComponent(itemId)}`)
   const base: SyncedItem = { itemId, banco: item.connector?.name || 'Banco', status: item.status || 'UNKNOWN', accounts: [], bills: [], investments: [], transactions: [] }
   if (item.status && !['UPDATED', 'PARTIAL_SUCCESS'].includes(item.status)) return base
+  const categories = await categoryNames()
   try {
     for (const inv of await allInvestments(itemId)) {
       const atual = Number(inv.balance ?? inv.value ?? inv.amount ?? 0)
@@ -122,7 +137,7 @@ export async function syncItem(itemId: string, from: string): Promise<SyncedItem
         valor: Math.abs(Number(tx.amountInAccountCurrency ?? tx.amount ?? 0)), // compra em dólar: vale o valor em reais que o banco cobrou
         tipo: credit_in ? 'receita' : 'despesa',
         pendente: tx.status === 'PENDING',
-        categoria: String(tx.category || ''),
+        categoria: String((tx.categoryId && categories.get(String(tx.categoryId))) || tx.category || ''),
         billId: String(tx.creditCardMetadata?.billId || ''),
         parcela: tx.creditCardMetadata?.totalInstallments ? `${tx.creditCardMetadata.installmentNumber || 1}/${tx.creditCardMetadata.totalInstallments}` : '',
       })
