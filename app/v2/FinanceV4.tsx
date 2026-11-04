@@ -28,6 +28,7 @@ import { invoiceValue } from '../../lib/v2/financeInvoice'
 import { shiftInstallment } from '../../lib/v2/financeInstallments'
 import { financeTagSuggestions, parseFinanceTags } from '../../lib/v2/financeTags'
 import fm from './FinanceModern.module.css'
+import { OpenFinancePanel } from './OpenFinance'
 
 type Row = Record<string, any>
 type Commit = (change: (current: MaiState) => MaiState) => void
@@ -929,6 +930,7 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
     </> : null}
 
     {tab === 'accounts' ? <>
+      <OpenFinancePanel state={state} commit={commit} accounts={accounts} cards={cards} />
       <div className={fm.listHead}><span>{accounts.length} {accounts.length === 1 ? 'conta' : 'contas'}</span><span>{money.format(realBalance)} no total</span></div>
       <div className={fm.list}>{accounts.map(account => <div key={String(account.id)} className={fm.entityRow} {...quick.bind(() => entityMenu('account', account))}><button type="button" className={fm.entity} onClick={() => openExisting('account', account)}><i className={fm.ring} style={{ '--ring': String(account.cor || 'var(--ds-accent)') } as React.CSSProperties} /><span className={fm.copy}><span className={fm.name}>{account.nome}</span><span className={fm.sub}>Saldo inicial {money.format(Number(account.saldo_inicial || 0))}</span></span><span className={fm.amount}><b>{money.format(accountBalance(account))}</b></span></button></div>)}</div>
       {addRow('Adicionar conta', () => openNew('account'))}
