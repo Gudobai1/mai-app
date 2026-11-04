@@ -17,7 +17,6 @@ const money = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL
 const uid = (prefix: string) => `${prefix}-${crypto.randomUUID()}`
 const num = (value: unknown) => Number(value) || 0
 const cents = (value: number) => Math.round(value * 100) / 100
-const dayDiff = (a: string, b: string) => Math.abs(Date.parse(`${a}T12:00:00`) - Date.parse(`${b}T12:00:00`)) / 86400_000
 const FATURA = /pagamento (de |da |do )?fatura|pagamento fatura|fatura (do )?cart/i // pagamento de fatura já aparece como compras no cartão
 const shortName = (nome: string) => nome.replace(/^MeuPluggy\s*·\s*/i, '').split(' - ')[0].replace(/\s+S\.?\s?A\.?$/i, '').trim() || 'Banco'
 const AUTO_MINUTES = 15
@@ -41,31 +40,47 @@ function patchOpenFinance(commit: Commit, change: (data: OpenFinanceData, financ
   })
 }
 
-/** Liga sozinho cada conta/cartão do banco a uma conta/cartão do app (ou cria quando o app não tem nenhum). */
+const bankLabel = (nome: string) => /nu pagamentos|nubank/i.test(nome) ? 'Nubank' : shortName(nome)
+
+/**
+ * Cada conta/cartão do banco vira um item PRÓPRIO do app (marcado com pluggy_id); nunca mistura com os seus manuais.
+ * Vínculos antigos para itens manuais são desfeitos: o saldo inicial que o sync mexeu volta a 0 e o que foi importado migra para o item do banco.
+ */
 function resolveLinks(links: Record<string, string>, bank: BankAccount[], finance: Row) {
   const accounts: Row[] = [...((finance.accounts || []) as Row[])]
   const cards: Row[] = [...((finance.cards || []) as Row[])]
   const next = { ...links }
-  const taken = new Set(Object.values(next))
-  const gone = (id: string) => !(next[id] && (next[id].startsWith('card|') ? cards.some(c => `card|${c.id}` === next[id]) : accounts.some(a => String(a.id) === next[id])))
-  for (const kind of ['conta', 'cartao'] as const) {
-    const unlinked = bank.filter(b => b.tipo === kind && gone(b.id))
-    for (const b of unlinked) {
-      const free = (kind === 'cartao' ? cards : accounts).filter(x => !taken.has(kind === 'cartao' ? `card|${x.id}` : String(x.id)))
-      let target = ''
-      if (free.length === 1 && unlinked.length === 1) target = kind === 'cartao' ? `card|${free[0].id}` : String(free[0].id)
-      else {
-        const id = uid(kind === 'cartao' ? 'crd' : 'cta')
-        if (kind === 'cartao') { cards.push({ id, nome: /cart[aã]o/i.test(shortName(b.nome)) ? shortName(b.nome) : `Cartão ${shortName(b.nome)}`, limite: b.limite, fechamento: 1, vencimento: 10, conta_id: '', cor: '#4073FF', foto: '' }); target = `card|${id}` }
-        else { accounts.push({ id, nome: shortName(b.nome), saldo_inicial: 0, cor: '#4073FF', foto: '' }); target = id }
-      }
-      if (target) { next[b.id] = target; taken.add(target) }
-    }
+  const moved: Record<string, string> = {}
+  const stale: Record<string, string> = {}
+  const find = (target: string) => target.startsWith('card|') ? cards.find(c => `card|${c.id}` === target) : accounts.find(a => String(a.id) === target)
+  for (const b of bank) {
+    const target = next[b.id]
+    if (!target) continue
+    const item = find(target)
+    if (item && item.pluggy_id) continue
+    if (item) stale[target] = b.id
+    delete next[b.id]
   }
-  return { links: next, accounts, cards }
+  const prefix = (b: BankAccount) => bankLabel(bank.find(x => x.itemId === b.itemId && x.tipo === 'conta')?.nome || b.nome)
+  for (const b of bank) {
+    if (next[b.id]) continue
+    const id = uid(b.tipo === 'cartao' ? 'crd' : 'cta')
+    if (b.tipo === 'cartao') {
+      const base = shortName(b.nome)
+      const nome = `${/cart[aã]o/i.test(base) ? base : `${prefix(b)} ${base}`} (Open Finance)`
+      cards.push({ id, pluggy_id: b.id, nome, limite: b.limite, fechamento: 1, vencimento: 10, conta_id: '', cor: '#4073FF', foto: '' })
+      next[b.id] = `card|${id}`
+    } else {
+      accounts.push({ id, pluggy_id: b.id, nome: `${bankLabel(b.nome)} (Open Finance)`, saldo_inicial: 0, cor: '#4073FF', foto: '' })
+      next[b.id] = id
+    }
+    if (stale[Object.keys(stale).find(t => stale[t] === b.id) || '']) moved[Object.keys(stale).find(t => stale[t] === b.id) as string] = next[b.id]
+  }
+  const restored = accounts.map(a => stale[String(a.id)] ? { ...a, saldo_inicial: 0 } : a)
+  return { links: next, accounts: restored, cards, moved }
 }
 
-/** Lança direto: casa com lançamento seu parecido (sem duplicar) ou cria um novo já pago. */
+/** Lança direto na conta/cartão do banco, já pago. Nunca mexe nos seus lançamentos manuais. */
 function importPending(list: Pending[], links: Record<string, string>, rows: Row[]) {
   const out = [...rows]
   const remaining: Pending[] = []
@@ -75,13 +90,7 @@ function importPending(list: Pending[], links: Record<string, string>, rows: Row
     if (!target) { remaining.push(p); continue }
     const isCard = target.startsWith('card|')
     if (isCard && p.tipo === 'receita') { skipped.push(p.id); continue } // pagamento de fatura/estorno no cartão
-    const index = out.findIndex(tx => !tx.pluggy_id && String(tx.tipo) === p.tipo && Math.abs(num(tx.valor) - p.valor) < 0.005 && dayDiff(String(tx.data).slice(0, 10), p.data) <= 3)
     const settled = p.pendente ? { status: 'pendente', valor_pago: 0, pagamentos: [] as Row[] } : null
-    if (index >= 0) {
-      const tx = out[index]
-      out[index] = { ...tx, pluggy_id: p.id, ...(settled || { status: 'pago', valor_pago: tx.valor, pagamentos: [{ id: uid('pay'), data: p.data, valor: tx.valor }] }) }
-      continue
-    }
     out.push({
       id: uid('fin'), pluggy_id: p.id, titulo: (p.parcela ? `${p.titulo} (${p.parcela})` : p.titulo).replace(/\s*\|\s*/g, ' · '), observacao: 'Open Finance', valor: p.valor, tipo: p.tipo, data: p.data,
       categoria: '', conta_id: target, cartao_id: isCard ? target.slice(5) : '', anexos: [], recorrencia: 'unico',
@@ -141,13 +150,18 @@ export function useOpenFinance(state: MaiState, commit: Commit) {
       const items = (json.items || []) as { itemId: string; banco: string; status: string; accounts: any[]; investments?: any[]; transactions: any[] }[]
       let added = 0
       patchOpenFinance(commit, (current, finance) => {
-        const rows = (finance.transactions || []) as Row[]
+        // lançamentos seus que a versão anterior casou com o banco voltam a ser só seus (o movimento do banco entra no item do banco)
+        const rows = ((finance.transactions || []) as Row[]).map(tx => tx.pluggy_id && tx.observacao !== 'Open Finance' ? Object.fromEntries(Object.entries(tx).filter(([key]) => key !== 'pluggy_id')) : tx)
         const known = new Set([...current.vistos, ...current.pendentes.map(p => p.id), ...rows.map(tx => String(tx.pluggy_id || '')).filter(Boolean)])
         const fresh: Pending[] = items.flatMap(item => item.transactions.filter(tx => !known.has(tx.id)).map(tx => ({ ...tx, itemId: item.itemId } as Pending)))
         const bank: BankAccount[] = [...current.contas.filter(c => !items.some(i => i.itemId === c.itemId)), ...items.flatMap(item => item.accounts.map(a => ({ ...a, itemId: item.itemId } as BankAccount)))]
         const resolved = resolveLinks(current.vinculos, bank, finance)
-        const imported = importPending([...current.pendentes, ...fresh], resolved.links, rows)
-        added = imported.rows.length - rows.length
+        const migratedRows = Object.keys(resolved.moved).length ? rows.map(tx => {
+          const to = tx.pluggy_id && tx.observacao === 'Open Finance' ? resolved.moved[String(tx.conta_id)] : ''
+          return to ? { ...tx, conta_id: to, cartao_id: to.startsWith('card|') ? to.slice(5) : '' } : tx
+        }) : rows
+        const imported = importPending([...current.pendentes, ...fresh], resolved.links, migratedRows)
+        added = imported.rows.length - migratedRows.length
         const itens = current.itens.map(link => { const hit = items.find(i => i.itemId === link.itemId); return hit ? { ...link, banco: hit.banco, ultimaSync: new Date().toISOString() } : link })
         return {
           finance: { accounts: resolved.accounts, cards: resolved.cards, transactions: imported.rows, investments: upsertInvestments((finance.investments || []) as Row[], items) },
@@ -194,16 +208,6 @@ export function useOpenFinance(state: MaiState, commit: Commit) {
     if (!/^[\w-]{8,64}$/.test(itemId)) { setMessage('Esse ID não parece válido.'); return }
     patchOpenFinance(commit, current => ({ data: { ...current, itens: current.itens.some(i => i.itemId === itemId) ? current.itens : [...current.itens, { itemId, banco: 'MeuPluggy' }] } }))
     void sync([itemId])
-  }
-
-  /** Troca o vínculo e lança na hora o que estava esperando por ele. */
-  function link(accountId: string, target: string) {
-    patchOpenFinance(commit, (current, finance) => {
-      const links = { ...current.vinculos, [accountId]: target }
-      if (!target) delete links[accountId]
-      const imported = importPending(current.pendentes, links, (finance.transactions || []) as Row[])
-      return { finance: { transactions: imported.rows }, data: { ...current, vinculos: links, pendentes: imported.remaining, vistos: [...current.vistos, ...imported.skipped] } }
-    })
   }
 
   function disconnect(itemId: string) {
@@ -267,18 +271,17 @@ export function useOpenFinance(state: MaiState, commit: Commit) {
     return () => { window.clearInterval(timer); document.removeEventListener('visibilitychange', tick) }
   }, [])
 
-  return { data, busy, message, sync, connect, addItemId, link, disconnect, applyBalances }
+  return { data, busy, message, sync, connect, addItemId, disconnect, applyBalances }
 }
 
 export type OpenFinanceController = ReturnType<typeof useOpenFinance>
 
-export function OpenFinancePanel({ ctl, accounts, cards }: { ctl: OpenFinanceController; accounts: Row[]; cards: Row[] }) {
-  const { data, busy, message, sync, connect, addItemId, link, disconnect } = ctl
+export function OpenFinancePanel({ ctl }: { ctl: OpenFinanceController }) {
+  const { data, busy, message, sync, connect, addItemId, disconnect } = ctl
   const last = data.itens.map(i => i.ultimaSync).filter(Boolean).sort().pop()
-  const targets = [...accounts.map(a => ({ id: String(a.id), label: String(a.nome) })), ...cards.map(c => ({ id: `card|${c.id}`, label: String(c.nome) }))]
   const waiting = data.pendentes.length
   const status = !data.itens.length ? 'Conecte seu banco para lançar movimentos e atualizar saldos sozinho.'
-    : `${busy === 'sync' ? 'Sincronizando…' : last ? `Atualizado ${new Date(last).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}` : 'Aguardando a primeira sincronização'}${waiting ? ` · ${waiting} movimentos aguardando vínculo` : ''}`
+    : `${busy === 'sync' ? 'Sincronizando…' : last ? `Atualizado ${new Date(last).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}` : 'Aguardando a primeira sincronização'}${waiting ? ` · ${waiting} movimentos na fila` : ''}`
 
   return <section className={of.panel}>
     <div className={of.head}>
@@ -291,12 +294,9 @@ export function OpenFinancePanel({ ctl, accounts, cards }: { ctl: OpenFinanceCon
     </div>
     {message ? <p className={of.message} role="status">{message}</p> : null}
     {data.itens.map(item => <div key={item.itemId} className={of.bank}>
-      {data.contas.filter(c => c.itemId === item.itemId).map(account => { const linked = data.vinculos[account.id] || ''; return <div key={account.id} className={of.accountRow} data-unlinked={!linked}>
-        <span className={of.accountName}>{shortName(account.nome)}<small>{account.tipo === 'cartao' ? `Cartão · limite ${money.format(account.limite || account.limite_disponivel)}` : `Conta · saldo ${money.format(account.saldo)}`}</small></span>
-        <select value={linked} onChange={event => link(account.id, event.target.value)} aria-label={`Vincular ${account.nome}`}>
-          <option value="">Escolher no app…</option>
-          {targets.filter(t => account.tipo === 'cartao' ? t.id.startsWith('card|') : !t.id.startsWith('card|')).map(t => <option key={t.id} value={t.id}>{t.label}</option>)}
-        </select>
+      {data.contas.filter(c => c.itemId === item.itemId).map(account => { const linked = data.vinculos[account.id] || ''; return <div key={account.id} className={of.accountRow}>
+        <span className={of.accountName}>{bankLabel(account.nome)}<small>{account.tipo === 'cartao' ? `Cartão · limite ${money.format(account.limite || account.limite_disponivel)}` : `Conta · saldo ${money.format(account.saldo)}`}</small></span>
+        <span className={of.where}>{linked ? (account.tipo === 'cartao' ? 'Em Cartões' : 'Em Contas') : 'Aguardando'}</span>
       </div> })}
       <button type="button" className={of.disconnect} onClick={() => disconnect(item.itemId)}>Desconectar {shortName(item.banco)}</button>
     </div>)}
