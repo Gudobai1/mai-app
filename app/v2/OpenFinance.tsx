@@ -10,8 +10,8 @@ type Commit = (change: (current: MaiState) => MaiState) => void
 
 type Link = { itemId: string; banco: string; ultimaSync?: string }
 type Pending = { id: string; accountId: string; itemId: string; data: string; titulo: string; valor: number; tipo: 'receita' | 'despesa'; pendente: boolean; categoria: string; parcela: string }
-type BankAccount = { id: string; itemId: string; nome: string; tipo: 'conta' | 'cartao'; saldo: number; limite: number; limite_disponivel: number }
-export type OpenFinanceData = { itens: Link[]; contas: BankAccount[]; vinculos: Record<string, string>; pendentes: Pending[]; vistos: string[] }
+export type BankAccount = { id: string; itemId: string; nome: string; tipo: 'conta' | 'cartao'; saldo: number; limite: number; limite_disponivel: number }
+export type OpenFinanceData = { itens: Link[]; contas: BankAccount[]; vinculos: Record<string, string>; pendentes: Pending[]; vistos: string[]; dispensadas: string[] }
 
 const money = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' })
 const uid = (prefix: string) => `${prefix}-${crypto.randomUUID()}`
@@ -29,6 +29,7 @@ export function readOpenFinance(state: MaiState): OpenFinanceData {
     vinculos: raw.vinculos && typeof raw.vinculos === 'object' ? raw.vinculos : {},
     pendentes: Array.isArray(raw.pendentes) ? raw.pendentes : [],
     vistos: Array.isArray(raw.vistos) ? raw.vistos : [],
+    dispensadas: Array.isArray(raw.dispensadas) ? raw.dispensadas : [],
   }
 }
 
@@ -40,18 +41,26 @@ function patchOpenFinance(commit: Commit, change: (data: OpenFinanceData, financ
   })
 }
 
-const bankLabel = (nome: string) => /nu pagamentos|nubank/i.test(nome) ? 'Nubank' : shortName(nome)
+/** Nome sugerido para o item do app: conta = banco; cartão = banco + nome do cartão. */
+export function suggestedName(b: BankAccount, all: BankAccount[]) {
+  if (b.tipo !== 'cartao') return bankLabel(b.nome)
+  const base = shortName(b.nome)
+  return /cart[aã]o/i.test(base) ? base : `${bankLabel(all.find(x => x.itemId === b.itemId && x.tipo === 'conta')?.nome || b.nome)} ${base}`
+}
+
+export const bankLabel = (nome: string) => /nu pagamentos|nubank/i.test(nome) ? 'Nubank' : shortName(nome)
 
 /**
  * Cada conta/cartão do banco vira um item PRÓPRIO do app (marcado com pluggy_id); nunca mistura com os seus manuais.
  * Vínculos antigos para itens manuais são desfeitos: o saldo inicial que o sync mexeu volta a 0 e o que foi importado migra para o item do banco.
  */
-function resolveLinks(links: Record<string, string>, bank: BankAccount[], finance: Row) {
+function resolveLinks(links: Record<string, string>, bank: BankAccount[], finance: Row, dismissed: string[] = []) {
   const unsuffix = (item: Row) => item.pluggy_id && /\s\(Open Finance\)$/.test(String(item.nome)) ? { ...item, nome: String(item.nome).replace(/\s\(Open Finance\)$/, '') } : item
   const accounts: Row[] = ((finance.accounts || []) as Row[]).map(unsuffix)
   const cards: Row[] = ((finance.cards || []) as Row[]).map(unsuffix)
   const next = { ...links }
   const moved: Record<string, string> = {}
+  const skip = new Set(dismissed)
   const stale: Record<string, string> = {}
   const find = (target: string) => target.startsWith('card|') ? cards.find(c => `card|${c.id}` === target) : accounts.find(a => String(a.id) === target)
   for (const b of bank) {
@@ -60,25 +69,24 @@ function resolveLinks(links: Record<string, string>, bank: BankAccount[], financ
     const item = find(target)
     if (item && item.pluggy_id) continue
     if (item) stale[target] = b.id
+    else skip.add(b.id) // você excluiu o item do app: não recria sozinho (volta pelo "Criar conta" > Open Finance)
     delete next[b.id]
   }
-  const prefix = (b: BankAccount) => bankLabel(bank.find(x => x.itemId === b.itemId && x.tipo === 'conta')?.nome || b.nome)
   for (const b of bank) {
-    if (next[b.id]) continue
+    if (next[b.id] || skip.has(b.id)) continue
     const id = uid(b.tipo === 'cartao' ? 'crd' : 'cta')
     if (b.tipo === 'cartao') {
-      const base = shortName(b.nome)
-      const nome = /cart[aã]o/i.test(base) ? base : `${prefix(b)} ${base}`
+      const nome = suggestedName(b, bank)
       cards.push({ id, pluggy_id: b.id, nome, limite: b.limite, fechamento: 1, vencimento: 10, conta_id: '', cor: '#4073FF', foto: '' })
       next[b.id] = `card|${id}`
     } else {
-      accounts.push({ id, pluggy_id: b.id, nome: bankLabel(b.nome), saldo_inicial: 0, cor: '#4073FF', foto: '' })
+      accounts.push({ id, pluggy_id: b.id, nome: suggestedName(b, bank), saldo_inicial: 0, cor: '#4073FF', foto: '' })
       next[b.id] = id
     }
     if (stale[Object.keys(stale).find(t => stale[t] === b.id) || '']) moved[Object.keys(stale).find(t => stale[t] === b.id) as string] = next[b.id]
   }
   const restored = accounts.map(a => stale[String(a.id)] ? { ...a, saldo_inicial: 0 } : a)
-  return { links: next, accounts: restored, cards, moved }
+  return { links: next, accounts: restored, cards, moved, dismissed: [...skip].filter(id => !next[id]) }
 }
 
 /** Lança direto na conta/cartão do banco, já pago. Nunca mexe nos seus lançamentos manuais. */
@@ -111,6 +119,16 @@ function upsertInvestments(current: Row[], items: { banco: string; investments?:
     else next.push({ id: uid('inv'), pluggy_id: inv.id, nome: inv.nome, tipo: inv.tipo, instituicao: shortName(item.banco), icone: 'trending_up', cor: '#4073FF', foto: '', aportado: cents(num(inv.aportado)), valor_atual: cents(num(inv.valor_atual)), observacao: 'Open Finance', movimentos: [] })
   }
   return next
+}
+
+/** Registra (ou desfaz) o vínculo de um item do app com uma conta/cartão do banco, ao salvar o item. */
+export function bindOpenFinance(finance: Row, target: string, pluggyId?: string): OpenFinanceData {
+  const data = readOpenFinance({ finance } as unknown as MaiState)
+  const vinculos = Object.fromEntries(Object.entries(data.vinculos).filter(([, value]) => value !== target))
+  if (pluggyId) vinculos[pluggyId] = target
+  const dispensadas = data.dispensadas.filter(id => id !== pluggyId)
+  if (!pluggyId) for (const [id, value] of Object.entries(data.vinculos)) if (value === target) dispensadas.push(id)
+  return { ...data, vinculos, dispensadas }
 }
 
 let widgetLoading: Promise<void> | null = null
@@ -156,7 +174,7 @@ export function useOpenFinance(state: MaiState, commit: Commit) {
         const known = new Set([...current.vistos, ...current.pendentes.map(p => p.id), ...rows.map(tx => String(tx.pluggy_id || '')).filter(Boolean)])
         const fresh: Pending[] = items.flatMap(item => item.transactions.filter(tx => !known.has(tx.id)).map(tx => ({ ...tx, itemId: item.itemId } as Pending)))
         const bank: BankAccount[] = [...current.contas.filter(c => !items.some(i => i.itemId === c.itemId)), ...items.flatMap(item => item.accounts.map(a => ({ ...a, itemId: item.itemId } as BankAccount)))]
-        const resolved = resolveLinks(current.vinculos, bank, finance)
+        const resolved = resolveLinks(current.vinculos, bank, finance, current.dispensadas)
         const migratedRows = Object.keys(resolved.moved).length ? rows.map(tx => {
           const to = tx.pluggy_id && tx.observacao === 'Open Finance' ? resolved.moved[String(tx.conta_id)] : ''
           return to ? { ...tx, conta_id: to, cartao_id: to.startsWith('card|') ? to.slice(5) : '' } : tx
@@ -166,7 +184,7 @@ export function useOpenFinance(state: MaiState, commit: Commit) {
         const itens = current.itens.map(link => { const hit = items.find(i => i.itemId === link.itemId); return hit ? { ...link, banco: hit.banco, ultimaSync: new Date().toISOString() } : link })
         return {
           finance: { accounts: resolved.accounts, cards: resolved.cards, transactions: imported.rows, investments: upsertInvestments((finance.investments || []) as Row[], items) },
-          data: { ...current, itens, contas: bank, vinculos: resolved.links, pendentes: imported.remaining, vistos: [...current.vistos, ...imported.skipped] },
+          data: { ...current, itens, contas: bank, vinculos: resolved.links, dispensadas: resolved.dismissed, pendentes: imported.remaining, vistos: [...current.vistos, ...imported.skipped] },
         }
       })
       const waiting = items.filter(item => !['UPDATED', 'PARTIAL_SUCCESS'].includes(item.status))
@@ -272,7 +290,15 @@ export function useOpenFinance(state: MaiState, commit: Commit) {
     return () => { window.clearInterval(timer); document.removeEventListener('visibilitychange', tick) }
   }, [])
 
-  return { data, busy, message, sync, connect, addItemId, disconnect, applyBalances }
+  const info = (pluggyId?: string) => {
+    const bank = pluggyId ? data.contas.find(c => c.id === pluggyId) : undefined
+    if (!bank) return null
+    const item = data.itens.find(i => i.itemId === bank.itemId)
+    return { banco: bankLabel(bank.nome), tipo: bank.tipo, saldo: bank.saldo, limite: bank.limite || bank.limite_disponivel, atualizado: item?.ultimaSync || '' }
+  }
+  const available = (kind: 'conta' | 'cartao') => data.contas.filter(c => c.tipo === kind && !data.vinculos[c.id])
+
+  return { data, busy, message, sync, connect, addItemId, disconnect, applyBalances, info, available }
 }
 
 export type OpenFinanceController = ReturnType<typeof useOpenFinance>
