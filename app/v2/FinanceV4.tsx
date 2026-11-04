@@ -814,6 +814,22 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
     { title: 'Despesas por conta e cartão', total: reportExpenses.reduce((sum, item) => sum + clampMoney(item.valor), 0), tone: 'out', slices: sumBy(reportExpenses, item => originName(item.conta_id || (item.cartao_id ? `card|${item.cartao_id}` : ''), accounts, cards), originColor), items: reportExpenses, keyOf: item => originName(item.conta_id || (item.cartao_id ? `card|${item.cartao_id}` : ''), accounts, cards) },
     { title: 'Despesas fixas e variáveis', total: reportExpenses.reduce((sum, item) => sum + clampMoney(item.valor), 0), tone: 'out', slices: sumBy(reportExpenses, item => item._isFixed ? 'Fixas' : 'Variáveis', name => name === 'Fixas' ? 'var(--ds-sky-fg)' : 'var(--ds-peach-fg)'), items: reportExpenses, keyOf: item => item._isFixed ? 'Fixas' : 'Variáveis' },
   ]
+  const isCardOrigin = (item: Row) => String(item.conta_id || '').startsWith('card|') || Boolean(item.cartao_id)
+  const originOf = (item: Row) => originName(item.conta_id || (item.cartao_id ? `card|${item.cartao_id}` : ''), accounts, cards)
+  const cardExpenses = reportExpenses.filter(isCardOrigin)
+  const accountExpenses = reportExpenses.filter(item => !isCardOrigin(item))
+  const tabBlocks: typeof reportBlocks = [
+    { ...reportBlocks[1], title: 'Receitas por categoria' },
+    { ...reportBlocks[0], title: 'Despesas por categoria' },
+    { title: 'Compras por cartão', total: cardExpenses.reduce((sum, item) => sum + clampMoney(item.valor), 0), tone: 'out', slices: sumBy(cardExpenses, originOf, originColor), items: cardExpenses, keyOf: originOf },
+    { title: 'Despesas por conta', total: accountExpenses.reduce((sum, item) => sum + clampMoney(item.valor), 0), tone: 'out', slices: sumBy(accountExpenses, originOf, originColor), items: accountExpenses, keyOf: originOf },
+  ]
+  const generalBars: { name: string; value: number; color: string; tab: number }[] = [
+    { name: 'Receitas', value: reportIncome, color: 'var(--ds-success)', tab: 1 },
+    { name: 'Despesas', value: reportExpense, color: 'var(--ds-danger)', tab: 2 },
+    { name: 'Cartões', value: reportInvoice, color: 'var(--ds-sky-fg)', tab: 3 },
+    { name: 'Contas', value: realBalance, color: 'var(--ds-lilac-fg)', tab: 4 },
+  ]
   const periodLabel = period === 'month' ? 'Mensal' : period === '3' ? 'Últimos 3 meses' : period === '6' ? 'Últimos 6 meses' : period === 'year' ? 'Este ano' : 'Personalizado'
   const periodRange = reportMonths.length ? (reportMonths.length === 1 ? monthLabel(reportMonths[0]) : `${monthLabel(reportMonths[0])} – ${monthLabel(reportMonths[reportMonths.length - 1])}`) : 'Período inválido'
   const pendingCount = filtered.filter(item => paymentState(item).status !== 'pago').length
@@ -1033,25 +1049,17 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
           {periodMenu ? <div className={fm.periodMenu}>{periodOptions.map(option => <button key={option.id} type="button" data-active={period === option.id} onClick={() => { setPeriod(option.id); setPeriodMenu(false) }}>{option.label}{period === option.id ? <span>✓</span> : null}</button>)}</div> : null}
         </div>
       </div>
-      {(() => {
-        const topOf = (index: number) => reportBlocks[index].slices.slice(0, 3)
-        const line = (name: string, value: string, key?: string) => <div className={fm.ovLine} key={key || name}><span>{name}</span><b>{value}</b></div>
-        const sub = (list: Slice[], tone: 'in' | 'out') => list.length ? list.map(slice => line(slice.name, money.format(slice.value))) : [<div className={fm.empty} key="empty">Sem dados no período.</div>]
-        return <div className={fm.overview}>
-          <section className={fm.ovCard}><small>Receitas</small><b data-tone="in">{money.format(reportIncome)}</b>{sub(topOf(1), 'in')}</section>
-          <section className={fm.ovCard}><small>Despesas</small><b data-tone="out">{money.format(reportExpense)}</b>{sub(topOf(0), 'out')}</section>
-          <section className={fm.ovCard}><small>Cartões</small><b data-tone="card">{money.format(reportInvoice)}</b>{cards.length ? cards.map(card => line(String(card.nome || 'Cartão'), clampMoney(card.limite) ? `${money.format(cardAvailable(card))} disp.` : money.format(cardInvoice(card, monthItems, month)))) : <div className={fm.empty}>Nenhum cartão.</div>}</section>
-          <section className={fm.ovCard}><small>Contas</small><b>{money.format(realBalance)}</b>{accounts.length ? accounts.map(account => line(String(account.nome || 'Conta'), money.format(accountBalance(account)))) : <div className={fm.empty}>Nenhuma conta.</div>}</section>
-        </div>
-      })()}
-      {(() => {
-        const periodRows = period === 'month' ? filtered : transactions.filter(item => reportMonths.includes(itemMonth(item)) && (item.ajuste_fatura === true || !(String(item.conta_id || '').startsWith('card|') || item.cartao_id))).sort((a, b) => String(b.data).localeCompare(String(a.data)))
+      <div className={fm.reportTabs} role="tablist">{['Geral', 'Receitas', 'Despesas', 'Cartões', 'Contas'].map((label, index) => <button key={label} type="button" role="tab" aria-selected={reportView === index} data-active={reportView === index} onClick={() => { setReportView(index); setReportPick(null) }}>{label}</button>)}</div>
+      {reportView === 0 ? (() => {
+        const biggest = generalBars.reduce((max, bar) => Math.max(max, Math.abs(bar.value)), 0)
+        const periodRows = period === 'month' ? filtered : transactions.filter(item => reportMonths.includes(itemMonth(item)) && (item.ajuste_fatura === true || !isCardOrigin(item))).sort((a, b) => String(b.data).localeCompare(String(a.data)))
         return <>
-          <div className={fm.listHead} style={{ marginTop: 22 }}><span>{periodRows.length} {periodRows.length === 1 ? 'lançamento' : 'lançamentos'}</span><span>{periodLabel === 'Mensal' ? monthLabel(month).split(' de ')[0] : periodRange}</span></div>
+          <div className={fm.cols}>{generalBars.map(bar => <button type="button" key={bar.name} className={fm.col} onClick={() => { setReportView(bar.tab); setReportPick(null) }}><span className={fm.colValue}>{money.format(bar.value).replace(/,\d\d$/, '')}</span><span className={fm.colBar}><span style={{ height: `${biggest ? Math.max(4, Math.abs(bar.value) / biggest * 100) : 0}%`, background: bar.color }} /></span><span className={fm.colName}>{bar.name}</span></button>)}</div>
+          <div className={fm.listHead} style={{ marginTop: 18 }}><span>{periodRows.length} {periodRows.length === 1 ? 'lançamento' : 'lançamentos'}</span><span>{period === 'month' ? monthLabel(month).split(' de ')[0] : periodRange}</span></div>
           <div className={fm.list}>{periodRows.map(transactionRow)}</div>
           {!periodRows.length ? <div className={fm.empty}>Nenhum lançamento no período.</div> : null}
         </>
-      })()}
+      })() : barBlock(tabBlocks[Math.min(reportView, tabBlocks.length) - 1])}
     </> : null}
 
     {quick.element}
