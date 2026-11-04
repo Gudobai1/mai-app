@@ -158,6 +158,21 @@ function applyCardBills(rows: Row[], cards: Row[], links: Record<string, string>
       nextRows = [...nextRows, { id: uid('invoice'), pluggy_bill: bill.id, titulo: `Fatura ${String(card.nome || 'Cartão')}`, tipo: 'despesa', data: bill.dueDate, valor: cents(bill.total), valor_pago: 0, status: 'pendente', pagamentos: [], categoria: 'Fatura do cartão', conta_id: `card|${cardId}`, cartao_id: cardId, conta_pagamento_id: String(card.conta_id || ''), anexos: [], ignorar_calculo: true, recorrencia: 'unico', ajuste_fatura: true, ajuste_fatura_card_id: cardId, competencia_fatura: month }]
     }
 
+    // pagamento: o que você marcou à mão é respeitado; se o banco também mostra o pagamento da fatura, a fatura fecha como paga sem duplicar
+    nextRows = nextRows.map(tx => {
+      if (tx.ajuste_fatura !== true || String(tx.ajuste_fatura_card_id || tx.cartao_id || '') !== cardId || !(tx.pluggy_bill || tx.pluggy_open)) return tx
+      const total = num(tx.valor)
+      let paid = Math.min(total, num(tx.valor_pago))
+      let payments = Array.isArray(tx.pagamentos) ? tx.pagamentos : []
+      if (tx.pluggy_bill && total > 0 && paid < total - 0.015) {
+        const due = new Date(`${String(tx.data).slice(0, 10)}T12:00:00`).getTime()
+        const bankPay = nextRows.find(r => r.pluggy_id && !r.ajuste_fatura && r.tipo === 'despesa' && FATURA.test(String(r.titulo)) && Math.abs(num(r.valor) - (total - paid)) < 0.015 && Math.abs(new Date(`${String(r.data).slice(0, 10)}T12:00:00`).getTime() - due) <= 12 * 86400000)
+        if (bankPay) { payments = [...payments, { id: uid('pay'), data: String(bankPay.data).slice(0, 10), valor: num(bankPay.valor) }]; paid = total }
+      }
+      const status = total > 0 && paid >= total - 0.015 ? 'pago' : paid > 0 ? 'parcial' : 'pendente'
+      return { ...tx, valor_pago: cents(paid), pagamentos: payments, status }
+    })
+
     // fatura aberta: o banco ainda não emitiu
     const today = new Date()
     const todayKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
@@ -226,7 +241,7 @@ export function useOpenFinance(state: MaiState, commit: Commit) {
       let added = 0
       patchOpenFinance(commit, (current, finance) => {
         // lançamentos seus que a versão anterior casou com o banco voltam a ser só seus (o movimento do banco entra no item do banco)
-        const cleaned = ((finance.transactions || []) as Row[]).map(tx => tx.pluggy_id && tx.observacao !== 'Open Finance' ? Object.fromEntries(Object.entries(tx).filter(([key]) => key !== 'pluggy_id')) : tx)
+        const cleaned = ((finance.transactions || []) as Row[]).map(tx => tx.pluggy_id && tx.observacao !== 'Open Finance' && !tx.of_linked ? Object.fromEntries(Object.entries(tx).filter(([key]) => key !== 'pluggy_id')) : tx)
         // o banco troca o id dos lançamentos quando refaz (fatura fecha, pendente vira lançado): o que sumiu do banco na janela lida sai daqui
         const remote = new Map<string, Set<string>>()
         for (const item of items) for (const tx of item.transactions) { const set = remote.get(tx.accountId) || new Set<string>(); set.add(tx.id); remote.set(tx.accountId, set) }
@@ -234,7 +249,8 @@ export function useOpenFinance(state: MaiState, commit: Commit) {
         const remoteById = new Map<string, any>()
         for (const item of items) for (const tx of item.transactions) remoteById.set(tx.id, tx)
         const rows = cleaned.map(tx => {
-          const hit = tx.pluggy_id && tx.observacao === 'Open Finance' ? remoteById.get(String(tx.pluggy_id)) : null
+          const hit = tx.pluggy_id && (tx.observacao === 'Open Finance' || tx.of_linked) ? remoteById.get(String(tx.pluggy_id)) : null
+          if (hit && tx.of_linked) return { ...tx, valor: hit.valor, fatura_bill_id: hit.billId || '' } // vinculado: o que é seu (título, categoria, pagamentos, data) fica
           return hit ? { ...tx, valor: hit.valor, data: hit.data, fatura_bill_id: hit.billId || '' } : tx
         }).filter(tx => {
           if (!tx.pluggy_id || tx.observacao !== 'Open Finance' || String(tx.data).slice(0, 10) < from) return true
@@ -394,4 +410,21 @@ export function OpenFinancePanel({ ctl }: { ctl: OpenFinanceController }) {
     </div>
     {message ? <p className={of.message} role="status">{message}</p> : null}
   </div>
+}
+
+
+/** Vincula um lançamento seu a um lançamento do banco: vira um só (mantém o que é seu, passa a acompanhar o valor do banco) e o do banco não é duplicado. */
+export function linkTransactions(finance: Row, manualId: string, bankId: string): Row[] {
+  const list = (finance.transactions || []) as Row[]
+  const bank = list.find(tx => String(tx.id) === bankId)
+  if (!bank || !bank.pluggy_id) return list
+  return list.filter(tx => String(tx.id) !== bankId).map(tx => String(tx.id) !== manualId ? tx : {
+    ...tx, pluggy_id: bank.pluggy_id, of_linked: true, valor: bank.valor, fatura_bill_id: bank.fatura_bill_id || '', competencia_fatura: bank.competencia_fatura || tx.competencia_fatura,
+    conta_id: tx.conta_id || bank.conta_id, cartao_id: tx.cartao_id || bank.cartao_id || '',
+  })
+}
+
+/** Desfaz o vínculo: o lançamento volta a ser só seu e o do banco reaparece no próximo sync. */
+export function unlinkTransaction(list: Row[], id: string): Row[] {
+  return list.map(tx => String(tx.id) !== id ? tx : Object.fromEntries(Object.entries(tx).filter(([key]) => !['pluggy_id', 'of_linked', 'fatura_bill_id'].includes(key))))
 }
