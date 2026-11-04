@@ -1044,6 +1044,14 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
           <section className={fm.ovCard}><small>Contas</small><b>{money.format(realBalance)}</b>{accounts.length ? accounts.map(account => line(String(account.nome || 'Conta'), money.format(accountBalance(account)))) : <div className={fm.empty}>Nenhuma conta.</div>}</section>
         </div>
       })()}
+      {(() => {
+        const periodRows = period === 'month' ? filtered : transactions.filter(item => reportMonths.includes(itemMonth(item)) && (item.ajuste_fatura === true || !(String(item.conta_id || '').startsWith('card|') || item.cartao_id))).sort((a, b) => String(b.data).localeCompare(String(a.data)))
+        return <>
+          <div className={fm.listHead} style={{ marginTop: 22 }}><span>{periodRows.length} {periodRows.length === 1 ? 'lançamento' : 'lançamentos'}</span><span>{periodLabel === 'Mensal' ? monthLabel(month).split(' de ')[0] : periodRange}</span></div>
+          <div className={fm.list}>{periodRows.map(transactionRow)}</div>
+          {!periodRows.length ? <div className={fm.empty}>Nenhum lançamento no período.</div> : null}
+        </>
+      })()}
     </> : null}
 
     {quick.element}
