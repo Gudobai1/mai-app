@@ -181,6 +181,7 @@ export function financeSummary(state: MaiState, today: string): FinanceSummary {
     // faturas de cartão do mês que ainda faltam pagar
     + transactions.filter(item => item.ajuste_fatura === true && dateKey(item.data).slice(0, 7) === month).reduce((sum, item) => sum + Math.max(0, clampMoney(item.valor) - clampMoney(item.valor_pago)), 0)
   const toReceive = openItems.filter(item => item.tipo === 'receita').reduce((sum, item) => sum + remaining(item), 0)
+  const projectedFromPending = balance + toReceive - toPay
 
   return {
     hasData: transactions.length > 0 || fixed.length > 0 || accounts.length > 0,
@@ -188,7 +189,7 @@ export function financeSummary(state: MaiState, today: string): FinanceSummary {
     monthIncome,
     monthExpense,
     monthResult: monthIncome - monthExpense,
-    projected,
+    projected: projectedFromPending,
     toPay,
     toReceive,
   }
