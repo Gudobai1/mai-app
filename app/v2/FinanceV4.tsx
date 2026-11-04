@@ -239,6 +239,9 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
     return Number(account.saldo_inicial || 0) + regular + fixedCashTotalThrough(today, accountId)
   }
 
+  // Open Finance: saldo das contas e limite dos cartões seguem o banco
+  useEffect(() => { openFinance.applyBalances(account => accountBalance(account) - Number(account.saldo_inicial || 0)) }) // eslint-disable-line react-hooks/exhaustive-deps
+
   const monthFixed = fixedForMonthAt(month)
   const monthTxRaw = transactions.filter(item => dateKey(item.data).slice(0, 7) === month)
   const monthTx = monthTxRaw.map(item => {
