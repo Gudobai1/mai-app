@@ -28,7 +28,7 @@ import { invoiceValue } from '../../lib/v2/financeInvoice'
 import { shiftInstallment } from '../../lib/v2/financeInstallments'
 import { financeTagSuggestions, parseFinanceTags } from '../../lib/v2/financeTags'
 import fm from './FinanceModern.module.css'
-import { OpenFinancePanel, bindOpenFinance, suggestedName, useOpenFinance } from './OpenFinance'
+import { OpenFinancePanel, linkTransactions, unlinkTransaction, bindOpenFinance, suggestedName, useOpenFinance } from './OpenFinance'
 
 type Row = Record<string, any>
 type Commit = (change: (current: MaiState) => MaiState) => void
@@ -361,16 +361,10 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
   }
 
   function resetView() {
+    // só volta para o mês atual: filtros e classificação ficam como você configurou
     setMonth(today.slice(0, 7))
     setPeriod('month')
     setPeriodMenu(false)
-    commit(current => {
-      const areaTabs = current.configs.areaTabs && typeof current.configs.areaTabs === 'object' ? current.configs.areaTabs as Record<string, string> : {}
-      const filters = current.configs.moduleFilters && typeof current.configs.moduleFilters === 'object' ? current.configs.moduleFilters as Record<string, Row> : {}
-      const controls = current.configs.moduleControls && typeof current.configs.moduleControls === 'object' ? current.configs.moduleControls as Record<string, Row> : {}
-      const { sort: _sort, ...financeControl } = controls.finance || {}
-      return { ...current, configs: { ...current.configs, areaTabs: { ...areaTabs, finance: 'transactions' }, moduleFilters: { ...filters, finance: {} }, moduleControls: { ...controls, finance: financeControl } } }
-    })
   }
 
   function newDraft(type: DraftKind): Row {
@@ -941,7 +935,7 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
 
     <div className={fm.balance}>
       <div><small>Saldo inicial</small><b>{money.format(monthStartBalance)}</b></div><i />
-      <button type="button" className={fm.balanceMain} onClick={resetView} title="Voltar ao início (mês atual, sem filtros)"><small>Saldo atual</small><strong data-negative={realBalance < 0}>{money.format(realBalance)}</strong></button><i />
+      <button type="button" className={fm.balanceMain} onClick={resetView} title="Voltar ao mês atual"><small>Saldo atual</small><strong data-negative={realBalance < 0}>{money.format(realBalance)}</strong></button><i />
       <div className={fm.balanceEnd}><small>Saldo previsto</small><b>{money.format(projectedBalance)}</b></div>
     </div>
 
@@ -1133,12 +1127,27 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
         {extras}
       </>
 
+      /** Vincular lançamento seu ↔ lançamento do banco (Open Finance), sem duplicar */
+      const linkRow = (() => {
+        if (kind !== 'transaction' || !draft._persisted || draft._isFixed || draft.ajuste_fatura === true) return null
+        const id = String(draft.id)
+        const isBank = Boolean(draft.pluggy_id) && draft.observacao === 'Open Finance' && !draft.of_linked
+        const isLinked = Boolean(draft.of_linked)
+        if (!isBank && !isLinked && !openFinance.data.contas.length) return null
+        const near = (item: Row) => Math.abs(clampMoney(item.valor) - clampMoney(draft.valor)) * 100 + Math.abs((new Date(dateKey(item.data)).getTime() - new Date(dateKey(draft.data)).getTime()) / 86400000)
+        if (isLinked) return <SideRow id="finance-of-link" icon="link" color="var(--ds-success)" label="Open Finance" summary="Vinculado ao banco" open={createTool} setOpen={setCreateTool}><CreateOptionList value="keep" onChange={() => { commit(current => ({ ...current, finance: { ...current.finance, transactions: unlinkTransaction(rows(current.finance.transactions), id) } })); setDraft(null) }} close={() => setCreateTool('')} options={[{ value: 'keep', label: 'Manter vinculado', icon: 'link' }, { value: 'unlink', label: 'Desvincular (o do banco volta no próximo sync)', icon: 'link_off' }]} /></SideRow>
+        const candidates = transactions.filter(item => String(item.id) !== id && !item.ajuste_fatura && !item._isFixed && item.tipo === draft.tipo && String(item.conta_id || '') === String(draft.conta_id || '') && (isBank ? !item.pluggy_id : Boolean(item.pluggy_id) && item.observacao === 'Open Finance' && !item.of_linked)).sort((a, b) => near(a) - near(b)).slice(0, 25)
+        const options = [{ value: '', label: 'Não vinculado', icon: 'link_off' }, ...candidates.map(item => ({ value: String(item.id), label: `${String(item.titulo || 'Sem título')} · ${money.format(clampMoney(item.valor))} · ${createNaturalDate(dateKey(item.data), today)}`, icon: 'link' }))]
+        return <SideRow id="finance-of-link" icon="link" color="var(--ds-muted)" label={isBank ? 'Vincular ao meu lançamento' : 'Vincular ao banco'} summary={candidates.length ? 'Escolher' : 'Nenhum parecido'} open={createTool} setOpen={setCreateTool}><CreateOptionList value="" onChange={value => { const other = String(value); if (!other) return; const manualId = isBank ? other : id; const bankId = isBank ? id : other; commit(current => ({ ...current, finance: { ...current.finance, transactions: linkTransactions(current.finance, manualId, bankId) } })); setDraft(null) }} close={() => setCreateTool('')} options={options} /></SideRow>
+      })()
+
       const side = kind === 'transaction' ? <>
         <SideRow id="finance-date" icon="calendar_today" color="var(--ds-sky-fg)" label="Data" summary={createNaturalDate(dateKey(draft.data), today)} open={createTool} setOpen={setCreateTool}><CreateCalendarPicker allowEmpty={false} value={dateKey(draft.data)} today={today} onChange={value => setDraft({ ...draft, data: value, dia_mes: Number(value.slice(8)), mes_inicio: draft.mes_inicio || value.slice(0, 7) })} close={() => setCreateTool('')} /></SideRow>
         <SideRow id="finance-value" icon="payments" color="var(--ds-success)" label="Valor" summary={money.format(clampMoney(draft.valor))} open={createTool} setOpen={setCreateTool}><CreateNumberEditor money value={clampMoney(draft.valor)} onChange={value => { const nextPayments = cleanPayments(draft.pagamentos, dateKey(draft.data)); const paid = Math.min(value, nextPayments.reduce((sum, payment) => sum + clampMoney(payment.valor), 0)); setDraft({ ...draft, valor: value, valor_pago: paid, status: value > 0 && paid >= value ? 'pago' : paid > 0 ? 'parcial' : 'pendente' }) }} /></SideRow>
         <SideRow id="finance-category" icon="sell" color="var(--ds-peach-fg)" label="Categoria" summary={String(draft.categoria || 'Não selecionado')} open={createTool} setOpen={setCreateTool}><div className="mai-finance-v4-category-picker"><CreateOptionList value={String(draft.categoria || '')} onChange={value => setDraft({ ...draft, categoria: value })} close={() => setCreateTool('')} options={[{ value: '', label: 'Sem categoria', icon: 'remove_circle' }, ...categories.map(category => ({ value: String(category.nome), label: String(category.nome), icon: 'sell', color: categoryColorOf(String(category.nome), categories) }))]} /><div className="mai-finance-v4-category-create"><input value={categoryDraftName} onChange={event => setCategoryDraftName(event.target.value)} onKeyDown={event => { if (event.key === 'Enter') { event.preventDefault(); addCategoryFromLaunch() } }} placeholder="Nova categoria" /><button type="button" onClick={addCategoryFromLaunch}>Adicionar</button></div><div className={ic.swatches}>{categoryPalette.map(color => <button key={color} type="button" aria-label="Cor da categoria" data-active={(categoryDraftColor || categoryPalette[categories.length % categoryPalette.length]) === color || undefined} style={{ background: color }} onClick={() => setCategoryDraftColor(color)} />)}</div></div></SideRow>
         <SideRow id="finance-account" icon="account_balance_wallet" color="var(--ds-muted)" label="Pagamento" summary={accountSummary} open={createTool} setOpen={setCreateTool}><CreateOptionList value={String(draft.conta_id || '')} onChange={value => setDraft({ ...draft, conta_id: value })} close={() => setCreateTool('')} options={[{ value: '', label: 'Sem origem', icon: 'remove_circle' }, ...accounts.map(account => ({ value: String(account.id), label: String(account.nome || 'Conta'), icon: 'account_balance' })), ...cards.map(card => ({ value: `card|${String(card.id)}`, label: String(card.nome || 'Cartão'), icon: 'credit_card' }))]} /></SideRow>
         <SideRow id="finance-type" icon={draft.tipo === 'receita' ? 'arrow_downward' : 'arrow_upward'} color={draft.tipo === 'receita' ? 'var(--ds-success)' : 'var(--ds-danger)'} label="Tipo" summary={draft.tipo === 'receita' ? 'Receita' : 'Despesa'} open={createTool} setOpen={setCreateTool}><CreateOptionList value={String(draft.tipo || 'despesa')} onChange={value => setDraft({ ...draft, tipo: value })} close={() => setCreateTool('')} options={[{ value: 'despesa', label: 'Despesa', icon: 'arrow_upward' }, { value: 'receita', label: 'Receita', icon: 'arrow_downward' }]} /></SideRow>
+        {linkRow}
         <FinanceTransactionExtraTools asRows draft={draft} setDraft={setDraft} today={today} month={month} open={createTool} setOpen={setCreateTool} draftPayment={draftPayment} addPayment={addPayment} removePayment={removePayment} generateInstallments={generateInstallments} editFixedOccurrence={() => editFixedOccurrence(draft)} ignoreFixed={() => ignoreFixed(draft)} />
         <SideRow id="finance-status" icon="task_alt" color="var(--ds-sky-fg)" label="Status" summary={statusLabel(draft.status)} open={createTool} setOpen={setCreateTool}><CreateOptionList value={draft.status === 'pago' ? 'pago' : 'pendente'} onChange={value => setDraftPaymentStatus(String(value))} close={() => setCreateTool('')} options={[{ value: 'pendente', label: 'Pendente / zerar pagamentos', icon: 'schedule' }, { value: 'pago', label: 'Pago integralmente', icon: 'check_circle' }]} /></SideRow>
       </>
