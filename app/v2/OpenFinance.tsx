@@ -9,7 +9,7 @@ type Row = Record<string, any>
 type Commit = (change: (current: MaiState) => MaiState) => void
 
 type Link = { itemId: string; banco: string; ultimaSync?: string }
-type Pending = { id: string; accountId: string; itemId: string; data: string; titulo: string; valor: number; tipo: 'receita' | 'despesa'; pendente: boolean; categoria: string; parcela: string }
+type Pending = { id: string; accountId: string; itemId: string; data: string; titulo: string; valor: number; tipo: 'receita' | 'despesa'; pendente: boolean; categoria: string; parcela: string; billId?: string }
 export type BankAccount = { id: string; itemId: string; nome: string; tipo: 'conta' | 'cartao'; saldo: number; limite: number; limite_disponivel: number; vencimento_dia?: number; fechamento_dia?: number }
 export type OpenFinanceData = { itens: Link[]; contas: BankAccount[]; vinculos: Record<string, string>; pendentes: Pending[]; vistos: string[]; dispensadas: string[] }
 
@@ -102,7 +102,7 @@ function importPending(list: Pending[], links: Record<string, string>, rows: Row
     const settled = p.pendente ? { status: 'pendente', valor_pago: 0, pagamentos: [] as Row[] } : null
     out.push({
       id: uid('fin'), pluggy_id: p.id, titulo: (p.parcela ? `${p.titulo} (${p.parcela})` : p.titulo).replace(/\s*\|\s*/g, ' · '), observacao: 'Open Finance', valor: p.valor, tipo: p.tipo, data: p.data,
-      categoria: '', conta_id: target, cartao_id: isCard ? target.slice(5) : '', anexos: [], recorrencia: 'unico',
+      categoria: '', conta_id: target, cartao_id: isCard ? target.slice(5) : '', fatura_bill_id: p.billId || '', anexos: [], recorrencia: 'unico',
       ignorar_calculo: !isCard && FATURA.test(p.titulo),
       ...(settled || { status: 'pago', valor_pago: p.valor, pagamentos: [{ id: uid('pay'), data: p.data, valor: p.valor }] }),
     })
@@ -144,7 +144,19 @@ function applyCardBills(rows: Row[], cards: Row[], links: Record<string, string>
     const bills = items.flatMap(item => item.bills || []).filter(bill => bill.accountId === bankCard.id).sort((a, b) => a.dueDate.localeCompare(b.dueDate))
     const dueDay = Number(bankCard.vencimento_dia) || Number(card.vencimento) || 10
     const dues = bills.map(bill => bill.dueDate)
-    nextRows = nextRows.map(tx => tx.pluggy_id && !tx.ajuste_fatura && String(tx.cartao_id) === cardId ? { ...tx, competencia_fatura: invoiceMonthOf(String(tx.data).slice(0, 10), dues, dueDay) } : tx)
+    const billMonth = new Map(bills.map(bill => [bill.id, monthOf(bill.dueDate)]))
+    const linked = nextRows.some(tx => tx.pluggy_id && !tx.ajuste_fatura && String(tx.cartao_id) === cardId && tx.fatura_bill_id)
+    const lastBill = bills.length ? monthOf(bills[bills.length - 1].dueDate) : ''
+    // compra com fatura emitida: mês da fatura do banco. Sem fatura ainda (aberta): próxima fatura depois da última emitida. Sem vínculo nenhum: janela que começa no vencimento anterior.
+    const monthFor = (tx: Row) => {
+      const date = String(tx.data).slice(0, 10)
+      if (tx.fatura_bill_id && billMonth.has(tx.fatura_bill_id)) return billMonth.get(tx.fatura_bill_id) as string
+      if (!linked) return invoiceMonthOf(date, dues, dueDay)
+      let month = lastBill ? nextMonth(lastBill) : monthOf(date)
+      for (let guard = 0; guard < 36 && date > dueOf(month, dueDay); guard += 1) month = nextMonth(month)
+      return month
+    }
+    nextRows = nextRows.map(tx => tx.pluggy_id && !tx.ajuste_fatura && String(tx.cartao_id) === cardId ? { ...tx, competencia_fatura: monthFor(tx) } : tx)
     for (const bill of bills) {
       const month = monthOf(bill.dueDate)
       const index = nextRows.findIndex(tx => tx.ajuste_fatura === true && String(tx.ajuste_fatura_card_id || tx.cartao_id || '') === cardId && String(tx.competencia_fatura || monthOf(String(tx.data))) === month)
@@ -198,14 +210,22 @@ export function useOpenFinance(state: MaiState, commit: Commit) {
   async function sync(itemIds: string[], silent = false) {
     setBusy('sync'); if (!silent) setMessage('')
     try {
-      const first = !data.itens.some(item => item.ultimaSync)
-      const from = new Date(Date.now() - (first ? 90 : 14) * 86400_000).toISOString().slice(0, 10)
+      const from = new Date(Date.now() - 90 * 86400_000).toISOString().slice(0, 10) // o banco refaz lançamentos de cartão quando a fatura fecha: relê sempre 90 dias
       const json = await api('/api/pluggy/sync', { itemIds, from })
       const items = (json.items || []) as { itemId: string; banco: string; status: string; accounts: any[]; bills?: { id: string; accountId: string; dueDate: string; total: number }[]; investments?: any[]; transactions: any[] }[]
       let added = 0
       patchOpenFinance(commit, (current, finance) => {
         // lançamentos seus que a versão anterior casou com o banco voltam a ser só seus (o movimento do banco entra no item do banco)
-        const rows = ((finance.transactions || []) as Row[]).map(tx => tx.pluggy_id && tx.observacao !== 'Open Finance' ? Object.fromEntries(Object.entries(tx).filter(([key]) => key !== 'pluggy_id')) : tx)
+        const cleaned = ((finance.transactions || []) as Row[]).map(tx => tx.pluggy_id && tx.observacao !== 'Open Finance' ? Object.fromEntries(Object.entries(tx).filter(([key]) => key !== 'pluggy_id')) : tx)
+        // o banco troca o id dos lançamentos quando refaz (fatura fecha, pendente vira lançado): o que sumiu do banco na janela lida sai daqui
+        const remote = new Map<string, Set<string>>()
+        for (const item of items) for (const tx of item.transactions) { const set = remote.get(tx.accountId) || new Set<string>(); set.add(tx.id); remote.set(tx.accountId, set) }
+        const linksNow = current.vinculos
+        const rows = cleaned.filter(tx => {
+          if (!tx.pluggy_id || tx.observacao !== 'Open Finance' || String(tx.data).slice(0, 10) < from) return true
+          const owner = Object.keys(linksNow).find(id => linksNow[id] === String(tx.conta_id) && remote.has(id))
+          return !owner || remote.get(owner)!.has(String(tx.pluggy_id))
+        })
         const known = new Set([...current.vistos, ...current.pendentes.map(p => p.id), ...rows.map(tx => String(tx.pluggy_id || '')).filter(Boolean)])
         const fresh: Pending[] = items.flatMap(item => item.transactions.filter(tx => !known.has(tx.id)).map(tx => ({ ...tx, itemId: item.itemId } as Pending)))
         const bank: BankAccount[] = [...current.contas.filter(c => !items.some(i => i.itemId === c.itemId)), ...items.flatMap(item => item.accounts.map(a => ({ ...a, itemId: item.itemId } as BankAccount)))]
