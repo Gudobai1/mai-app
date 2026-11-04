@@ -49,23 +49,20 @@ export type SyncedItem = {
   transactions: { id: string; accountId: string; data: string; titulo: string; valor: number; tipo: 'receita' | 'despesa'; pendente: boolean; categoria: string; parcela: string }[]
 }
 
+type CursorPage<T> = { results: T[]; next?: string | null }
+
+/** /transactions foi descontinuado: usa /v2/transactions com paginação por cursor (`next` já vem como query string). */
 async function allTransactions(accountId: string, from: string) {
   const id = encodeURIComponent(accountId)
-  // Tenta com período e página grande; se a Pluggy recusar, cai para consultas mais simples.
-  const variants = [`accountId=${id}&from=${from}&pageSize=500`, `accountId=${id}&from=${from}`, `accountId=${id}`]
-  let lastError: unknown
-  for (const query of variants) {
-    try {
-      const out: PluggyTransaction[] = []
-      for (let page = 1; page <= 20; page += 1) {
-        const data = await call<Paged<PluggyTransaction>>(`/transactions?${query}&page=${page}`)
-        out.push(...data.results)
-        if (page >= (data.totalPages || 1)) break
-      }
-      return out.filter(tx => String(tx.date).slice(0, 10) >= from)
-    } catch (error) { lastError = error }
+  const out: PluggyTransaction[] = []
+  let query: string | null = `?accountId=${id}&dateFrom=${from}`
+  for (let page = 0; query && page < 40; page += 1) {
+    const data: CursorPage<PluggyTransaction> = await call<CursorPage<PluggyTransaction>>(`/v2/transactions${query}`)
+    out.push(...data.results)
+    const next: string | null | undefined = data.next
+    query = next ? (next.startsWith('?') ? next : `?${next}`) : null
   }
-  throw lastError
+  return out.filter(tx => String(tx.date).slice(0, 10) >= from)
 }
 
 export async function syncItem(itemId: string, from: string): Promise<SyncedItem> {
