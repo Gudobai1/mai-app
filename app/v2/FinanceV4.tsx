@@ -132,7 +132,13 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
   const allowedTabs: Tab[] = ['transactions', 'accounts', 'cards', 'boxes', 'investments', 'reports']
   const tab: Tab = allowedTabs.includes(savedTab as Tab) ? savedTab as Tab : 'transactions'
   const finance = state.finance || {}
-  const transactions = rows(finance.transactions)
+  // sobras de uma conexão antiga do Pluggy (conta/cartão que não existe mais) duplicavam tudo
+  const knownOrigins = new Set<string>([...rows(finance.accounts).map(item => String(item.id)), ...rows(finance.cards).flatMap(item => [String(item.id), `card|${String(item.id)}`])])
+  const transactions = rows(finance.transactions).filter(item => {
+    if (!item.pluggy_id) return true
+    const origin = String(item.conta_id || (item.cartao_id ? `card|${item.cartao_id}` : ''))
+    return !origin || knownOrigins.has(origin)
+  })
   const accounts = rows(finance.accounts)
   const cards = rows(finance.cards)
   const categories = rows(finance.categories)
@@ -980,7 +986,16 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
   const periodOptions: { id: typeof period; label: string }[] = [{ id: 'month', label: 'Mensal' }, { id: '3', label: 'Últimos 3 meses' }, { id: '6', label: 'Últimos 6 meses' }, { id: 'year', label: 'Este ano' }, { id: 'custom', label: 'Personalizado' }]
   const originalBlock = (block: typeof reportBlocks[number]) => <section className={fm.reportBlock} key={block.title}>
     <div className={fm.reportTitle}><strong>{block.title}</strong><span>{money.format(block.total)}</span></div>
-    <div className={fm.barList}>{block.slices.map(slice => { const percent = block.total ? slice.value / block.total * 100 : 0; return <div className={fm.barRow} key={slice.name}><div className={fm.barTop}><span className={fm.barName}>{slice.name}</span><span className={fm.barPct}>{percent.toFixed(1).replace('.', ',')}%</span><span className={fm.barValue} data-tone={block.tone}>{money.format(slice.value)}</span></div><div className={fm.barTrack}><div style={{ width: `${percent}%`, background: slice.color }} /></div></div> })}{!block.slices.length ? <div className={fm.empty}>Sem dados no período.</div> : null}</div>
+    <div className={fm.barList}>{block.slices.map(slice => {
+      const percent = block.total ? slice.value / block.total * 100 : 0
+      const pickKey = `${block.title}|${slice.name}`
+      const open = reportPick === pickKey
+      const sliceItems = open ? block.items.filter(item => block.keyOf(item) === slice.name).slice().sort((a, b) => String(b.data).localeCompare(String(a.data))) : []
+      return <div className={fm.barRow} key={slice.name}>
+        <button type="button" className={fm.barPick} aria-expanded={open} onClick={() => setReportPick(open ? null : pickKey)}><div className={fm.barTop}><span className={fm.barName}>{slice.name}</span><span className={fm.barPct}>{percent.toFixed(1).replace('.', ',')}%</span><span className={fm.barValue} data-tone={block.tone}>{money.format(slice.value)}</span></div><div className={fm.barTrack}><div style={{ width: `${percent}%`, background: slice.color }} /></div></button>
+        {open ? <div className={fm.reportList}>{sliceItems.slice(0, 80).map(item => <button type="button" key={`${item._isFixed ? 'f' : 't'}-${String(item.id)}-${dateKey(item.data)}`} onClick={() => openTransaction(item)}><span className={fm.reportItemText}><b>{String(item.titulo || 'Lançamento')}</b><small>{naturalDate(dateKey(item.data), today)} · {originName(item.conta_id || (item.cartao_id ? `card|${item.cartao_id}` : ''), accounts, cards)}</small></span><span className={fm.reportItemValue} data-tone={block.tone}>{money.format(clampMoney(item.valor))}</span></button>)}{sliceItems.length > 80 ? <div className={fm.empty}>Mostrando os 80 mais recentes.</div> : null}</div> : null}
+      </div>
+    })}{!block.slices.length ? <div className={fm.empty}>Sem dados no período.</div> : null}</div>
   </section>
   const REPORT_TOP = 6
   const barBlock = (block: typeof reportBlocks[number]) => {
@@ -1067,12 +1082,9 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
       <div className={fm.reportTabs} role="tablist">{['Geral', 'Receitas', 'Despesas', 'Cartões', 'Contas'].map((label, index) => <button key={label} type="button" role="tab" aria-selected={reportView === index} data-active={reportView === index} onClick={() => { setReportView(index); setReportPick(null) }}>{label}</button>)}</div>
       {reportView === 0 ? (() => {
         const biggest = generalBars.reduce((max, bar) => Math.max(max, Math.abs(bar.value)), 0)
-        const periodRows = period === 'month' ? filtered : transactions.filter(item => reportMonths.includes(itemMonth(item)) && (item.ajuste_fatura === true || !isCardOrigin(item))).sort((a, b) => String(b.data).localeCompare(String(a.data)))
         return <>
           <div className={fm.cols}>{generalBars.map(bar => <button type="button" key={bar.name} className={fm.col} onClick={() => { setReportView(bar.tab); setReportPick(null) }}><span className={fm.colValue}>{money.format(bar.value).replace(/,\d\d$/, '')}</span><span className={fm.colBar}><span style={{ height: `${biggest ? Math.max(4, Math.abs(bar.value) / biggest * 100) : 0}%`, background: bar.color }} /></span><span className={fm.colName}>{bar.name}</span></button>)}</div>
           {reportBlocks.map(originalBlock)}
-          <div className={fm.reportListHead}><b>Lançamentos <span className={fm.listSum}>{signedMoney(listTotal(periodRows))}</span></b><small>{periodRows.length} {periodRows.length === 1 ? 'lançamento' : 'lançamentos'} · {period === 'month' ? monthLabel(month).split(' de ')[0] : periodRange}</small></div>
-          <div className={fm.reportList}>{periodRows.map(transactionRow)}{!periodRows.length ? <div className={fm.empty}>Nenhum lançamento no período.</div> : null}</div>
         </>
       })() : barBlock(tabBlocks[Math.min(reportView, tabBlocks.length) - 1])}
     </> : null}
