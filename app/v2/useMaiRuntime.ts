@@ -1,6 +1,7 @@
 'use client'
 
 import { isDarkMode, normalizeMode, normalizeTheme } from './theme'
+import { logoDataUrl, themeLogoColor } from './logo'
 import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { describeChange, type ChangeInfo } from '../../lib/v2/changes'
@@ -129,6 +130,7 @@ export function useMaiRuntime() {
         document.head.appendChild(meta)
       }
       meta.content = dark ? '#1E1E1E' : '#FFFFFF'
+      applyLogoIcons(themeLogoColor(state.configs.accentColor))
     }
     apply()
     if (normalizeMode(state.configs.theme) !== 'system' || typeof window.matchMedia !== 'function') return
@@ -333,4 +335,31 @@ export function useMaiRuntime() {
     syncStatus, undoCount, installPrompt, importRef, commit, undo, googleRpc, syncCalendar, openGoogle,
     saveCalendars, disconnectGoogle, requestNotifications, install, exportData, importData, logout, flushRemoteSync,
   }
+}
+
+
+/* Favicon e ícone de "adicionar à tela inicial" acompanham a cor do tema escolhido. */
+function applyLogoIcons(color: string) {
+  try {
+    document.querySelectorAll('link[rel~="icon"], link[rel="apple-touch-icon"]').forEach(node => node.remove())
+    const icon = document.createElement('link')
+    icon.rel = 'icon'
+    icon.type = 'image/svg+xml'
+    icon.href = logoDataUrl(color)
+    document.head.appendChild(icon)
+    const image = new Image()
+    image.onload = () => {
+      try {
+        const canvas = document.createElement('canvas')
+        canvas.width = 180
+        canvas.height = 180
+        canvas.getContext('2d')?.drawImage(image, 0, 0, 180, 180)
+        const touch = document.createElement('link')
+        touch.rel = 'apple-touch-icon'
+        touch.href = canvas.toDataURL('image/png')
+        document.head.appendChild(touch)
+      } catch {}
+    }
+    image.src = logoDataUrl(color, false)
+  } catch {}
 }

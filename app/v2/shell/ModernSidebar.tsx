@@ -6,6 +6,7 @@ import { Icon } from '../../ds'
 import type { AppView } from '../app-types'
 import { driveAssetUrl } from '../DriveAsset'
 import { SidebarIcon } from './SidebarIcons'
+import { MaiLogo, themeLogoColor } from '../logo'
 import { NAV_ALIAS, todayCounts, type NavItem } from './nav'
 import styles from './ModernShell.module.css'
 
@@ -143,6 +144,10 @@ export function ModernSidebar({ state, today, view, navigate, onSearch, onSettin
 
   return (
     <aside className={styles.sidebar} aria-label="Menu principal">
+      <div className={styles.brand}>
+        <MaiLogo size={28} color={themeLogoColor(state.configs.accentColor)} />
+        <strong>MAI</strong>
+      </div>
       <button type="button" className={styles.search} onClick={onSearch}>
         <SidebarIcon name="search" size={20} />
         <span>Buscar</span>
