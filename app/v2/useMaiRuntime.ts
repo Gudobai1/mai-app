@@ -276,7 +276,7 @@ export function useMaiRuntime() {
   }
 
   async function disconnectGoogle() {
-    if (!confirm('Desconectar a conta Google e sair do MAI neste navegador?')) return
+    if (!confirm('Desconectar a conta Google e sair do Bukid neste navegador?')) return
     await fetch('/api/google/disconnect', { method: 'POST' }).catch(() => null)
     localStorage.removeItem('mai-supabase-access-token')
     localStorage.removeItem('mai-supabase-refresh-token')

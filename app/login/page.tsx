@@ -4,11 +4,11 @@ import { useEffect, useState } from 'react'
 import { MaiLogo, themeLogoColor } from '../v2/logo'
 
 const errors: Record<string,string> = {
-  unauthorized_google_account: 'Esta conta Google não tem permissão para acessar o MAI.',
+  unauthorized_google_account: 'Esta conta Google não tem permissão para acessar o Bukid.',
   invalid_state: 'Não foi possível validar o login. Tente novamente.',
   google_token_error: 'O Google não concluiu a autenticação. Tente novamente.',
-  supabase_not_configured: 'A conexão com os dados do MAI não está configurada.',
-  supabase_session_error: 'Não foi possível conectar sua conta Google aos dados do MAI.',
+  supabase_not_configured: 'A conexão com os dados do Bukid não está configurada.',
+  supabase_session_error: 'Não foi possível conectar sua conta Google aos dados do Bukid.',
 }
 
 export default function LoginPage() {
@@ -21,14 +21,14 @@ export default function LoginPage() {
   return <main style={{minHeight:'100vh',display:'grid',placeItems:'center',fontFamily:'var(--ds-font)',background:'var(--ds-surface-2)',color:'var(--ds-text)',padding:20,boxSizing:'border-box'}}>
     <section style={{width:'min(390px,100%)',background:'var(--ds-surface)',border:'1px solid var(--ds-line)',borderRadius:20,padding:28,boxShadow:'var(--ds-shadow-float)'}}>
       <div style={{marginBottom:20}}><MaiLogo size={44} color={themeLogoColor('todoist')} /></div>
-      <h1 style={{margin:'0 0 7px',fontSize:25,letterSpacing:'-.03em'}}>Entrar no MAI</h1>
+      <h1 style={{margin:'0 0 7px',fontSize:25,letterSpacing:'-.03em'}}>Entrar no Bukid</h1>
       <p style={{margin:'0 0 24px',fontSize:13,lineHeight:1.55,color:'var(--ds-muted)'}}>Seus dados ficam vinculados à sua conta e aparecem nos seus dispositivos.</p>
       <a href="/api/google/connect?mode=login" style={{height:46,border:'1px solid var(--ds-line-strong)',borderRadius:12,display:'flex',alignItems:'center',justifyContent:'center',gap:10,textDecoration:'none',color:'var(--ds-text)',fontSize:13,fontWeight:650,background:'var(--ds-surface)'}}>
         <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path fill="#4285F4" d="M21.6 12.23c0-.71-.06-1.4-.18-2.06H12v3.9h5.38a4.6 4.6 0 0 1-2 3.02v2.53h3.24c1.9-1.75 2.98-4.33 2.98-7.39Z"/><path fill="#34A853" d="M12 22c2.7 0 4.96-.9 6.62-2.38l-3.24-2.53c-.9.6-2.05.96-3.38.96-2.6 0-4.8-1.76-5.6-4.12H3.05v2.6A10 10 0 0 0 12 22Z"/><path fill="#FBBC05" d="M6.4 13.93A6 6 0 0 1 6.08 12c0-.67.11-1.32.32-1.93v-2.6H3.05A10 10 0 0 0 2 12c0 1.61.39 3.14 1.05 4.53l3.35-2.6Z"/><path fill="#EA4335" d="M12 5.95c1.47 0 2.78.5 3.81 1.49l2.87-2.87A9.64 9.64 0 0 0 12 2a10 10 0 0 0-8.95 5.47l3.35 2.6c.8-2.36 3-4.12 5.6-4.12Z"/></svg>
         Continuar com Google
       </a>
       {message ? <p style={{margin:'14px 0 0',padding:'11px 12px',borderRadius:10,background:'var(--ds-rose-bg)',color:'var(--ds-danger)',fontSize:11.5,lineHeight:1.45}}>{message}</p> : null}
-      <p style={{margin:'18px 0 0',fontSize:10.5,color:'var(--ds-muted)',lineHeight:1.5}}>O acesso é restrito à conta Google autorizada do MAI.</p>
+      <p style={{margin:'18px 0 0',fontSize:10.5,color:'var(--ds-muted)',lineHeight:1.5}}>O acesso é restrito à conta Google autorizada do Bukid.</p>
     </section>
   </main>
 }

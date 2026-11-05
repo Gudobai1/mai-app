@@ -74,7 +74,7 @@ export function AppTopBar({ state, today, view, taskScope, commit, onTaskScopeCh
   const layoutMode = control.layout === 'kanban' ? 'kanban' : 'normal'
   const activeProject = taskScope.startsWith('project:') ? projects.find(project => String(project.id) === taskScope.slice(8)) : null
   const titleMap: Partial<Record<AppView,string>> = { today:'Hoje', upcoming:'Em breve', completed:'Concluídos', tasks:'Tarefas', habits:'Hábitos', goals:'Metas', notes:'Notas', finance:'Finanças', files:'Arquivos' }
-  const title = titleMap[view] || 'MAI'
+  const title = titleMap[view] || 'Bukid'
   const dayLabel = new Date(`${today}T12:00:00`).toLocaleDateString('pt-BR', { weekday:'short', day:'numeric', month:'short' }).replace('.', '')
   const overdueTasks = activeTasks.filter(task => dateKey(task.data_vencimento) && dateKey(task.data_vencimento) < today).length
   const futureTasks = activeTasks.filter(task => dateKey(task.data_vencimento) >= today).length

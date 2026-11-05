@@ -92,7 +92,7 @@ export function FinanceEntityPhotoPicker({ value, fallbackIcon, color, onChange 
     <FinanceEntityIcon photo={value} icon={fallbackIcon} color={color} className="mai-finance-photo-preview" />
     <div className="mai-finance-photo-copy">
       <strong>Foto do ícone</strong>
-      <small>Opcional. O arquivo fica no Google Drive; no MAI fica somente a referência. Ícones do sistema não são arquivos e sincronizam junto com o estado.</small>
+      <small>Opcional. O arquivo fica no Google Drive; no Bukid fica somente a referência. Ícones do sistema não são arquivos e sincronizam junto com o estado.</small>
       <div className="mai-finance-photo-actions">
         <label data-busy={busy}>
           <MaiIcon name="photo_camera" size={18} />

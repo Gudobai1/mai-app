@@ -58,7 +58,7 @@ export function DesignSystemPreview() {
       <div className={styles.inner}>
         <header className={styles.top}>
           <div>
-            <div className={styles.eyebrow}>MAI · visual Moderno</div>
+            <div className={styles.eyebrow}>Bukid · visual Moderno</div>
             <h1 className={styles.title}>Design system</h1>
           </div>
           <div className={styles.segmented} role="radiogroup" aria-label="Tema da prévia">

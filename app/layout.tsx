@@ -53,10 +53,10 @@ import './v2/shell/detail-popup.css'
 import './motion.css'
 
 export const metadata: Metadata = {
-  title: 'MAI — Meu Sistema',
+  title: 'Bukid — Meu Sistema',
   description: 'Organize tarefas, compromissos, hábitos, finanças, notas e bem-estar.',
   manifest: '/manifest.webmanifest',
-  appleWebApp: { capable: true, title: 'MAI', statusBarStyle: 'default' },
+  appleWebApp: { capable: true, title: 'Bukid', statusBarStyle: 'default' },
 }
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
