@@ -53,7 +53,7 @@ import './v2/shell/detail-popup.css'
 import './motion.css'
 
 export const metadata: Metadata = {
-  title: 'Bukid — Meu Sistema',
+  title: 'Bukid',
   description: 'Organize tarefas, compromissos, hábitos, finanças, notas e bem-estar.',
   manifest: '/manifest.webmanifest',
   appleWebApp: { capable: true, title: 'Bukid', statusBarStyle: 'default' },
