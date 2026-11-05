@@ -339,3 +339,8 @@ button.balanceMain:hover { background: var(--ds-surface-hover); }
 .repSumRows b[data-tone='neg'] { color: var(--ds-danger); }
 .repSumRows b[data-tone='card'] { color: var(--ds-sky-fg); }
 .repSumRows em { font-style: normal; font-size: 11.5px; color: var(--ds-muted); text-align: right; font-variant-numeric: tabular-nums; }
+
+/* Cartão do resumo selecionado: fundo suave, rótulo na cor de destaque e barra embaixo, para você saber onde está. */
+.summary > button[data-active] { background: var(--ds-accent-soft); box-shadow: inset 0 -2px 0 var(--ds-accent); border-radius: 8px; }
+.summary > button[data-active] span { color: var(--ds-accent); font-weight: 650; }
+.summary > button[data-active]:hover { background: var(--ds-accent-soft); }
