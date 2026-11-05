@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { MaiLogo, themeLogoColor } from '../v2/logo'
 
 const errors: Record<string,string> = {
   unauthorized_google_account: 'Esta conta Google não tem permissão para acessar o MAI.',
@@ -19,7 +20,7 @@ export default function LoginPage() {
 
   return <main style={{minHeight:'100vh',display:'grid',placeItems:'center',fontFamily:'var(--ds-font)',background:'var(--ds-surface-2)',color:'var(--ds-text)',padding:20,boxSizing:'border-box'}}>
     <section style={{width:'min(390px,100%)',background:'var(--ds-surface)',border:'1px solid var(--ds-line)',borderRadius:20,padding:28,boxShadow:'var(--ds-shadow-float)'}}>
-      <div style={{width:42,height:42,borderRadius:13,display:'grid',placeItems:'center',background:'var(--ds-accent)',color:'var(--ds-surface)',fontWeight:800,marginBottom:20}}>M</div>
+      <div style={{marginBottom:20}}><MaiLogo size={44} color={themeLogoColor('todoist')} /></div>
       <h1 style={{margin:'0 0 7px',fontSize:25,letterSpacing:'-.03em'}}>Entrar no MAI</h1>
       <p style={{margin:'0 0 24px',fontSize:13,lineHeight:1.55,color:'var(--ds-muted)'}}>Seus dados ficam vinculados à sua conta e aparecem nos seus dispositivos.</p>
       <a href="/api/google/connect?mode=login" style={{height:46,border:'1px solid var(--ds-line-strong)',borderRadius:12,display:'flex',alignItems:'center',justifyContent:'center',gap:10,textDecoration:'none',color:'var(--ds-text)',fontSize:13,fontWeight:650,background:'var(--ds-surface)'}}>
