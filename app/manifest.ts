@@ -3,8 +3,8 @@ import type { MetadataRoute } from 'next'
 export default function manifest(): MetadataRoute.Manifest {
   return {
     id: '/',
-    name: 'MAI — Meu Sistema',
-    short_name: 'MAI',
+    name: 'Bukid — Meu Sistema',
+    short_name: 'Bukid',
     description: 'Seu sistema pessoal para organizar o dia.',
     start_url: '/',
     scope: '/',

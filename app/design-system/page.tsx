@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import { DesignSystemPreview } from './DesignSystemPreview'
 
 export const metadata: Metadata = {
-  title: 'MAI — Design system',
+  title: 'Bukid — Design system',
   robots: { index: false, follow: false },
 }
 

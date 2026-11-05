@@ -733,7 +733,7 @@ function EventDetail({ item, state, today, commit, googleRpc, refreshEvents, reg
     void close()
   }
 
-  const calendarName = google ? String(source.calendario_nome || 'Google Agenda') : String(draft.categoria || source.categoria || 'MAI')
+  const calendarName = google ? String(source.calendario_nome || 'Google Agenda') : String(draft.categoria || source.categoria || 'Bukid')
   const color = String(source.calendarColor || source.cor || 'var(--ds-accent)')
   const googleCategory = String(source.categoria || source.calendario_nome || 'Google Agenda')
   const timeRange = draft.dia_inteiro ? 'Dia todo' : `${draft.hora_inicio || '--:--'}${draft.hora_fim ? ` – ${draft.hora_fim}` : ''}`

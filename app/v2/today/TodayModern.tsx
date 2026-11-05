@@ -519,7 +519,7 @@ export function TodayModern({ state, today, commit, navigate, inspect, options, 
     })
     return {
       title: item.title,
-      subtitle: `${item.time ? `${item.time} · ` : ''}${google ? String(item.raw.calendario_nome || 'Google Agenda') : String(item.raw.categoria || 'MAI')}`,
+      subtitle: `${item.time ? `${item.time} · ` : ''}${google ? String(item.raw.calendario_nome || 'Google Agenda') : String(item.raw.categoria || 'Bukid')}`,
       groups: [
         google || !start ? { options: [] } : { label: 'Mover para', inline: true, options: dateChoices.map(choice => ({ label: choice.label, icon: choice.icon, active: start === choice.value, onSelect: () => moveTo(choice.value) })) },
         { options: [

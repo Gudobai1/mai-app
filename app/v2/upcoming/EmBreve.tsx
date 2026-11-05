@@ -195,7 +195,7 @@ export function EmBreve({ state, today, commit, inspect, syncRange }: Props) {
     const google = item.raw.tipo === 'google' || item.raw.tipo === 'gcalendar'
     return {
       ...base, kind: 'event', time: item.time ? item.time.slice(0, 5) : '', end: String(item.raw.hora_fim || '').slice(0, 5), title: item.title,
-      source: String(item.raw.calendario_nome || (google ? 'Google Agenda' : item.raw.categoria || 'MAI')),
+      source: String(item.raw.calendario_nome || (google ? 'Google Agenda' : item.raw.categoria || 'Bukid')),
       allDay: item.raw.dia_inteiro === true || !item.time || item.subtitle === 'Em andamento',
     }
   }
@@ -789,7 +789,7 @@ export function EmBreve({ state, today, commit, inspect, syncRange }: Props) {
     const map = new Map<string, { id: string; label: string; color: string }>()
     for (const event of rows(state.events)) {
       const google = event.tipo === 'google' || event.tipo === 'gcalendar'
-      const name = String(event.calendario_nome || (google ? 'Google Agenda' : event.categoria || 'MAI'))
+      const name = String(event.calendario_nome || (google ? 'Google Agenda' : event.categoria || 'Bukid'))
       if (!map.has(name)) map.set(name, { id: name, label: name, color: eventColor(event) })
     }
     return [...map.values()].sort((a, b) => a.label.localeCompare(b.label, 'pt-BR'))

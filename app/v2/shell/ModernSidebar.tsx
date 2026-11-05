@@ -146,7 +146,7 @@ export function ModernSidebar({ state, today, view, navigate, onSearch, onSettin
     <aside className={styles.sidebar} aria-label="Menu principal">
       <div className={styles.brand}>
         <MaiLogo size={28} color={themeLogoColor(state.configs.accentColor)} />
-        <strong>MAI</strong>
+        <strong>Bukid</strong>
       </div>
       <button type="button" className={styles.search} onClick={onSearch}>
         <SidebarIcon name="search" size={20} />

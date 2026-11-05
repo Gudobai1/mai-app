@@ -180,7 +180,7 @@ export function AppSettingsDrawer(props: Props) {
               <section className={styles.section} data-section="app">
                 <h3>Aplicativo</h3>
                 <div className={styles.row}>
-                  <span><strong>Instalar MAI</strong><small>Usar como aplicativo no aparelho.</small></span>
+                  <span><strong>Instalar Bukid</strong><small>Usar como aplicativo no aparelho.</small></span>
                   <button type="button" className={styles.button} onClick={() => void props.install()}>Instalar</button>
                 </div>
               </section>
