@@ -8,7 +8,7 @@ import of from './OpenFinance.module.css'
 type Row = Record<string, any>
 type Commit = (change: (current: MaiState) => MaiState) => void
 
-type Link = { itemId: string; banco: string; ultimaSync?: string }
+type Link = { itemId: string; banco: string; ultimaSync?: string; url?: string }
 type Pending = { id: string; accountId: string; itemId: string; data: string; titulo: string; valor: number; tipo: 'receita' | 'despesa'; pendente: boolean; categoria: string; parcela: string; billId?: string }
 export type BankAccount = { id: string; itemId: string; nome: string; tipo: 'conta' | 'cartao'; saldo: number; limite: number; limite_disponivel: number; vencimento_dia?: number; fechamento_dia?: number }
 export type OpenFinanceData = { itens: Link[]; contas: BankAccount[]; vinculos: Record<string, string>; pendentes: Pending[]; vistos: string[]; dispensadas: string[] }
@@ -20,8 +20,10 @@ const cents = (value: number) => Math.round(value * 100) / 100
 const FATURA = /pagamento (de |da |do )?fatura|pagamento fatura|fatura (do )?cart/i // pagamento de fatura já aparece como compras no cartão
 const shortName = (nome: string) => nome.replace(/^MeuPluggy\s*·\s*/i, '').split(' - ')[0].replace(/\s+S\.?\s?A\.?$/i, '').trim() || 'Banco'
 const AUTO_MINUTES = 15
-/** A Pluggy não deixa atualizar o MeuPluggy por API: o botão abre a página da conexão para você clicar em atualizar. */
-const MEU_PLUGGY_URL = 'https://meu.pluggy.ai/connections/f435a5e6-6469-4a1f-8f24-cb1d9cb1c644'
+/** A Pluggy não deixa atualizar o MeuPluggy por API: o botão Sincronizar abre a página da conexão (link guardado em cada conexão) para você clicar em atualizar. */
+const MEU_PLUGGY_DEFAULTS: Record<string, string> = { '4a0f43fc-2110-456e-8a2f-5020bb32984e': 'https://meu.pluggy.ai/connections/f435a5e6-6469-4a1f-8f24-cb1d9cb1c644' }
+const meuPluggyUrl = (item: Link) => item.url || MEU_PLUGGY_DEFAULTS[item.itemId] || ''
+const validMeuPluggyUrl = (value: string) => /^https:\/\/meu\.pluggy\.ai\/\S+$/.test(value)
 
 export function readOpenFinance(state: MaiState): OpenFinanceData {
   const raw = (state.finance?.openFinance && typeof state.finance.openFinance === 'object' ? state.finance.openFinance : {}) as Partial<OpenFinanceData>
@@ -330,6 +332,17 @@ export function useOpenFinance(state: MaiState, commit: Commit) {
     if (!/^[\w-]{8,64}$/.test(itemId)) { setMessage('Esse ID não parece válido.'); return }
     patchOpenFinance(commit, current => ({ data: { ...current, itens: current.itens.some(i => i.itemId === itemId) ? current.itens : [...current.itens, { itemId, banco: 'MeuPluggy' }] } }))
     void sync([itemId], false, false)
+    setLink(itemId, '')
+  }
+
+  /** Guarda o link da conexão no MeuPluggy; vazio remove. Devolve false se o link for inválido. */
+  function setLink(itemId: string, current: string) {
+    const raw = window.prompt('Link desta conexão no MeuPluggy (https://meu.pluggy.ai/connections/…). Deixe vazio para não abrir nada ao sincronizar:', current)
+    if (raw === null) return
+    const url = raw.trim()
+    if (url && !validMeuPluggyUrl(url)) { setMessage('Esse link não parece ser do MeuPluggy (https://meu.pluggy.ai/connections/…).'); return }
+    patchOpenFinance(commit, data => ({ data: { ...data, itens: data.itens.map(i => i.itemId === itemId ? { ...i, url } : i) } }))
+    setMessage(url ? 'Link do MeuPluggy salvo.' : 'Link removido.')
   }
 
   function disconnect(itemId: string) {
@@ -405,14 +418,14 @@ export function useOpenFinance(state: MaiState, commit: Commit) {
   }
   const available = (kind: 'conta' | 'cartao') => data.contas.filter(c => c.tipo === kind && !data.vinculos[c.id])
 
-  return { data, busy, message, sync, connect, addItemId, disconnect, applyBalances, info, available }
+  return { data, busy, message, sync, connect, addItemId, setLink, disconnect, applyBalances, info, available }
 }
 
 export type OpenFinanceController = ReturnType<typeof useOpenFinance>
 
 /** Linha discreta no fim das listas: as contas, cartões e investimentos do banco aparecem nas listas normais, iguais aos manuais. */
 export function OpenFinancePanel({ ctl }: { ctl: OpenFinanceController }) {
-  const { data, busy, message, sync, connect, addItemId, disconnect } = ctl
+  const { data, busy, message, sync, connect, addItemId, setLink, disconnect } = ctl
   const last = data.itens.map(i => i.ultimaSync).filter(Boolean).sort().pop()
   const status = !data.itens.length ? 'Open Finance: conecte seu banco para lançar e atualizar tudo sozinho'
     : busy === 'sync' ? 'Open Finance · sincronizando…'
@@ -421,11 +434,12 @@ export function OpenFinancePanel({ ctl }: { ctl: OpenFinanceController }) {
   return <div className={of.line}>
     <span className={of.status}>{status}</span>
     <div className={of.actions}>
-      {data.itens.length ? <button type="button" disabled={busy !== ''} onClick={() => { try { window.open(MEU_PLUGGY_URL, 'meu-pluggy', 'popup,width=520,height=780') } catch { /* popup bloqueado: segue só com a leitura */ } void sync(data.itens.map(i => i.itemId), false, false) }}>Sincronizar</button> : null}
+      {data.itens.length ? <button type="button" disabled={busy !== ''} onClick={() => { for (const item of data.itens) { const url = meuPluggyUrl(item); if (url) { try { window.open(url, `meu-pluggy-${item.itemId}`, 'popup,width=520,height=780') } catch { /* popup bloqueado: segue só com a leitura */ } } } void sync(data.itens.map(i => i.itemId), false, false) }}>Sincronizar</button> : null}
       {!data.itens.length ? <button type="button" data-primary="true" disabled={busy !== ''} onClick={connect}>Conectar banco</button> : null}
       <details className={of.more}><summary aria-label="Mais opções">⋯</summary><div>
         {data.itens.length ? <button type="button" disabled={busy !== ''} onClick={connect}>Conectar outro banco</button> : null}
         <button type="button" onClick={addItemId}>Usar ID do MeuPluggy</button>
+        {data.itens.map(item => <button key={`link-${item.itemId}`} type="button" onClick={() => setLink(item.itemId, meuPluggyUrl(item))}>Link do MeuPluggy · {shortName(item.banco)}{meuPluggyUrl(item) ? '' : ' (não definido)'}</button>)}
         {data.itens.map(item => <button key={item.itemId} type="button" onClick={() => disconnect(item.itemId)}>Desconectar {shortName(item.banco)}</button>)}
       </div></details>
     </div>
