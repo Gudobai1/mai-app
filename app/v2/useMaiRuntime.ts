@@ -7,8 +7,9 @@ import { useRouter } from 'next/navigation'
 import { describeChange, type ChangeInfo } from '../../lib/v2/changes'
 import { animateExit, trackItems } from '../../lib/v2/exit'
 import { addDays, plannerItems } from '../../lib/v2/planner'
-import { dateKey, emptyState, flushRemoteSync, hydrateRemoteState, loadState, type MaiState, normalizeState, persistState, subscribeSyncStatus, type SyncStatus } from '../../lib/v2/state'
+import { createTask, dateKey, emptyState, flushRemoteSync, hydrateRemoteState, loadState, type MaiState, normalizeState, persistState, subscribeSyncStatus, type SyncStatus } from '../../lib/v2/state'
 import { drivePreviewUrl, uploadDataUrlToDrive } from './DriveAsset'
+import { isNativeApp, nativePlugin } from '../../lib/native/native'
 
 type Row = Record<string, any>
 type Calendar = { id: string; nome: string; cor: string; primary?: boolean; acesso?: string }
@@ -167,7 +168,8 @@ export function useMaiRuntime() {
   }, [ready, googleConnected, state])
 
   useEffect(() => {
-    if ('Notification' in window) setNotificationPermission(Notification.permission)
+    if (isNativeApp()) void nativePlugin('LocalNotifications')?.checkPermissions?.().then((result: { display?: string }) => setNotificationPermission(result?.display === 'granted' ? 'granted' : result?.display === 'denied' ? 'denied' : 'default')).catch(() => null)
+    else if ('Notification' in window) setNotificationPermission(Notification.permission)
     const install = (event: Event) => { event.preventDefault(); setInstallPrompt(event as InstallPromptEvent) }
     window.addEventListener('beforeinstallprompt', install)
     const timer = window.setInterval(() => setToday(dateKey()), 60_000)
@@ -175,7 +177,7 @@ export function useMaiRuntime() {
   }, [])
 
   useEffect(() => {
-    if (!ready || !today || state.configs.notificationsEnabled !== true || notificationPermission !== 'granted' || !('Notification' in window)) return
+    if (!ready || !today || state.configs.notificationsEnabled !== true || notificationPermission !== 'granted' || !('Notification' in window) || isNativeApp()) return
     const notify = () => {
       const now = new Date()
       if (dateKey(now) !== today) return
@@ -194,6 +196,49 @@ export function useMaiRuntime() {
     const timer = window.setInterval(notify, 30_000)
     return () => window.clearInterval(timer)
   }, [notificationPermission, ready, state, today])
+
+  // App Android: agenda os lembretes dos próximos 7 dias no sistema, para tocarem mesmo com o app fechado.
+  useEffect(() => {
+    if (!ready || !today || !isNativeApp()) return
+    const plugin = nativePlugin('LocalNotifications')
+    if (!plugin) return
+    const timer = window.setTimeout(async () => {
+      try {
+        const pending = await plugin.getPending?.()
+        if (pending?.notifications?.length) await plugin.cancel({ notifications: pending.notifications })
+        if (state.configs.notificationsEnabled !== true || notificationPermission !== 'granted') return
+        const now = Date.now()
+        const notifications = plannerItems(state, today, addDays(today, 7))
+          .filter(item => !item.completed && item.time && item.date)
+          .map(item => ({ item, at: new Date(`${item.date}T${item.time}:00`) }))
+          .filter(entry => entry.at.getTime() > now + 5_000)
+          .sort((a, b) => a.at.getTime() - b.at.getTime())
+          .slice(0, 60)
+          .map(({ item, at }) => ({ id: Math.abs([...`${item.id}`].reduce((hash, char) => (hash * 31 + char.charCodeAt(0)) | 0, 7)) % 2_000_000_000 + 1, title: `Bukid · ${item.title}`, body: `${item.subtitle} · ${item.time}`, schedule: { at, allowWhileIdle: true } }))
+        if (notifications.length) await plugin.schedule({ notifications })
+      } catch { /* sem plugin ou sem permissão: o aviso por navegador não se aplica aqui */ }
+    }, 1500)
+    return () => window.clearTimeout(timer)
+  }, [notificationPermission, ready, state, today])
+
+  // App Android: texto/link compartilhado de outro app vira tarefa na Entrada.
+  useEffect(() => {
+    if (!ready || !isNativeApp()) return
+    const plugin = nativePlugin('BukidNative')
+    if (!plugin) return
+    const add = (share?: { title?: string; text?: string }) => {
+      const text = String(share?.text || '').trim()
+      const title = String(share?.title || '').trim()
+      if (!text && !title) return
+      const [first, ...rest] = (title || text).split(/\r?\n/)
+      const task = createTask(first.slice(0, 140))
+      const body = [title ? text : rest.join('\n')].join('').trim()
+      commit(current => ({ ...current, tasks: [{ ...task, descricao: body }, ...current.tasks] }))
+    }
+    void Promise.resolve(plugin.getPendingShare?.()).then(add).catch(() => null)
+    const handle = plugin.addListener?.('shareReceived', add)
+    return () => { void Promise.resolve(handle).then(item => item?.remove?.()) }
+  }, [ready]) // eslint-disable-line react-hooks/exhaustive-deps
 
   function commit(change: (current: MaiState) => MaiState) {
     const apply = () => {
@@ -287,6 +332,19 @@ export function useMaiRuntime() {
   }
 
   async function requestNotifications() {
+    if (isNativeApp()) {
+      const plugin = nativePlugin('LocalNotifications')
+      if (!plugin) return alert('As notificações do app não estão disponíveis nesta versão.')
+      if (state.configs.notificationsEnabled === true && notificationPermission === 'granted') {
+        commit(current => ({ ...current, configs: { ...current.configs, notificationsEnabled: false } }))
+        return
+      }
+      const result = await plugin.requestPermissions()
+      const granted = result?.display === 'granted'
+      setNotificationPermission(granted ? 'granted' : 'denied')
+      if (granted) commit(current => ({ ...current, configs: { ...current.configs, notificationsEnabled: true } }))
+      return
+    }
     if (!('Notification' in window)) return alert('Este navegador não oferece notificações.')
     if (state.configs.notificationsEnabled === true && notificationPermission === 'granted') {
       commit(current => ({ ...current, configs: { ...current.configs, notificationsEnabled: false } }))

@@ -17,7 +17,9 @@ export async function GET(request: NextRequest) {
     scope: GOOGLE_SCOPES,
     state,
   }).toString()
+  const native = request.nextUrl.searchParams.get('native') === '1'
   const response = NextResponse.redirect(url)
+  response.cookies.set('mai_google_oauth_native', native ? '1' : '', { httpOnly: true, secure: true, sameSite: 'lax', path: '/', maxAge: native ? 600 : 0 })
   response.cookies.set('mai_google_oauth_state', state, {
     httpOnly: true, secure: true, sameSite: 'lax', path: '/', maxAge: 600,
   })

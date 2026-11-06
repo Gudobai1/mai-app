@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { MaiState } from '../../lib/v2/state-model'
 import { authedFetch } from '../../lib/v2/sync'
+import { isNativeApp, nativePlugin } from '../../lib/native/native'
 import of from './OpenFinance.module.css'
 
 type Row = Record<string, any>
@@ -416,7 +417,8 @@ export function useOpenFinance(state: MaiState, commit: Commit) {
   function refreshAt(itemId: string) {
     const link = data.itens.find(i => i.itemId === itemId)
     const url = link ? meuPluggyUrl(link) : ''
-    if (url) { try { window.open(url, `meu-pluggy-${itemId}`, 'popup,width=520,height=780') } catch { /* popup bloqueado: segue só com a leitura */ } }
+    if (url && isNativeApp()) { void nativePlugin('Browser')?.open?.({ url }) }
+    else if (url) { try { window.open(url, `meu-pluggy-${itemId}`, 'popup,width=520,height=780') } catch { /* popup bloqueado: segue só com a leitura */ } }
     else setMessage('Defina o link desta conexão no MeuPluggy para abrir a página de atualização.')
     void sync([itemId], false, false)
   }

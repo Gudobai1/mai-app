@@ -1,5 +1,7 @@
 'use client'
 
+import { isNativeApp, openGoogleAuth } from '../../lib/native/native'
+
 export type DriveAsset = {
   idDrive: string
   nome: string
@@ -14,6 +16,7 @@ function reconnectGoogle() {
   if (typeof window === 'undefined') return
   const returnTo = `${window.location.pathname}${window.location.search}${window.location.hash}`
   try { window.sessionStorage.setItem('mai-google-return-to', returnTo) } catch {}
+  if (isNativeApp()) { void openGoogleAuth('/api/google/connect?mode=connect'); return }
   window.location.assign('/api/google/connect?mode=connect')
 }
 
