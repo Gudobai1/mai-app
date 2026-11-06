@@ -103,6 +103,13 @@ function resolveLinks(links: Record<string, string>, bank: BankAccount[], financ
 }
 
 /** Lança direto na conta/cartão do banco, já pago. Nunca mexe nos seus lançamentos manuais. */
+/** Compra no cartão (do banco) é sempre concluída; só a fatura do cartão fica em aberto. Corrige também o que já tinha entrado como aberto. */
+function settleCardPurchase(tx: Row): Row {
+  if (!tx.pluggy_id || !tx.cartao_id || tx.ajuste_fatura === true || tx.status === 'pago') return tx
+  const total = num(tx.valor)
+  return { ...tx, status: 'pago', valor_pago: total, pagamentos: [{ id: uid('pay'), data: String(tx.data).slice(0, 10), valor: total }] }
+}
+
 function importPending(list: Pending[], links: Record<string, string>, rows: Row[]) {
   const out = [...rows]
   const remaining: Pending[] = []
@@ -112,7 +119,7 @@ function importPending(list: Pending[], links: Record<string, string>, rows: Row
     if (!target) { remaining.push(p); continue }
     const isCard = target.startsWith('card|')
     if (isCard && p.tipo === 'receita') { skipped.push(p.id); continue } // pagamento de fatura/estorno no cartão
-    const settled = p.pendente ? { status: 'pendente', valor_pago: 0, pagamentos: [] as Row[] } : null
+    const settled = p.pendente && !isCard ? { status: 'pendente', valor_pago: 0, pagamentos: [] as Row[] } : null // compra no cartão entra sempre concluída: quem fica em aberto é a fatura
     out.push({
       id: uid('fin'), pluggy_id: p.id, titulo: (p.parcela ? `${p.titulo} (${p.parcela})` : p.titulo).replace(/\s*\|\s*/g, ' · '), observacao: 'Open Finance', valor: p.valor, tipo: p.tipo, data: p.data,
       categoria: p.categoria || '', conta_id: target, cartao_id: isCard ? target.slice(5) : '', fatura_bill_id: p.billId || '', anexos: [], recorrencia: 'unico',
@@ -341,7 +348,7 @@ export function useOpenFinance(state: MaiState, commit: Commit) {
         for (const account of bank) { const target = resolved.links[account.id]; if (target) cfgByTarget.set(target, matchConfig(current.itens.find(link => link.itemId === account.itemId))) }
         const auto = autoLinkRows(imported0.rows, row => cfgByTarget.get(String(row.conta_id || '')) || MATCH_DEFAULTS)
         autoLinked = auto.linked
-        const imported = { ...imported0, rows: auto.rows }
+        const imported = { ...imported0, rows: auto.rows.map(settleCardPurchase) }
         const itens = current.itens.map(link => { const hit = items.find(i => i.itemId === link.itemId); return hit ? { ...link, banco: hit.banco, ultimaSync: new Date().toISOString() } : link })
         return {
           finance: { categories: withBankCategories((finance.categories || []) as Row[], imported.rows), ...(() => { const billed = applyCardBills(imported.rows, resolved.cards, resolved.links, bank, items); return { accounts: resolved.accounts.map((account: Row) => account.pluggy_id ? { ...account, pago_base: cents(billed.transactions.filter((tx: Row) => tx.ajuste_fatura === true && String(tx.conta_pagamento_id || '') === String(account.id)).reduce((sum: number, tx: Row) => sum + num(tx.valor_pago), 0)) } : account), ...billed } })(), investments: upsertInvestments((finance.investments || []) as Row[], items) },
