@@ -1172,11 +1172,13 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
           setDraft({ ...draft, pluggy_id: bank.id, nome: String(draft.nome || '').trim() ? draft.nome : suggestedName(bank, openFinance.data.contas), ...(kind === 'account' ? { saldo_inicial: 0 } : { limite: bank.limite || bank.limite_disponivel || 0 }) })
         })}
         {draft.pluggy_id ? <SideField label={kind === 'card' ? 'Limite no banco' : 'Saldo no banco'} icon="account_balance" color="var(--ds-accent)"><input readOnly value={ofInfo ? money.format(kind === 'card' ? ofInfo.limite : ofInfo.saldo) : 'Aguardando sincronização'} /></SideField> : null}
-        {draft.pluggy_id && ofInfo ? <SideField label="Sincronização" icon="sync" color="var(--ds-accent)">
-          <button type="button" className={ic.inlineAction} disabled={openFinance.busy !== ''} onClick={() => openFinance.refreshAt(ofInfo.itemId)}>{openFinance.busy === 'sync' ? 'Sincronizando…' : openFinance.linkOf(ofInfo.itemId) ? 'Atualizar no MeuPluggy' : 'Sincronizar agora'}</button>
-          <button type="button" className={ic.inlineAction} onClick={() => openFinance.setLink(ofInfo.itemId, openFinance.linkOf(ofInfo.itemId))}>{openFinance.linkOf(ofInfo.itemId) ? 'Trocar link' : 'Definir link do MeuPluggy'}</button>
-          <button type="button" className={ic.inlineAction} onClick={() => { setDraft(null); openFinance.disconnect(ofInfo.itemId) }}>Desconectar banco</button>
-        </SideField> : null}
+        {draft.pluggy_id && ofInfo ? <>
+          <SideField label="Link no MeuPluggy" icon="link" color="var(--ds-accent)"><input key={`${ofInfo.itemId}-${openFinance.linkOf(ofInfo.itemId)}`} type="url" inputMode="url" placeholder="https://meu.pluggy.ai/connections/…" defaultValue={openFinance.linkOf(ofInfo.itemId)} onBlur={event => { const error = openFinance.saveLink(ofInfo.itemId, event.target.value); event.target.setCustomValidity(error); if (error) event.target.reportValidity() }} onKeyDown={event => { if (event.key === 'Enter') event.currentTarget.blur() }} /></SideField>
+          <SideField label="Sincronização" icon="sync" color="var(--ds-accent)">
+            <button type="button" className={ic.inlineAction} disabled={openFinance.busy !== ''} onClick={() => openFinance.refreshAt(ofInfo.itemId)}>{openFinance.busy === 'sync' ? 'Sincronizando…' : openFinance.linkOf(ofInfo.itemId) ? 'Atualizar no MeuPluggy' : 'Sincronizar agora'}</button>
+            <button type="button" className={ic.inlineAction} onClick={() => { setDraft(null); openFinance.disconnect(ofInfo.itemId) }}>Desconectar banco</button>
+          </SideField>
+        </> : null}
         {draft.pluggy_id && ofInfo?.atualizado ? <SideField label="Atualizado" icon="schedule" color="var(--ds-muted)"><input readOnly value={new Date(ofInfo.atualizado).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })} /></SideField> : null}
       </> : null
 
