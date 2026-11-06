@@ -980,6 +980,8 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
   }
   const listTotal = (list: Row[]) => list.reduce((sum, item) => sum + (item.tipo === 'receita' ? 1 : -1) * clampMoney(item.valor), 0)
   const signedMoney = (value: number) => `${value > 0 ? '+' : value < 0 ? '−' : ''}${money.format(Math.abs(value))}`
+  /** Botão de sincronizar na linha de contas/cartões do banco: abre o MeuPluggy (link da conexão) e lê os dados. */
+  const rowSync = (item: Row) => { const info = item.pluggy_id ? openFinance.info(String(item.pluggy_id)) : undefined; return info ? <button type="button" className={fm.rowSync} title="Sincronizar dados" aria-label="Sincronizar dados" disabled={openFinance.busy !== ''} data-busy={openFinance.busy === 'sync' || undefined} onClick={event => { event.stopPropagation(); openFinance.refreshAt(info.itemId) }}><MaiIcon name="sync" size={18} /></button> : null }
   const addRow = (label: string, onClick: () => void) => <button type="button" className={fm.addRow} onClick={onClick}><MaiIcon name="add" size={18} />{label}</button>
   const calIcon = <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="2.5" /><path d="M3.5 10h17M8 3v4M16 3v4" /></svg>
   const dueTone = (key: string) => key < today ? 'late' : key === today ? 'today' : 'future'
@@ -1035,14 +1037,14 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
 
     {tab === 'accounts' ? <>
       <div className={fm.listHead}><span>{accounts.length} {accounts.length === 1 ? 'conta' : 'contas'}</span><span>{money.format(realBalance)} no total</span></div>
-      <div className={fm.list}>{accounts.map(account => <div key={String(account.id)} className={fm.entityRow} {...quick.bind(() => entityMenu('account', account))}><button type="button" className={fm.entity} onClick={() => openExisting('account', account)}><i className={fm.ring} style={{ '--ring': String(account.cor || 'var(--ds-accent)') } as React.CSSProperties} /><span className={fm.copy}><span className={fm.name}>{account.nome}</span>{account.pluggy_id ? <span className={fm.sub}>{openFinance.info(String(account.pluggy_id))?.banco || 'Open Finance'}</span> : null}</span><span className={fm.amount}><b>{money.format(accountBalance(account))}</b></span></button></div>)}</div>
+      <div className={fm.list}>{accounts.map(account => <div key={String(account.id)} className={fm.entityRow} {...quick.bind(() => entityMenu('account', account))}><button type="button" className={fm.entity} onClick={() => openExisting('account', account)}><i className={fm.ring} style={{ '--ring': String(account.cor || 'var(--ds-accent)') } as React.CSSProperties} /><span className={fm.copy}><span className={fm.name}>{account.nome}</span>{account.pluggy_id ? <span className={fm.sub}>{openFinance.info(String(account.pluggy_id))?.banco || 'Open Finance'}</span> : null}</span><span className={fm.amount}><b>{money.format(accountBalance(account))}</b></span></button>{rowSync(account)}</div>)}</div>
       {addRow('Adicionar conta', () => openNew('account'))}
       <OpenFinancePanel ctl={openFinance} />
     </> : null}
 
     {tab === 'cards' ? <>
       <div className={fm.listHead}><span>{cards.length} {cards.length === 1 ? 'cartão' : 'cartões'}</span><span>Faturas de {monthLabel(month).split(' de ')[0]} · {money.format(monthInvoice)}</span></div>
-      <div className={fm.list}>{cards.map(card => { const invoice = cardInvoice(card, monthItems, month); const paid = clampMoney(invoiceRow(monthItems, String(card.id))?.valor_pago); const dueKey = monthDateForDay(month, Number(card.vencimento || 10)); const settled = invoice > 0 && paid >= invoice - 0.005; return <div key={String(card.id)} className={fm.entityRow} {...quick.bind(() => entityMenu('card', card))}><button type="button" className={fm.entity} onClick={() => openExisting('card', card)}><i className={fm.ring} style={{ '--ring': String(card.cor || 'var(--ds-accent)') } as React.CSSProperties} /><span className={fm.copy}><span className={fm.name}>{card.nome}</span><span className={fm.subLine}>{settled ? <span>Fatura paga</span> : <span className={fm.due} data-tone={dueTone(dueKey)}>{calIcon}Vence {naturalDate(dueKey, today)}</span>}{!settled && paid > 0 ? <span>falta {money.format(Math.max(0, invoice - paid))}</span> : null}</span></span><span className={fm.amount}><b>{money.format(invoice)}</b>{clampMoney(card.limite) ? <small>{money.format(cardAvailable(card))} disponível</small> : null}</span></button></div> })}</div>
+      <div className={fm.list}>{cards.map(card => { const invoice = cardInvoice(card, monthItems, month); const paid = clampMoney(invoiceRow(monthItems, String(card.id))?.valor_pago); const dueKey = monthDateForDay(month, Number(card.vencimento || 10)); const settled = invoice > 0 && paid >= invoice - 0.005; return <div key={String(card.id)} className={fm.entityRow} {...quick.bind(() => entityMenu('card', card))}><button type="button" className={fm.entity} onClick={() => openExisting('card', card)}><i className={fm.ring} style={{ '--ring': String(card.cor || 'var(--ds-accent)') } as React.CSSProperties} /><span className={fm.copy}><span className={fm.name}>{card.nome}</span><span className={fm.subLine}>{settled ? <span>Fatura paga</span> : <span className={fm.due} data-tone={dueTone(dueKey)}>{calIcon}Vence {naturalDate(dueKey, today)}</span>}{!settled && paid > 0 ? <span>falta {money.format(Math.max(0, invoice - paid))}</span> : null}</span></span><span className={fm.amount}><b>{money.format(invoice)}</b>{clampMoney(card.limite) ? <small>{money.format(cardAvailable(card))} disponível</small> : null}</span></button>{rowSync(card)}</div> })}</div>
       {addRow('Adicionar cartão', () => openNew('card'))}
     </> : null}
 
@@ -1158,11 +1160,11 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
       const ofInfo = openFinance.info(String(draft.pluggy_id || ''))
       const ofAvailable = openFinance.available(ofType)
       const ofSource = (kind === 'account' || kind === 'card') && (!draft._persisted || draft.pluggy_id) ? <>
-        {pickRow('of-source', 'sync', 'var(--ds-accent)', 'Origem', draft.pluggy_id ? `of:${draft.pluggy_id}` : 'manual', [
-          { value: 'manual', label: draft._persisted ? 'Tornar manual' : 'Manual', icon: 'edit' },
-          ...(draft.pluggy_id && !ofAvailable.some(bank => bank.id === draft.pluggy_id) ? [{ value: `of:${draft.pluggy_id}`, label: `Open Finance${ofInfo ? ` · ${ofInfo.banco}` : ''}`, icon: 'sync' }] : []),
+        {!draft._persisted ? pickRow('of-source', 'sync', 'var(--ds-accent)', 'Origem', draft.pluggy_id ? `of:${draft.pluggy_id}` : 'manual', [
+          { value: 'manual', label: 'Manual', icon: 'edit' },
           ...ofAvailable.map(bank => ({ value: `of:${bank.id}`, label: `Open Finance · ${suggestedName(bank, openFinance.data.contas)}`, icon: 'sync' })),
-          ...(!draft._persisted ? [{ value: 'connect', label: 'Conectar banco (Open Finance)…', icon: 'add_link' }, { value: 'add-id', label: 'Usar ID do MeuPluggy…', icon: 'key' }] : []),
+          { value: 'connect', label: 'Conectar banco (Open Finance)…', icon: 'add_link' },
+          { value: 'add-id', label: 'Usar ID do MeuPluggy…', icon: 'key' },
         ], value => {
           if (value === 'manual') { setDraft({ ...draft, pluggy_id: '' }); return }
           if (value === 'connect') { setDraft(null); void openFinance.connect(); return }
@@ -1170,16 +1172,32 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
           const bank = openFinance.data.contas.find(item => `of:${item.id}` === value)
           if (!bank) return
           setDraft({ ...draft, pluggy_id: bank.id, nome: String(draft.nome || '').trim() ? draft.nome : suggestedName(bank, openFinance.data.contas), ...(kind === 'account' ? { saldo_inicial: 0 } : { limite: bank.limite || bank.limite_disponivel || 0 }) })
-        })}
-        {draft.pluggy_id ? <SideField label={kind === 'card' ? 'Limite no banco' : 'Saldo no banco'} icon="account_balance" color="var(--ds-accent)"><input readOnly value={ofInfo ? money.format(kind === 'card' ? ofInfo.limite : ofInfo.saldo) : 'Aguardando sincronização'} /></SideField> : null}
-        {draft.pluggy_id && ofInfo ? <>
-          <SideField label="Link no MeuPluggy" icon="link" color="var(--ds-accent)"><input key={`${ofInfo.itemId}-${openFinance.linkOf(ofInfo.itemId)}`} type="url" inputMode="url" placeholder="https://meu.pluggy.ai/connections/…" defaultValue={openFinance.linkOf(ofInfo.itemId)} onBlur={event => { const error = openFinance.saveLink(ofInfo.itemId, event.target.value); event.target.setCustomValidity(error); if (error) event.target.reportValidity() }} onKeyDown={event => { if (event.key === 'Enter') event.currentTarget.blur() }} /></SideField>
-          <SideField label="Sincronização" icon="sync" color="var(--ds-accent)">
-            <button type="button" className={ic.inlineAction} disabled={openFinance.busy !== ''} onClick={() => openFinance.refreshAt(ofInfo.itemId)}>{openFinance.busy === 'sync' ? 'Sincronizando…' : openFinance.linkOf(ofInfo.itemId) ? 'Atualizar no MeuPluggy' : 'Sincronizar agora'}</button>
-            <button type="button" className={ic.inlineAction} onClick={() => { setDraft(null); openFinance.disconnect(ofInfo.itemId) }}>Desconectar banco</button>
-          </SideField>
-        </> : null}
-        {draft.pluggy_id && ofInfo?.atualizado ? <SideField label="Atualizado" icon="schedule" color="var(--ds-muted)"><input readOnly value={new Date(ofInfo.atualizado).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })} /></SideField> : null}
+        }) : null}
+        {draft.pluggy_id ? <div className={ic.row}>
+          <div className={ic.connHead}>
+            <i className={ic.rowIcon} style={{ color: 'var(--ds-accent)' }}><MaiIcon name="sync" size={18} /></i>
+            <small>Conexão</small>
+            <strong>{ofInfo ? `Open Finance · ${ofInfo.banco}` : 'Open Finance'}</strong>
+            <button type="button" className={ic.connMore} aria-label="Editar conexão" aria-expanded={createTool === 'of-edit'} onClick={() => setCreateTool(createTool === 'of-edit' ? '' : 'of-edit')}><MaiIcon name="more_horiz" size={22} /></button>
+          </div>
+          {createTool === 'of-edit' ? <div className={ic.rowEditor}>
+            {ofInfo ? <label className={ic.connLink}><small>Link desta conexão no MeuPluggy</small><input key={`${ofInfo.itemId}-${openFinance.linkOf(ofInfo.itemId)}`} type="url" inputMode="url" placeholder="https://meu.pluggy.ai/connections/…" defaultValue={openFinance.linkOf(ofInfo.itemId)} onBlur={event => { const error = openFinance.saveLink(ofInfo.itemId, event.target.value); event.target.setCustomValidity(error); if (error) event.target.reportValidity() }} onKeyDown={event => { if (event.key === 'Enter') event.currentTarget.blur() }} /></label> : null}
+            <CreateOptionList value="" close={() => setCreateTool('')} onChange={value => {
+              if (value === 'connect') { setDraft(null); void openFinance.connect() }
+              else if (value === 'add-id') { setDraft(null); openFinance.addItemId() }
+              else if (value === 'manual') setDraft({ ...draft, pluggy_id: '' })
+              else if (value === 'disconnect' && ofInfo) { setDraft(null); openFinance.disconnect(ofInfo.itemId) }
+            }} options={[
+              { value: 'connect', label: 'Conectar outro banco…', icon: 'add_link' },
+              { value: 'add-id', label: 'Usar ID do MeuPluggy…', icon: 'key' },
+              ...(draft._persisted ? [{ value: 'manual', label: 'Tornar manual', icon: 'edit' }] : []),
+              ...(ofInfo ? [{ value: 'disconnect', label: 'Desconectar banco', icon: 'link_off', color: 'var(--ds-danger)' }] : []),
+            ]} />
+          </div> : null}
+          <div className={ic.connLine}><small>{kind === 'card' ? 'Limite no banco' : 'Saldo no banco'}</small><span>{ofInfo ? money.format(kind === 'card' ? ofInfo.limite : ofInfo.saldo) : 'Aguardando sincronização'}</span></div>
+          {ofInfo?.atualizado ? <div className={ic.connLine}><small>Atualizado</small><span>{new Date(ofInfo.atualizado).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span></div> : null}
+          {ofInfo ? <button type="button" className={ic.connSync} disabled={openFinance.busy !== ''} onClick={() => openFinance.refreshAt(ofInfo.itemId)}><MaiIcon name="sync" size={16} />{openFinance.busy === 'sync' ? 'Sincronizando…' : 'Sincronizar dados'}</button> : null}
+        </div> : null}
       </> : null
 
       const commentsField = kind === 'card' ? 'comentarios_faturas' : 'comentarios_meses'

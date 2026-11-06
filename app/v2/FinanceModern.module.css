@@ -347,3 +347,12 @@ button.balanceMain:hover { background: var(--ds-surface-hover); }
 .summary > button[data-active][data-pick='card'] { --pick: var(--ds-sky-fg); }
 .summary > button[data-active] span { color: var(--pick); font-weight: 650; }
 .summary > button[data-active]:hover { background: color-mix(in srgb, var(--pick) 16%, transparent); }
+
+/* Contas e cartões do banco: botão de sincronizar na própria linha */
+.entityRow:has(.rowSync) { display: flex; align-items: center; gap: 4px; }
+.entityRow:has(.rowSync) .entity { flex: 1; min-width: 0; width: auto; }
+.rowSync { appearance: none; flex: none; display: inline-grid; place-items: center; width: 32px; height: 32px; border: 0; border-radius: 8px; background: transparent; color: var(--ds-muted); cursor: pointer; transition: background-color var(--ds-dur-fast, 120ms), color var(--ds-dur-fast, 120ms); }
+.rowSync:hover:not(:disabled) { background: var(--ds-accent-soft); color: var(--ds-accent); }
+.rowSync:disabled { opacity: .5; cursor: default; }
+.rowSync[data-busy] svg { animation: rowSyncSpin 900ms linear infinite; }
+@keyframes rowSyncSpin { to { transform: rotate(360deg); } }
