@@ -1185,11 +1185,13 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
             <CreateOptionList value="" close={() => setCreateTool('')} onChange={value => {
               if (value === 'connect') { setDraft(null); void openFinance.connect() }
               else if (value === 'add-id') { setDraft(null); openFinance.addItemId() }
+              else if (value === 'auto-link') openFinance.setAutoLink(!openFinance.data.autoLink)
               else if (value === 'manual') setDraft({ ...draft, pluggy_id: '' })
               else if (value === 'disconnect' && ofInfo) { setDraft(null); openFinance.disconnect(ofInfo.itemId) }
             }} options={[
               { value: 'connect', label: 'Conectar outro banco…', icon: 'add_link' },
               { value: 'add-id', label: 'Usar ID do MeuPluggy…', icon: 'key' },
+              { value: 'auto-link', label: openFinance.data.autoLink ? 'Vínculo automático de lançamentos: ligado' : 'Vínculo automático de lançamentos: desligado', icon: openFinance.data.autoLink ? 'link' : 'link_off' },
               ...(draft._persisted ? [{ value: 'manual', label: 'Tornar manual', icon: 'edit' }] : []),
               ...(ofInfo ? [{ value: 'disconnect', label: 'Desconectar banco', icon: 'link_off', color: 'var(--ds-danger)' }] : []),
             ]} />
