@@ -178,7 +178,7 @@ export function DayTimeline({ state, day, today, commit, inspect, accept }: Prop
         ? <button type="button" className={styles.check} aria-label={`Concluir: ${item.title}`} aria-pressed={item.completed} onClick={() => toggleTask(item)}>{item.completed ? <Icon name="check" size={12} /> : null}</button>
         : item.kind === 'habit'
           ? <button type="button" className={styles.check} aria-label={`Registrar: ${item.title}`} aria-pressed={item.completed} onClick={() => toggleHabit(item)}>{item.completed ? <Icon name="check" size={12} /> : null}</button>
-          : <Icon name={item.kind === 'habit' ? 'autorenew' : item.kind === 'finance' ? 'payments' : 'event'} size={16} filled={false} style={{ color: item.color }} />}
+          : <Icon name={item.kind === 'finance' ? 'payments' : 'event'} size={16} filled={false} style={{ color: item.color }} />}
       <button type="button" className={styles.looseMain} onClick={() => open(item)}>
         <span>{item.title}</span>
         <small>{item.kind === 'finance' ? item.subtitle : item.kind === 'event' ? 'Dia inteiro' : item.subtitle}</small>
