@@ -1182,16 +1182,24 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
           </div>
           {createTool === 'of-edit' ? <div className={ic.rowEditor}>
             {ofInfo ? <label className={ic.connLink}><small>Link desta conexão no MeuPluggy</small><input key={`${ofInfo.itemId}-${openFinance.linkOf(ofInfo.itemId)}`} type="url" inputMode="url" placeholder="https://meu.pluggy.ai/connections/…" defaultValue={openFinance.linkOf(ofInfo.itemId)} onBlur={event => { const error = openFinance.saveLink(ofInfo.itemId, event.target.value); event.target.setCustomValidity(error); if (error) event.target.reportValidity() }} onKeyDown={event => { if (event.key === 'Enter') event.currentTarget.blur() }} /></label> : null}
+            {ofInfo ? <div className={ic.connDays}>
+              <label className={ic.connLink}><small>Vincular se o dinheiro cair até (dias depois do seu lançamento)</small><input key={`d-${ofInfo.itemId}-${openFinance.matchOf(ofInfo.itemId).depois}`} type="number" min={0} max={365} inputMode="numeric" defaultValue={openFinance.matchOf(ofInfo.itemId).depois} onBlur={event => openFinance.setMatch(ofInfo.itemId, { depois: Number(event.target.value) })} onKeyDown={event => { if (event.key === 'Enter') event.currentTarget.blur() }} /></label>
+              <label className={ic.connLink}><small>… ou até (dias antes do seu lançamento)</small><input key={`a-${ofInfo.itemId}-${openFinance.matchOf(ofInfo.itemId).antes}`} type="number" min={0} max={365} inputMode="numeric" defaultValue={openFinance.matchOf(ofInfo.itemId).antes} onBlur={event => openFinance.setMatch(ofInfo.itemId, { antes: Number(event.target.value) })} onKeyDown={event => { if (event.key === 'Enter') event.currentTarget.blur() }} /></label>
+            </div> : null}
             <CreateOptionList value="" close={() => setCreateTool('')} onChange={value => {
               if (value === 'connect') { setDraft(null); void openFinance.connect() }
               else if (value === 'add-id') { setDraft(null); openFinance.addItemId() }
-              else if (value === 'auto-link') openFinance.setAutoLink(!openFinance.data.autoLink)
+              else if (value === 'auto-link' && ofInfo) openFinance.setMatch(ofInfo.itemId, { ligado: !openFinance.matchOf(ofInfo.itemId).ligado })
+              else if (value === 'match-word' && ofInfo) openFinance.setMatch(ofInfo.itemId, { palavra: !openFinance.matchOf(ofInfo.itemId).palavra })
               else if (value === 'manual') setDraft({ ...draft, pluggy_id: '' })
               else if (value === 'disconnect' && ofInfo) { setDraft(null); openFinance.disconnect(ofInfo.itemId) }
             }} options={[
               { value: 'connect', label: 'Conectar outro banco…', icon: 'add_link' },
               { value: 'add-id', label: 'Usar ID do MeuPluggy…', icon: 'key' },
-              { value: 'auto-link', label: openFinance.data.autoLink ? 'Vínculo automático de lançamentos: ligado' : 'Vínculo automático de lançamentos: desligado', icon: openFinance.data.autoLink ? 'link' : 'link_off' },
+              ...(ofInfo ? [
+                { value: 'auto-link', label: `Vínculo automático: ${openFinance.matchOf(ofInfo.itemId).ligado ? 'ligado' : 'desligado'}`, icon: openFinance.matchOf(ofInfo.itemId).ligado ? 'link' : 'link_off' },
+                { value: 'match-word', label: `Exigir palavra em comum no título: ${openFinance.matchOf(ofInfo.itemId).palavra ? 'sim' : 'não'}`, icon: 'key' },
+              ] : []),
               ...(draft._persisted ? [{ value: 'manual', label: 'Tornar manual', icon: 'edit' }] : []),
               ...(ofInfo ? [{ value: 'disconnect', label: 'Desconectar banco', icon: 'link_off', color: 'var(--ds-danger)' }] : []),
             ]} />
