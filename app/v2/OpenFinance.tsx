@@ -345,6 +345,16 @@ export function useOpenFinance(state: MaiState, commit: Commit) {
     setMessage(url ? 'Link do MeuPluggy salvo.' : 'Link removido.')
   }
 
+  /** Abre a página da conexão no MeuPluggy (para você clicar em atualizar) e já lê o que a Pluggy tem. Precisa ser chamado direto de um clique, senão o navegador bloqueia o pop-up. */
+  function refreshAt(itemId: string) {
+    const link = data.itens.find(i => i.itemId === itemId)
+    const url = link ? meuPluggyUrl(link) : ''
+    if (url) { try { window.open(url, `meu-pluggy-${itemId}`, 'popup,width=520,height=780') } catch { /* popup bloqueado: segue só com a leitura */ } }
+    else setMessage('Defina o link desta conexão no MeuPluggy para abrir a página de atualização.')
+    void sync([itemId], false, false)
+  }
+  const linkOf = (itemId: string) => { const link = data.itens.find(i => i.itemId === itemId); return link ? meuPluggyUrl(link) : '' }
+
   function disconnect(itemId: string) {
     if (!window.confirm('Desconectar este banco do app? Os lançamentos já importados continuam.')) return
     patchOpenFinance(commit, current => {
@@ -418,33 +428,21 @@ export function useOpenFinance(state: MaiState, commit: Commit) {
   }
   const available = (kind: 'conta' | 'cartao') => data.contas.filter(c => c.tipo === kind && !data.vinculos[c.id])
 
-  return { data, busy, message, sync, connect, addItemId, setLink, disconnect, applyBalances, info, available }
+  return { data, busy, message, sync, connect, addItemId, setLink, refreshAt, linkOf, disconnect, applyBalances, info, available }
 }
 
 export type OpenFinanceController = ReturnType<typeof useOpenFinance>
 
 /** Linha discreta no fim das listas: as contas, cartões e investimentos do banco aparecem nas listas normais, iguais aos manuais. */
 export function OpenFinancePanel({ ctl }: { ctl: OpenFinanceController }) {
-  const { data, busy, message, sync, connect, addItemId, setLink, disconnect } = ctl
-  const last = data.itens.map(i => i.ultimaSync).filter(Boolean).sort().pop()
-  const status = !data.itens.length ? 'Open Finance: conecte seu banco para lançar e atualizar tudo sozinho'
-    : busy === 'sync' ? 'Open Finance · sincronizando…'
-    : `Open Finance · ${last ? `atualizado ${new Date(last).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}` : 'aguardando a primeira sincronização'}`
-
-  return <div className={of.line}>
-    <span className={of.status}>{status}</span>
-    <div className={of.actions}>
-      {data.itens.length ? <button type="button" disabled={busy !== ''} onClick={() => { for (const item of data.itens) { const url = meuPluggyUrl(item); if (url) { try { window.open(url, `meu-pluggy-${item.itemId}`, 'popup,width=520,height=780') } catch { /* popup bloqueado: segue só com a leitura */ } } } void sync(data.itens.map(i => i.itemId), false, false) }}>Sincronizar</button> : null}
-      {!data.itens.length ? <button type="button" data-primary="true" disabled={busy !== ''} onClick={connect}>Conectar banco</button> : null}
-      <details className={of.more}><summary aria-label="Mais opções">⋯</summary><div>
-        {data.itens.length ? <button type="button" disabled={busy !== ''} onClick={connect}>Conectar outro banco</button> : null}
-        <button type="button" onClick={addItemId}>Usar ID do MeuPluggy</button>
-        {data.itens.map(item => <button key={`link-${item.itemId}`} type="button" onClick={() => setLink(item.itemId, meuPluggyUrl(item))}>Link do MeuPluggy · {shortName(item.banco)}{meuPluggyUrl(item) ? '' : ' (não definido)'}</button>)}
-        {data.itens.map(item => <button key={item.itemId} type="button" onClick={() => disconnect(item.itemId)}>Desconectar {shortName(item.banco)}</button>)}
-      </div></details>
-    </div>
+  const { data, busy, message, connect } = ctl
+  // Sem a linha geral: com banco conectado, o botão de atualizar fica em cada conta/cartão (ao abri-lo). Aqui só o convite inicial e os avisos.
+  if (!data.itens.length) return <div className={of.line}>
+    <span className={of.status}>Open Finance: conecte seu banco para lançar e atualizar tudo sozinho</span>
+    <div className={of.actions}><button type="button" data-primary="true" disabled={busy !== ''} onClick={connect}>Conectar banco</button></div>
     {message ? <p className={of.message} role="status">{message}</p> : null}
   </div>
+  return message ? <div className={of.line}><p className={of.message} role="status">{message}</p></div> : null
 }
 
 
