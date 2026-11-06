@@ -8,10 +8,18 @@ import of from './OpenFinance.module.css'
 type Row = Record<string, any>
 type Commit = (change: (current: MaiState) => MaiState) => void
 
-type Link = { itemId: string; banco: string; ultimaSync?: string; url?: string }
+/** Vínculo automático de lançamentos, configurado em cada banco. */
+export type MatchConfig = { ligado: boolean; depois: number; antes: number; palavra: boolean }
+export const MATCH_DEFAULTS: MatchConfig = { ligado: true, depois: 45, antes: 10, palavra: true }
+export const matchConfig = (link?: { vinc?: Partial<MatchConfig> }): MatchConfig => {
+  const raw = link?.vinc || {}
+  const days = (value: unknown, fallback: number) => Number.isFinite(Number(value)) && Number(value) >= 0 ? Math.min(365, Math.round(Number(value))) : fallback
+  return { ligado: raw.ligado !== false, depois: days(raw.depois, MATCH_DEFAULTS.depois), antes: days(raw.antes, MATCH_DEFAULTS.antes), palavra: raw.palavra !== false }
+}
+type Link = { itemId: string; banco: string; ultimaSync?: string; url?: string; vinc?: Partial<MatchConfig> }
 type Pending = { id: string; accountId: string; itemId: string; data: string; titulo: string; valor: number; tipo: 'receita' | 'despesa'; pendente: boolean; categoria: string; parcela: string; billId?: string }
 export type BankAccount = { id: string; itemId: string; nome: string; tipo: 'conta' | 'cartao'; saldo: number; limite: number; limite_disponivel: number; vencimento_dia?: number; fechamento_dia?: number }
-export type OpenFinanceData = { autoLink?: boolean; itens: Link[]; contas: BankAccount[]; vinculos: Record<string, string>; pendentes: Pending[]; vistos: string[]; dispensadas: string[] }
+export type OpenFinanceData = { itens: Link[]; contas: BankAccount[]; vinculos: Record<string, string>; pendentes: Pending[]; vistos: string[]; dispensadas: string[] }
 
 const money = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' })
 const uid = (prefix: string) => `${prefix}-${crypto.randomUUID()}`
@@ -28,7 +36,6 @@ const validMeuPluggyUrl = (value: string) => /^https:\/\/meu\.pluggy\.ai\/\S+$/.
 export function readOpenFinance(state: MaiState): OpenFinanceData {
   const raw = (state.finance?.openFinance && typeof state.finance.openFinance === 'object' ? state.finance.openFinance : {}) as Partial<OpenFinanceData>
   return {
-    autoLink: raw.autoLink !== false, // vínculo automático de lançamentos: ligado por padrão
     itens: Array.isArray(raw.itens) ? raw.itens : [],
     contas: Array.isArray(raw.contas) ? raw.contas.map(c => ({ ...c, limite: num((c as any).limite) })) : [],
     vinculos: raw.vinculos && typeof raw.vinculos === 'object' ? raw.vinculos : {},
@@ -125,21 +132,23 @@ const dayMs = (value: unknown) => Date.parse(`${String(value).slice(0, 10)}T12:0
  * com o MESMO valor, mesma conta/tipo, datas próximas e uma palavra-chave em comum viram um só.
  * Só vincula quando o par é único dos dois lados (sem dúvida) e nunca refaz o que você desvinculou.
  */
-export function autoLinkRows(rows: Row[]): { rows: Row[]; linked: number } {
+export function autoLinkRows(rows: Row[], configFor: (bank: Row) => MatchConfig = () => MATCH_DEFAULTS): { rows: Row[]; linked: number } {
   const manual = rows.filter(tx => !tx.pluggy_id && !tx.ajuste_fatura && !tx._isFixed && !tx.of_nolink && num(tx.valor) > 0)
   const bank = rows.filter(tx => tx.pluggy_id && tx.observacao === 'Open Finance' && !tx.of_linked && !tx.ajuste_fatura && num(tx.valor) > 0)
   const manualWords = new Map(manual.map(tx => [String(tx.id), keywords(tx.titulo)]))
   const matches = new Map<string, string[]>() // banco -> seus lançamentos candidatos
   const taken = new Map<string, number>() // seu lançamento -> quantos bancos casam
   for (const b of bank) {
+    const cfg = configFor(b)
+    if (!cfg.ligado) continue
     const words = keywords(b.titulo)
-    if (!words.size) continue
+    if (cfg.palavra && !words.size) continue
     const found = manual.filter(m => {
       if (m.tipo !== b.tipo || String(m.conta_id || '') !== String(b.conta_id || '')) return false
       if (Math.round(num(m.valor) * 100) !== Math.round(num(b.valor) * 100)) return false
       const gap = (dayMs(b.data) - dayMs(m.data)) / 86400000
-      if (!(gap >= -10 && gap <= 45)) return false // o seu lançamento costuma vir antes do dinheiro cair
-      return [...(manualWords.get(String(m.id)) || [])].some(word => words.has(word))
+      if (!(gap >= -cfg.antes && gap <= cfg.depois)) return false // gap > 0: o seu lançamento veio antes do dinheiro cair
+      return !cfg.palavra || [...(manualWords.get(String(m.id)) || [])].some(word => words.has(word))
     }).map(m => String(m.id))
     if (found.length) { matches.set(String(b.id), found); for (const id of found) taken.set(id, (taken.get(id) || 0) + 1) }
   }
@@ -327,7 +336,9 @@ export function useOpenFinance(state: MaiState, commit: Commit) {
         }) : rows
         const imported0 = importPending([...current.pendentes, ...fresh], resolved.links, migratedRows)
         added = imported0.rows.length - migratedRows.length
-        const auto = current.autoLink !== false ? autoLinkRows(imported0.rows) : { rows: imported0.rows, linked: 0 }
+        const cfgByTarget = new Map<string, MatchConfig>() // conta/cartão do app -> configuração do banco dele
+        for (const account of bank) { const target = resolved.links[account.id]; if (target) cfgByTarget.set(target, matchConfig(current.itens.find(link => link.itemId === account.itemId))) }
+        const auto = autoLinkRows(imported0.rows, row => cfgByTarget.get(String(row.conta_id || '')) || MATCH_DEFAULTS)
         autoLinked = auto.linked
         const imported = { ...imported0, rows: auto.rows }
         const itens = current.itens.map(link => { const hit = items.find(i => i.itemId === link.itemId); return hit ? { ...link, banco: hit.banco, ultimaSync: new Date().toISOString() } : link })
@@ -390,7 +401,8 @@ export function useOpenFinance(state: MaiState, commit: Commit) {
     setMessage(url ? 'Link do MeuPluggy salvo.' : 'Link removido.')
   }
 
-  function setAutoLink(on: boolean) { patchOpenFinance(commit, current => ({ data: { ...current, autoLink: on } })) }
+  function setMatch(itemId: string, patch: Partial<MatchConfig>) { patchOpenFinance(commit, current => ({ data: { ...current, itens: current.itens.map(i => i.itemId === itemId ? { ...i, vinc: { ...matchConfig(i), ...patch } } : i) } })) }
+  const matchOf = (itemId: string) => matchConfig(data.itens.find(i => i.itemId === itemId))
 
   /** Grava o link digitado no campo da conta/cartão. Devolve o motivo se não for válido ('' = salvo). */
   function saveLink(itemId: string, raw: string) {
@@ -483,7 +495,7 @@ export function useOpenFinance(state: MaiState, commit: Commit) {
   }
   const available = (kind: 'conta' | 'cartao') => data.contas.filter(c => c.tipo === kind && !data.vinculos[c.id])
 
-  return { data, busy, message, sync, connect, addItemId, setLink, saveLink, setAutoLink, refreshAt, linkOf, disconnect, applyBalances, info, available }
+  return { data, busy, message, sync, connect, addItemId, setLink, saveLink, setMatch, matchOf, refreshAt, linkOf, disconnect, applyBalances, info, available }
 }
 
 export type OpenFinanceController = ReturnType<typeof useOpenFinance>
