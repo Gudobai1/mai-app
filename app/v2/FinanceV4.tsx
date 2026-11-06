@@ -28,6 +28,7 @@ import { invoiceValue } from '../../lib/v2/financeInvoice'
 import { shiftInstallment } from '../../lib/v2/financeInstallments'
 import { financeTagSuggestions, parseFinanceTags } from '../../lib/v2/financeTags'
 import fm from './FinanceModern.module.css'
+import { ConnectionDialog } from './ConnectionDialog'
 import { OpenFinancePanel, linkTransactions, unlinkTransaction, bindOpenFinance, suggestedName, useOpenFinance } from './OpenFinance'
 
 type Row = Record<string, any>
@@ -1180,30 +1181,11 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
             <strong>{ofInfo ? `Open Finance · ${ofInfo.banco}` : 'Open Finance'}</strong>
             <button type="button" className={ic.connMore} aria-label="Editar conexão" aria-expanded={createTool === 'of-edit'} onClick={() => setCreateTool(createTool === 'of-edit' ? '' : 'of-edit')}><MaiIcon name="more_horiz" size={22} /></button>
           </div>
-          {createTool === 'of-edit' ? <div className={ic.rowEditor}>
-            {ofInfo ? <label className={ic.connLink}><small>Link desta conexão no MeuPluggy</small><input key={`${ofInfo.itemId}-${openFinance.linkOf(ofInfo.itemId)}`} type="url" inputMode="url" placeholder="https://meu.pluggy.ai/connections/…" defaultValue={openFinance.linkOf(ofInfo.itemId)} onBlur={event => { const error = openFinance.saveLink(ofInfo.itemId, event.target.value); event.target.setCustomValidity(error); if (error) event.target.reportValidity() }} onKeyDown={event => { if (event.key === 'Enter') event.currentTarget.blur() }} /></label> : null}
-            {ofInfo ? <div className={ic.connDays}>
-              <label className={ic.connLink}><small>Vincular se o dinheiro cair até (dias depois do seu lançamento)</small><input key={`d-${ofInfo.itemId}-${openFinance.matchOf(ofInfo.itemId).depois}`} type="number" min={0} max={365} inputMode="numeric" defaultValue={openFinance.matchOf(ofInfo.itemId).depois} onBlur={event => openFinance.setMatch(ofInfo.itemId, { depois: Number(event.target.value) })} onKeyDown={event => { if (event.key === 'Enter') event.currentTarget.blur() }} /></label>
-              <label className={ic.connLink}><small>… ou até (dias antes do seu lançamento)</small><input key={`a-${ofInfo.itemId}-${openFinance.matchOf(ofInfo.itemId).antes}`} type="number" min={0} max={365} inputMode="numeric" defaultValue={openFinance.matchOf(ofInfo.itemId).antes} onBlur={event => openFinance.setMatch(ofInfo.itemId, { antes: Number(event.target.value) })} onKeyDown={event => { if (event.key === 'Enter') event.currentTarget.blur() }} /></label>
-            </div> : null}
-            <CreateOptionList value="" close={() => setCreateTool('')} onChange={value => {
-              if (value === 'connect') { setDraft(null); void openFinance.connect() }
-              else if (value === 'add-id') { setDraft(null); openFinance.addItemId() }
-              else if (value === 'auto-link' && ofInfo) openFinance.setMatch(ofInfo.itemId, { ligado: !openFinance.matchOf(ofInfo.itemId).ligado })
-              else if (value === 'match-word' && ofInfo) openFinance.setMatch(ofInfo.itemId, { palavra: !openFinance.matchOf(ofInfo.itemId).palavra })
-              else if (value === 'manual') setDraft({ ...draft, pluggy_id: '' })
-              else if (value === 'disconnect' && ofInfo) { setDraft(null); openFinance.disconnect(ofInfo.itemId) }
-            }} options={[
-              { value: 'connect', label: 'Conectar outro banco…', icon: 'add_link' },
-              { value: 'add-id', label: 'Usar ID do MeuPluggy…', icon: 'key' },
-              ...(ofInfo ? [
-                { value: 'auto-link', label: `Vínculo automático: ${openFinance.matchOf(ofInfo.itemId).ligado ? 'ligado' : 'desligado'}`, icon: openFinance.matchOf(ofInfo.itemId).ligado ? 'link' : 'link_off' },
-                { value: 'match-word', label: `Exigir palavra em comum no título: ${openFinance.matchOf(ofInfo.itemId).palavra ? 'sim' : 'não'}`, icon: 'key' },
-              ] : []),
-              ...(draft._persisted ? [{ value: 'manual', label: 'Tornar manual', icon: 'edit' }] : []),
-              ...(ofInfo ? [{ value: 'disconnect', label: 'Desconectar banco', icon: 'link_off', color: 'var(--ds-danger)' }] : []),
-            ]} />
-          </div> : null}
+          {createTool === 'of-edit' && ofInfo ? <ConnectionDialog banco={ofInfo.banco} itemId={ofInfo.itemId} ctl={openFinance} persisted={Boolean(draft._persisted)} onClose={() => setCreateTool('')}
+            onConnect={() => { setCreateTool(''); setDraft(null); void openFinance.connect() }}
+            onAddId={() => { setCreateTool(''); setDraft(null); openFinance.addItemId() }}
+            onManual={() => { setCreateTool(''); setDraft({ ...draft, pluggy_id: '' }) }}
+            onDisconnect={() => { setCreateTool(''); setDraft(null); openFinance.disconnect(ofInfo.itemId) }} /> : null}
           <div className={ic.connLine}><small>{kind === 'card' ? 'Limite no banco' : 'Saldo no banco'}</small><span>{ofInfo ? money.format(kind === 'card' ? ofInfo.limite : ofInfo.saldo) : 'Aguardando sincronização'}</span></div>
           {ofInfo?.atualizado ? <div className={ic.connLine}><small>Atualizado</small><span>{new Date(ofInfo.atualizado).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span></div> : null}
           {ofInfo ? <button type="button" className={ic.connSync} disabled={openFinance.busy !== ''} onClick={() => openFinance.refreshAt(ofInfo.itemId)}><MaiIcon name="sync" size={16} />{openFinance.busy === 'sync' ? 'Sincronizando…' : 'Sincronizar dados'}</button> : null}
