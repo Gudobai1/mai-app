@@ -1162,16 +1162,21 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
           { value: 'manual', label: draft._persisted ? 'Tornar manual' : 'Manual', icon: 'edit' },
           ...(draft.pluggy_id && !ofAvailable.some(bank => bank.id === draft.pluggy_id) ? [{ value: `of:${draft.pluggy_id}`, label: `Open Finance${ofInfo ? ` · ${ofInfo.banco}` : ''}`, icon: 'sync' }] : []),
           ...ofAvailable.map(bank => ({ value: `of:${bank.id}`, label: `Open Finance · ${suggestedName(bank, openFinance.data.contas)}`, icon: 'sync' })),
-          ...(!draft._persisted ? [{ value: 'connect', label: 'Conectar banco (Open Finance)…', icon: 'add_link' }] : []),
+          ...(!draft._persisted ? [{ value: 'connect', label: 'Conectar banco (Open Finance)…', icon: 'add_link' }, { value: 'add-id', label: 'Usar ID do MeuPluggy…', icon: 'key' }] : []),
         ], value => {
           if (value === 'manual') { setDraft({ ...draft, pluggy_id: '' }); return }
           if (value === 'connect') { setDraft(null); void openFinance.connect(); return }
+          if (value === 'add-id') { setDraft(null); openFinance.addItemId(); return }
           const bank = openFinance.data.contas.find(item => `of:${item.id}` === value)
           if (!bank) return
           setDraft({ ...draft, pluggy_id: bank.id, nome: String(draft.nome || '').trim() ? draft.nome : suggestedName(bank, openFinance.data.contas), ...(kind === 'account' ? { saldo_inicial: 0 } : { limite: bank.limite || bank.limite_disponivel || 0 }) })
         })}
         {draft.pluggy_id ? <SideField label={kind === 'card' ? 'Limite no banco' : 'Saldo no banco'} icon="account_balance" color="var(--ds-accent)"><input readOnly value={ofInfo ? money.format(kind === 'card' ? ofInfo.limite : ofInfo.saldo) : 'Aguardando sincronização'} /></SideField> : null}
-        {draft.pluggy_id && ofInfo ? <SideField label="Sincronização" icon="sync" color="var(--ds-accent)"><button type="button" className={ic.inlineAction} disabled={openFinance.busy !== ''} onClick={() => void openFinance.sync([ofInfo.itemId])}>{openFinance.busy === 'sync' ? 'Sincronizando…' : 'Sincronizar agora'}</button></SideField> : null}
+        {draft.pluggy_id && ofInfo ? <SideField label="Sincronização" icon="sync" color="var(--ds-accent)">
+          <button type="button" className={ic.inlineAction} disabled={openFinance.busy !== ''} onClick={() => openFinance.refreshAt(ofInfo.itemId)}>{openFinance.busy === 'sync' ? 'Sincronizando…' : openFinance.linkOf(ofInfo.itemId) ? 'Atualizar no MeuPluggy' : 'Sincronizar agora'}</button>
+          <button type="button" className={ic.inlineAction} onClick={() => openFinance.setLink(ofInfo.itemId, openFinance.linkOf(ofInfo.itemId))}>{openFinance.linkOf(ofInfo.itemId) ? 'Trocar link' : 'Definir link do MeuPluggy'}</button>
+          <button type="button" className={ic.inlineAction} onClick={() => { setDraft(null); openFinance.disconnect(ofInfo.itemId) }}>Desconectar banco</button>
+        </SideField> : null}
         {draft.pluggy_id && ofInfo?.atualizado ? <SideField label="Atualizado" icon="schedule" color="var(--ds-muted)"><input readOnly value={new Date(ofInfo.atualizado).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })} /></SideField> : null}
       </> : null
 
