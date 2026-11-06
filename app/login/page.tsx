@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { hasStoredSupabaseSession } from '../../lib/supabase/browser'
 import { MaiLogo, themeLogoColor } from '../v2/logo'
 
 const errors: Record<string,string> = {
@@ -16,6 +17,8 @@ export default function LoginPage() {
   useEffect(() => {
     const error = new URLSearchParams(window.location.search).get('error') || ''
     setMessage(errors[error] || '')
+    // já entrou antes (ex.: voltou com o botão Voltar): segue para o app em vez de pedir login de novo
+    if (!error && hasStoredSupabaseSession()) location.replace('/')
   }, [])
 
   return <main style={{minHeight:'100vh',display:'grid',placeItems:'center',fontFamily:'var(--ds-font)',background:'var(--ds-surface-2)',color:'var(--ds-text)',padding:20,boxSizing:'border-box'}}>
