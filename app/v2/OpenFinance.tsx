@@ -345,6 +345,14 @@ export function useOpenFinance(state: MaiState, commit: Commit) {
     setMessage(url ? 'Link do MeuPluggy salvo.' : 'Link removido.')
   }
 
+  /** Grava o link digitado no campo da conta/cartão. Devolve o motivo se não for válido ('' = salvo). */
+  function saveLink(itemId: string, raw: string) {
+    const url = raw.trim()
+    if (url && !validMeuPluggyUrl(url)) return 'Cole o link da conexão: https://meu.pluggy.ai/connections/…'
+    patchOpenFinance(commit, current => ({ data: { ...current, itens: current.itens.map(i => i.itemId === itemId ? { ...i, url } : i) } }))
+    return ''
+  }
+
   /** Abre a página da conexão no MeuPluggy (para você clicar em atualizar) e já lê o que a Pluggy tem. Precisa ser chamado direto de um clique, senão o navegador bloqueia o pop-up. */
   function refreshAt(itemId: string) {
     const link = data.itens.find(i => i.itemId === itemId)
@@ -428,7 +436,7 @@ export function useOpenFinance(state: MaiState, commit: Commit) {
   }
   const available = (kind: 'conta' | 'cartao') => data.contas.filter(c => c.tipo === kind && !data.vinculos[c.id])
 
-  return { data, busy, message, sync, connect, addItemId, setLink, refreshAt, linkOf, disconnect, applyBalances, info, available }
+  return { data, busy, message, sync, connect, addItemId, setLink, saveLink, refreshAt, linkOf, disconnect, applyBalances, info, available }
 }
 
 export type OpenFinanceController = ReturnType<typeof useOpenFinance>
