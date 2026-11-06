@@ -112,6 +112,7 @@ export async function refreshItem(itemId: string, waitMs = 40_000): Promise<{ st
     return { status, note: '' }
   } catch (error: any) {
     const text = String(error?.message || '')
+    if (/meupluggy/i.test(text)) return { status: '', note: 'Esta conexão é do MeuPluggy, e a Pluggy não deixa atualizá-la pelo app. Mostrei o que ela já tem; para forçar, use o próprio MeuPluggy.' }
     if (text.includes(' 429')) return { status: '', note: 'A Pluggy limita a atualização forçada a 1 por hora. Mostrei o que ela já tem.' }
     return { status: '', note: text ? `Não consegui pedir atualização ao banco (${text.slice(0, 120)}).` : 'Não consegui pedir atualização ao banco.' }
   }
