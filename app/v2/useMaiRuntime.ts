@@ -9,7 +9,7 @@ import { animateExit, trackItems } from '../../lib/v2/exit'
 import { addDays, plannerItems } from '../../lib/v2/planner'
 import { createTask, dateKey, emptyState, flushRemoteSync, hydrateRemoteState, loadState, type MaiState, normalizeState, persistState, subscribeSyncStatus, type SyncStatus } from '../../lib/v2/state'
 import { drivePreviewUrl, uploadDataUrlToDrive } from './DriveAsset'
-import { isNativeApp, nativePlugin } from '../../lib/native/native'
+import { isNativeApp, nativePlugin, syncSystemBars } from '../../lib/native/native'
 
 type Row = Record<string, any>
 type Calendar = { id: string; nome: string; cor: string; primary?: boolean; acesso?: string }
@@ -132,6 +132,7 @@ export function useMaiRuntime() {
       }
       meta.content = dark ? '#1E1E1E' : '#FFFFFF'
       applyLogoIcons(themeLogoColor(state.configs.accentColor))
+      syncSystemBars()
     }
     apply()
     if (normalizeMode(state.configs.theme) !== 'system' || typeof window.matchMedia !== 'function') return
