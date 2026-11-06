@@ -95,6 +95,28 @@ async function allInvestments(itemId: string) {
   return out
 }
 
+/** Pede ao banco (via Pluggy) dados novos e espera terminar. Nunca lança: devolve um aviso quando não deu para atualizar. */
+export async function refreshItem(itemId: string, waitMs = 40_000): Promise<{ status: string; note: string }> {
+  const id = encodeURIComponent(itemId)
+  try {
+    const item = await call<PluggyItem>(`/items/${id}`, { method: 'PATCH', body: JSON.stringify({}) })
+    let status = item.status || 'UPDATING'
+    const deadline = Date.now() + waitMs
+    while (['UPDATING', 'LOGIN_IN_PROGRESS', 'CREATING'].includes(status) && Date.now() < deadline) {
+      await new Promise(resolve => setTimeout(resolve, 2500))
+      status = (await call<PluggyItem>(`/items/${id}`)).status || status
+    }
+    if (status === 'WAITING_USER_INPUT') return { status, note: 'O banco pediu uma confirmação (código/aprovação). Reconecte o banco para continuar.' }
+    if (status === 'LOGIN_ERROR' || status === 'OUTDATED') return { status, note: 'O banco recusou o acesso. Reconecte o banco.' }
+    if (['UPDATING', 'LOGIN_IN_PROGRESS'].includes(status)) return { status, note: 'O banco ainda está atualizando. Tente de novo em instantes.' }
+    return { status, note: '' }
+  } catch (error: any) {
+    const text = String(error?.message || '')
+    if (text.includes(' 429')) return { status: '', note: 'A Pluggy limita a atualização forçada a 1 por hora. Mostrei o que ela já tem.' }
+    return { status: '', note: text ? `Não consegui pedir atualização ao banco (${text.slice(0, 120)}).` : 'Não consegui pedir atualização ao banco.' }
+  }
+}
+
 export async function syncItem(itemId: string, from: string): Promise<SyncedItem> {
   const item = await call<PluggyItem>(`/items/${encodeURIComponent(itemId)}`)
   const base: SyncedItem = { itemId, banco: item.connector?.name || 'Banco', status: item.status || 'UNKNOWN', accounts: [], bills: [], investments: [], transactions: [] }
