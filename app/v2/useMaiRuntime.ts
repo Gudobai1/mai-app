@@ -389,8 +389,16 @@ export function useMaiRuntime() {
     router.refresh()
   }
 
+  /** Puxar para atualizar: recarrega só os dados (nuvem + Google), sem recarregar a página. */
+  const refreshItems = async () => {
+    await Promise.resolve(flushRemoteSync()).catch(() => null)
+    const hydrated = await hydrateRemoteState(loadState())
+    setState(current => Date.parse(String(current.meta?.updatedAt || '')) > Date.parse(String(hydrated.meta?.updatedAt || '')) ? current : hydrated)
+    await checkGoogle(hydrated)
+  }
+
   return {
-    toast, dismissToast: () => setToast(null), state, setState, ready, today, googleConnected, calendars, calendarDraft, setCalendarDraft, calendarBusy,
+    refreshItems, toast, dismissToast: () => setToast(null), state, setState, ready, today, googleConnected, calendars, calendarDraft, setCalendarDraft, calendarBusy,
     syncStatus, undoCount, installPrompt, importRef, commit, undo, googleRpc, syncCalendar, openGoogle,
     saveCalendars, disconnectGoogle, requestNotifications, install, exportData, importData, logout, flushRemoteSync,
   }
