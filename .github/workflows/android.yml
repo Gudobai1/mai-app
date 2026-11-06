@@ -1,11 +1,12 @@
 name: Android APK
 
 # Gera o app Android do Bukid e publica o .apk em Releases (baixe pelo celular).
-# Dispare: aba Actions > "Android APK" > Run workflow, ou empurre uma tag android-v*.
+# Dispara sozinho quando algo da pasta mobile/ (ou este arquivo) muda na main, ou manualmente: aba Actions > "Android APK" > Run workflow.
 on:
   workflow_dispatch:
   push:
-    tags: ['android-v*']
+    branches: [main]
+    paths: ['mobile/**', '.github/workflows/android.yml', 'public/icon-512.png']
 
 permissions:
   contents: write
