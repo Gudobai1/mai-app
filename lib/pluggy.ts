@@ -121,17 +121,27 @@ export async function syncItem(itemId: string, from: string): Promise<SyncedItem
   const item = await call<PluggyItem>(`/items/${encodeURIComponent(itemId)}`)
   const base: SyncedItem = { itemId, banco: item.connector?.name || 'Banco', status: item.status || 'UNKNOWN', accounts: [], bills: [], investments: [], transactions: [] }
   if (item.status && !['UPDATED', 'PARTIAL_SUCCESS'].includes(item.status)) return base
-  const categories = await categoryNames()
-  try {
-    for (const inv of await allInvestments(itemId)) {
-      const atual = Number(inv.balance ?? inv.value ?? inv.amount ?? 0)
-      const aportado = Number(inv.amountOriginal ?? (inv.amountProfit != null ? atual - Number(inv.amountProfit) : atual))
-      base.investments.push({ id: inv.id, nome: String(inv.name || inv.code || 'Investimento'), tipo: INVESTMENT_TYPE[String(inv.type || '')] || 'Investimento', valor_atual: atual, aportado: aportado > 0 ? aportado : atual })
-    }
-  } catch { /* investimentos são opcionais: o banco pode não ter ou a Pluggy pode recusar */ }
-  const accounts = await call<Paged<PluggyAccount>>(`/accounts?itemId=${encodeURIComponent(itemId)}`)
-  for (const account of accounts.results) {
+  const id = encodeURIComponent(itemId)
+  // Leituras independentes saem juntas (antes eram uma após a outra).
+  const [categories, investments, accounts] = await Promise.all([
+    categoryNames(),
+    allInvestments(itemId).catch(() => [] as PluggyInvestment[]), // investimentos são opcionais: o banco pode não ter ou a Pluggy pode recusar
+    call<Paged<PluggyAccount>>(`/accounts?itemId=${id}`),
+  ])
+  for (const inv of investments) {
+    const atual = Number(inv.balance ?? inv.value ?? inv.amount ?? 0)
+    const aportado = Number(inv.amountOriginal ?? (inv.amountProfit != null ? atual - Number(inv.amountProfit) : atual))
+    base.investments.push({ id: inv.id, nome: String(inv.name || inv.code || 'Investimento'), tipo: INVESTMENT_TYPE[String(inv.type || '')] || 'Investimento', valor_atual: atual, aportado: aportado > 0 ? aportado : atual })
+  }
+  const perAccount = await Promise.all(accounts.results.map(async account => {
     const credit = account.type === 'CREDIT'
+    const [bills, txs] = await Promise.all([
+      credit ? call<Paged<PluggyBill>>(`/bills?accountId=${encodeURIComponent(account.id)}`).catch(() => null) : Promise.resolve(null), // faturas são opcionais: sem elas, a fatura aberta soma as compras da janela
+      allTransactions(account.id, from),
+    ])
+    return { account, credit, bills, txs }
+  }))
+  for (const { account, credit, bills, txs } of perAccount) {
     base.accounts.push({
       id: account.id,
       nome: [item.connector?.name, account.name].filter(Boolean).join(' · ') || 'Conta',
@@ -142,14 +152,8 @@ export async function syncItem(itemId: string, from: string): Promise<SyncedItem
       vencimento_dia: Number(String(account.creditData?.balanceDueDate || '').slice(8, 10)) || 0,
       fechamento_dia: Number(String(account.creditData?.balanceCloseDate || '').slice(8, 10)) || 0,
     })
-    if (credit) {
-      try {
-        const bills = await call<Paged<PluggyBill>>(`/bills?accountId=${encodeURIComponent(account.id)}`)
-        for (const bill of bills.results) if (bill.dueDate && bill.totalAmount != null) base.bills.push({ id: bill.id, accountId: account.id, dueDate: String(bill.dueDate).slice(0, 10), total: Math.abs(Number(bill.totalAmount)) })
-      } catch { /* faturas são opcionais: sem elas, a fatura aberta soma as compras da janela */ }
-    }
-    for (const tx of await allTransactions(account.id, from)) {
-      const credit_in = tx.type === 'CREDIT'
+    for (const bill of bills?.results || []) if (bill.dueDate && bill.totalAmount != null) base.bills.push({ id: bill.id, accountId: account.id, dueDate: String(bill.dueDate).slice(0, 10), total: Math.abs(Number(bill.totalAmount)) })
+    for (const tx of txs) {
       // Em cartão a Pluggy manda compras como DEBIT; pagamentos/estornos como CREDIT.
       base.transactions.push({
         id: tx.id,
@@ -157,7 +161,7 @@ export async function syncItem(itemId: string, from: string): Promise<SyncedItem
         data: String(tx.date).slice(0, 10),
         titulo: String(tx.description || tx.descriptionRaw || 'Sem descrição').trim(),
         valor: Math.abs(Number(tx.amountInAccountCurrency ?? tx.amount ?? 0)), // compra em dólar: vale o valor em reais que o banco cobrou
-        tipo: credit_in ? 'receita' : 'despesa',
+        tipo: tx.type === 'CREDIT' ? 'receita' : 'despesa',
         pendente: tx.status === 'PENDING',
         categoria: String((tx.categoryId && categories.get(String(tx.categoryId))) || tx.category || ''),
         billId: String(tx.creditCardMetadata?.billId || ''),
