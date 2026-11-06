@@ -38,8 +38,7 @@
 .sentinel { height: 1px; }
 .day { display: flex; flex-direction: column; gap: 10px; min-width: 0; margin-top: 18px; }
 .dayHead { display: flex; align-items: baseline; gap: 8px; padding-bottom: 8px; border-bottom: 1px solid var(--ds-line); }
-.dayHead strong { font-size: 15px; font-weight: var(--ds-fw-heavy); color: var(--ds-text); }
-.dayHead strong[data-today] { color: var(--ds-accent); }
+.dayHead strong { font-size: 15px; font-weight: var(--ds-fw-heavy); color: var(--ds-accent); }
 .dayHead span { font-size: 13px; color: var(--ds-muted); font-weight: var(--ds-fw-medium); }
 .dayHead em { margin-left: auto; font-style: normal; font-size: 12px; color: var(--ds-muted); }
 .empty { margin: 0; font-size: 13px; color: var(--ds-muted); }
