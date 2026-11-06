@@ -871,7 +871,7 @@ export function EmBreve({ state, today, commit, inspect, syncRange }: Props) {
       ) : null}
       {mode === 'week' ? (mobile ? weekMobile : weekDesktop) : null}
       {mode === 'month' ? monthView : null}
-      {mode === 'myday' ? <DayTimeline state={state} day={selected} today={today} commit={commit} inspect={inspect} /> : null}
+      {mode === 'myday' ? <DayTimeline state={state} day={selected} today={today} commit={commit} inspect={inspect} accept={item => (item.kind === 'event' || item.kind === 'task' || item.kind === 'habit' || item.kind === 'finance') && visible(item.kind) && !(nextIds && nextIds.has(item.id)) && passes(toEntry(item))} /> : null}
       {quick.element}
       {manageCategories ? <CategoryManager state={state} commit={commit} onClose={() => setManageCategories(false)} /> : null}
       {taskQuick.element}

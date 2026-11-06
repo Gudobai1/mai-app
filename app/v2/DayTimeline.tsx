@@ -19,6 +19,8 @@ type Props = {
   today: string
   commit: (change: (current: MaiState) => MaiState) => void
   inspect: (item: InspectableItem) => void
+  /** Mesmos filtros da tela (tipos, "somente o próximo", projetos…). */
+  accept?: (item: PlannerItem) => boolean
 }
 
 const HOUR = 56
@@ -45,7 +47,7 @@ function duration(item: PlannerItem) {
 
 const movable = (item: PlannerItem) => item.kind === 'task' || item.kind === 'habit' || (item.kind === 'event' && item.raw.tipo !== 'google' && item.raw.tipo !== 'gcalendar')
 
-export function DayTimeline({ state, day, today, commit, inspect }: Props) {
+export function DayTimeline({ state, day, today, commit, inspect, accept }: Props) {
   const [now, setNow] = useState(() => new Date())
   const [dragId, setDragId] = useState('')
   const [ghost, setGhost] = useState<number | null>(null)
@@ -57,8 +59,8 @@ export function DayTimeline({ state, day, today, commit, inspect }: Props) {
   }, [])
 
   const items = useMemo(
-    () => plannerItems(state, day, day).filter(item => item.kind !== 'goal' && !(item.kind === 'task' && item.raw.parent_id)),
-    [state, day],
+    () => plannerItems(state, day, day).filter(item => item.kind !== 'goal' && !(item.kind === 'task' && item.raw.parent_id) && (!accept || accept(item))),
+    [state, day, accept],
   )
 
   const { blocks, loose, firstHour, lastHour } = useMemo(() => {
@@ -95,6 +97,7 @@ export function DayTimeline({ state, day, today, commit, inspect }: Props) {
     .map(task => ({ id: String(task.id), title: String(task.titulo || 'Tarefa'), date: String(task.data_vencimento).slice(0, 10), raw: task }))), [state.tasks, day, today])
 
   const isToday = day === today
+  const dayHabits = items.filter(item => item.kind === 'habit')
   const nowMin = now.getHours() * 60 + now.getMinutes()
   const gridHeight = (lastHour - firstHour) * HOUR
   const topOf = (minutes: number) => ((minutes - firstHour * 60) / 60) * HOUR
@@ -132,6 +135,28 @@ export function DayTimeline({ state, day, today, commit, inspect }: Props) {
 
   const toggleTask = (item: PlannerItem) => commit(current => ({ ...current, tasks: current.tasks.map(task => (String(task.id) === item.sourceId ? { ...task, concluida: !task.concluida, concluida_em: !task.concluida ? new Date().toISOString() : '' } : task)) }))
 
+  const habitState = (item: PlannerItem) => {
+    const entry = (state.habitEntries as Record<string, any>[]).find(row => String(row.habito_id) === item.sourceId && String(row.data).slice(0, 10) === day)
+    const target = Math.max(1, Number(item.raw.meta || 1))
+    const value = entry && entry.falhou !== true ? Number(entry.valor || 0) : 0
+    const quantitative = target > 1 || Boolean(item.raw.unidade)
+    return { target, value, quantitative }
+  }
+  const toggleHabit = (item: PlannerItem) => {
+    if (day > today) return open(item)
+    const { target, quantitative } = habitState(item)
+    commit(current => {
+      const all = current.habitEntries as Record<string, any>[]
+      const existing = all.find(row => String(row.habito_id) === item.sourceId && String(row.data).slice(0, 10) === day)
+      const others = all.filter(row => row !== existing)
+      const make = (valor: number) => ({ id: existing?.id || `hr-${crypto.randomUUID()}`, habito_id: item.raw.id, data: day, valor, falhou: false, status: '', criado_em: existing?.criado_em || new Date().toISOString() })
+      const currentValue = existing && existing.falhou !== true ? Number(existing.valor || 0) : 0
+      if (!quantitative) return { ...current, habitEntries: currentValue > 0 ? others : [...others, make(target)] } as MaiState
+      const next = currentValue >= target ? 0 : currentValue + 1
+      return { ...current, habitEntries: next === 0 ? others : [...others, make(next)] } as MaiState
+    })
+  }
+
   const minutesAt = (event: DragEvent<HTMLDivElement>) => {
     const rect = event.currentTarget.getBoundingClientRect()
     const raw = firstHour * 60 + ((event.clientY - rect.top) / HOUR) * 60
@@ -151,7 +176,9 @@ export function DayTimeline({ state, day, today, commit, inspect }: Props) {
       {movable(item) ? <Icon name="drag_indicator" size={16} filled={false} className={styles.grip} /> : null}
       {item.kind === 'task'
         ? <button type="button" className={styles.check} aria-label={`Concluir: ${item.title}`} aria-pressed={item.completed} onClick={() => toggleTask(item)}>{item.completed ? <Icon name="check" size={12} /> : null}</button>
-        : <Icon name={item.kind === 'habit' ? 'autorenew' : item.kind === 'finance' ? 'payments' : 'event'} size={16} filled={false} style={{ color: item.color }} />}
+        : item.kind === 'habit'
+          ? <button type="button" className={styles.check} aria-label={`Registrar: ${item.title}`} aria-pressed={item.completed} onClick={() => toggleHabit(item)}>{item.completed ? <Icon name="check" size={12} /> : null}</button>
+          : <Icon name={item.kind === 'habit' ? 'autorenew' : item.kind === 'finance' ? 'payments' : 'event'} size={16} filled={false} style={{ color: item.color }} />}
       <button type="button" className={styles.looseMain} onClick={() => open(item)}>
         <span>{item.title}</span>
         <small>{item.kind === 'finance' ? item.subtitle : item.kind === 'event' ? 'Dia inteiro' : item.subtitle}</small>
@@ -196,7 +223,9 @@ export function DayTimeline({ state, day, today, commit, inspect }: Props) {
                   {...dragProps(item)}>
                   {item.kind === 'task'
                     ? <button type="button" className={styles.check} aria-label={`Concluir: ${item.title}`} aria-pressed={item.completed} onClick={() => toggleTask(item)}>{item.completed ? <Icon name="check" size={12} /> : null}</button>
-                    : null}
+                    : item.kind === 'habit'
+                      ? <button type="button" className={styles.check} aria-label={`Registrar: ${item.title}`} aria-pressed={item.completed} onClick={() => toggleHabit(item)}>{item.completed ? <Icon name="check" size={12} /> : null}</button>
+                      : null}
                   <button type="button" className={styles.blockMain} onClick={() => open(item)}>
                     <b>{item.title}</b>
                     <small>{clock(start)} – {clock(end)}{item.kind === 'event' && item.subtitle ? ` · ${item.subtitle}` : ''}</small>
@@ -224,6 +253,12 @@ export function DayTimeline({ state, day, today, commit, inspect }: Props) {
             <p>Arraste para a linha do tempo ou toque em Horário.</p>
             {loose.length ? loose.map(looseRow) : <small className={styles.empty}>Tudo com horário por aqui.</small>}
           </section>
+          {dayHabits.some(item => toMinutes(item.time) >= 0) ? (
+            <section className={styles.panel}>
+              <h2>Hábitos com horário</h2>
+              {dayHabits.filter(item => toMinutes(item.time) >= 0).map(looseRow)}
+            </section>
+          ) : null}
           {overdue.length ? (
             <section className={styles.panel}>
               <h2>Atrasadas</h2>
