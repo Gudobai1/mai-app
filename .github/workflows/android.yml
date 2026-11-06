@@ -29,6 +29,9 @@ jobs:
           distribution: temurin
           java-version: 21
 
+      - name: Instalar ImageMagick (ícones)
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq imagemagick
+
       - name: Instalar Capacitor
         working-directory: mobile
         run: npm install --no-audit --no-fund
