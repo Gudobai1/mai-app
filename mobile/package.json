@@ -1,0 +1,14 @@
+{
+  "name": "bukid-android",
+  "private": true,
+  "version": "1.0.0",
+  "description": "App Android do Bukid (Capacitor). O app abre o site em produção; recursos nativos: notificações, compartilhar para o app e login pelo navegador do sistema.",
+  "dependencies": {
+    "@capacitor/android": "^7.4.0",
+    "@capacitor/app": "^7.0.0",
+    "@capacitor/browser": "^7.0.0",
+    "@capacitor/cli": "^7.4.0",
+    "@capacitor/core": "^7.4.0",
+    "@capacitor/local-notifications": "^7.0.0"
+  }
+}

@@ -1,0 +1,83 @@
+name: Android APK
+
+# Gera o app Android do Bukid e publica o .apk em Releases (baixe pelo celular).
+# Dispare: aba Actions > "Android APK" > Run workflow, ou empurre uma tag android-v*.
+on:
+  workflow_dispatch:
+  push:
+    tags: ['android-v*']
+
+permissions:
+  contents: write
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      BUKID_URL: ${{ vars.BUKID_URL }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Instalar Capacitor
+        working-directory: mobile
+        run: npm install --no-audit --no-fund
+
+      - name: Endereço do app (opcional: variável BUKID_URL do repositório)
+        working-directory: mobile
+        run: |
+          if [ -n "$BUKID_URL" ]; then
+            node -e "const fs=require('fs');const c=JSON.parse(fs.readFileSync('capacitor.config.json'));c.server.url=process.env.BUKID_URL.replace(/\/$/,'');fs.writeFileSync('capacitor.config.json',JSON.stringify(c,null,2))"
+          fi
+          grep '"url"' capacitor.config.json
+
+      - name: Criar projeto Android
+        working-directory: mobile
+        run: |
+          npx cap add android
+          python3 scripts/prepare-android.py
+          npx cap sync android
+
+      - name: Compilar
+        working-directory: mobile/android
+        run: ./gradlew --no-daemon assembleRelease
+
+      - name: Assinar
+        env:
+          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KEYSTORE_PASS: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+        run: |
+          set -e
+          cd mobile/android/app/build/outputs/apk/release
+          if [ -n "$KEYSTORE_B64" ]; then
+            echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/bukid.keystore"
+            PASS="$KEYSTORE_PASS"; ALIAS="${KEY_ALIAS:-bukid}"
+            echo "SIGNED=stable" >> "$GITHUB_ENV"
+          else
+            # sem chave guardada: gera uma só para esta compilação (o Android não atualiza por cima de um APK com chave diferente)
+            PASS="$(openssl rand -hex 12)"; ALIAS=bukid
+            keytool -genkeypair -keystore "$RUNNER_TEMP/bukid.keystore" -alias "$ALIAS" -keyalg RSA -keysize 2048 -validity 10000 -storepass "$PASS" -keypass "$PASS" -dname "CN=Bukid"
+            echo "SIGNED=temporary" >> "$GITHUB_ENV"
+          fi
+          BT="$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)"
+          "$BT/zipalign" -f -p 4 app-release-unsigned.apk aligned.apk
+          "$BT/apksigner" sign --ks "$RUNNER_TEMP/bukid.keystore" --ks-key-alias "$ALIAS" --ks-pass "pass:$PASS" --out "$GITHUB_WORKSPACE/Bukid.apk" aligned.apk
+          "$BT/apksigner" verify "$GITHUB_WORKSPACE/Bukid.apk"
+
+      - name: Publicar em Releases
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="android-build-${{ github.run_number }}"
+          NOTE="APK do Bukid, build ${{ github.run_number }}. Assinatura: ${SIGNED}. Instale no celular (permitir apps de fontes desconhecidas)."
+          gh release create "$TAG" Bukid.apk --title "Bukid Android ${{ github.run_number }}" --notes "$NOTE" --target "${{ github.sha }}" --latest

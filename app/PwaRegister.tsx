@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect } from 'react'
+import { NativeBridge } from './NativeBridge'
 import { GlobalFilePreviewBridge } from './v2/GlobalFilePreviewBridge'
 import { ItemDateTone } from './v2/ItemDateTone'
 import { ModuleListSorter } from './v2/ModuleListSorter'
@@ -10,5 +11,5 @@ export function PwaRegister() {
     if (!('serviceWorker' in navigator)) return
     void navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' }).then(registration => registration.update()).catch(() => null)
   }, [])
-  return <><ItemDateTone/><ModuleListSorter/><GlobalFilePreviewBridge/></>
+  return <><ItemDateTone/><ModuleListSorter/><GlobalFilePreviewBridge/><NativeBridge/></>
 }

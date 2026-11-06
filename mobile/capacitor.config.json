@@ -1,0 +1,18 @@
+{
+  "appId": "app.bukid",
+  "appName": "Bukid",
+  "webDir": "www",
+  "server": {
+    "url": "https://mai-app-navy.vercel.app",
+    "androidScheme": "https"
+  },
+  "android": {
+    "allowMixedContent": false
+  },
+  "plugins": {
+    "LocalNotifications": {
+      "smallIcon": "ic_stat_bukid",
+      "iconColor": "#DE4C4A"
+    }
+  }
+}
