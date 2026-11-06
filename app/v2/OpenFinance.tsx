@@ -246,11 +246,11 @@ export function useOpenFinance(state: MaiState, commit: Commit) {
     return json
   }
 
-  async function sync(itemIds: string[], silent = false) {
+  async function sync(itemIds: string[], silent = false, refresh = true) {
     setBusy('sync'); if (!silent) setMessage('')
     try {
       const from = new Date(Date.now() - 90 * 86400_000).toISOString().slice(0, 10) // o banco refaz lançamentos de cartão quando a fatura fecha: relê sempre 90 dias
-      const json = await api('/api/pluggy/sync', { itemIds, from })
+      const json = await api('/api/pluggy/sync', { itemIds, from, refresh })
       const items = (json.items || []) as { itemId: string; banco: string; status: string; accounts: any[]; bills?: { id: string; accountId: string; dueDate: string; total: number }[]; investments?: any[]; transactions: any[] }[]
       let added = 0
       patchOpenFinance(commit, (current, finance) => {
@@ -288,8 +288,9 @@ export function useOpenFinance(state: MaiState, commit: Commit) {
         }
       })
       const waiting = items.filter(item => !['UPDATED', 'PARTIAL_SUCCESS'].includes(item.status))
-      const text = json.errors?.length ? `Falha em ${json.errors.length} conexão(ões): ${json.errors[0].error}` : waiting.length ? 'O banco ainda está atualizando os dados. Tente de novo em instantes.' : added > 0 ? `Sincronizado. ${added} ${added === 1 ? 'lançamento novo' : 'lançamentos novos'}.` : 'Sincronizado. Nada novo.'
-      if (!silent || json.errors?.length) setMessage(text)
+      const note = (json.notes || [])[0] as string | undefined
+      const text = json.errors?.length ? `Falha em ${json.errors.length} conexão(ões): ${json.errors[0].error}` : note ? note : waiting.length ? 'O banco ainda está atualizando os dados. Tente de novo em instantes.' : added > 0 ? `Sincronizado. ${added} ${added === 1 ? 'lançamento novo' : 'lançamentos novos'}.` : 'Sincronizado. Nada novo.'
+      if (!silent || json.errors?.length || note) setMessage(text)
     } catch (error: any) {
       if (!silent) setMessage(error?.message || 'Falha ao sincronizar')
     } finally { setBusy('') }
@@ -308,7 +309,7 @@ export function useOpenFinance(state: MaiState, commit: Commit) {
           const itemId = String(item?.id || '')
           if (!itemId) return
           patchOpenFinance(commit, current => ({ data: { ...current, itens: current.itens.some(i => i.itemId === itemId) ? current.itens : [...current.itens, { itemId, banco: String(item?.connector?.name || 'Banco') }] } }))
-          void sync([itemId])
+          void sync([itemId], false, false)
         },
         onError: (error: any) => setMessage(String(error?.message || 'Erro ao conectar o banco')),
         onClose: () => setBusy(''),
@@ -326,7 +327,7 @@ export function useOpenFinance(state: MaiState, commit: Commit) {
     if (!itemId) return
     if (!/^[\w-]{8,64}$/.test(itemId)) { setMessage('Esse ID não parece válido.'); return }
     patchOpenFinance(commit, current => ({ data: { ...current, itens: current.itens.some(i => i.itemId === itemId) ? current.itens : [...current.itens, { itemId, banco: 'MeuPluggy' }] } }))
-    void sync([itemId])
+    void sync([itemId], false, false)
   }
 
   function disconnect(itemId: string) {
@@ -374,6 +375,7 @@ export function useOpenFinance(state: MaiState, commit: Commit) {
   const latest = useRef({ data, busy, sync })
   latest.current = { data, busy, sync }
   const lastAttempt = useRef(0)
+  const lastForced = useRef(0)
   useEffect(() => {
     const tick = () => {
       const { data: current, busy: working, sync: run } = latest.current
@@ -383,7 +385,9 @@ export function useOpenFinance(state: MaiState, commit: Commit) {
       const stale = current.itens.some(item => !item.ultimaSync || now - Date.parse(item.ultimaSync) > AUTO_MINUTES * 60_000)
       if (!stale) return
       lastAttempt.current = now
-      void run(current.itens.map(item => item.itemId), true)
+      const forced = now - lastForced.current > 61 * 60_000 // a Pluggy só aceita 1 atualização forçada por hora
+      if (forced) lastForced.current = now
+      void run(current.itens.map(item => item.itemId), true, forced)
     }
     tick()
     const timer = window.setInterval(tick, 60_000)
