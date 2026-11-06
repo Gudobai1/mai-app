@@ -290,7 +290,7 @@ export function useOpenFinance(state: MaiState, commit: Commit) {
       const waiting = items.filter(item => !['UPDATED', 'PARTIAL_SUCCESS'].includes(item.status))
       const note = (json.notes || [])[0] as string | undefined
       const text = json.errors?.length ? `Falha em ${json.errors.length} conexão(ões): ${json.errors[0].error}` : note ? note : waiting.length ? 'O banco ainda está atualizando os dados. Tente de novo em instantes.' : added > 0 ? `Sincronizado. ${added} ${added === 1 ? 'lançamento novo' : 'lançamentos novos'}.` : 'Sincronizado. Nada novo.'
-      if (!silent || json.errors?.length || note) setMessage(text)
+      if (!silent || json.errors?.length) setMessage(text)
     } catch (error: any) {
       if (!silent) setMessage(error?.message || 'Falha ao sincronizar')
     } finally { setBusy('') }
