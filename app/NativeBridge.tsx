@@ -19,12 +19,22 @@ export function NativeBridge() {
       const link = parseAuthLink(String(event?.url || ''))
       if (!link) return
       try { await nativePlugin('Browser')?.close?.() } catch { /* já fechou */ }
-      if (link.error) { location.assign(`/login?error=${encodeURIComponent(link.error)}`); return }
+      if (link.error) { location.replace(`/login?error=${encodeURIComponent(link.error)}`); return }
       // as credenciais do Google foram criadas no navegador: aqui elas viram o cookie do app
       if (link.sealed) { try { await fetch('/api/google/adopt', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ g: link.sealed }) }) } catch { /* segue: o login ainda vale */ } }
-      location.assign(link.mode === 'login' && link.tokenHash ? `/auth/google-complete?token_hash=${encodeURIComponent(link.tokenHash)}` : '/?google=connected')
+      location.replace(link.mode === 'login' && link.tokenHash ? `/auth/google-complete?token_hash=${encodeURIComponent(link.tokenHash)}` : '/?google=connected')
     })
-    return () => { document.removeEventListener('click', onClick, true); void Promise.resolve(handle).then(item => item?.remove?.()) }
+    // Botão Voltar do Android: na tela inicial ou no login sai do app; nas demais volta uma tela (sem cair de novo no login)
+    const back = app?.addListener?.('backButton', () => {
+      const path = location.pathname
+      if (path === '/' || path === '/login' || path.startsWith('/auth/') || history.length <= 1) { void app?.exitApp?.(); return }
+      history.back()
+    })
+    return () => {
+      document.removeEventListener('click', onClick, true)
+      void Promise.resolve(handle).then(item => item?.remove?.())
+      void Promise.resolve(back).then(item => item?.remove?.())
+    }
   }, [])
   return null
 }

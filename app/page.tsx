@@ -1,10 +1,8 @@
-import { cookies } from 'next/headers'
-import { redirect } from 'next/navigation'
-import { GOOGLE_COOKIE, hasAllowedGoogleCookie } from '../lib/google'
 import { MaiV2ParityShell } from './v2/MaiV2ParityShell'
 
-export default async function Page() {
-  const store = await cookies()
-  if (!hasAllowedGoogleCookie(store.get(GOOGLE_COOKIE)?.value)) redirect('/login')
+// A entrada é decidida no navegador (sessão guardada em MaiV2ParityShell). Antes o servidor mandava para /login sempre que o cookie
+// do Google faltava; no app Android esse cookie podia não estar lá e o usuário caía num ciclo de login. Sem o cookie só os recursos
+// do Google (Drive e Agenda) pedem para reconectar, nas configurações.
+export default function Page() {
   return <MaiV2ParityShell />
 }
