@@ -20,6 +20,8 @@ const cents = (value: number) => Math.round(value * 100) / 100
 const FATURA = /pagamento (de |da |do )?fatura|pagamento fatura|fatura (do )?cart/i // pagamento de fatura já aparece como compras no cartão
 const shortName = (nome: string) => nome.replace(/^MeuPluggy\s*·\s*/i, '').split(' - ')[0].replace(/\s+S\.?\s?A\.?$/i, '').trim() || 'Banco'
 const AUTO_MINUTES = 15
+/** A Pluggy não deixa atualizar o MeuPluggy por API: o botão abre a página da conexão para você clicar em atualizar. */
+const MEU_PLUGGY_URL = 'https://meu.pluggy.ai/connections/f435a5e6-6469-4a1f-8f24-cb1d9cb1c644'
 
 export function readOpenFinance(state: MaiState): OpenFinanceData {
   const raw = (state.finance?.openFinance && typeof state.finance.openFinance === 'object' ? state.finance.openFinance : {}) as Partial<OpenFinanceData>
@@ -419,7 +421,7 @@ export function OpenFinancePanel({ ctl }: { ctl: OpenFinanceController }) {
   return <div className={of.line}>
     <span className={of.status}>{status}</span>
     <div className={of.actions}>
-      {data.itens.length ? <button type="button" disabled={busy !== ''} onClick={() => sync(data.itens.map(i => i.itemId))}>Sincronizar</button> : null}
+      {data.itens.length ? <button type="button" disabled={busy !== ''} onClick={() => { try { window.open(MEU_PLUGGY_URL, 'meu-pluggy', 'popup,width=520,height=780') } catch { /* popup bloqueado: segue só com a leitura */ } void sync(data.itens.map(i => i.itemId), false, false) }}>Sincronizar</button> : null}
       {!data.itens.length ? <button type="button" data-primary="true" disabled={busy !== ''} onClick={connect}>Conectar banco</button> : null}
       <details className={of.more}><summary aria-label="Mais opções">⋯</summary><div>
         {data.itens.length ? <button type="button" disabled={busy !== ''} onClick={connect}>Conectar outro banco</button> : null}
