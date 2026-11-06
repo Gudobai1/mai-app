@@ -180,6 +180,7 @@ export function plannerItems(state: MaiState, start: string, end: string): Plann
     if (!day || day < start || day > end) continue
     const paid = ['pago', 'paga', 'quitado', 'quitada', 'concluido', 'concluida'].includes(String(item.status || '').toLowerCase())
     if (item.pluggy_id && paid) continue // já executado no banco (Open Finance): não aparece em Hoje nem em Em breve
+    if (item.cartao_id && !item.ajuste_fatura && !item.fixo_id) continue // compra no cartão nunca aparece aqui: só a fatura do cartão
     result.push({ id: `finance:${item.id}:${day}`, sourceId: String(item.id), kind: 'finance', date: day, time: '', title: String(item.titulo || 'Lançamento'), subtitle: `${item.tipo === 'receita' ? 'Receita' : 'Despesa'} · ${new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(item.valor || 0))}`, color: item.tipo === 'receita' ? '#4f8a66' : '#b75b55', completed: paid, recurring: item.recorrente === true, raw: item })
   }
 
