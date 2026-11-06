@@ -33,7 +33,7 @@ jobs:
         working-directory: mobile
         run: npm install --no-audit --no-fund
 
-      - name: Endereço do app (opcional: variável BUKID_URL do repositório)
+      - name: "Endereço do app (variável opcional BUKID_URL do repositório)"
         working-directory: mobile
         run: |
           if [ -n "$BUKID_URL" ]; then
