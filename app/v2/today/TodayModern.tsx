@@ -21,6 +21,7 @@ import { ValueDialog } from '../habits/HabitsModern'
 import { abbreviateUnit } from '../../../lib/v2/units'
 import { AgendaStrip } from './AgendaStrip'
 import styles from './TodayModern.module.css'
+import { DayTimeline } from '../DayTimeline'
 
 /*
  * Tela Hoje — visual Moderno.
@@ -146,6 +147,8 @@ export function TodayModern({ state, today, commit, navigate, inspect, options, 
   useEffect(() => { setSelected(today) }, [today])
 
   const day = selected
+  const timeline = state.configs.todayView === 'timeline'
+  const setTodayView = (next: 'list' | 'timeline') => commit(current => ({ ...current, configs: { ...current.configs, todayView: next } }))
   const isToday = day === today
 
   /* ---------------------------------------------------------- Preferências */
@@ -971,15 +974,21 @@ export function TodayModern({ state, today, commit, navigate, inspect, options, 
           </p>
         </div>
         <div className={styles.headerActions}>
+          <div className={styles.viewToggle} role="group" aria-label="Visualização">
+            <button type="button" aria-pressed={!timeline} onClick={() => setTodayView('list')}>Lista</button>
+            <button type="button" aria-pressed={timeline} onClick={() => setTodayView('timeline')}>Linha do tempo</button>
+          </div>
           {!isToday ? <Button variant="secondary" size="sm" pill icon="undo" onClick={goToToday}>Hoje</Button> : null}
           {options ? <div className={styles.options}>{options}</div> : null}
         </div>
       </header>
 
-      <div className={styles.board}>
-        {column('main')}
-        {column('side')}
-      </div>
+      {timeline ? <DayTimeline state={state} day={day} today={today} commit={commit} inspect={inspect} /> : (
+        <div className={styles.board}>
+          {column('main')}
+          {column('side')}
+        </div>
+      )}
       {quick.element}
       {habitValue ? (() => {
         const { habit, day: key } = habitValue

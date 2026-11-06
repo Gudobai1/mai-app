@@ -16,6 +16,7 @@ import tasksStyles from '../tasks/TasksModern.module.css'
 import todayStyles from '../today/TodayModern.module.css'
 import styles from './EmBreve.module.css'
 import { CategoryManager } from '../detail/CategoryManager'
+import { DayTimeline } from '../DayTimeline'
 import { DEFAULT_DISPLAY, EMPTY_FILTERS, KINDS, UpcomingControls, normalizeFilters, type Kind, type UpcomingDisplay, type UpcomingFilters } from './UpcomingControls'
 
 /**
@@ -24,7 +25,7 @@ import { DEFAULT_DISPLAY, EMPTY_FILTERS, KINDS, UpcomingControls, normalizeFilte
  * Em todas as listas: compromissos primeiro, depois tarefas, hábitos e finanças.
  */
 
-type Mode = 'list' | 'week' | 'month'
+type Mode = 'list' | 'week' | 'month' | 'myday'
 
 type Entry = {
   id: string
@@ -70,6 +71,7 @@ const shiftMonth = (key: string, amount: number) => {
   return dateKey(date)
 }
 const cap = (text: string) => text.charAt(0).toUpperCase() + text.slice(1)
+const dayTitle = (key: string, today: string) => (key === today ? 'Hoje' : cap(dayDate(key).toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })))
 const longDay = (key: string) => dayDate(key).toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })
 const monthTitle = (key: string) => cap(dayDate(key).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }))
 const shortRange = (start: string, end: string) => {
@@ -116,7 +118,7 @@ export function EmBreve({ state, today, commit, inspect, syncRange }: Props) {
   const quick = useQuickMenu()
   const saved = state.configs.upcomingView
   const [manageCategories, setManageCategories] = useState(false)
-  const [mode, setModeState] = useState<Mode>(saved === 'month' ? 'month' : saved === 'week' ? 'week' : 'list')
+  const [mode, setModeState] = useState<Mode>(saved === 'month' ? 'month' : saved === 'week' ? 'week' : saved === 'myday' ? 'myday' : 'list')
   const [selected, setSelected] = useState(today)
   const [anchor, setAnchor] = useState(weekStart(today))
   const [monthAnchor, setMonthAnchor] = useState(monthStart(today))
@@ -152,8 +154,9 @@ export function EmBreve({ state, today, commit, inspect, syncRange }: Props) {
   const range = useMemo(() => {
     if (mode === 'list') return { start: today, end: addDays(today, horizon - 1) }
     if (mode === 'week') return { start: anchor, end: addDays(anchor, 6) }
+    if (mode === 'myday') return { start: selected, end: selected }
     return { start: monthAnchor, end: addDays(monthAnchor, monthLength(monthAnchor) - 1) }
-  }, [mode, today, anchor, monthAnchor, horizon])
+  }, [mode, today, anchor, monthAnchor, horizon, selected])
 
   // Google: só pede outro período quando o que está na tela sai da janela padrão.
   const extended = useRef(false)
@@ -487,7 +490,7 @@ export function EmBreve({ state, today, commit, inspect, syncRange }: Props) {
     )
   }
 
-  const overduePanel = overdue.length && mode !== 'month' ? (
+  const overduePanel = overdue.length && mode !== 'month' && mode !== 'myday' ? (
     <div className={styles.late}>
       <button type="button" className={styles.lateHead} aria-expanded={lateOpen} onClick={() => setLateOpen(value => !value)}>
         <Icon name="schedule" size={16} filled={false} />{overdue.length} {overdue.length === 1 ? 'tarefa atrasada' : 'tarefas atrasadas'}
@@ -499,7 +502,8 @@ export function EmBreve({ state, today, commit, inspect, syncRange }: Props) {
 
   /* ------------------------------------------------------ Navegação */
   const step = (direction: number) => {
-    if (mode === 'week') {
+    if (mode === 'myday') setSelected(addDays(selected, direction))
+    else if (mode === 'week') {
       const next = addDays(anchor, direction * 7)
       setAnchor(next)
       setSelected(next <= today && today <= addDays(next, 6) ? today : next)
@@ -515,7 +519,7 @@ export function EmBreve({ state, today, commit, inspect, syncRange }: Props) {
     setMonthAnchor(monthStart(today))
     if (mode === 'list') goList(today)
   }
-  const subtitle = mode === 'month' ? monthTitle(monthAnchor) : mode === 'week' ? shortRange(anchor, addDays(anchor, 6)) : cap(monthShort(selected)) + ' ' + selected.slice(0, 4)
+  const subtitle = mode === 'myday' ? dayTitle(selected, today) : mode === 'month' ? monthTitle(monthAnchor) : mode === 'week' ? shortRange(anchor, addDays(anchor, 6)) : cap(monthShort(selected)) + ' ' + selected.slice(0, 4)
 
   /* -------------------------------------------------- Lista infinita */
   const listDays = useMemo(() => {
@@ -799,7 +803,7 @@ export function EmBreve({ state, today, commit, inspect, syncRange }: Props) {
   useLayoutEffect(() => {
     const page = pageRef.current
     if (!page) return
-    if (mobile) { page.style.removeProperty('height'); return }
+    if (mobile || mode === 'myday') { page.style.removeProperty('height'); return }
     const html = document.documentElement
     const body = document.body
     const before = [html.style.overflow, body.style.overflow]
@@ -822,7 +826,7 @@ export function EmBreve({ state, today, commit, inspect, syncRange }: Props) {
     <div ref={pageRef} className={styles.page} data-mode={mode}>
       <header className={styles.bar}>
         <div className={styles.views} role="tablist" aria-label="Visualização">
-          {([['list', 'Lista', 'format_list_bulleted'], ['week', 'Semana', 'view_week'], ['month', 'Mês', 'calendar_month']] as [Mode, string, string][]).map(([id, label, icon]) => (
+          {([['list', 'Lista', 'format_list_bulleted'], ['week', 'Semana', 'view_week'], ['month', 'Mês', 'calendar_month'], ['myday', 'Meu dia', 'schedule']] as [Mode, string, string][]).map(([id, label, icon]) => (
             <button key={id} type="button" role="tab" aria-selected={mode === id} data-active={mode === id || undefined} onClick={() => setMode(id)}>
               <Icon name={icon} size={18} filled={false} /><span>{label}</span>
             </button>
@@ -844,7 +848,7 @@ export function EmBreve({ state, today, commit, inspect, syncRange }: Props) {
       <div className={styles.titleRow}>
         <div className={styles.headText}>
           <h1>{mode === 'list' ? 'Em breve' : subtitle}</h1>
-          <span>{mode === 'list' ? subtitle : 'Em breve'}</span>
+          <span>{mode === 'list' ? subtitle : mode === 'myday' ? 'Meu dia' : 'Em breve'}</span>
         </div>
         <div className={styles.nav}>
           {mode !== 'list' ? <button type="button" className={styles.navStep} data-hide-mobile={mode === 'month' || undefined} aria-label="Anterior" onClick={() => step(-1)}><Icon name="chevron_left" size={20} filled={false} /></button> : null}
@@ -867,6 +871,7 @@ export function EmBreve({ state, today, commit, inspect, syncRange }: Props) {
       ) : null}
       {mode === 'week' ? (mobile ? weekMobile : weekDesktop) : null}
       {mode === 'month' ? monthView : null}
+      {mode === 'myday' ? <DayTimeline state={state} day={selected} today={today} commit={commit} inspect={inspect} /> : null}
       {quick.element}
       {manageCategories ? <CategoryManager state={state} commit={commit} onClose={() => setManageCategories(false)} /> : null}
       {taskQuick.element}
