@@ -11,7 +11,7 @@ type Commit = (change: (current: MaiState) => MaiState) => void
 type Link = { itemId: string; banco: string; ultimaSync?: string; url?: string }
 type Pending = { id: string; accountId: string; itemId: string; data: string; titulo: string; valor: number; tipo: 'receita' | 'despesa'; pendente: boolean; categoria: string; parcela: string; billId?: string }
 export type BankAccount = { id: string; itemId: string; nome: string; tipo: 'conta' | 'cartao'; saldo: number; limite: number; limite_disponivel: number; vencimento_dia?: number; fechamento_dia?: number }
-export type OpenFinanceData = { itens: Link[]; contas: BankAccount[]; vinculos: Record<string, string>; pendentes: Pending[]; vistos: string[]; dispensadas: string[] }
+export type OpenFinanceData = { autoLink?: boolean; itens: Link[]; contas: BankAccount[]; vinculos: Record<string, string>; pendentes: Pending[]; vistos: string[]; dispensadas: string[] }
 
 const money = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' })
 const uid = (prefix: string) => `${prefix}-${crypto.randomUUID()}`
@@ -28,6 +28,7 @@ const validMeuPluggyUrl = (value: string) => /^https:\/\/meu\.pluggy\.ai\/\S+$/.
 export function readOpenFinance(state: MaiState): OpenFinanceData {
   const raw = (state.finance?.openFinance && typeof state.finance.openFinance === 'object' ? state.finance.openFinance : {}) as Partial<OpenFinanceData>
   return {
+    autoLink: raw.autoLink !== false, // vínculo automático de lançamentos: ligado por padrão
     itens: Array.isArray(raw.itens) ? raw.itens : [],
     contas: Array.isArray(raw.contas) ? raw.contas.map(c => ({ ...c, limite: num((c as any).limite) })) : [],
     vinculos: raw.vinculos && typeof raw.vinculos === 'object' ? raw.vinculos : {},
@@ -112,6 +113,46 @@ function importPending(list: Pending[], links: Record<string, string>, rows: Row
     })
   }
   return { rows: out, remaining, skipped }
+}
+
+// Palavras que não identificam a origem de um lançamento (tipo de operação, sufixo de empresa, conectivos).
+const GENERIC_WORDS = new Set(['estorno', 'devolucao', 'reembolso', 'pagamento', 'transferencia', 'transf', 'recebida', 'recebido', 'enviada', 'enviado', 'pix', 'ted', 'doc', 'compra', 'credito', 'debito', 'cartao', 'fatura', 'ltda', 'eireli', 'brasil', 'para', 'com', 'dos', 'das', 'por', 'sobre', 'online', 'loja', 'conta'])
+const keywords = (text: unknown) => new Set(String(text || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().split(/[^a-z0-9]+/).filter(word => word.length >= 4 && !GENERIC_WORDS.has(word)))
+const dayMs = (value: unknown) => Date.parse(`${String(value).slice(0, 10)}T12:00:00Z`)
+
+/**
+ * Vínculo automático: um lançamento seu (ex.: "devolução amazon", 85,67) e um do banco (ex.: "estorno amazon ltda", 85,67)
+ * com o MESMO valor, mesma conta/tipo, datas próximas e uma palavra-chave em comum viram um só.
+ * Só vincula quando o par é único dos dois lados (sem dúvida) e nunca refaz o que você desvinculou.
+ */
+export function autoLinkRows(rows: Row[]): { rows: Row[]; linked: number } {
+  const manual = rows.filter(tx => !tx.pluggy_id && !tx.ajuste_fatura && !tx._isFixed && !tx.of_nolink && num(tx.valor) > 0)
+  const bank = rows.filter(tx => tx.pluggy_id && tx.observacao === 'Open Finance' && !tx.of_linked && !tx.ajuste_fatura && num(tx.valor) > 0)
+  const manualWords = new Map(manual.map(tx => [String(tx.id), keywords(tx.titulo)]))
+  const matches = new Map<string, string[]>() // banco -> seus lançamentos candidatos
+  const taken = new Map<string, number>() // seu lançamento -> quantos bancos casam
+  for (const b of bank) {
+    const words = keywords(b.titulo)
+    if (!words.size) continue
+    const found = manual.filter(m => {
+      if (m.tipo !== b.tipo || String(m.conta_id || '') !== String(b.conta_id || '')) return false
+      if (Math.round(num(m.valor) * 100) !== Math.round(num(b.valor) * 100)) return false
+      const gap = (dayMs(b.data) - dayMs(m.data)) / 86400000
+      if (!(gap >= -10 && gap <= 45)) return false // o seu lançamento costuma vir antes do dinheiro cair
+      return [...(manualWords.get(String(m.id)) || [])].some(word => words.has(word))
+    }).map(m => String(m.id))
+    if (found.length) { matches.set(String(b.id), found); for (const id of found) taken.set(id, (taken.get(id) || 0) + 1) }
+  }
+  let out = rows
+  let linked = 0
+  for (const [bankId, found] of matches) {
+    if (found.length !== 1 || taken.get(found[0]) !== 1) continue
+    const bankRow = out.find(tx => String(tx.id) === bankId)
+    const merged = linkTransactions({ transactions: out }, found[0], bankId)
+    out = merged.map(tx => String(tx.id) !== found[0] || !bankRow || tx.status === 'pago' || bankRow.status !== 'pago' ? tx : { ...tx, status: 'pago', valor_pago: bankRow.valor_pago, pagamentos: bankRow.pagamentos }) // recebido/pago no banco: o seu lançamento também fica quitado
+    linked += 1
+  }
+  return { rows: out, linked }
 }
 
 const CATEGORY_COLORS = ['var(--ds-rose-fg)', 'var(--ds-peach-fg)', 'var(--ds-sky-fg)', 'var(--ds-lilac-fg)', 'var(--ds-mint-fg)', 'var(--ds-teal-fg)', 'var(--ds-accent)']
@@ -257,6 +298,7 @@ export function useOpenFinance(state: MaiState, commit: Commit) {
       const json = await api('/api/pluggy/sync', { itemIds, from, refresh })
       const items = (json.items || []) as { itemId: string; banco: string; status: string; accounts: any[]; bills?: { id: string; accountId: string; dueDate: string; total: number }[]; investments?: any[]; transactions: any[] }[]
       let added = 0
+      let autoLinked = 0
       patchOpenFinance(commit, (current, finance) => {
         // lançamentos seus que a versão anterior casou com o banco voltam a ser só seus (o movimento do banco entra no item do banco)
         const cleaned = ((finance.transactions || []) as Row[]).map(tx => tx.pluggy_id && tx.observacao !== 'Open Finance' && !tx.of_linked ? Object.fromEntries(Object.entries(tx).filter(([key]) => key !== 'pluggy_id')) : tx)
@@ -283,8 +325,11 @@ export function useOpenFinance(state: MaiState, commit: Commit) {
           const to = tx.pluggy_id && tx.observacao === 'Open Finance' ? resolved.moved[String(tx.conta_id)] : ''
           return to ? { ...tx, conta_id: to, cartao_id: to.startsWith('card|') ? to.slice(5) : '' } : tx
         }) : rows
-        const imported = importPending([...current.pendentes, ...fresh], resolved.links, migratedRows)
-        added = imported.rows.length - migratedRows.length
+        const imported0 = importPending([...current.pendentes, ...fresh], resolved.links, migratedRows)
+        added = imported0.rows.length - migratedRows.length
+        const auto = current.autoLink !== false ? autoLinkRows(imported0.rows) : { rows: imported0.rows, linked: 0 }
+        autoLinked = auto.linked
+        const imported = { ...imported0, rows: auto.rows }
         const itens = current.itens.map(link => { const hit = items.find(i => i.itemId === link.itemId); return hit ? { ...link, banco: hit.banco, ultimaSync: new Date().toISOString() } : link })
         return {
           finance: { categories: withBankCategories((finance.categories || []) as Row[], imported.rows), ...(() => { const billed = applyCardBills(imported.rows, resolved.cards, resolved.links, bank, items); return { accounts: resolved.accounts.map((account: Row) => account.pluggy_id ? { ...account, pago_base: cents(billed.transactions.filter((tx: Row) => tx.ajuste_fatura === true && String(tx.conta_pagamento_id || '') === String(account.id)).reduce((sum: number, tx: Row) => sum + num(tx.valor_pago), 0)) } : account), ...billed } })(), investments: upsertInvestments((finance.investments || []) as Row[], items) },
@@ -293,7 +338,7 @@ export function useOpenFinance(state: MaiState, commit: Commit) {
       })
       const waiting = items.filter(item => !['UPDATED', 'PARTIAL_SUCCESS'].includes(item.status))
       const note = (json.notes || [])[0] as string | undefined
-      const text = json.errors?.length ? `Falha em ${json.errors.length} conexão(ões): ${json.errors[0].error}` : note ? note : waiting.length ? 'O banco ainda está atualizando os dados. Tente de novo em instantes.' : added > 0 ? `Sincronizado. ${added} ${added === 1 ? 'lançamento novo' : 'lançamentos novos'}.` : 'Sincronizado. Nada novo.'
+      const text = json.errors?.length ? `Falha em ${json.errors.length} conexão(ões): ${json.errors[0].error}` : note ? note : waiting.length ? 'O banco ainda está atualizando os dados. Tente de novo em instantes.' : (added > 0 ? `Sincronizado. ${added} ${added === 1 ? 'lançamento novo' : 'lançamentos novos'}` : 'Sincronizado. Nada novo') + (autoLinked ? `; ${autoLinked} vinculado${autoLinked === 1 ? '' : 's'} ao seu.` : '.')
       if (!silent || json.errors?.length) setMessage(text)
     } catch (error: any) {
       if (!silent) setMessage(error?.message || 'Falha ao sincronizar')
@@ -344,6 +389,8 @@ export function useOpenFinance(state: MaiState, commit: Commit) {
     patchOpenFinance(commit, data => ({ data: { ...data, itens: data.itens.map(i => i.itemId === itemId ? { ...i, url } : i) } }))
     setMessage(url ? 'Link do MeuPluggy salvo.' : 'Link removido.')
   }
+
+  function setAutoLink(on: boolean) { patchOpenFinance(commit, current => ({ data: { ...current, autoLink: on } })) }
 
   /** Grava o link digitado no campo da conta/cartão. Devolve o motivo se não for válido ('' = salvo). */
   function saveLink(itemId: string, raw: string) {
@@ -436,7 +483,7 @@ export function useOpenFinance(state: MaiState, commit: Commit) {
   }
   const available = (kind: 'conta' | 'cartao') => data.contas.filter(c => c.tipo === kind && !data.vinculos[c.id])
 
-  return { data, busy, message, sync, connect, addItemId, setLink, saveLink, refreshAt, linkOf, disconnect, applyBalances, info, available }
+  return { data, busy, message, sync, connect, addItemId, setLink, saveLink, setAutoLink, refreshAt, linkOf, disconnect, applyBalances, info, available }
 }
 
 export type OpenFinanceController = ReturnType<typeof useOpenFinance>
@@ -467,5 +514,5 @@ export function linkTransactions(finance: Row, manualId: string, bankId: string)
 
 /** Desfaz o vínculo: o lançamento volta a ser só seu e o do banco reaparece no próximo sync. */
 export function unlinkTransaction(list: Row[], id: string): Row[] {
-  return list.map(tx => String(tx.id) !== id ? tx : Object.fromEntries(Object.entries(tx).filter(([key]) => !['pluggy_id', 'of_linked', 'fatura_bill_id'].includes(key))))
+  return list.map(tx => String(tx.id) !== id ? tx : { ...Object.fromEntries(Object.entries(tx).filter(([key]) => !['pluggy_id', 'of_linked', 'fatura_bill_id'].includes(key))), of_nolink: true }) // of_nolink: o vínculo automático não refaz o que você desfez
 }
