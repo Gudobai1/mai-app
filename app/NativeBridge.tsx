@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect } from 'react'
-import { isNativeApp, nativePlugin, openGoogleAuth, parseAuthLink } from '../lib/native/native'
+import { isNativeApp, nativePlugin, openGoogleAuth, parseAuthLink, syncSystemBars } from '../lib/native/native'
 
 /** Só age dentro do app Android: manda o login do Google para o navegador do sistema e trata a volta por link profundo. */
 export function NativeBridge() {
@@ -14,6 +14,7 @@ export function NativeBridge() {
       void openGoogleAuth(anchor.getAttribute('href') || '/api/google/connect')
     }
     document.addEventListener('click', onClick, true)
+    syncSystemBars()
     const app = nativePlugin('App')
     const handle = app?.addListener?.('appUrlOpen', async (event: { url?: string }) => {
       const link = parseAuthLink(String(event?.url || ''))

@@ -1,6 +1,10 @@
 package app.bukid;
 
 import android.content.Intent;
+import android.graphics.Color;
+import android.view.Window;
+import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsControllerCompat;
 import com.getcapacitor.JSObject;
 import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
@@ -44,5 +48,28 @@ public class BukidNativePlugin extends Plugin {
         pendingTitle = null;
         pendingText = null;
         call.resolve(data);
+    }
+
+    /**
+     * Barra de status e de navegação: o app respeita as barras do sistema (a tela fica entre elas) e as barras
+     * ganham a cor do tema do app, com ícones claros ou escuros conforme o fundo.
+     * color: "#rrggbb" ; light: true quando o fundo é claro (ícones escuros).
+     */
+    @PluginMethod
+    public void setSystemBars(final PluginCall call) {
+        final String color = call.getString("color", "#ffffff");
+        final boolean light = Boolean.TRUE.equals(call.getBoolean("light", true));
+        getActivity().runOnUiThread(() -> {
+            try {
+                Window window = getActivity().getWindow();
+                window.getDecorView().setBackgroundColor(Color.parseColor(color));
+                WindowInsetsControllerCompat controller = WindowCompat.getInsetsController(window, window.getDecorView());
+                controller.setAppearanceLightStatusBars(light);
+                controller.setAppearanceLightNavigationBars(light);
+                call.resolve();
+            } catch (Exception error) {
+                call.reject("Não foi possível ajustar as barras do sistema", error);
+            }
+        });
     }
 }
