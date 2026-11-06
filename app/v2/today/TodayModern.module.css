@@ -2098,3 +2098,7 @@
 html body .itemButton.itemButton:hover > .taskBody,
 html body .itemButton.itemButton:hover .taskSub { text-decoration: none !important; }
 html body .itemButton.itemButton:hover .taskTitle { text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px; }
+
+.viewToggle { display: inline-flex; gap: 2px; padding: 2px; border-radius: 8px; background: var(--ds-surface-2); }
+.viewToggle button { appearance: none; border: 0; background: transparent; color: var(--ds-muted); font: inherit; font-size: 13px; font-weight: var(--ds-fw-medium); height: 30px; padding: 0 12px; border-radius: 6px; cursor: pointer; }
+.viewToggle button[aria-pressed='true'] { background: var(--ds-surface); color: var(--ds-text); box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08); }
