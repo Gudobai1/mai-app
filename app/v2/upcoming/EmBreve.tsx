@@ -16,7 +16,7 @@ import tasksStyles from '../tasks/TasksModern.module.css'
 import todayStyles from '../today/TodayModern.module.css'
 import styles from './EmBreve.module.css'
 import { CategoryManager } from '../detail/CategoryManager'
-import { DayTimeline } from '../DayTimeline'
+import { DayNav, DayTimeline } from '../DayTimeline'
 import { DEFAULT_DISPLAY, EMPTY_FILTERS, KINDS, UpcomingControls, normalizeFilters, type Kind, type UpcomingDisplay, type UpcomingFilters } from './UpcomingControls'
 
 /**
@@ -826,7 +826,7 @@ export function EmBreve({ state, today, commit, inspect, syncRange }: Props) {
     <div ref={pageRef} className={styles.page} data-mode={mode}>
       <header className={styles.bar}>
         <div className={styles.views} role="tablist" aria-label="Visualização">
-          {([['list', 'Lista', 'format_list_bulleted'], ['week', 'Semana', 'view_week'], ['month', 'Mês', 'calendar_month'], ['myday', 'Meu dia', 'schedule']] as [Mode, string, string][]).map(([id, label, icon]) => (
+          {([['myday', 'Meu dia', 'schedule'], ['week', 'Semana', 'view_week'], ['month', 'Mês', 'calendar_month']] as [Mode, string, string][]).map(([id, label, icon]) => (
             <button key={id} type="button" role="tab" aria-selected={mode === id} data-active={mode === id || undefined} onClick={() => setMode(id)}>
               <Icon name={icon} size={18} filled={false} /><span>{label}</span>
             </button>
@@ -841,10 +841,13 @@ export function EmBreve({ state, today, commit, inspect, syncRange }: Props) {
             projects={projectOptions}
             sources={sourceOptions}
             onManageCategories={() => setManageCategories(true)}
+            view={mode === 'list' ? 'list' : mode === 'myday' ? 'timeline' : null}
+            onView={next => setMode(next === 'list' ? 'list' : 'myday')}
           />
         </div>
       </header>
 
+      {mode === 'myday' ? <DayNav day={selected} today={today} onStep={step} onToday={goToday} /> : (
       <div className={styles.titleRow}>
         <div className={styles.headText}>
           <h1>{mode === 'list' ? 'Em breve' : subtitle}</h1>
@@ -856,6 +859,7 @@ export function EmBreve({ state, today, commit, inspect, syncRange }: Props) {
           {mode !== 'list' ? <button type="button" className={styles.navStep} data-hide-mobile={mode === 'month' || undefined} aria-label="Próximo" onClick={() => step(1)}><Icon name="chevron_right" size={20} filled={false} /></button> : null}
         </div>
       </div>
+      )}
 
       {mode === 'list' && mobile ? strip : null}
       {overduePanel}
