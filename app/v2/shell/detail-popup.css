@@ -485,3 +485,53 @@ html body .mai-context-v3-section > header strong { font-weight: 700 !important;
 }
 
 html body .mai-global-search-panel { border-radius: 6px !important; background: var(--ds-bg) !important; box-shadow: 0 12px 40px rgba(0, 0, 0, 0.2) !important; }
+
+/* ===================================================================
+ * Padrão global (docs/PADROES.md): janelas de criar/editar item em TELA CHEIA,
+ * no computador e no celular, sem folha de baixo. Mesma regra da janela de item
+ * (app/v2/detail/ItemDetail.module.css). Este bloco vale para as janelas antigas.
+ * =================================================================== */
+html body .mai-v3-create-layer,
+html body .mai-context-layer,
+html body .mai-task-v4-layer,
+html body .mai-context-v3-layer {
+  padding: 0 !important;
+  align-items: stretch !important;
+  justify-content: stretch !important;
+  background: var(--ds-bg) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+html body .mai-v3-create-drawer,
+html body .mai-context-drawer,
+html body .mai-task-v4-drawer,
+html body .mai-context-v3-drawer {
+  width: 100% !important;
+  max-width: 100% !important;
+  height: 100dvh !important;
+  max-height: none !important;
+  margin: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  padding-bottom: env(safe-area-inset-bottom) !important;
+  background: var(--ds-bg) !important;
+  animation: mai-popup-fade 160ms ease-out both !important;
+}
+
+html body .mai-v3-create-drawer::before,
+html body .mai-context-drawer::before,
+html body .mai-task-v4-drawer::before,
+html body .mai-context-v3-drawer::before {
+  display: none !important;
+  content: none !important;
+}
+
+/* Conteúdo centrado, com largura de leitura confortável em telas grandes. */
+html body .mai-task-v4-scroll,
+html body .mai-context-v3-scroll,
+html body .mai-v3-drawer-body {
+  padding-left: max(24px, calc((100% - 880px) / 2)) !important;
+  padding-right: max(24px, calc((100% - 880px) / 2)) !important;
+}
