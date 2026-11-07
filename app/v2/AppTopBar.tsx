@@ -148,8 +148,8 @@ export function AppTopBar({ state, today, view, taskScope, commit, onTaskScopeCh
         <div className="mai-app-topbar-sections">
           {todayOrder.map((id, index) => <div key={id} className="mai-app-topbar-section-row">
             <button type="button" className="mai-app-topbar-section-toggle" data-active={!todayHidden.has(id)} aria-pressed={!todayHidden.has(id)} onClick={() => toggleTodaySection(id)}><span className="material-symbols-rounded">{todayHidden.has(id) ? 'check_box_outline_blank' : 'check_box'}</span>{TODAY_SECTION_LABELS[id]}</button>
-            <button type="button" className="mai-app-topbar-section-move" disabled={index === 0} onClick={() => moveTodaySection(id, -1)} aria-label={`Mover ${TODAY_SECTION_LABELS[id]} para cima`}><span className="material-symbols-rounded">arrow_upward</span></button>
-            <button type="button" className="mai-app-topbar-section-move" disabled={index === todayOrder.length - 1} onClick={() => moveTodaySection(id, 1)} aria-label={`Mover ${TODAY_SECTION_LABELS[id]} para baixo`}><span className="material-symbols-rounded">arrow_downward</span></button>
+            <button type="button" className="mai-app-topbar-section-move" disabled={index === 0} onClick={() => moveTodaySection(id, -1)} aria-label={`Mover ${TODAY_SECTION_LABELS[id]} para cima`}><IonIcon name="arrow_upward" size={18} /></button>
+            <button type="button" className="mai-app-topbar-section-move" disabled={index === todayOrder.length - 1} onClick={() => moveTodaySection(id, 1)} aria-label={`Mover ${TODAY_SECTION_LABELS[id]} para baixo`}><IonIcon name="arrow_downward" size={18} /></button>
           </div>)}
         </div>
       </PanelSection>

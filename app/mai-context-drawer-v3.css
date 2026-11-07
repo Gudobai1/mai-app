@@ -137,7 +137,7 @@
 .mai-context-v3-subtask-list{display:grid!important;gap:1px!important}
 .mai-context-v3-subtask{min-height:46px!important;display:grid!important;grid-template-columns:20px minmax(0,1fr) 16px!important;align-items:center!important;gap:9px!important;padding:3px 5px!important;border-radius:6px!important}
 .mai-context-v3-subtask:hover{background:var(--v3-hover)!important}
-.mai-context-v3-subtask-check{width:17px!important;height:17px!important;padding:0!important;border:1.5px solid var(--v3-line-strong)!important;border-radius:50%!important;background:transparent!important;color:#fff!important;font-size:9px!important;box-shadow:none!important}
+.mai-context-v3-subtask-check{width:17px!important;height:17px!important;padding:0!important;border:1.5px solid var(--v3-line-strong)!important;border-radius:4px!important;background:transparent!important;color:#fff!important;font-size:9px!important;box-shadow:none!important}
 .mai-context-v3-subtask-check[data-done="true"]{background:var(--v3-accent)!important;border-color:var(--v3-accent)!important}
 .mai-context-v3-subtask-main{min-width:0!important;display:block!important;padding:5px 0!important;border:0!important;background:transparent!important;text-align:left!important}
 .mai-context-v3-subtask-main strong,.mai-context-v3-subtask-main small{display:block!important;overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important}
