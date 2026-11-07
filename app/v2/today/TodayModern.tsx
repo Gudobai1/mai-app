@@ -679,11 +679,10 @@ export function TodayModern({ state, today, commit, navigate, inspect, options, 
           <button type="button" className={styles.taskTitleBtn}>{title}</button>
           {description ? <div className={styles.taskDesc}>{renderDescription(description)}</div> : null}
           <div className={styles.taskMeta}>
-            {when ? <span className={`${styles.dateTag} ${late ? styles.dateLate : due === today ? styles.dateToday : ''}`}><Icon name="calendar_today" size={14} filled={false} />{when}</span> : null}
+            {when ? <span className={`${styles.dateTag} ${task.concluida ? styles.dateDone : late ? styles.dateLate : due === today ? styles.dateToday : ''}`}>{when}</span> : null}
             {children.length ? (
               <button type="button" className={styles.subChip} data-open={expanded || undefined} onClick={event => { event.stopPropagation(); toggleSubs(taskId) }} aria-expanded={expanded} title={`${children.filter(child => child.concluida).length}/${children.length} subtarefas`} aria-label={`${expanded ? 'Esconder' : 'Mostrar'} subtarefas de ${title} (${children.filter(child => child.concluida).length} de ${children.length} concluídas)`}>
                 <span>{children.filter(child => child.concluida).length}/{children.length}</span>
-                <Icon name={expanded ? 'expand_more' : 'chevron_right'} size={20} filled={false} />
               </button>
             ) : null}
             {sub ? null : <span className={styles.projLabel} style={{ color: projectColor(task.projeto_id) }}>{projectLabel}<b>#</b></span>}
@@ -776,7 +775,7 @@ export function TodayModern({ state, today, commit, navigate, inspect, options, 
           <span className={styles.taskBody}>
             <span className={styles.taskTitle}>{title}{payment.status === 'parcial' ? <span className={styles.partial}>Parcial</span> : null}</span>
             <span className={styles.taskSub}>
-              <span className={`${styles.dateTag} ${late ? styles.dateLate : due === today ? styles.dateToday : ''}`}><Icon name="calendar_today" size={13} filled={false} />{naturalDate(due, today)}</span>
+              <span className={`${styles.dateTag} ${payment.status === 'pago' ? styles.dateDone : late ? styles.dateLate : due === today ? styles.dateToday : ''}`}>{naturalDate(due, today)}</span>
             </span>
           </span>
           <span className={`${styles.amount} ${income ? styles.positive : styles.negative}`}>{income ? '+' : '−'} {money.format(payment.remaining || payment.total)}</span>
