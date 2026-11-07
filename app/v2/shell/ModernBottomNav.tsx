@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Icon, IconButton, IconTile, type Tone } from '../../ds'
+import { DayIcon, IonIcon, IconButton } from '../../ds'
 import type { AppView } from '../app-types'
 import { NAV_ALIAS, NAV_GROUPS } from './nav'
 import styles from './ModernShell.module.css'
@@ -17,18 +17,7 @@ type Props = {
   dark: boolean
 }
 
-const sheetTones: Partial<Record<string, Tone>> = {
-  tasks: 'accent',
-  agenda: 'sky',
-  completed: 'mint',
-  habits: 'mint',
-  goals: 'lilac',
-  notes: 'peach',
-  finance: 'sky',
-  files: 'accent',
-}
-
-/** Áreas com botão próprio na barra; as demais ficam na folha de módulos. */
+/** Áreas com botão próprio na barra; as demais ficam no popup "Mais" (nunca folha de baixo). */
 const barViews = new Set(['today', 'upcoming'])
 
 export function ModernBottomNav({ view, searchOpen, navigate, onSearch, onAdd, onSettings, onToggleTheme, dark }: Props) {
@@ -56,7 +45,7 @@ export function ModernBottomNav({ view, searchOpen, navigate, onSearch, onAdd, o
     const active = view === id && !sheetOpen && !searchOpen
     return (
       <button type="button" className={styles.tab} aria-current={active ? 'page' : undefined} onClick={() => go(id)}>
-        <Icon name={icon} size={24} filled={active} />
+        {id === 'today' ? <DayIcon size={22} active={active} /> : <IonIcon name={icon} size={24} filled={active} />}
         <span>{label}</span>
       </button>
     )
@@ -71,34 +60,33 @@ export function ModernBottomNav({ view, searchOpen, navigate, onSearch, onAdd, o
         <div className={styles.sheetLayer}>
           <button type="button" className={styles.scrim} aria-label="Fechar" onClick={() => setSheetOpen(false)} />
           <section className={styles.sheet} role="dialog" aria-modal="true" aria-labelledby="mai-modules-title">
-            <div className={styles.handle} aria-hidden="true" />
             <header className={styles.sheetHeader}>
-              <h2 id="mai-modules-title" className={styles.sheetTitle}>Módulos</h2>
+              <h2 id="mai-modules-title" className={styles.sheetTitle}>Mais</h2>
               <div className={styles.sheetHeaderActions}>
-                <IconButton icon={dark ? 'dark_mode' : 'light_mode'} label={dark ? 'Usar tema claro' : 'Usar tema escuro'} size={40} onClick={onToggleTheme} aria-pressed={dark} />
+                <IconButton icon={dark ? 'light_mode' : 'dark_mode'} label={dark ? 'Usar tema claro' : 'Usar tema escuro'} size={40} onClick={onToggleTheme} aria-pressed={dark} />
                 <IconButton icon="close" label="Fechar" size={40} onClick={() => setSheetOpen(false)} />
               </div>
             </header>
 
             {sheetGroups.map((group, index) => (
-              <div key={index}>
+              <div key={index} className={styles.sheetGroup}>
                 {group.label ? <h3 className={styles.sheetGroupLabel}>{group.label}</h3> : null}
-                <div className={styles.sheetGrid}>
-                  {group.items.map(item => (
-                    <button key={String(item.id)} type="button" className={styles.sheetItem} aria-current={(NAV_ALIAS[view] ?? view) === item.id ? 'page' : undefined} onClick={() => go(item.id)}>
-                      <IconTile icon={item.icon} tone={sheetTones[String(item.id)] || 'accent'} solid={(NAV_ALIAS[view] ?? view) === item.id} size={44} />
+                {group.items.map(item => {
+                  const current = (NAV_ALIAS[view] ?? view) === item.id
+                  return (
+                    <button key={String(item.id)} type="button" className={styles.sheetItem} aria-current={current ? 'page' : undefined} onClick={() => go(item.id)}>
                       <span>{item.label}</span>
+                      <IonIcon name={item.icon} size={20} filled={current} />
                     </button>
-                  ))}
-                </div>
+                  )
+                })}
               </div>
             ))}
 
-            <div className={styles.sheetRows}>
-              <button type="button" className={styles.sheetRow} onClick={() => { setSheetOpen(false); onSettings() }}>
-                <Icon name="tune" size={22} filled={false} />
+            <div className={styles.sheetGroup}>
+              <button type="button" className={styles.sheetItem} onClick={() => { setSheetOpen(false); onSettings() }}>
                 <span>Ajustes</span>
-                <Icon name="chevron_right" size={20} />
+                <IonIcon name="tune" size={20} />
               </button>
             </div>
           </section>
@@ -108,17 +96,13 @@ export function ModernBottomNav({ view, searchOpen, navigate, onSearch, onAdd, o
       <nav className={styles.mobileNav} aria-label="Navegação principal">
         {tab('today', 'Hoje', 'today')}
         {tab('upcoming', 'Em breve', 'event_upcoming')}
-        <button type="button" className={`${styles.tab} ${styles.tabAdd}`} aria-label="Adicionar" onClick={() => { setSheetOpen(false); onAdd() }}>
-          <Icon name="add" size={24} />
-          <span>Novo</span>
-        </button>
         <button type="button" className={styles.tab} aria-current={searchOpen && !sheetOpen ? 'page' : undefined} onClick={() => { setSheetOpen(false); onSearch() }}>
-          <Icon name="search" size={24} filled={searchOpen} weight={searchOpen ? 600 : 400} />
-          <span>Pesquisa</span>
+          <IonIcon name="search" size={24} filled={searchOpen} />
+          <span>Pesquisar</span>
         </button>
         <button type="button" className={styles.tab} aria-expanded={sheetOpen} aria-current={modulesActive && !sheetOpen ? 'page' : undefined} onClick={() => setSheetOpen(value => !value)}>
-          <Icon name="grid_view" size={24} filled={modulesActive} />
-          <span>Módulos</span>
+          <IonIcon name="more_horiz" size={24} />
+          <span>Mais</span>
         </button>
       </nav>
     </>

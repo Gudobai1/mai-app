@@ -2,10 +2,9 @@
 
 import { useState } from 'react'
 import type { MaiState } from '../../../lib/v2/state'
-import { Icon } from '../../ds'
+import { DayIcon, Icon, IonIcon } from '../../ds'
 import type { AppView } from '../app-types'
 import { driveAssetUrl } from '../DriveAsset'
-import { SidebarIcon } from './SidebarIcons'
 import { MaiLogo, themeLogoColor } from '../logo'
 import { NAV_ALIAS, todayCounts, type NavItem } from './nav'
 import styles from './ModernShell.module.css'
@@ -81,7 +80,7 @@ export function ModernSidebar({ state, today, view, navigate, onSearch, onSettin
         aria-current={active ? 'page' : undefined}
         onClick={() => navigate(item.id)}
       >
-        <SidebarIcon name={String(item.id)} />
+        {item.id === 'today' ? <DayIcon size={20} active={active} /> : <IonIcon name={item.icon} size={20} filled={active} />}
         <span className={styles.itemLabel}>{item.label}</span>
         {badge ? (
           <span className={styles.badge} title={counts.overdue ? `${counts.overdue} atrasada(s)` : undefined}>{badge}</span>
@@ -149,7 +148,7 @@ export function ModernSidebar({ state, today, view, navigate, onSearch, onSettin
         <strong>Bukid</strong>
       </div>
       <button type="button" className={styles.search} onClick={onSearch}>
-        <SidebarIcon name="search" size={20} />
+        <IonIcon name="search" size={20} />
         <span>Buscar</span>
         <span className={styles.kbd}>Ctrl Espaço</span>
       </button>
@@ -159,7 +158,7 @@ export function ModernSidebar({ state, today, view, navigate, onSearch, onSettin
           <div className={styles.groupLabel}>Planejar</div>
           {state.configs.hideInbox ? null : (
             <button type="button" className={styles.item} aria-current={view === 'tasks' && activeProjectId === 'entrada' ? 'page' : undefined} onClick={() => navigate('inbox' as AppView)}>
-              <SidebarIcon name="inbox" />
+              <IonIcon name="inbox" size={20} />
               <span className={styles.itemLabel}>Entrada</span>
               {inboxCount ? <span className={styles.badge}>{inboxCount}</span> : null}
             </button>
@@ -190,7 +189,7 @@ export function ModernSidebar({ state, today, view, navigate, onSearch, onSettin
           </span>
           <span className={styles.profileName} title={profile?.email || profileName}>{profileName}</span>
           <span className={styles.settingsButton} aria-hidden="true">
-            <SidebarIcon name="settings" />
+            <IonIcon name="settings" size={20} />
           </span>
         </button>
       </div>

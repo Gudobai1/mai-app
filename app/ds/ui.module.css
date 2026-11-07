@@ -301,3 +301,17 @@
   vertical-align: middle;
   flex: none;
 }
+
+/* Ícone de Hoje (dia do mês) */
+.dayIcon.dayIcon {
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  border: 2px solid currentColor;
+  font-weight: var(--ds-fw-heavy);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+.dayIconOn.dayIconOn { background: var(--ds-accent); border-color: var(--ds-accent); color: var(--ds-on-accent); }

@@ -44,7 +44,23 @@ export const ION_SVG: Record<string,string> = {
  "time": "<path d=\"M256,48C141.13,48,48,141.13,48,256s93.13,208,208,208,208-93.13,208-208S370.87,48,256,48Zm96,240H256a16,16,0,0,1-16-16V128a16,16,0,0,1,32,0V256h80a16,16,0,0,1,0,32Z\"/>",
  "time-outline": "<path d=\"M256,64C150,64,64,150,64,256s86,192,192,192,192-86,192-192S362,64,256,64Z\" style=\"fill:none;stroke:#000;stroke-miterlimit:10;stroke-width:32px\"/><polyline points=\"256 128 256 272 352 272\" style=\"fill:none;stroke:#000;stroke-linecap:round;stroke-linejoin:round;stroke-width:32px\"/>",
  "trash": "<path d=\"M296,64H216a7.91,7.91,0,0,0-8,8V96h96V72A7.91,7.91,0,0,0,296,64Z\" style=\"fill:none\"/><path d=\"M432,96H336V72a40,40,0,0,0-40-40H216a40,40,0,0,0-40,40V96H80a16,16,0,0,0,0,32H97L116,432.92c1.42,26.85,22,47.08,48,47.08H348c26.13,0,46.3-19.78,48-47L415,128h17a16,16,0,0,0,0-32ZM192.57,416H192a16,16,0,0,1-16-15.43l-8-224a16,16,0,1,1,32-1.14l8,224A16,16,0,0,1,192.57,416ZM272,400a16,16,0,0,1-32,0V176a16,16,0,0,1,32,0ZM304,96H208V72a7.91,7.91,0,0,1,8-8h80a7.91,7.91,0,0,1,8,8Zm32,304.57A16,16,0,0,1,320,416h-.58A16,16,0,0,1,304,399.43l8-224a16,16,0,1,1,32,1.14Z\"/>",
- "trash-outline": "<path d=\"M112,112l20,320c.95,18.49,14.4,32,32,32H348c17.67,0,30.87-13.51,32-32l20-320\" style=\"fill:none;stroke:#000;stroke-linecap:round;stroke-linejoin:round;stroke-width:32px\"/><line x1=\"80\" y1=\"112\" x2=\"432\" y2=\"112\" style=\"stroke:#000;stroke-linecap:round;stroke-miterlimit:10;stroke-width:32px\"/><path d=\"M192,112V72h0a23.93,23.93,0,0,1,24-24h80a23.93,23.93,0,0,1,24,24h0v40\" style=\"fill:none;stroke:#000;stroke-linecap:round;stroke-linejoin:round;stroke-width:32px\"/><line x1=\"256\" y1=\"176\" x2=\"256\" y2=\"400\" style=\"fill:none;stroke:#000;stroke-linecap:round;stroke-linejoin:round;stroke-width:32px\"/><line x1=\"184\" y1=\"176\" x2=\"192\" y2=\"400\" style=\"fill:none;stroke:#000;stroke-linecap:round;stroke-linejoin:round;stroke-width:32px\"/><line x1=\"328\" y1=\"176\" x2=\"320\" y2=\"400\" style=\"fill:none;stroke:#000;stroke-linecap:round;stroke-linejoin:round;stroke-width:32px\"/>"
+ "trash-outline": "<path d=\"M112,112l20,320c.95,18.49,14.4,32,32,32H348c17.67,0,30.87-13.51,32-32l20-320\" style=\"fill:none;stroke:#000;stroke-linecap:round;stroke-linejoin:round;stroke-width:32px\"/><line x1=\"80\" y1=\"112\" x2=\"432\" y2=\"112\" style=\"stroke:#000;stroke-linecap:round;stroke-miterlimit:10;stroke-width:32px\"/><path d=\"M192,112V72h0a23.93,23.93,0,0,1,24-24h80a23.93,23.93,0,0,1,24,24h0v40\" style=\"fill:none;stroke:#000;stroke-linecap:round;stroke-linejoin:round;stroke-width:32px\"/><line x1=\"256\" y1=\"176\" x2=\"256\" y2=\"400\" style=\"fill:none;stroke:#000;stroke-linecap:round;stroke-linejoin:round;stroke-width:32px\"/><line x1=\"184\" y1=\"176\" x2=\"192\" y2=\"400\" style=\"fill:none;stroke:#000;stroke-linecap:round;stroke-linejoin:round;stroke-width:32px\"/><line x1=\"328\" y1=\"176\" x2=\"320\" y2=\"400\" style=\"fill:none;stroke:#000;stroke-linecap:round;stroke-linejoin:round;stroke-width:32px\"/>",
+ "list-outline": "<line x1=\"160\" y1=\"144\" x2=\"448\" y2=\"144\" style=\"fill:none;stroke:#000;stroke-linecap:round;stroke-linejoin:round;stroke-width:32px\"/><line x1=\"160\" y1=\"256\" x2=\"448\" y2=\"256\" style=\"fill:none;stroke:#000;stroke-linecap:round;stroke-linejoin:round;stroke-width:32px\"/><line x1=\"160\" y1=\"368\" x2=\"448\" y2=\"368\" style=\"fill:none;stroke:#000;stroke-linecap:round;stroke-linejoin:round;stroke-width:32px\"/><circle cx=\"80\" cy=\"144\" r=\"16\" style=\"fill:none;stroke:#000;stroke-linecap:round;stroke-linejoin:round;stroke-width:32px\"/><circle cx=\"80\" cy=\"256\" r=\"16\" style=\"fill:none;stroke:#000;stroke-linecap:round;stroke-linejoin:round;stroke-width:32px\"/><circle cx=\"80\" cy=\"368\" r=\"16\" style=\"fill:none;stroke:#000;stroke-linecap:round;stroke-linejoin:round;stroke-width:32px\"/>",
+ "list": "<line x1=\"160\" y1=\"144\" x2=\"448\" y2=\"144\" style=\"fill:none;stroke:#000;stroke-linecap:round;stroke-linejoin:round;stroke-width:48px\"/><line x1=\"160\" y1=\"256\" x2=\"448\" y2=\"256\" style=\"fill:none;stroke:#000;stroke-linecap:round;stroke-linejoin:round;stroke-width:48px\"/><line x1=\"160\" y1=\"368\" x2=\"448\" y2=\"368\" style=\"fill:none;stroke:#000;stroke-linecap:round;stroke-linejoin:round;stroke-width:48px\"/><circle cx=\"80\" cy=\"144\" r=\"16\" style=\"fill:none;stroke:#000;stroke-linecap:round;stroke-linejoin:round;stroke-width:32px\"/><circle cx=\"80\" cy=\"256\" r=\"16\" style=\"fill:none;stroke:#000;stroke-linecap:round;stroke-linejoin:round;stroke-width:32px\"/><circle cx=\"80\" cy=\"368\" r=\"16\" style=\"fill:none;stroke:#000;stroke-linecap:round;stroke-linejoin:round;stroke-width:32px\"/>",
+ "wallet-outline": "<rect x=\"48\" y=\"144\" width=\"416\" height=\"288\" rx=\"48\" ry=\"48\" style=\"fill:none;stroke:#000;stroke-linejoin:round;stroke-width:32px\"/><path d=\"M411.36,144V114A50,50,0,0,0,352,64.9L88.64,109.85A50,50,0,0,0,48,159v49\" style=\"fill:none;stroke:#000;stroke-linejoin:round;stroke-width:32px\"/><path d=\"M368,320a32,32,0,1,1,32-32A32,32,0,0,1,368,320Z\"/>",
+ "wallet": "<path d=\"M95.5,104h320a87.73,87.73,0,0,1,11.18.71,66,66,0,0,0-77.51-55.56L86,94.08l-.3,0a66,66,0,0,0-41.07,26.13A87.57,87.57,0,0,1,95.5,104Z\"/><path d=\"M415.5,128H95.5a64.07,64.07,0,0,0-64,64V384a64.07,64.07,0,0,0,64,64h320a64.07,64.07,0,0,0,64-64V192A64.07,64.07,0,0,0,415.5,128ZM368,320a32,32,0,1,1,32-32A32,32,0,0,1,368,320Z\"/><path d=\"M32,259.5V160c0-21.67,12-58,53.65-65.87C121,87.5,156,87.5,156,87.5s23,16,4,16S141.5,128,160,128s0,23.5,0,23.5L85.5,236Z\"/>",
+ "sync-outline": "<path d=\"M434.67,285.59v-29.8C434.67,157.06,354.43,77,255.47,77a179,179,0,0,0-140.14,67.36m-38.53,82v29.8C76.8,355,157,435,256,435a180.45,180.45,0,0,0,140-66.92\" style=\"fill:none;stroke:#000;stroke-linecap:round;stroke-linejoin:round;stroke-width:32px\"/><polyline points=\"32 256 76 212 122 256\" style=\"fill:none;stroke:#000;stroke-linecap:round;stroke-linejoin:round;stroke-width:32px\"/><polyline points=\"480 256 436 300 390 256\" style=\"fill:none;stroke:#000;stroke-linecap:round;stroke-linejoin:round;stroke-width:32px\"/>",
+ "sync": "<path d=\"M434.67,285.59v-29.8C434.67,157.06,354.43,77,255.47,77a179,179,0,0,0-140.14,67.36m-38.53,82v29.8C76.8,355,157,435,256,435a180.45,180.45,0,0,0,140-66.92\" style=\"fill:none;stroke:#000;stroke-linecap:round;stroke-linejoin:round;stroke-width:32px\"/><polyline points=\"32 256 76 212 122 256\" style=\"fill:none;stroke:#000;stroke-linecap:round;stroke-linejoin:round;stroke-width:32px\"/><polyline points=\"480 256 436 300 390 256\" style=\"fill:none;stroke:#000;stroke-linecap:round;stroke-linejoin:round;stroke-width:32px\"/>",
+ "moon-outline": "<path d=\"M160,136c0-30.62,4.51-61.61,16-88C99.57,81.27,48,159.32,48,248c0,119.29,96.71,216,216,216,88.68,0,166.73-51.57,200-128-26.39,11.49-57.38,16-88,16C256.71,352,160,255.29,160,136Z\" style=\"fill:none;stroke:#000;stroke-linecap:round;stroke-linejoin:round;stroke-width:32px\"/>",
+ "moon": "<path d=\"M264,480A232,232,0,0,1,32,248C32,154,86,69.72,169.61,33.33a16,16,0,0,1,21.06,21.06C181.07,76.43,176,104.66,176,136c0,110.28,89.72,200,200,200,31.34,0,59.57-5.07,81.61-14.67a16,16,0,0,1,21.06,21.06C442.28,426,358,480,264,480Z\"/>",
+ "sunny-outline": "<line x1=\"256\" y1=\"48\" x2=\"256\" y2=\"96\" style=\"fill:none;stroke:#000;stroke-linecap:round;stroke-miterlimit:10;stroke-width:32px\"/><line x1=\"256\" y1=\"416\" x2=\"256\" y2=\"464\" style=\"fill:none;stroke:#000;stroke-linecap:round;stroke-miterlimit:10;stroke-width:32px\"/><line x1=\"403.08\" y1=\"108.92\" x2=\"369.14\" y2=\"142.86\" style=\"fill:none;stroke:#000;stroke-linecap:round;stroke-miterlimit:10;stroke-width:32px\"/><line x1=\"142.86\" y1=\"369.14\" x2=\"108.92\" y2=\"403.08\" style=\"fill:none;stroke:#000;stroke-linecap:round;stroke-miterlimit:10;stroke-width:32px\"/><line x1=\"464\" y1=\"256\" x2=\"416\" y2=\"256\" style=\"fill:none;stroke:#000;stroke-linecap:round;stroke-miterlimit:10;stroke-width:32px\"/><line x1=\"96\" y1=\"256\" x2=\"48\" y2=\"256\" style=\"fill:none;stroke:#000;stroke-linecap:round;stroke-miterlimit:10;stroke-width:32px\"/><line x1=\"403.08\" y1=\"403.08\" x2=\"369.14\" y2=\"369.14\" style=\"fill:none;stroke:#000;stroke-linecap:round;stroke-miterlimit:10;stroke-width:32px\"/><line x1=\"142.86\" y1=\"142.86\" x2=\"108.92\" y2=\"108.92\" style=\"fill:none;stroke:#000;stroke-linecap:round;stroke-miterlimit:10;stroke-width:32px\"/><circle cx=\"256\" cy=\"256\" r=\"80\" style=\"fill:none;stroke:#000;stroke-linecap:round;stroke-miterlimit:10;stroke-width:32px\"/>",
+ "sunny": "<path d=\"M256,118a22,22,0,0,1-22-22V48a22,22,0,0,1,44,0V96A22,22,0,0,1,256,118Z\"/><path d=\"M256,486a22,22,0,0,1-22-22V416a22,22,0,0,1,44,0v48A22,22,0,0,1,256,486Z\"/><path d=\"M369.14,164.86a22,22,0,0,1-15.56-37.55l33.94-33.94a22,22,0,0,1,31.11,31.11l-33.94,33.94A21.93,21.93,0,0,1,369.14,164.86Z\"/><path d=\"M108.92,425.08a22,22,0,0,1-15.55-37.56l33.94-33.94a22,22,0,1,1,31.11,31.11l-33.94,33.94A21.94,21.94,0,0,1,108.92,425.08Z\"/><path d=\"M464,278H416a22,22,0,0,1,0-44h48a22,22,0,0,1,0,44Z\"/><path d=\"M96,278H48a22,22,0,0,1,0-44H96a22,22,0,0,1,0,44Z\"/><path d=\"M403.08,425.08a21.94,21.94,0,0,1-15.56-6.45l-33.94-33.94a22,22,0,0,1,31.11-31.11l33.94,33.94a22,22,0,0,1-15.55,37.56Z\"/><path d=\"M142.86,164.86a21.89,21.89,0,0,1-15.55-6.44L93.37,124.48a22,22,0,0,1,31.11-31.11l33.94,33.94a22,22,0,0,1-15.56,37.55Z\"/><path d=\"M256,358A102,102,0,1,1,358,256,102.12,102.12,0,0,1,256,358Z\"/>",
+ "apps-outline": "<rect x=\"64\" y=\"64\" width=\"80\" height=\"80\" rx=\"40\" ry=\"40\" style=\"fill:none;stroke:#000;stroke-miterlimit:10;stroke-width:32px\"/><rect x=\"216\" y=\"64\" width=\"80\" height=\"80\" rx=\"40\" ry=\"40\" style=\"fill:none;stroke:#000;stroke-miterlimit:10;stroke-width:32px\"/><rect x=\"368\" y=\"64\" width=\"80\" height=\"80\" rx=\"40\" ry=\"40\" style=\"fill:none;stroke:#000;stroke-miterlimit:10;stroke-width:32px\"/><rect x=\"64\" y=\"216\" width=\"80\" height=\"80\" rx=\"40\" ry=\"40\" style=\"fill:none;stroke:#000;stroke-miterlimit:10;stroke-width:32px\"/><rect x=\"216\" y=\"216\" width=\"80\" height=\"80\" rx=\"40\" ry=\"40\" style=\"fill:none;stroke:#000;stroke-miterlimit:10;stroke-width:32px\"/><rect x=\"368\" y=\"216\" width=\"80\" height=\"80\" rx=\"40\" ry=\"40\" style=\"fill:none;stroke:#000;stroke-miterlimit:10;stroke-width:32px\"/><rect x=\"64\" y=\"368\" width=\"80\" height=\"80\" rx=\"40\" ry=\"40\" style=\"fill:none;stroke:#000;stroke-miterlimit:10;stroke-width:32px\"/><rect x=\"216\" y=\"368\" width=\"80\" height=\"80\" rx=\"40\" ry=\"40\" style=\"fill:none;stroke:#000;stroke-miterlimit:10;stroke-width:32px\"/><rect x=\"368\" y=\"368\" width=\"80\" height=\"80\" rx=\"40\" ry=\"40\" style=\"fill:none;stroke:#000;stroke-miterlimit:10;stroke-width:32px\"/>",
+ "apps": "<path d=\"M104,160a56,56,0,1,1,56-56A56.06,56.06,0,0,1,104,160Z\"/><path d=\"M256,160a56,56,0,1,1,56-56A56.06,56.06,0,0,1,256,160Z\"/><path d=\"M408,160a56,56,0,1,1,56-56A56.06,56.06,0,0,1,408,160Z\"/><path d=\"M104,312a56,56,0,1,1,56-56A56.06,56.06,0,0,1,104,312Z\"/><path d=\"M256,312a56,56,0,1,1,56-56A56.06,56.06,0,0,1,256,312Z\"/><path d=\"M408,312a56,56,0,1,1,56-56A56.06,56.06,0,0,1,408,312Z\"/><path d=\"M104,464a56,56,0,1,1,56-56A56.06,56.06,0,0,1,104,464Z\"/><path d=\"M256,464a56,56,0,1,1,56-56A56.06,56.06,0,0,1,256,464Z\"/><path d=\"M408,464a56,56,0,1,1,56-56A56.06,56.06,0,0,1,408,464Z\"/>",
+ "log-out-outline": "<path d=\"M304,336v40a40,40,0,0,1-40,40H104a40,40,0,0,1-40-40V136a40,40,0,0,1,40-40H256c22.09,0,48,17.91,48,40v40\" style=\"fill:none;stroke:#000;stroke-linecap:round;stroke-linejoin:round;stroke-width:32px\"/><polyline points=\"368 336 448 256 368 176\" style=\"fill:none;stroke:#000;stroke-linecap:round;stroke-linejoin:round;stroke-width:32px\"/><line x1=\"176\" y1=\"256\" x2=\"432\" y2=\"256\" style=\"fill:none;stroke:#000;stroke-linecap:round;stroke-linejoin:round;stroke-width:32px\"/>",
+ "log-out": "<path d=\"M160,256a16,16,0,0,1,16-16H320V136c0-32-33.79-56-64-56H104a56.06,56.06,0,0,0-56,56V376a56.06,56.06,0,0,0,56,56H264a56.06,56.06,0,0,0,56-56V272H176A16,16,0,0,1,160,256Z\"/><path d=\"M459.31,244.69l-80-80a16,16,0,0,0-22.62,22.62L409.37,240H320v32h89.37l-52.68,52.69a16,16,0,1,0,22.62,22.62l80-80a16,16,0,0,0,0-22.62Z\"/>",
+ "attach-outline": "<path d=\"M216.08,192V335.85a40.08,40.08,0,0,0,80.15,0l.13-188.55a67.94,67.94,0,1,0-135.87,0V337.12a95.51,95.51,0,1,0,191,0V159.74\" style=\"fill:none;stroke:#000;stroke-linecap:round;stroke-miterlimit:10;stroke-width:32px\"/>",
+ "attach": "<path d=\"M216.08,192V335.85a40.08,40.08,0,0,0,80.15,0l.13-188.55a67.94,67.94,0,1,0-135.87,0V337.12a95.51,95.51,0,1,0,191,0V159.74\" style=\"fill:none;stroke:#000;stroke-linecap:round;stroke-miterlimit:10;stroke-width:32px\"/>"
 }
 
 // Nome usado no app (Material/Lucide) -> [contorno, cheio]
@@ -168,5 +184,45 @@ export const ION_ALIAS: Record<string,[string,string]> = {
  "refresh": [
   "refresh-outline",
   "refresh"
+ ],
+ "task_alt": [
+  "checkmark-circle-outline",
+  "checkmark-circle"
+ ],
+ "checklist": [
+  "list-outline",
+  "list"
+ ],
+ "account_balance_wallet": [
+  "wallet-outline",
+  "wallet"
+ ],
+ "autorenew": [
+  "sync-outline",
+  "sync"
+ ],
+ "event_upcoming": [
+  "calendar-outline",
+  "calendar"
+ ],
+ "dark_mode": [
+  "moon-outline",
+  "moon"
+ ],
+ "light_mode": [
+  "sunny-outline",
+  "sunny"
+ ],
+ "grid_view": [
+  "apps-outline",
+  "apps"
+ ],
+ "logout": [
+  "log-out-outline",
+  "log-out"
+ ],
+ "attach_file": [
+  "attach-outline",
+  "attach"
  ]
 }
