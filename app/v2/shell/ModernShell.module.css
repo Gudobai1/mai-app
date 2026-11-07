@@ -554,3 +554,8 @@ button.profileRow.profileRow:hover .settingsButton { color: var(--ds-text); }
 
 .brand { display: flex; align-items: center; gap: 10px; padding: 2px 8px 10px; }
 .brand strong { font-size: 15px; font-weight: 750; letter-spacing: -.01em; color: var(--ds-text, inherit); }
+
+/* A linha do tempo tem a própria barra fixa no fundo; libera o espaço da barra flutuante. */
+@media (max-width: 900px) {
+  :global(body[data-day-timeline='true']) .mobileNav { display: none; }
+}
