@@ -389,20 +389,6 @@
     color: var(--ds-accent);
   }
 
-  .tabAdd.tabAdd {
-    justify-self: center;
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    background: var(--ds-accent);
-    color: var(--ds-on-accent);
-    transition: transform var(--ds-dur-fast) var(--ds-ease);
-  }
-
-  .tabAdd.tabAdd:active {
-    transform: scale(0.92);
-  }
-
   .sheetLayer {
     position: fixed;
     inset: 0;
