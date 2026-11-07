@@ -61,11 +61,6 @@ export function DayTimeline({ state, day, today, commit, inspect, accept }: Prop
   const [pickFor, setPickFor] = useState('')
 
   useEffect(() => {
-    document.body.dataset.dayTimeline = 'true'
-    return () => { delete document.body.dataset.dayTimeline }
-  }, [])
-
-  useEffect(() => {
     const timer = window.setInterval(() => setNow(new Date()), 60_000)
     return () => window.clearInterval(timer)
   }, [])
@@ -134,14 +129,14 @@ export function DayTimeline({ state, day, today, commit, inspect, accept }: Prop
       const card = cardRef.current
       if (!card) return
       const mobile = window.matchMedia('(max-width: 900px)').matches
-      const reserve = mobile ? 56 : 24
+      const reserve = mobile ? 80 + (dockOpen ? 360 : 190) + 12 : 24
       const free = window.innerHeight - card.getBoundingClientRect().top - reserve - 32
       setHour(Math.max(mobile ? 14 : 22, Math.min(56, Math.floor(free / 24))))
     }
     fit()
     window.addEventListener('resize', fit)
     return () => window.removeEventListener('resize', fit)
-  }, [])
+  }, [dockOpen])
   const nowMin = now.getHours() * 60 + now.getMinutes()
   const gridHeight = (lastHour - firstHour) * HOUR
   const topOf = (minutes: number) => ((minutes - firstHour * 60) / 60) * HOUR
@@ -346,11 +341,10 @@ export function DayTimeline({ state, day, today, commit, inspect, accept }: Prop
 
         <aside className={styles.side} data-open={dockOpen || undefined} aria-label="Dia todo">
           <button type="button" className={styles.dockBar} aria-expanded={dockOpen} onClick={() => setDockOpen(open => !open)}>
-            <Icon name="event_note" size={18} filled={false} />
-            <strong>Organizar o dia</strong>
+            <strong>Dia todo</strong>
             <span>{items.length ? `${items.length} ${items.length === 1 ? 'item' : 'itens'}` : 'Nada neste dia'}{overdue.length ? ` · ${overdue.length} ${overdue.length === 1 ? 'atrasada' : 'atrasadas'}` : ''}</span>
+            <Icon name={dockOpen ? 'expand_more' : 'expand_less'} size={20} filled={false} />
           </button>
-          {dockOpen ? <button type="button" className={styles.scrim} aria-label="Fechar" onClick={() => setDockOpen(false)} /> : null}
           <div className={styles.dockBody}>
             <section className={`${styles.panel} ${todayStyles.page} ${styles.hojeScope}`}>
               <h2>Dia todo</h2>

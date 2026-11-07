@@ -65,29 +65,28 @@
 .dayNav .dayTitle { appearance: none; border: 0; background: transparent; flex: 1; min-height: 30px; text-align: center; font: inherit; font-size: 22px; line-height: 1.15; font-weight: var(--ds-fw-bold); letter-spacing: -0.02em; color: var(--ds-accent); cursor: pointer; padding: 0; }
 
 @media (max-width: 900px) {
-  .wrap { padding-bottom: 64px; }
+  .wrap { padding-bottom: 210px; }
   .dayNav { width: 100%; }
   .dayStep { width: 40px; height: 40px; }
   .dayNav .dayTitle { font-size: 20px; }
-
-  /* Barra fina e fixa, de ponta a ponta no fundo; o painel abre em pop-up. */
-  .side { position: fixed; z-index: 1300; left: 0; right: 0; bottom: 0; gap: 0; }
-  .dockBar { appearance: none; border: 0; border-top: 1px solid var(--ds-line); background: var(--ds-surface); color: var(--ds-text); font: inherit; display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; height: 44px; padding: 0 16px calc(env(safe-area-inset-bottom)); box-sizing: content-box; cursor: pointer; position: relative; z-index: 2; }
-  .dockBar strong { font-size: 14px; font-weight: var(--ds-fw-heavy); }
-  .dockBar span { font-size: 12.5px; color: var(--ds-muted); }
-  .scrim { position: fixed; inset: 0; z-index: 1; border: 0; background: rgba(0, 0, 0, 0.4); }
-  .dockBody { display: none; }
-  .side[data-open] .dockBody {
-    display: flex; position: fixed; z-index: 2; left: 0; right: 0;
-    bottom: calc(44px + env(safe-area-inset-bottom));
-    max-height: 72vh; overflow-y: auto; box-sizing: border-box;
-    background: var(--ds-surface); border-radius: 16px 16px 0 0; padding: 16px 16px 20px; gap: 8px;
+  .side {
+    position: fixed; z-index: 1200; left: 0; right: 0;
+    bottom: calc(max(12px, env(safe-area-inset-bottom)) + 80px);
+    max-height: 190px; box-sizing: border-box; overflow: hidden;
+    background: var(--ds-surface-2); border-top: 1px solid var(--ds-line); box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.08);
+    padding: 8px 0 10px; gap: 0;
   }
+  .side[data-open] { max-height: min(60vh, 520px); overflow-y: auto; }
+  .dockBar { appearance: none; border: 0; background: transparent; color: var(--ds-text); font: inherit; display: flex; align-items: center; gap: 8px; width: 100%; min-height: 40px; padding: 0 16px; cursor: pointer; text-align: left; }
+  .dockBar strong { font-size: 15px; font-weight: var(--ds-fw-heavy); }
+  .dockBar span { flex: 1; font-size: 12.5px; color: var(--ds-muted); }
+  .dockBody { gap: 8px; padding: 0 16px; }
   .panel { border: 0; padding: 0; background: transparent; }
   .panel h2 { display: none; }
+  .side:not([data-open]) { overflow-y: auto; }
+  .side:not([data-open]) .panelLate { display: none; }
   .panelLate::before { content: 'Atrasadas'; font-size: 12.5px; font-weight: var(--ds-fw-heavy); color: var(--ds-muted); }
 }
-@media (min-width: 901px) { .scrim { display: none; } }
 
 .group { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
 .group h3 { margin: 6px 0 0; font-size: 12px; font-weight: var(--ds-fw-heavy); color: var(--ds-muted); text-transform: uppercase; letter-spacing: 0.04em; }
