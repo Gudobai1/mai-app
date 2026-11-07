@@ -1575,3 +1575,46 @@
 .subCard.subCard .subMain { flex-direction: column; align-items: flex-start; gap: 2px; }
 .subCard.subCard .subTitle { flex: 0 1 auto; max-width: 100%; }
 .subCard.subCard .subInfo { margin-top: 1px; font-weight: var(--ds-fw-medium); }
+
+/* ===================================================================
+ * Janela de item — padrão global (docs/PADROES.md).
+ * Todo item (tarefa, compromisso, hábito, lançamento, meta, nota) abre em TELA CHEIA, igual em
+ * computador e celular: cabeçalho em cima; conteúdo à esquerda; propriedades à direita; rodapé com
+ * Excluir à esquerda e Cancelar / Salvar à direita. Para mudar a janela de todos os itens, é aqui.
+ * =================================================================== */
+.layer.layer {
+  padding: 0;
+  align-items: stretch;
+  justify-content: stretch;
+  background: var(--ds-bg);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.panel.panel,
+.panel[data-kind].panel {
+  width: 100%;
+  height: 100dvh;
+  max-height: none;
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  background: var(--ds-bg);
+}
+
+.panel.panel > .header { min-height: 48px; padding: 0 14px 0 24px; border-bottom: var(--ds-hairline-w, 1px) solid var(--ds-line); }
+.panel.panel > .footer { min-height: 56px; padding: 10px 24px max(10px, env(safe-area-inset-bottom)); border-top: var(--ds-hairline-w, 1px) solid var(--ds-line); }
+
+/* Coluna do conteúdo centrada, com largura de leitura confortável em telas grandes. */
+.panel.panel .taskContent {
+  padding: 24px max(24px, calc((100% - 880px) / 2)) 24px;
+}
+
+.panel.panel .taskSide { flex: 0 0 320px; padding-top: 8px; }
+
+@media (max-width: 900px) {
+  .panel.panel > .header { padding: 0 8px 0 20px; }
+  .panel.panel > .footer { padding: 10px 14px max(12px, env(safe-area-inset-bottom)) 20px; }
+  .panel.panel .taskContent { padding: 16px 20px 20px; }
+}
