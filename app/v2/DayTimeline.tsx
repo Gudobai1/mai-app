@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState, type CSSProperties, type DragEvent } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type DragEvent } from 'react'
 import { plannerItems, type PlannerItem } from '../../lib/v2/planner'
 import type { MaiState } from '../../lib/v2/state'
 import { Check, Icon } from '../ds'
@@ -27,7 +27,9 @@ type Props = {
   accept?: (item: PlannerItem) => boolean
 }
 
-const HOUR = 56
+const FIRST_HOUR = 0
+const LAST_HOUR = 24
+const ROW_MIN = 22
 const SNAP = 15
 const toMinutes = (time: string) => {
   if (!String(time || '').trim()) return NaN // sem horário não é 00:00
@@ -68,7 +70,9 @@ export function DayTimeline({ state, day, today, commit, inspect, accept }: Prop
     [state, day, accept],
   )
 
-  const { blocks, loose, firstHour, lastHour } = useMemo(() => {
+  const firstHour = FIRST_HOUR
+  const lastHour = LAST_HOUR
+  const { blocks, loose } = useMemo(() => {
     const timed: Block[] = []
     const rest: PlannerItem[] = []
     const habitsAt = new Map<number, PlannerItem[]>()
@@ -97,9 +101,7 @@ export function DayTimeline({ state, day, today, commit, inspect, accept }: Prop
       clusterEnd = Math.max(clusterEnd, block.end)
     }
     flush()
-    const first = Math.min(7, ...timed.map(block => Math.floor(block.start / 60) - 1))
-    const last = Math.max(21, ...timed.map(block => Math.ceil(block.end / 60) + 1))
-    return { blocks: timed, loose: rest, firstHour: Math.max(0, first), lastHour: Math.min(24, last) }
+    return { blocks: timed, loose: rest }
   }, [items])
 
   const overdue = useMemo(() => (day !== today ? [] : (state.tasks as Record<string, any>[])
@@ -108,6 +110,22 @@ export function DayTimeline({ state, day, today, commit, inspect, accept }: Prop
 
   const isToday = day === today
   const [dockOpen, setDockOpen] = useState(false)
+  const [HOUR, setHour] = useState(36)
+  const cardRef = useRef<HTMLElement | null>(null)
+  // As 24 horas cabem na tela, sem rolar: a altura da hora vem do espaço livre abaixo do cabeçalho.
+  useLayoutEffect(() => {
+    const fit = () => {
+      const card = cardRef.current
+      if (!card) return
+      const mobile = window.matchMedia('(max-width: 900px)').matches
+      const reserve = mobile ? 80 + (dockOpen ? 360 : 190) + 12 : 24
+      const free = window.innerHeight - card.getBoundingClientRect().top - reserve - 32
+      setHour(Math.max(mobile ? 14 : 22, Math.min(56, Math.floor(free / 24))))
+    }
+    fit()
+    window.addEventListener('resize', fit)
+    return () => window.removeEventListener('resize', fit)
+  }, [dockOpen])
   const nowMin = now.getHours() * 60 + now.getMinutes()
   const gridHeight = (lastHour - firstHour) * HOUR
   const topOf = (minutes: number) => ((minutes - firstHour * 60) / 60) * HOUR
@@ -245,7 +263,7 @@ export function DayTimeline({ state, day, today, commit, inspect, accept }: Prop
   return (
     <div className={styles.wrap}>
       <div className={styles.layout}>
-        <section className={styles.gridCard} aria-label="Linha do tempo do dia">
+        <section ref={cardRef} className={styles.gridCard} aria-label="Linha do tempo do dia">
           <div className={styles.grid} style={{ height: gridHeight, '--hour': `${HOUR}px` } as CSSProperties}
             onDragOver={event => { if (dragId) { event.preventDefault(); setGhost(minutesAt(event)) } }}
             onDragLeave={event => { if (event.currentTarget === event.target) setGhost(null) }}
@@ -256,7 +274,7 @@ export function DayTimeline({ state, day, today, commit, inspect, accept }: Prop
               setGhost(null); setDragId('')
               if (target) schedule(target, clock(at))
             }}>
-            {hours.map(hour => (
+            {hours.filter(hour => HOUR >= 28 || hour % 2 === 0).map(hour => (
               <span key={hour} className={styles.hourLabel} style={{ top: (hour - firstHour) * HOUR }}>{String(hour % 24).padStart(2, '0')}:00</span>
             ))}
 
@@ -265,7 +283,7 @@ export function DayTimeline({ state, day, today, commit, inspect, accept }: Prop
               if (group) {
                 return (
                   <div key={`habits-${start}`} className={styles.habitGroup}
-                    style={{ top: topOf(start), height: Math.max(26, high - 2), left: `calc(${(lane / lanes) * 100}% + 8px)`, width: `calc(${100 / lanes}% - 12px)` } as CSSProperties}>
+                    style={{ top: topOf(start), height: Math.max(group.length * ROW_MIN, high - 2), left: `calc(${(lane / lanes) * 100}% + 8px)`, width: `calc(${100 / lanes}% - 12px)` } as CSSProperties}>
                     {group.map(habit => (
                       <div key={habit.id} className={styles.habitLine} data-done={habit.completed || undefined} {...dragProps(habit)}>
                         <button type="button" className={styles.check} aria-label={`Registrar: ${habit.title}`} aria-pressed={habit.completed} onClick={() => toggleHabit(habit)}>{habit.completed ? <Icon name="check" size={12} /> : null}</button>
@@ -280,8 +298,8 @@ export function DayTimeline({ state, day, today, commit, inspect, accept }: Prop
                 )
               }
               return (
-                <div key={item.id} className={styles.block} data-kind={item.kind} data-done={item.completed || undefined} data-short={high < 40 || undefined}
-                  style={{ top: topOf(start), height: Math.max(26, high - 2), left: `calc(${(lane / lanes) * 100}% + 8px)`, width: `calc(${100 / lanes}% - 12px)`, '--ev': item.kind === 'event' ? item.color : item.kind === 'habit' ? item.color : 'var(--ds-accent)' } as CSSProperties}
+                <div key={item.id} className={styles.block} data-kind={item.kind} data-done={item.completed || undefined} data-short={high < 44 || undefined}
+                  style={{ top: topOf(start), height: Math.max(18, high - 2), left: `calc(${(lane / lanes) * 100}% + 8px)`, width: `calc(${100 / lanes}% - 12px)`, '--ev': item.kind === 'event' ? item.color : item.kind === 'habit' ? item.color : 'var(--ds-accent)' } as CSSProperties}
                   {...dragProps(item)}>
                   {item.kind === 'task'
                     ? <button type="button" className={styles.check} aria-label={`Concluir: ${item.title}`} aria-pressed={item.completed} onClick={() => toggleTask(item)}>{item.completed ? <Icon name="check" size={12} /> : null}</button>
@@ -298,7 +316,7 @@ export function DayTimeline({ state, day, today, commit, inspect, accept }: Prop
             })}
 
             {ghost !== null && dragged ? (
-              <div className={styles.ghost} style={{ top: topOf(ghost), height: Math.max(26, duration(dragged) / 60 * HOUR - 2) }}>
+              <div className={styles.ghost} style={{ top: topOf(ghost), height: Math.max(18, duration(dragged) / 60 * HOUR - 2) }}>
                 <span>{dragged.title}</span><em>Solte aqui · {clock(ghost)}</em>
               </div>
             ) : null}
@@ -316,7 +334,7 @@ export function DayTimeline({ state, day, today, commit, inspect, accept }: Prop
             <Icon name={dockOpen ? 'expand_more' : 'expand_less'} size={20} filled={false} />
           </button>
           <div className={styles.dockBody}>
-            <section className={styles.panel}>
+            <section className={`${styles.panel} ${todayStyles.page} ${styles.hojeScope}`}>
               <h2>Dia todo</h2>
               {items.length ? null : <small className={styles.empty}>Nada previsto para este dia.</small>}
               {groupEvents.length ? <div className={styles.group}><h3>Compromissos</h3><AgendaStrip items={groupEvents} nowMinutes={isToday ? nowMin : null} isPassed={() => false} onOpen={open} bind={() => ({})} /></div> : null}
