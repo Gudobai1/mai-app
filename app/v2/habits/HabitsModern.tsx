@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import type { MaiState } from '../../../lib/v2/state'
-import { IonIcon as Icon } from '../../ds'
+import { Icon } from '../../ds'
 import { DotRing } from './DotRing'
 import { UnitField } from './UnitField'
 import { abbreviateUnit } from '../../../lib/v2/units'

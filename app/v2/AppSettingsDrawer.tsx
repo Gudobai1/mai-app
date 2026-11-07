@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, type RefObject } from 'react'
 import type { MaiState, SyncStatus } from '../../lib/v2/state'
-import { IonIcon as Icon } from '../ds'
+import { Icon } from '../ds'
 import styles from './Settings.module.css'
 import { ThemePicker } from './ThemePicker'
 

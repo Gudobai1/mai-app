@@ -2,7 +2,6 @@
 
 import { CSSProperties, ReactNode, useState } from 'react'
 import { MoneyInput } from './MoneyInput'
-import { IonIcon } from '../ds'
 
 type ToolProps = {
   id: string
@@ -33,7 +32,7 @@ export function CreateTool({ id, icon, label, summary, color, leading, open, set
 export function CreateOptionList({ options, value, onChange, close }: { options: { value: string | number; label: string; icon?: string; color?: string }[]; value: string | number; onChange: (value: string) => void; close: () => void }) {
   return <div className="mai-task-v4-option-list">{options.map(option => <button type="button" key={String(option.value)} data-selected={String(option.value) === String(value) || undefined} onClick={() => { onChange(String(option.value)); close() }}>
     {option.icon ? <span className="material-symbols-rounded" style={option.color ? { color: option.color } : undefined}>{option.icon}</span> : <span />}
-    <span>{option.label}</span>{String(option.value) === String(value) ? <IonIcon name="check" size={18} /> : <span />}
+    <span>{option.label}</span>{String(option.value) === String(value) ? <span className="material-symbols-rounded">check</span> : <span />}
   </button>)}</div>
 }
 

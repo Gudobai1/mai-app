@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { isNativeApp } from '../../lib/native/native'
-import { IonIcon as Icon } from '../ds'
+import { Icon } from '../ds'
 import styles from './PullToRefresh.module.css'
 
 /**

@@ -2,7 +2,7 @@
 
 import { useMemo, type CSSProperties, type HTMLAttributes } from 'react'
 import { eventColor, type PlannerItem } from '../../../lib/v2/planner'
-import { IonIcon as Icon } from '../../ds'
+import { Icon } from '../../ds'
 import styles from './AgendaStrip.module.css'
 
 /**

@@ -3,11 +3,10 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { fold, parseNatural, type NlKind } from '../../lib/v2/nlp'
 import type { MaiState } from '../../lib/v2/state'
-import { IonIcon as Icon } from '../ds'
+import { Icon } from '../ds'
 import type { Row } from './app-types'
 import type { InspectableItem } from './ContextDrawer'
 import styles from './SearchOverlay.module.css'
-import { PRIORITY_COLOR } from '../ds/priority'
 
 /*
  * Busca do MAI: uma janela no centro, aberta com Ctrl Espaço ou "/".
@@ -31,6 +30,7 @@ const KINDS: Record<Kind, { label: string; plural: string; icon: string; color: 
   goal: { label: 'Meta', plural: 'Metas', icon: 'flag', color: 'var(--ds-warn)' },
   project: { label: 'Projeto', plural: 'Projetos', icon: 'folder', color: 'var(--ds-text-2)' },
 }
+const PRIORITY_COLOR: Record<number, string> = { 1: 'var(--ds-rose-fg)', 2: 'var(--ds-peach-fg)', 3: 'var(--ds-sky-fg)' }
 const PRIORITY_LABEL: Record<number, string> = { 1: 'Alta', 2: 'Média', 3: 'Baixa' }
 
 const MONTHS = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez']

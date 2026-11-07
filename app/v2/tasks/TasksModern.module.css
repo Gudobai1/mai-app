@@ -2466,20 +2466,3 @@
 .list .card.card[data-sub], .card.card[data-sub] { padding: 6px 6px 6px 0; gap: 10px; border-bottom: 0; min-height: 0; }
 .card.card[data-sub] .cardTitle { font-size: 14px; line-height: 1.35; }
 .card.card[data-sub] .check.check { width: 18px; height: 18px; margin-top: 1px; }
-
-
-/* ------------------------------------------------------------------
- * Sistema de design (etapa 6): check quadrado, data 13/600 sem ícone com cor do estado,
- * título 15/500, foco no próprio contorno. Valores em docs/PADROES.md.
- * ------------------------------------------------------------------ */
-.check.check, .selectBox.selectBox, .subCheck.subCheck { border-radius: var(--ds-r-sm); }
-.check.check[data-priority="1"] { --check-color: var(--ds-prio-1); }
-.check.check[data-priority="2"] { --check-color: var(--ds-prio-2); }
-.check.check[data-priority="3"] { --check-color: var(--ds-prio-3); }
-.cardTitle.cardTitle { font-size: var(--ds-fs-md); font-weight: var(--ds-fw-medium); }
-.cardMeta > span[data-future], .cardMeta > span[data-today], .cardMeta > span[data-late], .cardMeta > span[data-done] { font-size: var(--ds-fs-sm); font-weight: var(--ds-fw-bold); }
-.cardMeta > span[data-future] { color: var(--ds-date-future); }
-.cardMeta > span[data-today] { color: var(--ds-date-today); }
-.cardMeta > span[data-late] { color: var(--ds-date-late); }
-.cardMeta > span[data-done] { color: var(--ds-date-done); }
-.expand.expand { font-size: var(--ds-fs-md); }

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { IonIcon as Icon } from '../ds'
+import { Icon } from '../ds'
 import { MaiIcon } from './MaiIcons'
 import type { OpenFinanceController } from './OpenFinance'
 import styles from './ConnectionDialog.module.css'

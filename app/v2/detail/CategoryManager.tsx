@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { IonIcon as Icon } from '../../ds'
+import { Icon } from '../../ds'
 import { eventCategories, removeEventCategory, updateEventCategory, withEventCategory, EVENT_CATEGORY_COLORS } from '../../../lib/v2/event-categories'
 import type { MaiState } from '../../../lib/v2/state'
 import { askConfirm } from '../shell/ConfirmDialog'

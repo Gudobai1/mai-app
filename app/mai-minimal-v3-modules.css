@@ -20,7 +20,7 @@
 .mai-v3-simple-list{display:grid}
 .mai-v3-habit-today{min-height:64px;border-top:1px solid #f0f2ee;display:grid;grid-template-columns:34px minmax(0,1fr);align-items:center}
 .mai-v3-habit-today:first-child{border-top:0}
-.mai-v3-habit-check{width:20px;height:20px;border:1.6px solid #b9c0b7;border-radius:4px;background:#fff;color:#fff;font-size:10px;display:grid;place-items:center}
+.mai-v3-habit-check{width:20px;height:20px;border:1.6px solid #b9c0b7;border-radius:50%;background:#fff;color:#fff;font-size:10px;display:grid;place-items:center}
 .mai-v3-habit-body{border:0;background:transparent;text-align:left;padding:9px 0}
 .mai-v3-habit-body strong{display:block;font-size:13.5px;font-weight:560;color:#30352f}
 .mai-v3-habit-body small{display:block;margin-top:4px;color:#969d94;font-size:10px}

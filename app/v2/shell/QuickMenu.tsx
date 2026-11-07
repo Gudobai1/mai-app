@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent } from 'react'
 import { createPortal } from 'react-dom'
-import { IonIcon as Icon } from '../../ds'
+import { Icon } from '../../ds'
 import { CreateCalendarPicker } from '../CreateDrawerTools'
 import styles from './QuickMenu.module.css'
 
