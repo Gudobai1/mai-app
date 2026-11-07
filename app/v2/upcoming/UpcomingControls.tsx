@@ -84,7 +84,7 @@ type FilterProps = {
   sources: Option[]
 }
 
-export function UpcomingControls({ filters, onChange, projects, sources, display, onDisplay, onManageCategories }: FilterProps & { display: UpcomingDisplay; onDisplay: (next: UpcomingDisplay) => void; onManageCategories?: () => void }) {
+export function UpcomingControls({ filters, onChange, projects, sources, display, onDisplay, onManageCategories, view, onView }: FilterProps & { display: UpcomingDisplay; onDisplay: (next: UpcomingDisplay) => void; onManageCategories?: () => void; view?: 'list' | 'timeline' | null; onView?: (next: 'list' | 'timeline') => void }) {
   const [open, setOpen] = useState<'' | 'filter' | 'display'>('')
   const filterRef = useRef<HTMLButtonElement | null>(null)
   const displayRef = useRef<HTMLButtonElement | null>(null)
@@ -141,6 +141,15 @@ export function UpcomingControls({ filters, onChange, projects, sources, display
       {open === 'display' ? (
         <Floating anchor={displayRef} title="Exibição" width={280} onClose={() => setOpen('')}>
           <div className={styles.panel}>
+            {onView ? (
+              <Section title="Visualização">
+                {([['timeline', 'Linha do tempo'], ['list', 'Lista']] as ['timeline' | 'list', string][]).map(([id, label]) => (
+                  <button key={id} type="button" role="menuitemradio" aria-checked={view === id} className={styles.row} data-on={view === id || undefined} onClick={() => { onView(id); setOpen('') }}>
+                    <span>{label}</span><span className={styles.tick}>{view === id ? <Icon name="check" size={16} /> : null}</span>
+                  </button>
+                ))}
+              </Section>
+            ) : null}
             <Section title="Agrupar por">
               {([['kind', 'Tipo'], ['project', 'Projeto'], ['none', 'Sem grupos']] as [UpcomingDisplay['group'], string][]).map(([id, label]) => (
                 <button key={id} type="button" role="menuitemradio" aria-checked={display.group === id} className={styles.row} data-on={display.group === id || undefined} onClick={() => onDisplay({ ...display, group: id })}>

@@ -33,7 +33,7 @@ const clock = (total: number) => `${String(Math.floor(total / 60) % 24).padStart
 const span = (minutes: number) => (minutes >= 60 ? `${Math.floor(minutes / 60)} h${minutes % 60 ? ` ${minutes % 60} min` : ''}` : `${minutes} min`)
 const money = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' })
 
-type Block = { item: PlannerItem; start: number; end: number; lane: number; lanes: number }
+type Block = { item: PlannerItem; start: number; end: number; lane: number; lanes: number; group?: PlannerItem[] }
 
 function duration(item: PlannerItem) {
   if (item.kind === 'event') {
@@ -66,13 +66,18 @@ export function DayTimeline({ state, day, today, commit, inspect, accept }: Prop
   const { blocks, loose, firstHour, lastHour } = useMemo(() => {
     const timed: Block[] = []
     const rest: PlannerItem[] = []
+    const habitsAt = new Map<number, PlannerItem[]>()
     for (const item of items) {
       const allDay = item.kind === 'event' && (item.raw.dia_inteiro === true || item.subtitle === 'Em andamento')
       const start = toMinutes(item.time)
-      if (item.kind !== 'finance' && !allDay && Number.isFinite(start)) {
+      if (item.kind === 'habit' && !allDay && Number.isFinite(start)) {
+        habitsAt.set(start, [...(habitsAt.get(start) || []), item])
+      } else if (item.kind !== 'finance' && !allDay && Number.isFinite(start)) {
         timed.push({ item, start, end: Math.min(1440, start + duration(item)), lane: 0, lanes: 1 })
       } else rest.push(item)
     }
+    // Hábitos no mesmo horário viram um bloco só, com uma linha por hábito (nome + progresso).
+    habitsAt.forEach((group, start) => timed.push({ item: group[0], group, start, end: Math.min(1440, start + 30 * group.length), lane: 0, lanes: 1 }))
     timed.sort((a, b) => a.start - b.start || b.end - a.end)
     let cluster: Block[] = []
     let clusterEnd = -1
@@ -97,18 +102,10 @@ export function DayTimeline({ state, day, today, commit, inspect, accept }: Prop
     .map(task => ({ id: String(task.id), title: String(task.titulo || 'Tarefa'), date: String(task.data_vencimento).slice(0, 10), raw: task }))), [state.tasks, day, today])
 
   const isToday = day === today
-  const dayHabits = items.filter(item => item.kind === 'habit')
+  const [dockOpen, setDockOpen] = useState(false)
   const nowMin = now.getHours() * 60 + now.getMinutes()
   const gridHeight = (lastHour - firstHour) * HOUR
   const topOf = (minutes: number) => ((minutes - firstHour * 60) / 60) * HOUR
-
-  const timed = blocks.filter(block => block.item.kind !== 'finance')
-  const busy = timed.reduce((sum, block) => sum + (block.end - block.start), 0)
-  const free = Math.max(0, (lastHour - firstHour) * 60 - busy)
-  const counts = {
-    event: items.filter(item => item.kind === 'event').length,
-    task: items.filter(item => item.kind === 'task').length,
-  }
 
   const open = (item: PlannerItem) => inspect({ kind: item.kind, sourceId: item.sourceId, title: item.title, date: item.date, time: item.time, raw: item.raw })
 
@@ -140,7 +137,10 @@ export function DayTimeline({ state, day, today, commit, inspect, accept }: Prop
     const target = Math.max(1, Number(item.raw.meta || 1))
     const value = entry && entry.falhou !== true ? Number(entry.valor || 0) : 0
     const quantitative = target > 1 || Boolean(item.raw.unidade)
-    return { target, value, quantitative }
+    const number = (amount: number) => String(Math.round(amount * 10) / 10).replace('.', ',')
+    const unit = String(item.raw.unidade || '').trim()
+    const label = quantitative ? `${number(value)} de ${number(target)}${unit ? ` ${unit}` : ''}` : value > 0 ? 'Feito' : 'Pendente'
+    return { target, value, quantitative, label }
   }
   const toggleHabit = (item: PlannerItem) => {
     if (day > today) return open(item)
@@ -181,7 +181,7 @@ export function DayTimeline({ state, day, today, commit, inspect, accept }: Prop
           : <Icon name={item.kind === 'finance' ? 'payments' : 'event'} size={16} filled={false} style={{ color: item.color }} />}
       <button type="button" className={styles.looseMain} onClick={() => open(item)}>
         <span>{item.title}</span>
-        <small>{item.kind === 'finance' ? item.subtitle : item.kind === 'event' ? 'Dia inteiro' : item.subtitle}</small>
+        <small>{item.kind === 'finance' ? item.subtitle : item.kind === 'event' ? 'Dia inteiro' : item.kind === 'habit' ? habitState(item).label : item.subtitle}</small>
       </button>
       {movable(item) && item.kind !== 'event' ? (
         pickFor === item.id
@@ -193,12 +193,6 @@ export function DayTimeline({ state, day, today, commit, inspect, accept }: Prop
 
   return (
     <div className={styles.wrap}>
-      <div className={styles.summary}>
-        <span>{counts.event} {counts.event === 1 ? 'compromisso' : 'compromissos'} · {counts.task} {counts.task === 1 ? 'tarefa' : 'tarefas'}</span>
-        <span>{span(Math.round(free / 15) * 15)} livres</span>
-        <div className={styles.meter} aria-hidden="true"><i style={{ width: `${Math.min(100, Math.round((busy / Math.max(1, (lastHour - firstHour) * 60)) * 100))}%` }} /></div>
-      </div>
-
       <div className={styles.layout}>
         <section className={styles.gridCard} aria-label="Linha do tempo do dia">
           <div className={styles.grid} style={{ height: gridHeight, '--hour': `${HOUR}px` } as CSSProperties}
@@ -215,8 +209,25 @@ export function DayTimeline({ state, day, today, commit, inspect, accept }: Prop
               <span key={hour} className={styles.hourLabel} style={{ top: (hour - firstHour) * HOUR }}>{String(hour % 24).padStart(2, '0')}:00</span>
             ))}
 
-            {blocks.map(({ item, start, end, lane, lanes }) => {
+            {blocks.map(({ item, start, end, lane, lanes, group }) => {
               const high = (end - start) / 60 * HOUR
+              if (group) {
+                return (
+                  <div key={`habits-${start}`} className={styles.habitGroup}
+                    style={{ top: topOf(start), height: Math.max(26, high - 2), left: `calc(${(lane / lanes) * 100}% + 8px)`, width: `calc(${100 / lanes}% - 12px)` } as CSSProperties}>
+                    {group.map(habit => (
+                      <div key={habit.id} className={styles.habitLine} data-done={habit.completed || undefined} {...dragProps(habit)}>
+                        <button type="button" className={styles.check} aria-label={`Registrar: ${habit.title}`} aria-pressed={habit.completed} onClick={() => toggleHabit(habit)}>{habit.completed ? <Icon name="check" size={12} /> : null}</button>
+                        <button type="button" className={styles.blockMain} onClick={() => open(habit)}>
+                          <b>{habit.title}</b>
+                        </button>
+                        <span className={styles.habitProgress}>{clock(start)} · {habitState(habit).label}</span>
+                        <button type="button" className={styles.unplan} aria-label={`Tirar ${habit.title} do horário`} onClick={() => schedule(habit, null)}><Icon name="close" size={14} filled={false} /></button>
+                      </div>
+                    ))}
+                  </div>
+                )
+              }
               return (
                 <div key={item.id} className={styles.block} data-kind={item.kind} data-done={item.completed || undefined} data-short={high < 40 || undefined}
                   style={{ top: topOf(start), height: Math.max(26, high - 2), left: `calc(${(lane / lanes) * 100}% + 8px)`, width: `calc(${100 / lanes}% - 12px)`, '--ev': item.kind === 'event' ? item.color : item.kind === 'habit' ? item.color : 'var(--ds-accent)' } as CSSProperties}
@@ -247,34 +258,51 @@ export function DayTimeline({ state, day, today, commit, inspect, accept }: Prop
           </div>
         </section>
 
-        <aside className={styles.side}>
-          <section className={styles.panel}>
-            <h2>Sem horário</h2>
-            <p>Arraste para a linha do tempo ou toque em Horário.</p>
-            {loose.length ? loose.map(looseRow) : <small className={styles.empty}>Tudo com horário por aqui.</small>}
-          </section>
-          {dayHabits.some(item => toMinutes(item.time) >= 0) ? (
+        <aside className={styles.side} data-open={dockOpen || undefined} aria-label="Dia todo">
+          <button type="button" className={styles.dockBar} aria-expanded={dockOpen} onClick={() => setDockOpen(open => !open)}>
+            <strong>Dia todo</strong>
+            <span>{loose.length ? `${loose.length} sem horário` : 'Nada sem horário'}{overdue.length ? ` · ${overdue.length} ${overdue.length === 1 ? 'atrasada' : 'atrasadas'}` : ''}</span>
+            <Icon name={dockOpen ? 'expand_more' : 'expand_less'} size={20} filled={false} />
+          </button>
+          <div className={styles.dockBody}>
             <section className={styles.panel}>
-              <h2>Hábitos com horário</h2>
-              {dayHabits.filter(item => toMinutes(item.time) >= 0).map(looseRow)}
+              <h2>Dia todo</h2>
+              <div className={styles.looseList}>
+                {loose.length ? loose.map(looseRow) : <small className={styles.empty}>Tudo com horário por aqui.</small>}
+              </div>
             </section>
-          ) : null}
-          {overdue.length ? (
-            <section className={styles.panel}>
-              <h2>Atrasadas</h2>
-              {overdue.map(task => (
-                <div key={task.id} className={styles.looseItem}>
-                  <button type="button" className={styles.check} aria-label={`Concluir: ${task.title}`} onClick={() => commit(current => ({ ...current, tasks: current.tasks.map(row => (String(row.id) === task.id ? { ...row, concluida: true, concluida_em: new Date().toISOString() } : row)) }))} />
-                  <button type="button" className={styles.looseMain} onClick={() => inspect({ kind: 'task', sourceId: task.id, title: task.title, date: task.date, time: '', raw: task.raw })}>
-                    <span>{task.title}</span>
-                    <small className={styles.late}>Atrasada · {task.date.split('-').reverse().slice(0, 2).join('/')}</small>
-                  </button>
+            {overdue.length ? (
+              <section className={`${styles.panel} ${styles.panelLate}`}>
+                <h2>Atrasadas</h2>
+                <div className={styles.looseList}>
+                  {overdue.map(task => (
+                    <div key={task.id} className={styles.looseItem}>
+                      <button type="button" className={styles.check} aria-label={`Concluir: ${task.title}`} onClick={() => commit(current => ({ ...current, tasks: current.tasks.map(row => (String(row.id) === task.id ? { ...row, concluida: true, concluida_em: new Date().toISOString() } : row)) }))} />
+                      <button type="button" className={styles.looseMain} onClick={() => inspect({ kind: 'task', sourceId: task.id, title: task.title, date: task.date, time: '', raw: task.raw })}>
+                        <span>{task.title}</span>
+                        <small className={styles.late}>Atrasada · {task.date.split('-').reverse().slice(0, 2).join('/')}</small>
+                      </button>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </section>
-          ) : null}
+              </section>
+            ) : null}
+          </div>
         </aside>
       </div>
+    </div>
+  )
+}
+
+/** Navegação de dia: setas e a própria data, que também volta para hoje. */
+export function DayNav({ day, today, onStep, onToday }: { day: string; today: string; onStep: (direction: number) => void; onToday: () => void }) {
+  const raw = new Date(`${day}T12:00:00`).toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' }).replace(/^([^,]+?)-feira/, '$1')
+  const label = raw.charAt(0).toUpperCase() + raw.slice(1)
+  return (
+    <div className={styles.dayNav}>
+      <button type="button" className={styles.dayStep} aria-label="Dia anterior" onClick={() => onStep(-1)}><Icon name="chevron_left" size={20} filled={false} /></button>
+      <button type="button" className={styles.dayTitle} aria-label={day === today ? `${label}, hoje` : `${label}. Voltar para hoje`} onClick={onToday}>{label}</button>
+      <button type="button" className={styles.dayStep} aria-label="Próximo dia" onClick={() => onStep(1)}><Icon name="chevron_right" size={20} filled={false} /></button>
     </div>
   )
 }
