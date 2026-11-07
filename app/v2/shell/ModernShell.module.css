@@ -391,9 +391,9 @@
 
   .tabAdd.tabAdd {
     justify-self: center;
-    width: 56px;
-    height: 56px;
-    border-radius: 8px;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
     background: var(--ds-accent);
     color: var(--ds-on-accent);
     transition: transform var(--ds-dur-fast) var(--ds-ease);

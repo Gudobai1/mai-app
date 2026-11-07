@@ -109,7 +109,7 @@ export function ModernBottomNav({ view, searchOpen, navigate, onSearch, onAdd, o
         {tab('today', 'Hoje', 'today')}
         {tab('upcoming', 'Em breve', 'event_upcoming')}
         <button type="button" className={`${styles.tab} ${styles.tabAdd}`} aria-label="Adicionar" onClick={() => { setSheetOpen(false); onAdd() }}>
-          <Icon name="add" size={30} weight={600} />
+          <Icon name="add" size={24} weight={600} />
         </button>
         <button type="button" className={styles.tab} aria-current={searchOpen && !sheetOpen ? 'page' : undefined} onClick={() => { setSheetOpen(false); onSearch() }}>
           <Icon name="search" size={24} filled={searchOpen} weight={searchOpen ? 600 : 400} />
