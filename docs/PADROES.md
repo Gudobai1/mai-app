@@ -33,21 +33,21 @@ Um conceito = um componente = um lugar no código. Se o mesmo item (tarefa, háb
 Fonte única da verdade: o quadro "Sistema de design Bukid" (quadros 0 a 12). Os valores abaixo são os aprovados.
 - Cores, espaçamentos, raios, sombras, tipografia: **somente** variáveis `--ds-*` de `app/ds/tokens.css`. Hex solto e `px` de fonte soltos são erro.
 - **Fonte:** Onest (reserva: system-ui, Segoe UI, Roboto, Arial). Escala: 11 / 13 / 15 / 17 / 22 / 28 / 34. Títulos com espaçamento de letras −0,02em.
-- **Raios:** 4 / 6 / 8 / 10 / 12. Círculo só para avatar, interruptor e ponto de status. **Nada em formato de pílula; sem radio** (seleção única = lista de linhas com visto; checks são quadrados).
+- **Raios:** 4 / 6 / 8 / 10 / 12. Círculo só para avatar e ponto de status. **Nada em formato de pílula; sem radio** (seleção única = lista de linhas com visto; checks são quadrados).
 - **Divisórias:** linha de 0,5px (`rgba(0,0,0,.06–.08)`; escuro `rgba(255,255,255,.07–.09)`).
 - **Cores:** destaque `#DE4C4A` (escuro `#FF7066`); perigo `#D1453B`. Prioridade no check: P1 `#D1453B`, P2 `#EB8909`, P3 `#246FE0`, sem `#808080`.
 - **Datas** (13px/600, embaixo do título, à esquerda): hoje amarelo `#D99A00`, atrasada vermelho `#D1453B`, futura verde `#058527`, concluída cinza `#8A8A8A`.
 - **Linha de item:** check quadrado à esquerda; título 15/500; data embaixo; à direita **só texto** ("2/5", "40%", valor financeiro verde "+" / vermelho "−"), sem ícone e sem descrição longa.
 - **Foco:** o próprio contorno do item, anel de 2px de destaque (`outline:2px solid destaque; outline-offset:-2px`). Botão cheio usa contorno vermelho mais escuro. Nunca por cima ou por dentro do item.
-- **Botão:** ícone depois do rótulo (à direita), por exemplo "Adicionar tarefa +". **[A CONFIRMAR]** o quadro 1 ainda mostra ícone à esquerda.
+- **Botão:** ícone depois do rótulo (à direita), por exemplo "Adicionar tarefa +", em todo o sistema. Única exceção: a barra lateral do computador, onde o ícone fica à esquerda.
 - **Menu:** opções com ícone à direita (visto na escolhida, seta em submenu, lixeira em perigo). Menus não perdem ícones.
 - **Popup e janela:** opções em linhas (texto à esquerda, valor + ícone à direita), sem caixas de campo. Campo (caixa) só em tela cheia e formulário longo. Diálogo 340 (celular 300); popup 360 / 440 / 640; botão 36 (celular 40); cabeçalho/rodapé 56/64; fundo escurecido 40% (escuro 60%); sombra `0 12px 40px 18%`; movimento 250ms entrada / 200ms saída.
 - **Cabeçalho:** título 28/700 com subtítulo 13 cinza; à direita só o botão de visualização (ajustes, abre menu) e o botão principal. Celular rolando: título compacto 17/600 centralizado.
 - **Navegação:** celular com 4 itens, barra de 56px: **Hoje** (ícone mostra o dia do mês), **Em breve**, **Pesquisar**, **Mais** (Caixa, Projetos e Finanças ficam em Mais). Computador: barra lateral de 220px com ícone à esquerda, contador à direita.
 - **Estados:** vazio, carregando, erro: ícone 40, título 17/600, texto 13, no máximo uma ação; carregando com linhas fantasmas, sem spinner de tela. Aviso (`UndoToast`) escuro, 340, canto 10, some em 4s (8s com ação). Faixa só para estados que duram.
 - **Telas do celular:** três esqueletos: lista, detalhe (barra de topo 48: Voltar / título / Salvar) e formulário longo (mais de 4 campos). Cadastro curto = popup.
-- **Interruptor** é exceção à regra de formas (trilho e bolinha redondos). **[A CONFIRMAR]**
-- Ícones: um só conjunto (`Icon` do DS). Sem emoji como ícone. **[A CONFIRMAR]** licença do conjunto atual (estilo SF); plano B: Ionicons (MIT).
+- **Interruptor:** retangular, 40×24, trilho com canto 6 e peça com canto 4. Sem círculo.
+- **Ícones:** Ionicons (licença MIT), um só conjunto (`Icon` do DS). Contorno por padrão, preenchido = ativo. Tamanhos 16 / 20 / 24, cor herdada do texto. Sem emoji como ícone. Manter o aviso de licença MIT no repositório.
 - Estados: normal, hover, foco visível, desativado, carregando, vazio e erro existem em todo componente interativo.
 
 ## 5. Comportamento
