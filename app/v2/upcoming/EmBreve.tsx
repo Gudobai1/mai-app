@@ -851,7 +851,7 @@ export function EmBreve({ state, today, commit, inspect, syncRange }: Props) {
       <div className={styles.titleRow}>
         <div className={styles.headText}>
           <h1>{mode === 'list' ? 'Em breve' : subtitle}</h1>
-          <span>{mode === 'list' ? subtitle : mode === 'myday' ? 'Meu dia' : 'Em breve'}</span>
+          <span>{mode === 'list' ? subtitle : 'Em breve'}</span>
         </div>
         <div className={styles.nav}>
           {mode !== 'list' ? <button type="button" className={styles.navStep} data-hide-mobile={mode === 'month' || undefined} aria-label="Anterior" onClick={() => step(-1)}><Icon name="chevron_left" size={20} filled={false} /></button> : null}
