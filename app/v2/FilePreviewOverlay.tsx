@@ -2,7 +2,6 @@
 
 import { useEffect } from 'react'
 import { createPortal } from 'react-dom'
-import { IonIcon } from '../ds'
 
 type Row = Record<string, any>
 
@@ -67,12 +66,12 @@ export function FilePreviewOverlay({ file, onClose }: { file: Row | null; onClos
           <span><strong title={name}>{name}</strong><small>{mime || 'Arquivo do Google Drive'}</small></span>
         </div>
         <div className="mai-file-preview-actions">
-          {external ? <a href={external} target="_blank" rel="noreferrer" title="Editar ou abrir no Google" data-mai-preview-external="true"><IonIcon name="open_in_new" size={18} /><span>Abrir no Google</span></a> : null}
-          <button type="button" onClick={onClose} aria-label="Fechar visualização" title="Fechar"><IonIcon name="close" size={18} /></button>
+          {external ? <a href={external} target="_blank" rel="noreferrer" title="Editar ou abrir no Google" data-mai-preview-external="true"><span className="material-symbols-rounded">open_in_new</span><span>Abrir no Google</span></a> : null}
+          <button type="button" onClick={onClose} aria-label="Fechar visualização" title="Fechar"><span className="material-symbols-rounded">close</span></button>
         </div>
       </header>
       <div className="mai-file-preview-body">
-        {preview ? <iframe src={preview} title={name} allow="autoplay; fullscreen" /> : <div className="mai-file-preview-unavailable"><IonIcon name="visibility_off" size={18} /><strong>Visualização indisponível</strong><p>Este arquivo não possui uma referência válida no Google Drive.</p></div>}
+        {preview ? <iframe src={preview} title={name} allow="autoplay; fullscreen" /> : <div className="mai-file-preview-unavailable"><span className="material-symbols-rounded">visibility_off</span><strong>Visualização indisponível</strong><p>Este arquivo não possui uma referência válida no Google Drive.</p></div>}
       </div>
     </section>
   </div>, document.body)

@@ -3,7 +3,7 @@
 import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState, type DragEvent, type MouseEvent as ReactMouseEvent, type ReactNode } from 'react'
 import { addDays } from '../../../lib/v2/planner'
 import type { LegacyTask, MaiState } from '../../../lib/v2/state'
-import { IonIcon as Icon } from '../../ds'
+import { Icon } from '../../ds'
 import type { AppView, Row, TaskModuleScope } from '../app-types'
 import type { InspectableItem } from '../ContextDrawer'
 import { DatePicker, Floating, OptionList, type PickerOption } from '../detail/Pickers'
@@ -14,7 +14,6 @@ import { compareSubtasks } from '../subtaskOrder'
 import { useTaskQuick } from '../shell/TaskQuick'
 import { useQuickMenu, type QuickMenuConfig } from '../shell/QuickMenu'
 import styles from './TasksModern.module.css'
-import { PRIORITY_COLOR } from '../../ds/priority'
 
 /*
  * MAI — módulo Tarefas (visual Moderno).
@@ -57,6 +56,7 @@ const PRIORITIES: PickerOption[] = [
   { value: '3', label: 'Baixa', icon: 'flag', color: 'var(--ds-sky-fg)' },
   { value: '4', label: 'Sem prioridade', icon: 'outlined_flag', color: 'var(--ds-muted)' },
 ]
+const PRIORITY_COLOR: Record<number, string> = { 1: 'var(--ds-rose-fg)', 2: 'var(--ds-peach-fg)', 3: 'var(--ds-sky-fg)' }
 
 function naturalDate(key: string, today: string) {
   if (!key) return 'Sem data'
@@ -522,7 +522,7 @@ export function TasksModern(props: Props) {
           {desc ? <span className={styles.cardDesc}>{renderDescription(desc)}</span> : null}
           {(showDate || time || showProject || children.length || files || task.repeticao) ? (
             <span className={styles.cardMeta}>
-              {showDate ? <span data-done={done || undefined} data-late={(!done && late) || undefined} data-today={(!done && due === today) || undefined} data-future={(!done && due > today) || undefined}>{naturalDate(due, today)}{time ? ` · ${time}` : ''}</span> : time ? <span><Icon name="schedule" size={12} />{time}</span> : null}
+              {showDate ? <span data-late={late || undefined} data-today={due === today || undefined} data-future={due > today || undefined}><Icon name="calendar_today" size={12} />{naturalDate(due, today)}{time ? ` · ${time}` : ''}</span> : time ? <span><Icon name="schedule" size={12} />{time}</span> : null}
               {showProject ? (
                 <span className={styles.metaProject} style={{ color: String(projectMap.get(String(task.projeto_id || ''))?.cor || 'var(--ds-accent)') }}>
                   {projectMap.get(String(task.projeto_id || ''))?.imagem_url ? <img src={driveAssetUrl(projectMap.get(String(task.projeto_id))?.imagem_url)} alt="" /> : <i style={{ background: String(projectMap.get(String(task.projeto_id || ''))?.cor || 'var(--ds-accent)') }} />}

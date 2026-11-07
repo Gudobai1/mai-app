@@ -1,7 +1,7 @@
 'use client'
 
 import type { CSSProperties } from 'react'
-import { IonIcon as Icon } from '../ds'
+import { Icon } from '../ds'
 import styles from './ThemePicker.module.css'
 import { THEMES, normalizeMode, normalizeTheme, type ThemeId, type ThemeMode } from './theme'
 

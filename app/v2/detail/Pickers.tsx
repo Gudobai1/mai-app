@@ -3,7 +3,7 @@
 import { createContext, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from 'react'
 import { createPortal } from 'react-dom'
 import { addDays } from '../../../lib/v2/planner'
-import { IonIcon as Icon } from '../../ds'
+import { Icon } from '../../ds'
 import styles from './Pickers.module.css'
 
 /*

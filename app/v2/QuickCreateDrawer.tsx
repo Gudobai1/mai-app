@@ -7,7 +7,6 @@ import { ItemAttachments } from './ItemAttachments'
 import styles from './unified.module.css'
 import { useManualDraft } from './useManualDraft'
 import { DraftFooter } from './shell/DraftFooter'
-import { IonIcon } from '../ds'
 
 const rows = (value: unknown): Row[] => Array.isArray(value) ? value as Row[] : []
 const dateOnly = (value: unknown) => String(value || '').slice(0, 10)
@@ -55,7 +54,7 @@ function OptionList({ options, value, onChange, close }: { options: { value: str
   return <div className="mai-task-v4-option-list">{options.map(option => <button type="button" key={String(option.value)} data-selected={String(option.value) === String(value) || undefined} onClick={() => { onChange(String(option.value)); close() }}>
     {option.icon ? <span className="material-symbols-rounded">{option.icon}</span> : <span />}
     <span>{option.label}</span>
-    {String(option.value) === String(value) ? <IonIcon name="check" size={18} /> : <span />}
+    {String(option.value) === String(value) ? <span className="material-symbols-rounded">check</span> : <span />}
   </button>)}</div>
 }
 
@@ -103,20 +102,20 @@ function ProjectPicker({ projects, projectId, section, onProject, onSection, clo
   const current = projects.find(project => String(project.id) === levelProject)
   const sections = current ? rows(current.secoes).map(String) : []
   if (current) return <div className="mai-task-v4-project-level">
-    <button type="button" className="mai-task-v4-back" onClick={() => setLevelProject('')}><IonIcon name="arrow_back" size={18} /><span>{String(current.nome || 'Projeto')}</span></button>
+    <button type="button" className="mai-task-v4-back" onClick={() => setLevelProject('')}><span className="material-symbols-rounded">arrow_back</span><span>{String(current.nome || 'Projeto')}</span></button>
     <div className="mai-task-v4-option-list">
-      <button type="button" data-selected={!section || undefined} onClick={() => { onSection(''); close() }}><IonIcon name="horizontal_rule" size={18} /><span>Sem seção</span>{!section ? <IonIcon name="check" size={18} /> : <span />}</button>
-      {sections.map(name => <button type="button" key={name} data-selected={section === name || undefined} onClick={() => { onSection(name); close() }}><IonIcon name="segment" size={18} /><span>{name}</span>{section === name ? <IonIcon name="check" size={18} /> : <span />}</button>)}
+      <button type="button" data-selected={!section || undefined} onClick={() => { onSection(''); close() }}><span className="material-symbols-rounded">horizontal_rule</span><span>Sem seção</span>{!section ? <span className="material-symbols-rounded">check</span> : <span />}</button>
+      {sections.map(name => <button type="button" key={name} data-selected={section === name || undefined} onClick={() => { onSection(name); close() }}><span className="material-symbols-rounded">segment</span><span>{name}</span>{section === name ? <span className="material-symbols-rounded">check</span> : <span />}</button>)}
     </div>
   </div>
   return <div className="mai-task-v4-option-list">
-    <button type="button" data-selected={projectId === 'entrada' || undefined} onClick={() => { onProject('entrada'); onSection(''); close() }}><IonIcon name="inbox" size={18} /><span>Entrada</span>{projectId === 'entrada' ? <IonIcon name="check" size={18} /> : <span />}</button>
+    <button type="button" data-selected={projectId === 'entrada' || undefined} onClick={() => { onProject('entrada'); onSection(''); close() }}><span className="material-symbols-rounded">inbox</span><span>Entrada</span>{projectId === 'entrada' ? <span className="material-symbols-rounded">check</span> : <span />}</button>
     {projects.map(project => {
       const id = String(project.id)
       const projectSections = rows(project.secoes).map(String)
       return <button type="button" key={id} data-selected={projectId === id || undefined} onClick={() => { onProject(id); onSection(''); if (projectSections.length) setLevelProject(id); else close() }}>
         {project.imagem_url ? <img className="mai-task-v4-project-option-image" src={String(project.imagem_url)} alt=""/> : <span className="material-symbols-rounded" style={{ color:String(project.cor || 'var(--v3-accent)') }}>{String(project.icone || 'folder')}</span>}
-        <span>{String(project.nome || 'Projeto')}</span>{projectSections.length ? <IonIcon name="chevron_right" size={18} /> : projectId === id ? <IonIcon name="check" size={18} /> : <span />}
+        <span>{String(project.nome || 'Projeto')}</span>{projectSections.length ? <span className="material-symbols-rounded">chevron_right</span> : projectId === id ? <span className="material-symbols-rounded">check</span> : <span />}
       </button>
     })}
   </div>
@@ -145,7 +144,7 @@ export function QuickCreateDrawer({ kind, allowKindSwitch = false, state, today,
   const project = projects.find(item => String(item.id) === projectId)
   const projectName = projectId === 'entrada' ? 'Entrada' : String(project?.nome || 'Projeto')
   const projectLeading = projectId === 'entrada'
-    ? <IonIcon name="inbox" size={18} />
+    ? <span className="material-symbols-rounded">inbox</span>
     : project?.imagem_url
       ? <img className="mai-task-v4-project-icon-image" src={String(project.imagem_url)} alt=""/>
       : <span className="material-symbols-rounded">{String(project?.icone || 'folder')}</span>

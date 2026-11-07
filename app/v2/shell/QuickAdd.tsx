@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, type MouseEvent as ReactMouseEvent } from 'react'
 import { createPortal } from 'react-dom'
 import type { MaiState } from '../../../lib/v2/state'
-import { IonIcon as Icon } from '../../ds'
+import { Icon } from '../../ds'
 import type { Row } from '../app-types'
 import { driveAssetUrl } from '../DriveAsset'
 import { DatePicker, Floating, OptionList, ProjectPicker, ReminderPicker, RepeatPicker, TimePicker, repeatLabel as repeatText, reminderLabel, type PickerOption } from '../detail/Pickers'
@@ -17,7 +17,6 @@ import { INTERVAL_CHOICES, intervalChoice, intervalDays, intervalLabel, shiftIns
 import { PALETTE } from '../../../lib/v2/palette'
 import { MoneyInput } from '../MoneyInput'
 import styles from './QuickAdd.module.css'
-import { PRIORITY_COLOR } from '../../ds/priority'
 
 /**
  * Adicionar rápido: o mesmo formulário em todo o app, com as opções de cada
@@ -72,6 +71,7 @@ const PRIORITIES: PickerOption[] = [
   { value: '3', label: 'Baixa', icon: 'flag', color: 'var(--ds-sky-fg)' },
   { value: '4', label: 'Sem prioridade', icon: 'outlined_flag', color: 'var(--ds-muted)' },
 ]
+const PRIORITY_COLOR: Record<number, string> = { 1: 'var(--ds-rose-fg)', 2: 'var(--ds-peach-fg)', 3: 'var(--ds-sky-fg)' }
 
 function addDays(key: string, amount: number) {
   const value = new Date(`${key}T12:00:00`)

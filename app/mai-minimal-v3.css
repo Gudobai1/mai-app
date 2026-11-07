@@ -150,7 +150,7 @@
 }
 .mai-v3-task-row:first-child {border-top:0}
 .mai-v3-task-row:hover {background:#f8f9f7;border-color:transparent}
-.mai-v3-task-check {width:19px;height:19px;border:1.7px solid #b8beb7;border-radius:4px;background:#fff;padding:0;display:grid;place-items:center;color:#fff;font-size:10px}
+.mai-v3-task-check {width:19px;height:19px;border:1.7px solid #b8beb7;border-radius:50%;background:#fff;padding:0;display:grid;place-items:center;color:#fff;font-size:10px}
 .mai-v3-task-check:hover {box-shadow:0 0 0 4px #eef2eb}
 .mai-v3-task-check[data-completed="true"] {background:var(--v3-sage);border-color:var(--v3-sage)}
 .mai-v3-task-body {min-width:0;border:0;background:transparent;text-align:left;padding:10px 0}

@@ -7,7 +7,6 @@ import { driveAssetUrl } from '../DriveAsset'
 import { DatePicker, Floating, ProjectPicker, ReminderPicker, RepeatPicker, TimePicker, reminderLabel, repeatLabel } from '../detail/Pickers'
 import { askConfirm } from './ConfirmDialog'
 import type { QuickMenuConfig, QuickOption } from './QuickMenu'
-import { PRIORITY_COLOR } from '../../ds/priority'
 
 /*
  * Edição rápida de tarefa (botão direito ou segurar): serve para tarefas e
@@ -18,6 +17,7 @@ import { PRIORITY_COLOR } from '../../ds/priority'
 type Row = Record<string, any>
 type Kind = 'date' | 'time' | 'repeat' | 'reminder' | 'project'
 
+const PRIORITY_COLOR: Record<number, string> = { 1: 'var(--ds-danger)', 2: 'var(--ds-warn)', 3: 'var(--ds-sky-fg, #4a8fd9)' }
 const dateOf = (task: Row) => String(task.data_vencimento || '').slice(0, 10)
 const timeOf = (task: Row) => (String(task.data_vencimento || '').includes('T') ? String(task.data_vencimento).slice(11, 16) : '')
 

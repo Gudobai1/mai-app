@@ -1,7 +1,7 @@
 'use client'
 
 import { createContext, useContext, useEffect, useRef, useState } from 'react'
-import { IonIcon as Icon } from '../../ds'
+import { Icon } from '../../ds'
 import { askConfirm } from '../shell/ConfirmDialog'
 import { FilePreviewOverlay } from '../FilePreviewOverlay'
 import { uploadAttachment } from './upload'

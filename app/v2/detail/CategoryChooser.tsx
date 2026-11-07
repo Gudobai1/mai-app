@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { IonIcon as Icon } from '../../ds'
+import { Icon } from '../../ds'
 import { ColorField } from './ColorField'
 import { EVENT_CATEGORY_COLORS, type EventCategory } from '../../../lib/v2/event-categories'
 import { OptionList } from './Pickers'

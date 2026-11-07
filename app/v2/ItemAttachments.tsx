@@ -3,7 +3,6 @@
 import { useState } from 'react'
 import { FilePreviewOverlay } from './FilePreviewOverlay'
 import { googleDriveRpc } from './DriveAsset'
-import { IonIcon } from '../ds'
 
 type Row = Record<string, any>
 type Rpc = (method: string, args?: unknown[]) => Promise<any>
@@ -86,7 +85,7 @@ export function ItemAttachments({ attachments, onChange, googleRpc = googleDrive
         {attachments.map((file, index) => <article key={`${driveId(file) || fileName(file)}-${index}`}>
           <span className="material-symbols-rounded mai-item-attachments-file-icon" aria-hidden="true">description</span>
           <button type="button" className="mai-item-attachments-open" title={`Visualizar ${fileName(file)}`} onClick={() => setPreview(file)}>{fileName(file)}</button>
-          <button type="button" aria-label={`Remover ${fileName(file)}`} title="Remover arquivo" onClick={() => void remove(index)}><IonIcon name="close" size={18} /></button>
+          <button type="button" aria-label={`Remover ${fileName(file)}`} title="Remover arquivo" onClick={() => void remove(index)}><span className="material-symbols-rounded">close</span></button>
         </article>)}
       </div> : <small className="mai-item-attachments-empty">Nenhum arquivo anexado.</small>}
 

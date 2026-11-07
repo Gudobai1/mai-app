@@ -63,7 +63,3 @@
   .mai-app-topbar-context span{overflow:hidden;text-overflow:ellipsis}
   .mai-app-topbar-select-line{grid-template-columns:82px minmax(0,1fr)}
 }
-
-/* Sistema de design (etapa 4b): botão de opções só com ícone, 36px, cantos 8px, foco no contorno */
-.mai-app-topbar-menu-button.mai-app-topbar-menu-button{width:36px;height:36px;padding:0;justify-content:center;border-radius:var(--ds-r-lg)}
-.mai-app-topbar-menu-button:focus-visible{outline:var(--ds-focus-ring);outline-offset:-2px}
