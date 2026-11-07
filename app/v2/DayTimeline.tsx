@@ -3,7 +3,11 @@
 import { useEffect, useMemo, useState, type CSSProperties, type DragEvent } from 'react'
 import { plannerItems, type PlannerItem } from '../../lib/v2/planner'
 import type { MaiState } from '../../lib/v2/state'
-import { Icon } from '../ds'
+import { Check, Icon } from '../ds'
+import { abbreviateUnit } from '../../lib/v2/units'
+import { AgendaStrip } from './today/AgendaStrip'
+import { DotRing } from './habits/DotRing'
+import todayStyles from './today/TodayModern.module.css'
 import type { InspectableItem } from './ContextDrawer'
 import styles from './DayTimeline.module.css'
 
@@ -26,6 +30,7 @@ type Props = {
 const HOUR = 56
 const SNAP = 15
 const toMinutes = (time: string) => {
+  if (!String(time || '').trim()) return NaN // sem horário não é 00:00
   const [h, m] = String(time || '').split(':').map(Number)
   return Number.isFinite(h) ? h * 60 + (Number.isFinite(m) ? m : 0) : NaN
 }
@@ -140,7 +145,8 @@ export function DayTimeline({ state, day, today, commit, inspect, accept }: Prop
     const number = (amount: number) => String(Math.round(amount * 10) / 10).replace('.', ',')
     const unit = String(item.raw.unidade || '').trim()
     const label = quantitative ? `${number(value)} de ${number(target)}${unit ? ` ${unit}` : ''}` : value > 0 ? 'Feito' : 'Pendente'
-    return { target, value, quantitative, label }
+    const failed = entry?.falhou === true
+    return { target, value, quantitative, label: failed ? 'Não feito' : label, failed, pct: Math.min(100, Math.round((value / target) * 100)) }
   }
   const toggleHabit = (item: PlannerItem) => {
     if (day > today) return open(item)
@@ -171,25 +177,70 @@ export function DayTimeline({ state, day, today, commit, inspect, accept }: Prop
 
   const hours = Array.from({ length: lastHour - firstHour + 1 }, (_, index) => firstHour + index)
 
-  const looseRow = (item: PlannerItem) => (
-    <div key={item.id} className={styles.looseItem} data-kind={item.kind} data-done={item.completed || undefined} {...dragProps(item)}>
-      {movable(item) ? <Icon name="drag_indicator" size={16} filled={false} className={styles.grip} /> : null}
-      {item.kind === 'task'
-        ? <button type="button" className={styles.check} aria-label={`Concluir: ${item.title}`} aria-pressed={item.completed} onClick={() => toggleTask(item)}>{item.completed ? <Icon name="check" size={12} /> : null}</button>
-        : item.kind === 'habit'
-          ? <button type="button" className={styles.check} aria-label={`Registrar: ${item.title}`} aria-pressed={item.completed} onClick={() => toggleHabit(item)}>{item.completed ? <Icon name="check" size={12} /> : null}</button>
-          : <Icon name={item.kind === 'finance' ? 'payments' : 'event'} size={16} filled={false} style={{ color: item.color }} />}
-      <button type="button" className={styles.looseMain} onClick={() => open(item)}>
-        <span>{item.title}</span>
-        <small>{item.kind === 'finance' ? item.subtitle : item.kind === 'event' ? 'Dia inteiro' : item.kind === 'habit' ? habitState(item).label : item.subtitle}</small>
-      </button>
-      {movable(item) && item.kind !== 'event' ? (
-        pickFor === item.id
-          ? <input type="time" className={styles.timeInput} aria-label={`Horário de ${item.title}`} autoFocus onBlur={() => setPickFor('')} onChange={event => { if (event.target.value) { schedule(item, event.target.value); setPickFor('') } }} />
-          : <button type="button" className={styles.timeButton} onClick={() => setPickFor(item.id)}>Horário</button>
-      ) : null}
+  const projectOf = (item: PlannerItem) => (state.projects as Record<string, any>[]).find(project => String(project.id) === String(item.raw.projeto_id || ''))
+  const timeControl = (item: PlannerItem) => (
+    movable(item) && item.kind !== 'event' && !item.time ? (
+      pickFor === item.id
+        ? <input type="time" className={styles.timeInput} aria-label={`Horário de ${item.title}`} autoFocus onBlur={() => setPickFor('')} onChange={event => { if (event.target.value) { schedule(item, event.target.value); setPickFor('') } }} />
+        : <button type="button" className={styles.timeButton} onClick={() => setPickFor(item.id)}>Horário</button>
+    ) : null
+  )
+
+  // Mesmo visual das listas do módulo Hoje.
+  const taskRow = (item: PlannerItem) => {
+    const project = projectOf(item)
+    const priority = Number(item.raw.prioridade || 4)
+    const color = priority === 1 ? 'var(--ds-rose-fg)' : priority === 2 ? 'var(--ds-peach-fg)' : priority === 3 ? 'var(--ds-sky-fg)' : ''
+    return (
+      <div key={item.id} role="listitem" className={`${todayStyles.item} ${todayStyles.itemWrap} ${todayStyles.task} ${item.completed ? todayStyles.itemPassed : ''}`} {...dragProps(item)}>
+        <Check className={todayStyles.itemCheck} checked={item.completed} label={`Concluir: ${item.title}`} data-priority={!item.completed && color ? priority : undefined} style={!item.completed && color ? ({ '--check-color': color } as CSSProperties) : undefined} onCheckedChange={() => toggleTask(item)} />
+        <div className={todayStyles.taskMain} onClick={() => open(item)}>
+          <button type="button" className={todayStyles.taskTitleBtn}>{item.title}</button>
+          <div className={todayStyles.taskMeta}>
+            {item.time ? <span className={todayStyles.dateTag}><Icon name="schedule" size={14} filled={false} />{item.time}</span> : null}
+            <span className={todayStyles.projLabel} style={{ color: String(project?.cor || 'var(--ds-line-strong)') }}>{String(project?.nome || 'Entrada')}<b>#</b></span>
+          </div>
+        </div>
+        {timeControl(item)}
+      </div>
+    )
+  }
+
+  const habitRow = (item: PlannerItem) => {
+    const info = habitState(item)
+    const color = String(item.raw.cor_hex || item.color || 'var(--ds-accent)')
+    const entry = (state.habitEntries as Record<string, any>[]).find(row => String(row.habito_id) === item.sourceId && String(row.data).slice(0, 10) === day)
+    const sub = [item.time, info.quantitative || info.failed ? info.label : item.completed ? 'Feito' : 'Pendente'].filter(Boolean).join(' · ')
+    return (
+      <div key={item.id} role="listitem" className={todayStyles.habitRow} style={{ '--hc': color } as CSSProperties} {...dragProps(item)}>
+        <button type="button" className={todayStyles.habitBody} onClick={() => open(item)}>
+          <span className={todayStyles.habitTitle} style={{ color }}>{item.title}</span>
+          <span className={todayStyles.habitDesc}>{sub}</span>
+        </button>
+        {timeControl(item)}
+        <span className={todayStyles.habitDots}>
+          <button type="button" className={todayStyles.habitDay} data-on={info.pct >= 100 || undefined} data-part={(info.pct > 0 && info.pct < 100) || undefined} data-failed={info.failed || undefined} data-today={day === today || undefined} disabled={day > today} onClick={() => toggleHabit(item)} aria-label={`Registrar: ${item.title}`}>
+            <DotRing pct={info.pct} value={Number(entry?.valor || 0)} unit={abbreviateUnit(item.raw.unidade)} plain={!info.quantitative} fail={info.failed} empty={info.value <= 0 && !info.failed} today={day === today} />
+          </button>
+        </span>
+      </div>
+    )
+  }
+
+  const financeRow = (item: PlannerItem) => (
+    <div key={item.id} role="listitem" className={`${todayStyles.item} ${todayStyles.itemWrap} ${todayStyles.task} ${item.completed ? todayStyles.itemPassed : ''}`}>
+      <Icon name="payments" size={20} filled={false} style={{ color: item.color }} />
+      <div className={todayStyles.taskMain} onClick={() => open(item)}>
+        <button type="button" className={todayStyles.taskTitleBtn}>{item.title}</button>
+        <div className={todayStyles.taskMeta}><span className={todayStyles.dateTag}>{item.subtitle}</span></div>
+      </div>
     </div>
   )
+
+  const groupEvents = items.filter(item => item.kind === 'event')
+  const groupTasks = items.filter(item => item.kind === 'task')
+  const groupHabits = items.filter(item => item.kind === 'habit')
+  const groupFinance = items.filter(item => item.kind === 'finance')
 
   return (
     <div className={styles.wrap}>
@@ -261,15 +312,17 @@ export function DayTimeline({ state, day, today, commit, inspect, accept }: Prop
         <aside className={styles.side} data-open={dockOpen || undefined} aria-label="Dia todo">
           <button type="button" className={styles.dockBar} aria-expanded={dockOpen} onClick={() => setDockOpen(open => !open)}>
             <strong>Dia todo</strong>
-            <span>{loose.length ? `${loose.length} sem horário` : 'Nada sem horário'}{overdue.length ? ` · ${overdue.length} ${overdue.length === 1 ? 'atrasada' : 'atrasadas'}` : ''}</span>
+            <span>{items.length ? `${items.length} ${items.length === 1 ? 'item' : 'itens'}` : 'Nada neste dia'}{overdue.length ? ` · ${overdue.length} ${overdue.length === 1 ? 'atrasada' : 'atrasadas'}` : ''}</span>
             <Icon name={dockOpen ? 'expand_more' : 'expand_less'} size={20} filled={false} />
           </button>
           <div className={styles.dockBody}>
             <section className={styles.panel}>
               <h2>Dia todo</h2>
-              <div className={styles.looseList}>
-                {loose.length ? loose.map(looseRow) : <small className={styles.empty}>Tudo com horário por aqui.</small>}
-              </div>
+              {items.length ? null : <small className={styles.empty}>Nada previsto para este dia.</small>}
+              {groupEvents.length ? <div className={styles.group}><h3>Compromissos</h3><AgendaStrip items={groupEvents} nowMinutes={isToday ? nowMin : null} isPassed={() => false} onOpen={open} bind={() => ({})} /></div> : null}
+              {groupTasks.length ? <div className={styles.group}><h3>Tarefas</h3><div className={todayStyles.items} role="list">{groupTasks.map(taskRow)}</div></div> : null}
+              {groupHabits.length ? <div className={styles.group}><h3>Hábitos</h3><div className={todayStyles.habitList} role="list">{groupHabits.map(habitRow)}</div></div> : null}
+              {groupFinance.length ? <div className={styles.group}><h3>Finanças</h3><div className={todayStyles.items} role="list">{groupFinance.map(financeRow)}</div></div> : null}
             </section>
             {overdue.length ? (
               <section className={`${styles.panel} ${styles.panelLate}`}>

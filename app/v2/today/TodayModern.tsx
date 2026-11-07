@@ -21,7 +21,7 @@ import { ValueDialog } from '../habits/HabitsModern'
 import { abbreviateUnit } from '../../../lib/v2/units'
 import { AgendaStrip } from './AgendaStrip'
 import styles from './TodayModern.module.css'
-import { DayNav, DayTimeline } from '../DayTimeline'
+import { DayTimeline } from '../DayTimeline'
 
 /*
  * Tela Hoje — visual Moderno.
@@ -300,6 +300,12 @@ export function TodayModern({ state, today, commit, navigate, inspect, options, 
       const button = weeksRef.current?.querySelector<HTMLButtonElement>(`[data-day="${next}"]`)
       button?.focus({ preventScroll: true })
     })
+  }
+
+  const stepDay = (direction: number) => {
+    const next = new Date(`${day}T12:00:00`)
+    next.setDate(next.getDate() + direction)
+    setSelected(toKey(next))
   }
 
   const goToToday = () => {
@@ -978,16 +984,19 @@ export function TodayModern({ state, today, commit, navigate, inspect, options, 
             <button type="button" aria-pressed={!timeline} onClick={() => setTodayView('list')}>Lista</button>
             <button type="button" aria-pressed={timeline} onClick={() => setTodayView('timeline')}>Linha do tempo</button>
           </div>
-          {!isToday && !timeline ? <Button variant="secondary" size="sm" pill icon="undo" onClick={goToToday}>Hoje</Button> : null}
+          {timeline ? (
+            <div className={styles.dayStepper} role="group" aria-label="Navegar entre dias">
+              <button type="button" aria-label="Dia anterior" onClick={() => stepDay(-1)}><Icon name="chevron_left" size={20} filled={false} /></button>
+              <button type="button" aria-label="Próximo dia" onClick={() => stepDay(1)}><Icon name="chevron_right" size={20} filled={false} /></button>
+            </div>
+          ) : null}
+          {!isToday ? <Button variant="secondary" size="sm" pill icon="undo" onClick={goToToday}>Hoje</Button> : null}
           {options ? <div className={styles.options}>{options}</div> : null}
         </div>
       </header>
 
       {timeline ? (
-        <>
-          <DayNav day={day} today={today} onStep={direction => { const next = new Date(`${day}T12:00:00`); next.setDate(next.getDate() + direction); setSelected(`${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, '0')}-${String(next.getDate()).padStart(2, '0')}`) }} onToday={goToToday} />
-          <DayTimeline state={state} day={day} today={today} commit={commit} inspect={inspect} />
-        </>
+        <DayTimeline state={state} day={day} today={today} commit={commit} inspect={inspect} />
       ) : (
         <div className={styles.board}>
           {column('main')}
