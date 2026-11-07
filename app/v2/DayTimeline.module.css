@@ -55,7 +55,6 @@
 .habitProgress { font-size: 12px; color: var(--ds-muted); white-space: nowrap; flex-shrink: 0; }
 .habitLine .blockMain { flex-direction: row; align-items: center; }
 
-.dockBar { display: none; }
 .dockBody { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
 .looseList { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
 
@@ -65,28 +64,26 @@
 .dayNav .dayTitle { appearance: none; border: 0; background: transparent; flex: 1; min-height: 30px; text-align: center; font: inherit; font-size: 22px; line-height: 1.15; font-weight: var(--ds-fw-bold); letter-spacing: -0.02em; color: var(--ds-accent); cursor: pointer; padding: 0; }
 
 @media (max-width: 900px) {
-  .wrap { padding-bottom: 210px; }
+  .wrap { padding-bottom: 72px; }
   .dayNav { width: 100%; }
   .dayStep { width: 40px; height: 40px; }
   .dayNav .dayTitle { font-size: 20px; }
-  .side {
-    position: fixed; z-index: 1200; left: 0; right: 0;
-    bottom: calc(max(12px, env(safe-area-inset-bottom)) + 80px);
-    max-height: 190px; box-sizing: border-box; overflow: hidden;
-    background: var(--ds-surface-2); border-top: 1px solid var(--ds-line); box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.08);
-    padding: 8px 0 10px; gap: 0;
+
+  /* Barra fina e fixa, de ponta a ponta no fundo; o painel abre em pop-up. */
+  .side { position: fixed; z-index: 1300; left: 0; right: 0; bottom: 0; gap: 0; }
+  .scrim { position: fixed; inset: 0; z-index: 1; border: 0; background: rgba(0, 0, 0, 0.4); }
+  .dockBody { display: none; }
+  .side[data-open] .dockBody {
+    display: flex; position: fixed; z-index: 2; left: 0; right: 0;
+    bottom: calc(56px + env(safe-area-inset-bottom));
+    max-height: 72vh; overflow-y: auto; box-sizing: border-box;
+    background: var(--ds-surface); border-radius: 16px 16px 0 0; padding: 16px 16px 20px; gap: 8px;
   }
-  .side[data-open] { max-height: min(60vh, 520px); overflow-y: auto; }
-  .dockBar { appearance: none; border: 0; background: transparent; color: var(--ds-text); font: inherit; display: flex; align-items: center; gap: 8px; width: 100%; min-height: 40px; padding: 0 16px; cursor: pointer; text-align: left; }
-  .dockBar strong { font-size: 15px; font-weight: var(--ds-fw-heavy); }
-  .dockBar span { flex: 1; font-size: 12.5px; color: var(--ds-muted); }
-  .dockBody { gap: 8px; padding: 0 16px; }
   .panel { border: 0; padding: 0; background: transparent; }
   .panel h2 { display: none; }
-  .side:not([data-open]) { overflow-y: auto; }
-  .side:not([data-open]) .panelLate { display: none; }
   .panelLate::before { content: 'Atrasadas'; font-size: 12.5px; font-weight: var(--ds-fw-heavy); color: var(--ds-muted); }
 }
+@media (min-width: 901px) { .scrim { display: none; } }
 
 .group { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
 .group h3 { margin: 6px 0 0; font-size: 12px; font-weight: var(--ds-fw-heavy); color: var(--ds-muted); text-transform: uppercase; letter-spacing: 0.04em; }
@@ -95,3 +92,9 @@
 .side .hojeScope.hojeScope { max-width: none; margin: 0; width: 100%; padding: 0; gap: 12px; border: 0; background: transparent; box-sizing: border-box; }
 .side .hojeScope.hojeScope h2 { display: none; }
 .block[data-short] { padding-top: 0; padding-bottom: 0; }
+
+.organize { display: none; }
+@media (max-width: 900px) {
+  .organize { position: relative; appearance: none; border: 0; background: var(--ds-accent-soft); color: var(--ds-accent); height: 40px; width: 40px; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
+  .organize b { position: absolute; top: 2px; right: 0; min-width: 16px; height: 16px; padding: 0 4px; box-sizing: border-box; border-radius: 99px; background: var(--ds-accent); color: #fff; font-size: 10px; font-weight: var(--ds-fw-bold); display: grid; place-items: center; }
+}
