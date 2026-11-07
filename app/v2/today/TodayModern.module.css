@@ -2106,3 +2106,10 @@ html body .itemButton.itemButton:hover .taskTitle { text-decoration: underline; 
 .dayStepper { display: inline-flex; gap: 2px; }
 .dayStepper button { appearance: none; border: 1px solid var(--ds-line); background: transparent; color: var(--ds-text); width: 30px; height: 30px; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
 .dayStepper button:hover { background: var(--ds-surface-hover); }
+
+/* Linha do tempo no celular: título em cima e os controles numa linha própria (sem sobrepor). */
+@media (max-width: 900px) {
+  .header[data-timeline] { flex-wrap: wrap; row-gap: 12px; }
+  .header[data-timeline] .headerText { flex: 1 1 100%; }
+  .header[data-timeline] .headerActions { flex: 1 1 100%; flex-wrap: wrap; justify-content: space-between; padding-top: 0; }
+}
