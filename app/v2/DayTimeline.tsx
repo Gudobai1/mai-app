@@ -3,7 +3,7 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore, type CSSProperties, type DragEvent } from 'react'
 import { plannerItems, type PlannerItem } from '../../lib/v2/planner'
 import type { MaiState } from '../../lib/v2/state'
-import { Check, Icon } from '../ds'
+import { Check, IonIcon as Icon } from '../ds'
 import { abbreviateUnit } from '../../lib/v2/units'
 import { AgendaStrip } from './today/AgendaStrip'
 import { DotRing } from './habits/DotRing'

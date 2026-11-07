@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { fold, parseNatural, type NlKind } from '../../lib/v2/nlp'
 import type { MaiState } from '../../lib/v2/state'
-import { Icon } from '../ds'
+import { IonIcon as Icon } from '../ds'
 import type { Row } from './app-types'
 import type { InspectableItem } from './ContextDrawer'
 import styles from './SearchOverlay.module.css'

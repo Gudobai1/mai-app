@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Button, Card, Check, DsRoot, Icon, IconButton, IconTile, List, ListItem, ProgressBar, SectionHeader, Tag } from '../ds'
+import { Button, Card, Check, DsRoot, IonIcon as Icon, IconButton, IconTile, List, ListItem, ProgressBar, SectionHeader, Tag } from '../ds'
 import type { Tone } from '../ds'
 import styles from './preview.module.css'
 

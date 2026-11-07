@@ -1,7 +1,7 @@
 'use client'
 
 import { useRef, useState, type CSSProperties, type ReactNode } from 'react'
-import { Icon } from '../../ds'
+import { IonIcon as Icon } from '../../ds'
 import { Floating } from '../detail/Pickers'
 import styles from './UpcomingControls.module.css'
 

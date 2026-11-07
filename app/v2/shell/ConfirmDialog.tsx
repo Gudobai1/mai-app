@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { Icon } from '../../ds'
+import { IonIcon as Icon } from '../../ds'
 import { CreateCalendarPicker } from '../CreateDrawerTools'
 import { MoneyPad } from '../MoneyInput'
 import styles from './ConfirmDialog.module.css'

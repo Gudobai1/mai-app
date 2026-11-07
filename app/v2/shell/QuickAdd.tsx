@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, type MouseEvent as ReactMouseEvent } from 'react'
 import { createPortal } from 'react-dom'
 import type { MaiState } from '../../../lib/v2/state'
-import { Icon } from '../../ds'
+import { IonIcon as Icon } from '../../ds'
 import type { Row } from '../app-types'
 import { driveAssetUrl } from '../DriveAsset'
 import { DatePicker, Floating, OptionList, ProjectPicker, ReminderPicker, RepeatPicker, TimePicker, repeatLabel as repeatText, reminderLabel, type PickerOption } from '../detail/Pickers'
