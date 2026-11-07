@@ -65,10 +65,21 @@ export function DayTimeline({ state, day, today, commit, inspect, accept }: Prop
     return () => window.clearInterval(timer)
   }, [])
 
-  const items = useMemo(
-    () => plannerItems(state, day, day).filter(item => item.kind !== 'goal' && !(item.kind === 'task' && item.raw.parent_id) && (!accept || accept(item))),
-    [state, day, accept],
-  )
+  const items = useMemo(() => {
+    const base = plannerItems(state, day, day).filter(item => item.kind !== 'goal' && item.kind !== 'finance' && !(item.kind === 'task' && item.raw.parent_id))
+    // Finanças e metas seguem a mesma regra do módulo Hoje (hoje inclui o que já venceu).
+    const key = (value: unknown) => String(value || '').slice(0, 10)
+    const due = (date: string) => Boolean(date) && (day === today ? date <= today : date === day)
+    const paid = (status: unknown) => ['pago', 'paga', 'quitado', 'quitada', 'concluido', 'concluida'].includes(String(status || '').toLowerCase())
+    const money = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' })
+    const finance: PlannerItem[] = (((state.finance as unknown as Record<string, any>)?.transactions || []) as Record<string, any>[])
+      .filter(item => due(key(item.data)) && !item.ignorar_calculo && !paid(item.status) && !(item.pluggy_id && !item.of_linked) && item.ocultar_inicio !== true && item.ocultar_home !== true && !(item.cartao_id && !item.ajuste_fatura && !item.fixo_id))
+      .map(item => ({ id: `finance:${item.id}:${day}`, sourceId: String(item.id), kind: 'finance', date: key(item.data), time: '', title: String(item.descricao || item.titulo || item.nome || item.categoria || 'Lançamento'), subtitle: `${item.tipo === 'receita' ? 'Receita' : 'Despesa'} · ${money.format(Number(item.valor || 0))}`, color: item.tipo === 'receita' ? '#4f8a66' : '#b75b55', completed: false, recurring: item.recorrente === true, raw: item }) as PlannerItem)
+    const goals: PlannerItem[] = ((state.goals || []) as unknown as Record<string, any>[])
+      .filter(goal => due(key(goal.prazo || goal.data || goal.data_limite || goal.deadline)) && goal.concluida !== true && !String(goal.status || '').toLowerCase().includes('conclu'))
+      .map(goal => ({ id: `goal:${goal.id}:${day}`, sourceId: String(goal.id), kind: 'goal', date: key(goal.prazo || goal.data || goal.data_limite || goal.deadline), time: '', title: String(goal.titulo || goal.nome || 'Meta'), subtitle: 'Prazo da meta', color: String(goal.cor || '#8a6f98'), completed: false, recurring: false, raw: goal }) as PlannerItem)
+    return [...base, ...finance, ...goals].filter(item => !accept || accept(item))
+  }, [state, day, today, accept])
 
   const firstHour = FIRST_HOUR
   const lastHour = LAST_HOUR
@@ -247,7 +258,7 @@ export function DayTimeline({ state, day, today, commit, inspect, accept }: Prop
 
   const financeRow = (item: PlannerItem) => (
     <div key={item.id} role="listitem" className={`${todayStyles.item} ${todayStyles.itemWrap} ${todayStyles.task} ${item.completed ? todayStyles.itemPassed : ''}`}>
-      <Icon name="payments" size={20} filled={false} style={{ color: item.color }} />
+      <Icon name={item.kind === 'goal' ? 'flag' : 'payments'} size={20} filled={false} style={{ color: item.color }} />
       <div className={todayStyles.taskMain} onClick={() => open(item)}>
         <button type="button" className={todayStyles.taskTitleBtn}>{item.title}</button>
         <div className={todayStyles.taskMeta}><span className={todayStyles.dateTag}>{item.subtitle}</span></div>
@@ -259,6 +270,7 @@ export function DayTimeline({ state, day, today, commit, inspect, accept }: Prop
   const groupTasks = items.filter(item => item.kind === 'task')
   const groupHabits = items.filter(item => item.kind === 'habit')
   const groupFinance = items.filter(item => item.kind === 'finance')
+  const groupGoals = items.filter(item => item.kind === 'goal')
 
   return (
     <div className={styles.wrap}>
@@ -341,6 +353,7 @@ export function DayTimeline({ state, day, today, commit, inspect, accept }: Prop
               {groupTasks.length ? <div className={styles.group}><h3>Tarefas</h3><div className={todayStyles.items} role="list">{groupTasks.map(taskRow)}</div></div> : null}
               {groupHabits.length ? <div className={styles.group}><h3>Hábitos</h3><div className={todayStyles.habitList} role="list">{groupHabits.map(habitRow)}</div></div> : null}
               {groupFinance.length ? <div className={styles.group}><h3>Finanças</h3><div className={todayStyles.items} role="list">{groupFinance.map(financeRow)}</div></div> : null}
+              {groupGoals.length ? <div className={styles.group}><h3>Metas</h3><div className={todayStyles.items} role="list">{groupGoals.map(financeRow)}</div></div> : null}
             </section>
             {overdue.length ? (
               <section className={`${styles.panel} ${styles.panelLate}`}>
