@@ -2,6 +2,7 @@
 
 import { ReactNode, useEffect, useMemo, useState } from 'react'
 import type { MaiState } from '../../lib/v2/state'
+import { IonIcon } from '../ds'
 import type { AppView, TaskModuleScope } from './app-types'
 
 type Row = Record<string, any>
@@ -147,8 +148,8 @@ export function AppTopBar({ state, today, view, taskScope, commit, onTaskScopeCh
         <div className="mai-app-topbar-sections">
           {todayOrder.map((id, index) => <div key={id} className="mai-app-topbar-section-row">
             <button type="button" className="mai-app-topbar-section-toggle" data-active={!todayHidden.has(id)} aria-pressed={!todayHidden.has(id)} onClick={() => toggleTodaySection(id)}><span className="material-symbols-rounded">{todayHidden.has(id) ? 'check_box_outline_blank' : 'check_box'}</span>{TODAY_SECTION_LABELS[id]}</button>
-            <button type="button" className="mai-app-topbar-section-move" disabled={index === 0} onClick={() => moveTodaySection(id, -1)} aria-label={`Mover ${TODAY_SECTION_LABELS[id]} para cima`}><span className="material-symbols-rounded">arrow_upward</span></button>
-            <button type="button" className="mai-app-topbar-section-move" disabled={index === todayOrder.length - 1} onClick={() => moveTodaySection(id, 1)} aria-label={`Mover ${TODAY_SECTION_LABELS[id]} para baixo`}><span className="material-symbols-rounded">arrow_downward</span></button>
+            <button type="button" className="mai-app-topbar-section-move" disabled={index === 0} onClick={() => moveTodaySection(id, -1)} aria-label={`Mover ${TODAY_SECTION_LABELS[id]} para cima`}><IonIcon name="arrow_upward" size={18} /></button>
+            <button type="button" className="mai-app-topbar-section-move" disabled={index === todayOrder.length - 1} onClick={() => moveTodaySection(id, 1)} aria-label={`Mover ${TODAY_SECTION_LABELS[id]} para baixo`}><IonIcon name="arrow_downward" size={18} /></button>
           </div>)}
         </div>
       </PanelSection>
@@ -238,7 +239,7 @@ export function AppTopBar({ state, today, view, taskScope, commit, onTaskScopeCh
 
   return <div className="mai-app-topbar" data-view={String(view)} data-sort-mode={sortMode}>
     <div className="mai-app-topbar-context"><strong>{title}</strong><span>{info}</span></div>
-    <div className="mai-app-topbar-single-action"><button type="button" className="mai-app-topbar-menu-button" data-active={open} title="Opções do módulo" aria-label="Opções do módulo" onClick={() => setOpen(value => !value)}><span className="material-symbols-rounded">tune</span><span>Opções</span></button></div>
+    <div className="mai-app-topbar-single-action"><button type="button" className="mai-app-topbar-menu-button" data-active={open} title="Opções do módulo" aria-label="Opções do módulo" onClick={() => setOpen(value => !value)}><IonIcon name="tune" size={18} /></button></div>
     {open ? panel : null}
   </div>
 }

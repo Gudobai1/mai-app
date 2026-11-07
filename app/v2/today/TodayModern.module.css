@@ -2113,3 +2113,32 @@ html body .itemButton.itemButton:hover .taskTitle { text-decoration: underline; 
   .header[data-timeline] .headerText { flex: 1 1 100%; }
   .header[data-timeline] .headerActions { flex: 1 1 100%; flex-wrap: wrap; justify-content: space-between; padding-top: 0; }
 }
+
+
+/* ------------------------------------------------------------------
+ * Sistema de design (etapa 3): linha de item do Hoje.
+ * Check quadrado, título 15/500, data 13/600 embaixo à esquerda com a cor do estado
+ * (hoje amarelo, atrasada vermelho, futura verde, concluída cinza), direita só em texto,
+ * divisória fina e foco no próprio contorno. Valores em docs/PADROES.md.
+ * ------------------------------------------------------------------ */
+.page .items .itemCheck.itemCheck.itemCheck { width: 20px; height: 20px; margin-top: 1px; border-radius: var(--ds-r-sm); }
+.page .items .itemCheck.itemCheck.itemCheck[data-priority="1"] { --check-color: var(--ds-prio-1); }
+.page .items .itemCheck.itemCheck.itemCheck[data-priority="2"] { --check-color: var(--ds-prio-2); }
+.page .items .itemCheck.itemCheck.itemCheck[data-priority="3"] { --check-color: var(--ds-prio-3); }
+.page .items .taskTitleBtn.taskTitleBtn,
+.page .items .taskTitle.taskTitle { font-size: var(--ds-fs-md); font-weight: var(--ds-fw-medium); line-height: 1.3; }
+.page .items .dateTag.dateTag { font-size: var(--ds-fs-sm); font-weight: var(--ds-fw-bold); color: var(--ds-date-future); }
+.page .items .dateTag.dateToday { color: var(--ds-date-today); }
+.page .items .dateTag.dateLate { color: var(--ds-date-late); }
+.page .items .dateTag.dateDone { color: var(--ds-date-done); }
+.page .items .subChip.subChip { font-size: var(--ds-fs-md); font-weight: var(--ds-fw-medium); color: var(--ds-muted); }
+.page .items .item.item { border-bottom: var(--ds-hairline-w) solid var(--ds-hairline); }
+.page .items .item.item:last-child { border-bottom-color: transparent; }
+.page .items .item.item:focus-visible,
+.page .items .itemButton.itemButton:focus-visible { outline: var(--ds-focus-ring); outline-offset: -2px; }
+
+/* Datas também fora de .page .items (ex.: Em breve usa estas classes) */
+.dateTag.dateTag { font-size: var(--ds-fs-sm); font-weight: var(--ds-fw-bold); color: var(--ds-date-future); }
+.dateTag.dateToday { color: var(--ds-date-today); }
+.dateTag.dateLate { color: var(--ds-date-late); }
+.dateTag.dateDone { color: var(--ds-date-done); }

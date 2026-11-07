@@ -2,21 +2,18 @@
    Linha 1: título.
    Linha 2: data + projeto, categoria, horário, valor, progresso ou outro detalhe útil. */
 :root{
-  --mai-date-overdue:#c94f45;
-  --mai-date-today:#b77a00;
-  --mai-date-future:#4b78c2;
-  --mai-date-neutral:var(--v3-muted);
-  --mai-priority-1:#c85b52;
-  --mai-priority-2:#c28a3d;
-  --mai-priority-3:#7c9274;
-  --mai-priority-4:#b8beb7;
+  --mai-date-overdue:var(--ds-date-late);
+  --mai-date-today:var(--ds-date-today);
+  --mai-date-future:var(--ds-date-future);
+  --mai-date-neutral:var(--ds-date-done);
+  --mai-priority-1:var(--ds-prio-1);
+  --mai-priority-2:var(--ds-prio-2);
+  --mai-priority-3:var(--ds-prio-3);
+  --mai-priority-4:var(--ds-prio-none);
 }
 
 html[data-mai-theme="dark"]{
-  --mai-date-overdue:#ef8177;
-  --mai-date-today:#e3b94e;
-  --mai-date-future:#82a9eb;
-  --mai-date-neutral:var(--v3-muted);
+  /* cores de data e prioridade já mudam no tema escuro pelos tokens --ds-* */
 }
 
 /* Volta ao cartão compacto de duas linhas. */

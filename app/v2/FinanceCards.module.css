@@ -1,7 +1,7 @@
 /* Lançamentos no modo lista do módulo de tarefas: linha sem fundo, divisória fina, círculo na cor da categoria. */
 .card { position: relative; display: flex; align-items: flex-start; gap: 12px; padding: 12px 6px; border-radius: 0; background: transparent; box-shadow: none; border-bottom: 1px solid color-mix(in srgb, var(--ds-line) 70%, transparent); transition: background-color var(--ds-dur-fast) var(--ds-ease); }
 .card:hover { background: color-mix(in srgb, var(--ds-surface) 55%, transparent); }
-.check { appearance: none; flex-shrink: 0; width: 20px; height: 20px; margin-top: 1px; padding: 0; display: grid; place-items: center; border: 2px solid var(--check-color, var(--ds-line-strong)); border-radius: 50%; background: color-mix(in srgb, var(--check-color, transparent) 14%, transparent); color: var(--check-color, var(--ds-muted)); cursor: pointer; }
+.check { appearance: none; flex-shrink: 0; width: 20px; height: 20px; margin-top: 1px; padding: 0; display: grid; place-items: center; border: 2px solid var(--check-color, var(--ds-line-strong)); border-radius:4px; background: color-mix(in srgb, var(--check-color, transparent) 14%, transparent); color: var(--check-color, var(--ds-muted)); cursor: pointer; }
 .check > * { opacity: 0; transform: scale(0.4); transition: opacity 140ms ease, transform 180ms cubic-bezier(0.2, 0.8, 0.2, 1); }
 .check:hover > * { opacity: 0.9; transform: none; }
 .check[data-done] { border-color: var(--ds-muted); background: var(--ds-muted); color: var(--ds-bg); }

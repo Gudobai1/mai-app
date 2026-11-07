@@ -1,4 +1,5 @@
 import type { ButtonHTMLAttributes, CSSProperties, HTMLAttributes, ReactNode } from 'react'
+import { ION_ALIAS, ION_SVG } from './ionicons-data'
 import { LUCIDE_ICONS } from './lucide'
 import styles from './ui.module.css'
 
@@ -308,5 +309,30 @@ export function DsRoot({ children, className, theme, ...rest }: HTMLAttributes<H
     <div className={cx(styles.root, theme === 'dark' && 'ds-theme-dark', theme === 'light' && 'ds-theme-light', className)} {...rest}>
       {children}
     </div>
+  )
+}
+
+/* ------------------------------------------------------------ Ícone (Ionicons) */
+/*
+ * Ícone do sistema de design novo (Ionicons, MIT). Mesmo uso do `Icon`: aceita os nomes
+ * Material/Lucide já usados no app e troca pelo desenho do Ionicons. Nome sem equivalente
+ * cai no `Icon` antigo, então dá para migrar tela por tela. Contorno por padrão; `filled` = ativo.
+ */
+export function IonIcon({ name, size = 22, filled = false, weight, className, style }: IconProps) {
+  const alias = ION_ALIAS[name]
+  const body = alias ? ION_SVG[alias[filled ? 1 : 0]] : undefined
+  if (!body) return <Icon name={name} size={size} filled={filled} weight={weight} className={className} style={style} />
+  return (
+    <svg
+      aria-hidden="true"
+      focusable="false"
+      className={cx(styles.ion, className)}
+      width={size}
+      height={size}
+      viewBox="0 0 512 512"
+      fill="currentColor"
+      style={{ flex: 'none', ...style }}
+      dangerouslySetInnerHTML={{ __html: body }}
+    />
   )
 }

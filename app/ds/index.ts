@@ -1,2 +1,4 @@
-export { Button, Card, Check, DsRoot, Icon, IconButton, IconTile, List, ListItem, ProgressBar, SectionHeader, Tag } from './ui'
+export { Button, Card, Check, DsRoot, Icon, IconButton, IonIcon, IconTile, List, ListItem, ProgressBar, SectionHeader, Tag } from './ui'
 export type { ButtonProps, CardProps, CheckProps, IconButtonProps, IconProps, IconTileProps, ListItemProps, Tone } from './ui'
+export { DayIcon } from './DayIcon'
+export { PRIORITY_COLOR } from './priority'

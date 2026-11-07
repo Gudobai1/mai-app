@@ -1,7 +1,7 @@
 'use client'
 
 import { useRef, useState } from 'react'
-import { Icon } from '../../ds'
+import { IonIcon as Icon } from '../../ds'
 import { PALETTE, colorName } from '../../../lib/v2/palette'
 import { Floating, OptionList, type PickerOption } from './Pickers'
 import styles from './ColorField.module.css'

@@ -40,7 +40,7 @@
 .mai-today-item{min-height:58px;display:grid;grid-template-columns:26px minmax(0,1fr) auto;align-items:center;gap:10px;border-bottom:1px solid var(--line);}
 .mai-today-item[data-completed="true"]{opacity:.52;}
 .mai-today-item[data-completed="true"] .mai-item-body strong{text-decoration:line-through;}
-.mai-round-check{width:18px;height:18px;padding:0;border:1.5px solid var(--line-strong);border-radius:50%;background:transparent;color:#fff;font-size:10px;display:grid;place-items:center;}
+.mai-round-check{width:18px;height:18px;padding:0;border:1.5px solid var(--line-strong);border-radius:4px;background:transparent;color:#fff;font-size:10px;display:grid;place-items:center;}
 .mai-round-check[data-overdue="true"]{border-color:var(--danger);}
 .mai-item-body{min-width:0;padding:9px 0;border:0;background:transparent;text-align:left;}
 .mai-item-body strong,.mai-item-body small{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
