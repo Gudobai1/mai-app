@@ -2136,3 +2136,9 @@ html body .itemButton.itemButton:hover .taskTitle { text-decoration: underline; 
 .page .items .item.item:last-child { border-bottom-color: transparent; }
 .page .items .item.item:focus-visible,
 .page .items .itemButton.itemButton:focus-visible { outline: var(--ds-focus-ring); outline-offset: -2px; }
+
+/* Datas também fora de .page .items (ex.: Em breve usa estas classes) */
+.dateTag.dateTag { font-size: var(--ds-fs-sm); font-weight: var(--ds-fw-bold); color: var(--ds-date-future); }
+.dateTag.dateToday { color: var(--ds-date-today); }
+.dateTag.dateLate { color: var(--ds-date-late); }
+.dateTag.dateDone { color: var(--ds-date-done); }

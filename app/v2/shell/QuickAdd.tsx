@@ -17,6 +17,7 @@ import { INTERVAL_CHOICES, intervalChoice, intervalDays, intervalLabel, shiftIns
 import { PALETTE } from '../../../lib/v2/palette'
 import { MoneyInput } from '../MoneyInput'
 import styles from './QuickAdd.module.css'
+import { PRIORITY_COLOR } from '../../ds/priority'
 
 /**
  * Adicionar rápido: o mesmo formulário em todo o app, com as opções de cada
@@ -71,7 +72,6 @@ const PRIORITIES: PickerOption[] = [
   { value: '3', label: 'Baixa', icon: 'flag', color: 'var(--ds-sky-fg)' },
   { value: '4', label: 'Sem prioridade', icon: 'outlined_flag', color: 'var(--ds-muted)' },
 ]
-const PRIORITY_COLOR: Record<number, string> = { 1: 'var(--ds-rose-fg)', 2: 'var(--ds-peach-fg)', 3: 'var(--ds-sky-fg)' }
 
 function addDays(key: string, amount: number) {
   const value = new Date(`${key}T12:00:00`)

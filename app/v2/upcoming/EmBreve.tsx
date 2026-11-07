@@ -4,7 +4,7 @@ import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState, type C
 import { addDays, eventColor, plannerItems, type PlannerItem } from '../../../lib/v2/planner'
 import { hiddenOccurrenceIds } from '../../../lib/v2/series'
 import { dateKey, type MaiState } from '../../../lib/v2/state'
-import { Check, Icon } from '../../ds'
+import { Check, IonIcon as Icon } from '../../ds'
 import type { Row } from '../app-types'
 import type { InspectableItem } from '../ContextDrawer'
 import { driveAssetUrl } from '../DriveAsset'
@@ -18,6 +18,7 @@ import styles from './EmBreve.module.css'
 import { CategoryManager } from '../detail/CategoryManager'
 import { DayNav, DayTimeline, OrganizeButton } from '../DayTimeline'
 import { DEFAULT_DISPLAY, EMPTY_FILTERS, KINDS, UpcomingControls, normalizeFilters, type Kind, type UpcomingDisplay, type UpcomingFilters } from './UpcomingControls'
+import { PRIORITY_COLOR } from '../../ds/priority'
 
 /**
  * Em breve = agenda do MAI: compromissos, tarefas, hábitos e lançamentos
@@ -50,7 +51,6 @@ type Entry = {
 }
 
 const rows = (value: unknown): Row[] => (Array.isArray(value) ? (value as Row[]) : [])
-const PRIORITY_COLOR: Record<number, string> = { 1: 'var(--ds-rose-fg)', 2: 'var(--ds-peach-fg)', 3: 'var(--ds-sky-fg)' }
 const WEEKDAY = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
 const HOUR = 52
 const MAX_HORIZON = 730
@@ -371,7 +371,7 @@ export function EmBreve({ state, today, commit, inspect, syncRange }: Props) {
           <button type="button" className={todayStyles.taskTitleBtn}>{entry.title}</button>
           {description ? <div className={todayStyles.taskDesc}>{description}</div> : null}
           <div className={todayStyles.taskMeta}>
-            {when ? <span className={`${todayStyles.dateTag} ${entry.late ? todayStyles.dateLate : entry.day === today ? todayStyles.dateToday : ''}`}><Icon name={withDate ? 'calendar_today' : 'schedule'} size={14} filled={false} />{when}</span> : null}
+            {when ? <span className={`${todayStyles.dateTag} ${entry.late ? todayStyles.dateLate : entry.day === today ? todayStyles.dateToday : ''}`}>{when}</span> : null}
             {entry.recurring ? <span className={todayStyles.dateTag}><Icon name="repeat" size={14} filled={false} />Repete</span> : null}
           </div>
         </div>

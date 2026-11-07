@@ -22,6 +22,7 @@ import { abbreviateUnit } from '../../../lib/v2/units'
 import { AgendaStrip } from './AgendaStrip'
 import styles from './TodayModern.module.css'
 import { DayTimeline, OrganizeButton } from '../DayTimeline'
+import { PRIORITY_COLOR } from '../../ds/priority'
 
 /*
  * Tela Hoje — visual Moderno.
@@ -74,7 +75,6 @@ const failedEntry = (entry?: Row) => entry?.falhou === true || String(entry?.sta
 const plural = (count: number, one: string, many: string) => `${count} ${count === 1 ? one : many}`
 const capitalize = (text: string) => text.charAt(0).toLocaleUpperCase('pt-BR') + text.slice(1)
 
-const PRIORITY_COLOR: Record<number, string> = { 1: 'var(--ds-rose-fg)', 2: 'var(--ds-peach-fg)', 3: 'var(--ds-sky-fg)' }
 
 function toKey(date: Date) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
