@@ -293,3 +293,10 @@
 .check.check.check:not(.checkOn):hover { border-color: var(--check-color, var(--ds-line-strong)); color: var(--check-color, var(--ds-muted)); }
 .checkLate.checkLate.checkLate:not(.checkOn):hover { border-color: var(--ds-danger); color: var(--ds-danger); }
 .check.check.check:not(.checkOn):hover > * { opacity: 0.9; }
+
+/* Ícone Ionicons (SVG): herda a cor do texto */
+.ion.ion {
+  display: inline-block;
+  vertical-align: middle;
+  flex: none;
+}
