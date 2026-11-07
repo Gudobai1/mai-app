@@ -201,6 +201,25 @@ type DetailProps = Props & { item: InspectableItem; register: (flush: () => void
 
 /* ------------------------------------------------------------ Peças comuns */
 
+/* Janela de item (padrão global): conteúdo à esquerda, propriedades à direita, rodapé com os botões à direita.
+ * Todo tipo de item (tarefa, compromisso, hábito, lançamento, meta, nota) monta o corpo por aqui. */
+function ItemLayout({ side, children }: { side?: ReactNode; children: ReactNode }) {
+  const phone = useIsPhone()
+  return (
+    <div className={styles.taskMain}>
+      <div className={styles.taskContent}>
+        {phone && side ? <PropVariantCtx.Provider value="icon"><div className={styles.iconProps}>{side}</div></PropVariantCtx.Provider> : null}
+        {children}
+      </div>
+      {!phone && side ? (
+        <PropVariantCtx.Provider value="row">
+          <aside className={styles.taskSide} aria-label="Propriedades">{side}</aside>
+        </PropVariantCtx.Provider>
+      ) : null}
+    </div>
+  )
+}
+
 function Header({ kind, crumbs, hideKind }: { kind: string; crumbs?: ReactNode; onClose?: () => void; hideKind?: boolean }) {
   const { requestClose } = useContext(DetailCtx)
   return (
@@ -769,16 +788,7 @@ function EventDetail({ item, state, today, commit, googleRpc, refreshEvents, reg
   return (
     <>
       <Header kind="event" onClose={() => void close()} crumbs={<span className={styles.crumb}><i>·</i>{calendarName}</span>} />
-      <div className={styles.scroll}>
-        <div className={styles.titleRow}>
-          <span className={styles.tile} style={{ background: color.startsWith('#') ? color : undefined }}><Icon name="event" size={17} /></span>
-          <div className={styles.titleBody}>
-            <GrowText className={styles.title} value={draft.titulo} placeholder="Nome do compromisso" multiline={false} onChange={titulo => update({ titulo })} />
-            <GrowText className={styles.description} value={draft.descricao} placeholder="Adicionar descrição" onChange={descricao => update({ descricao })} />
-          </div>
-        </div>
-
-        <div className={styles.props}>
+      <ItemLayout side={<>
           <PickerProp today={today} type="date" icon="calendar_today" color="var(--ds-accent)" label="Data" allowEmpty={false} value={draft.data_inicio} display={friendlyDate(draft.data_inicio, today)} onChange={data_inicio => data_inicio && update({ data_inicio }, true)} />
           <SelectProp icon="wb_sunny" color="var(--ds-peach-fg)" label="Dia todo" value={draft.dia_inteiro ? 'sim' : 'nao'} onChange={value => update({ dia_inteiro: value === 'sim' }, true)} options={[{ value: 'nao', label: 'Com horário' }, { value: 'sim', label: 'Dia todo' }]} display={draft.dia_inteiro ? 'Dia todo' : 'Com horário'} />
           {!draft.dia_inteiro ? <PickerProp type="time" icon="schedule" color="var(--ds-lilac-fg)" label="Início" allowEmpty={false} value={draft.hora_inicio} display={draft.hora_inicio || '--:--'} onChange={hora_inicio => update({ hora_inicio }, true)} /> : null}
@@ -787,7 +797,15 @@ function EventDetail({ item, state, today, commit, googleRpc, refreshEvents, reg
             ? <Prop icon="calendar_month" color="var(--ds-sky-fg)" label="Calendário" display={calendarName} />
             : <CategoryProp categories={eventCategories(state)} value={String(draft.categoria || '')} display={calendarName} onPick={category => update({ categoria: category?.nome || '', categoria_cor: category?.cor || '', cor: category?.cor || '' }, true)} onCreate={category => commit(current => withEventCategory(current, category))} state={state} commit={commit} />}
           {!google ? <SelectProp icon="repeat" color="var(--ds-mint-fg)" label="Repetir" value={draft.repeticao} onChange={repeticao => update({ repeticao }, true)} options={REPEATS.some(option => option.value === draft.repeticao) ? REPEATS : [...REPEATS, { value: draft.repeticao, label: 'Personalizado' }]} /> : null}
+      </>}>
+        <div className={styles.titleRow}>
+          <span className={styles.tile} style={{ background: color.startsWith('#') ? color : undefined }}><Icon name="event" size={17} /></span>
+          <div className={styles.titleBody}>
+            <GrowText className={styles.title} value={draft.titulo} placeholder="Nome do compromisso" multiline={false} onChange={titulo => update({ titulo })} />
+            <GrowText className={styles.description} value={draft.descricao} placeholder="Adicionar descrição" onChange={descricao => update({ descricao })} />
+          </div>
         </div>
+
 
         <div className={styles.actions}>
           {google && source.url ? (
@@ -799,7 +817,7 @@ function EventDetail({ item, state, today, commit, googleRpc, refreshEvents, reg
 
         <Attachments files={draft.anexos} onChange={anexos => update({ anexos }, true)} />
         {message ? <p className={styles.error}>{message}</p> : null}
-      </div>
+      </ItemLayout>
       <Footer status={busy ? 'Salvando no Google…' : google ? (dirty ? <><Icon name="cloud_upload" size={15} />Será salvo no Google ao fechar</> : <><Icon name="cloud_done" size={15} className={styles.okIcon} />Sincronizado com o Google</>) : savedStatus} onDelete={() => void remove()} />
     </>
   )
@@ -849,7 +867,10 @@ function HabitDetail({ item, state, today, commit, register, close }: DetailProp
   return (
     <>
       <Header kind="habit" onClose={() => void close()} crumbs={<span className={styles.crumb}><i>·</i>{friendlyDate(day, today)}</span>} />
-      <div className={styles.scroll}>
+      <ItemLayout side={<>
+          <Prop icon="target" color="var(--ds-accent)" label="Meta por dia" display={<input className={styles.inlineInput} type="number" inputMode="numeric" min={1} value={draft.meta} onChange={event => update({ meta: Math.max(1, Number(event.target.value || 1)) })} aria-label="Meta por dia" />} />
+          <Prop icon="straighten" color="var(--ds-text-2)" label="Unidade" display={<UnitField className={styles.inlineInput} value={String(draft.unidade || '')} onChange={unidade => update({ unidade })} />} />
+      </>}>
         <div className={styles.titleRow}>
           <span className={styles.tile} data-tone={done ? 'success' : failed ? 'danger' : undefined}><Icon name={done ? 'check' : failed ? 'close' : 'repeat'} size={18} /></span>
           <div className={styles.titleBody}>
@@ -877,11 +898,7 @@ function HabitDetail({ item, state, today, commit, register, close }: DetailProp
           {week.map(dayInfo => <span key={dayInfo.key} className={styles.weekDay} data-state={dayInfo.state} data-today={dayInfo.key === day || undefined}><small>{dayInfo.letter}</small><i /></span>)}
         </div>
 
-        <div className={styles.props}>
-          <Prop icon="target" color="var(--ds-accent)" label="Meta por dia" display={<input className={styles.inlineInput} type="number" inputMode="numeric" min={1} value={draft.meta} onChange={event => update({ meta: Math.max(1, Number(event.target.value || 1)) })} aria-label="Meta por dia" />} />
-          <Prop icon="straighten" color="var(--ds-text-2)" label="Unidade" display={<UnitField className={styles.inlineInput} value={String(draft.unidade || '')} onChange={unidade => update({ unidade })} />} />
-        </div>
-      </div>
+      </ItemLayout>
       <Footer status={savedStatus} onDelete={() => void remove()} deleteLabel="Arquivar" />
     </>
   )
@@ -946,7 +963,12 @@ function FinanceDetail({ item, state, today, commit, register, close }: DetailPr
   return (
     <>
       <Header kind="finance" onClose={() => void close()} crumbs={<span className={styles.crumb}><i>·</i>{income ? 'A receber' : 'A pagar'}</span>} />
-      <div className={styles.scroll}>
+      <ItemLayout side={<>
+          <PickerProp today={today} type="date" icon="calendar_today" color="var(--ds-accent)" label="Vencimento" allowEmpty={false} value={draft.data} display={<span className={late ? styles.late : undefined}>{friendlyDate(draft.data, today)}</span>} onChange={data => data && update({ data, dia_mes: Number(data.slice(8)) }, true)} />
+          <SelectProp icon={income ? 'south_west' : 'north_east'} color={income ? 'var(--ds-success)' : 'var(--ds-danger)'} label="Tipo" value={draft.tipo} onChange={tipo => update({ tipo }, true)} options={[{ value: 'despesa', label: 'Despesa' }, { value: 'receita', label: 'Receita' }]} />
+          <SelectProp icon="sell" color="var(--ds-peach-fg)" label="Categoria" value={draft.categoria} onChange={categoria => update({ categoria }, true)} options={categoryOptions} />
+          <SelectProp icon="account_balance" color="var(--ds-text-2)" label={income ? 'Receber em' : 'Pagar com'} value={draft.conta_id} onChange={conta_id => update({ conta_id }, true)} options={accountOptions} />
+      </>}>
         <div className={styles.titleRow}>
           <Round checked={paid} late={Boolean(late)} tone="success" onToggle={togglePaid} label={paid ? 'Marcar como pendente' : income ? 'Marcar como recebido' : 'Marcar como pago'} />
           <div className={styles.titleBody}>
@@ -968,15 +990,9 @@ function FinanceDetail({ item, state, today, commit, register, close }: DetailPr
           </button>
         </div>
 
-        <div className={styles.props}>
-          <PickerProp today={today} type="date" icon="calendar_today" color="var(--ds-accent)" label="Vencimento" allowEmpty={false} value={draft.data} display={<span className={late ? styles.late : undefined}>{friendlyDate(draft.data, today)}</span>} onChange={data => data && update({ data, dia_mes: Number(data.slice(8)) }, true)} />
-          <SelectProp icon={income ? 'south_west' : 'north_east'} color={income ? 'var(--ds-success)' : 'var(--ds-danger)'} label="Tipo" value={draft.tipo} onChange={tipo => update({ tipo }, true)} options={[{ value: 'despesa', label: 'Despesa' }, { value: 'receita', label: 'Receita' }]} />
-          <SelectProp icon="sell" color="var(--ds-peach-fg)" label="Categoria" value={draft.categoria} onChange={categoria => update({ categoria }, true)} options={categoryOptions} />
-          <SelectProp icon="account_balance" color="var(--ds-text-2)" label={income ? 'Receber em' : 'Pagar com'} value={draft.conta_id} onChange={conta_id => update({ conta_id }, true)} options={accountOptions} />
-        </div>
 
         <Attachments files={draft.anexos} onChange={anexos => update({ anexos }, true)} />
-      </div>
+      </ItemLayout>
       <Footer status={savedStatus} onDelete={() => void remove()} />
     </>
   )
@@ -1008,7 +1024,11 @@ function GoalDetail({ item, state, today, commit, register, close }: DetailProps
   return (
     <>
       <Header kind="goal" onClose={() => void close()} />
-      <div className={styles.scroll}>
+      <ItemLayout side={<>
+          <PickerProp today={today} type="date" icon="event" color="var(--ds-accent)" label="Prazo" value={draft.prazo} display={friendlyDate(draft.prazo, today)} onChange={prazo => update({ prazo }, true)} />
+          <Prop icon="trending_up" color="var(--ds-lilac-fg)" label="Progresso atual" display={<input className={styles.inlineInput} type="number" inputMode="decimal" min={0} value={draft.progresso_atual} onChange={event => update({ progresso_atual: Number(event.target.value || 0) })} aria-label="Progresso atual" />} />
+          <Prop icon="flag" color="var(--ds-lilac-fg)" label="Total" display={<input className={styles.inlineInput} type="number" inputMode="decimal" min={1} value={draft.progresso_total} onChange={event => update({ progresso_total: Math.max(1, Number(event.target.value || 1)) })} aria-label="Total" />} />
+      </>}>
         <div className={styles.titleRow}>
           <span className={styles.tile} data-tone="lilac"><Icon name="flag" size={17} /></span>
           <div className={styles.titleBody}>
@@ -1028,12 +1048,7 @@ function GoalDetail({ item, state, today, commit, register, close }: DetailProps
           </div>
         </div>
 
-        <div className={styles.props}>
-          <PickerProp today={today} type="date" icon="event" color="var(--ds-accent)" label="Prazo" value={draft.prazo} display={friendlyDate(draft.prazo, today)} onChange={prazo => update({ prazo }, true)} />
-          <Prop icon="trending_up" color="var(--ds-lilac-fg)" label="Progresso atual" display={<input className={styles.inlineInput} type="number" inputMode="decimal" min={0} value={draft.progresso_atual} onChange={event => update({ progresso_atual: Number(event.target.value || 0) })} aria-label="Progresso atual" />} />
-          <Prop icon="flag" color="var(--ds-lilac-fg)" label="Total" display={<input className={styles.inlineInput} type="number" inputMode="decimal" min={1} value={draft.progresso_total} onChange={event => update({ progresso_total: Math.max(1, Number(event.target.value || 1)) })} aria-label="Total" />} />
-        </div>
-      </div>
+      </ItemLayout>
       <Footer status={savedStatus} onDelete={() => void remove()} />
     </>
   )
@@ -1061,7 +1076,7 @@ function NoteDetail({ item, state, today, commit, register, close }: DetailProps
   return (
     <>
       <Header kind="note" onClose={() => void close()} crumbs={updated ? <span className={styles.crumb}><i>·</i>{friendlyDate(updated, today)}</span> : null} />
-      <div className={styles.scroll}>
+      <ItemLayout>
         <GrowText className={styles.title} value={draft.titulo} placeholder="Título" multiline={false} onChange={titulo => update({ titulo })} />
         <div
           ref={editor}
@@ -1071,7 +1086,7 @@ function NoteDetail({ item, state, today, commit, register, close }: DetailProps
           data-placeholder="Escreva aqui…"
           onInput={event => update({ conteudo: event.currentTarget.innerHTML })}
         />
-      </div>
+      </ItemLayout>
       <Footer status={savedStatus} onDelete={() => void remove()} />
     </>
   )
