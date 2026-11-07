@@ -4,6 +4,7 @@
   font-family: var(--ds-font);
   color: var(--ds-text);
   -webkit-font-smoothing: antialiased;
+  font-variant-numeric: tabular-nums;
 }
 
 /* Ícone */

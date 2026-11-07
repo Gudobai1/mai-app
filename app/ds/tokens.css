@@ -13,7 +13,7 @@
 :root,
 .ds-theme-light {
   /* Tipografia */
-  --ds-font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --ds-font: 'Onest', system-ui, 'Segoe UI', Roboto, Arial, sans-serif;
   --ds-icon-font: 'Material Symbols Outlined';
   --ds-fs-xs: 11px;
   --ds-fs-sm: 13px;
@@ -43,7 +43,8 @@
   --ds-r-md: 6px;
   --ds-r-lg: 8px;
   --ds-r-xl: 10px;
-  --ds-r-full: 999px;
+  --ds-r-2xl: 12px; /* diálogo e popup */
+  --ds-r-full: 999px; /* SÓ avatar e ponto de status (padrão: nada em pílula, interruptor retangular) */
 
   /* Superfícies e texto */
   --ds-bg: #FFFFFF;
@@ -93,6 +94,25 @@
   --ds-shadow-float: 0 10px 30px rgba(15, 17, 21, 0.10);
   --ds-shadow-modal: 0 24px 60px rgba(15, 17, 21, 0.22);
 
+
+  /* Datas: hoje amarelo, atrasada vermelho, futura verde, concluída cinza (13px / 600) */
+  --ds-date-today: #D99A00;
+  --ds-date-late: #D1453B;
+  --ds-date-future: #058527;
+  --ds-date-done: #8A8A8A;
+
+  /* Prioridade no check: P1 vermelho, P2 laranja, P3 azul, sem prioridade cinza */
+  --ds-prio-1: #D1453B;
+  --ds-prio-2: #EB8909;
+  --ds-prio-3: #246FE0;
+  --ds-prio-none: #808080;
+
+  /* Divisória fina e foco (o próprio contorno do item, 2px, sem afastar) */
+  --ds-hairline-w: 0.5px;
+  --ds-hairline: rgba(0, 0, 0, 0.08);
+  --ds-focus-ring: 2px solid var(--ds-accent);
+  --ds-focus-ring-on-accent: 2px solid #7A1F1D;
+
   /* Movimento */
   --ds-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
   --ds-dur-fast: 120ms;
@@ -140,6 +160,18 @@ html[data-mai-theme="dark"],
   --ds-rose-bg: #3B1C24;
   --ds-rose-fg: #FF7066;
   --ds-teal-fg: #4FB8C9;
+
+
+  --ds-date-today: #F2C75C;
+  --ds-date-late: #FF7066;
+  --ds-date-future: #6CC47C;
+  --ds-date-done: #8A8A8A;
+  --ds-prio-1: #FF7066;
+  --ds-prio-2: #FF9A14;
+  --ds-prio-3: #5297FF;
+  --ds-prio-none: #8A8A8A;
+  --ds-hairline: rgba(255, 255, 255, 0.09);
+  --ds-focus-ring-on-accent: 2px solid #FFD3D0;
 
   --ds-shadow-1: 0 0 0 1px #333333;
   --ds-shadow-float: 0 0 0 1px #333333, 0 10px 30px rgba(0, 0, 0, 0.4);
