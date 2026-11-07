@@ -16,7 +16,7 @@ import tasksStyles from '../tasks/TasksModern.module.css'
 import todayStyles from '../today/TodayModern.module.css'
 import styles from './EmBreve.module.css'
 import { CategoryManager } from '../detail/CategoryManager'
-import { DayNav, DayTimeline } from '../DayTimeline'
+import { DayNav, DayTimeline, OrganizeButton } from '../DayTimeline'
 import { DEFAULT_DISPLAY, EMPTY_FILTERS, KINDS, UpcomingControls, normalizeFilters, type Kind, type UpcomingDisplay, type UpcomingFilters } from './UpcomingControls'
 
 /**
@@ -833,6 +833,7 @@ export function EmBreve({ state, today, commit, inspect, syncRange }: Props) {
           ))}
         </div>
         <div className={styles.barRight}>
+          {mode === 'myday' ? <OrganizeButton /> : null}
           <UpcomingControls
             filters={filters}
             onChange={setFilters}

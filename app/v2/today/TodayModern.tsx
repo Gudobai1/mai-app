@@ -21,7 +21,7 @@ import { ValueDialog } from '../habits/HabitsModern'
 import { abbreviateUnit } from '../../../lib/v2/units'
 import { AgendaStrip } from './AgendaStrip'
 import styles from './TodayModern.module.css'
-import { DayTimeline } from '../DayTimeline'
+import { DayTimeline, OrganizeButton } from '../DayTimeline'
 
 /*
  * Tela Hoje — visual Moderno.
@@ -984,6 +984,7 @@ export function TodayModern({ state, today, commit, navigate, inspect, options, 
             <button type="button" aria-pressed={!timeline} onClick={() => setTodayView('list')}>Lista</button>
             <button type="button" aria-pressed={timeline} onClick={() => setTodayView('timeline')}>Linha do tempo</button>
           </div>
+          {timeline ? <OrganizeButton /> : null}
           {timeline ? (
             <div className={styles.dayStepper} role="group" aria-label="Navegar entre dias">
               <button type="button" aria-label="Dia anterior" onClick={() => stepDay(-1)}><Icon name="chevron_left" size={20} filled={false} /></button>

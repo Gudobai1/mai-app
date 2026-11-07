@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type DragEvent } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore, type CSSProperties, type DragEvent } from 'react'
 import { plannerItems, type PlannerItem } from '../../lib/v2/planner'
 import type { MaiState } from '../../lib/v2/state'
 import { Check, Icon } from '../ds'
@@ -16,6 +16,24 @@ import styles from './DayTimeline.module.css'
  * numa grade de horas; o que não tem horário fica em "Sem horário" e é arrastado
  * (ou recebe um horário no botão) para a grade. Usada em Hoje e em Em breve › Meu dia.
  */
+
+/* Botão "Organizar o dia" (fica no cabeçalho da tela) e o pop-up (aqui dentro) conversam por este estado. */
+const organizer = { count: 0, open: false }
+const organizerListeners = new Set<() => void>()
+const emitOrganizer = () => organizerListeners.forEach(listener => listener())
+const subscribeOrganizer = (listener: () => void) => { organizerListeners.add(listener); return () => { organizerListeners.delete(listener) } }
+const organizerSnap = () => organizer.count * 2 + (organizer.open ? 1 : 0)
+
+export function OrganizeButton() {
+  const snapshot = useSyncExternalStore(subscribeOrganizer, organizerSnap, organizerSnap)
+  const count = snapshot >> 1
+  return (
+    <button type="button" className={styles.organize} aria-label="Organizar o dia" aria-expanded={(snapshot & 1) === 1} onClick={() => { organizer.open = !organizer.open; emitOrganizer() }}>
+      <Icon name="event_note" size={20} filled={false} />
+      {count ? <b>{count}</b> : null}
+    </button>
+  )
+}
 
 type Props = {
   state: MaiState
@@ -60,10 +78,7 @@ export function DayTimeline({ state, day, today, commit, inspect, accept }: Prop
   const [ghost, setGhost] = useState<number | null>(null)
   const [pickFor, setPickFor] = useState('')
 
-  useEffect(() => {
-    document.body.dataset.dayTimeline = 'true'
-    return () => { delete document.body.dataset.dayTimeline }
-  }, [])
+  useEffect(() => () => { organizer.count = 0; organizer.open = false; emitOrganizer() }, [])
 
   useEffect(() => {
     const timer = window.setInterval(() => setNow(new Date()), 60_000)
@@ -125,7 +140,9 @@ export function DayTimeline({ state, day, today, commit, inspect, accept }: Prop
     .map(task => ({ id: String(task.id), title: String(task.titulo || 'Tarefa'), date: String(task.data_vencimento).slice(0, 10), raw: task }))), [state.tasks, day, today])
 
   const isToday = day === today
-  const [dockOpen, setDockOpen] = useState(false)
+  const organizerSnapshot = useSyncExternalStore(subscribeOrganizer, organizerSnap, organizerSnap)
+  const dockOpen = (organizerSnapshot & 1) === 1
+  const setDockOpen = (next: boolean | ((current: boolean) => boolean)) => { organizer.open = typeof next === 'function' ? next(organizer.open) : next; emitOrganizer() }
   const [HOUR, setHour] = useState(36)
   const cardRef = useRef<HTMLElement | null>(null)
   // As 24 horas cabem na tela, sem rolar: a altura da hora vem do espaço livre abaixo do cabeçalho.
@@ -134,7 +151,7 @@ export function DayTimeline({ state, day, today, commit, inspect, accept }: Prop
       const card = cardRef.current
       if (!card) return
       const mobile = window.matchMedia('(max-width: 900px)').matches
-      const reserve = mobile ? 56 : 24
+      const reserve = mobile ? 72 : 24
       const free = window.innerHeight - card.getBoundingClientRect().top - reserve - 32
       setHour(Math.max(mobile ? 14 : 22, Math.min(56, Math.floor(free / 24))))
     }
@@ -145,6 +162,8 @@ export function DayTimeline({ state, day, today, commit, inspect, accept }: Prop
   const nowMin = now.getHours() * 60 + now.getMinutes()
   const gridHeight = (lastHour - firstHour) * HOUR
   const topOf = (minutes: number) => ((minutes - firstHour * 60) / 60) * HOUR
+
+  useEffect(() => { organizer.count = items.length + overdue.length; emitOrganizer() }, [items.length, overdue.length])
 
   const open = (item: PlannerItem) => inspect({ kind: item.kind, sourceId: item.sourceId, title: item.title, date: item.date, time: item.time, raw: item.raw })
 
@@ -345,11 +364,6 @@ export function DayTimeline({ state, day, today, commit, inspect, accept }: Prop
         </section>
 
         <aside className={styles.side} data-open={dockOpen || undefined} aria-label="Dia todo">
-          <button type="button" className={styles.dockBar} aria-expanded={dockOpen} onClick={() => setDockOpen(open => !open)}>
-            <Icon name="event_note" size={18} filled={false} />
-            <strong>Organizar o dia</strong>
-            <span>{items.length ? `${items.length} ${items.length === 1 ? 'item' : 'itens'}` : 'Nada neste dia'}{overdue.length ? ` · ${overdue.length} ${overdue.length === 1 ? 'atrasada' : 'atrasadas'}` : ''}</span>
-          </button>
           {dockOpen ? <button type="button" className={styles.scrim} aria-label="Fechar" onClick={() => setDockOpen(false)} /> : null}
           <div className={styles.dockBody}>
             <section className={`${styles.panel} ${todayStyles.page} ${styles.hojeScope}`}>
