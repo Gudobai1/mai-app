@@ -969,7 +969,7 @@ export function TodayModern({ state, today, commit, navigate, inspect, options, 
 
   return (
     <div className={styles.page}>
-      <header className={styles.header}>
+      <header className={styles.header} data-timeline={timeline || undefined}>
         <div className={styles.headerText}>
           <h1 className={styles.greeting}>{title}</h1>
           <p className={styles.subline}>
