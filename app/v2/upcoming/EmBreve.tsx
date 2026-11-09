@@ -825,13 +825,6 @@ export function EmBreve({ state, today, commit, inspect, syncRange }: Props) {
   return (
     <div ref={pageRef} className={styles.page} data-mode={mode}>
       <header className={styles.bar}>
-        <div className={styles.views} role="tablist" aria-label="Visualização">
-          {([['myday', 'Meu dia', 'schedule'], ['week', 'Semana', 'view_week'], ['month', 'Mês', 'calendar_month']] as [Mode, string, string][]).map(([id, label, icon]) => (
-            <button key={id} type="button" role="tab" aria-selected={mode === id} data-active={mode === id || undefined} onClick={() => setMode(id)}>
-              <Icon name={icon} size={18} filled={false} /><span>{label}</span>
-            </button>
-          ))}
-        </div>
         <div className={styles.barRight}>
           {mode === 'myday' ? <OrganizeButton /> : null}
           <UpcomingControls
@@ -842,8 +835,8 @@ export function EmBreve({ state, today, commit, inspect, syncRange }: Props) {
             projects={projectOptions}
             sources={sourceOptions}
             onManageCategories={() => setManageCategories(true)}
-            view={mode === 'list' ? 'list' : mode === 'myday' ? 'timeline' : null}
-            onView={next => setMode(next === 'list' ? 'list' : 'myday')}
+            view={mode}
+            onView={next => setMode(next as Mode)}
           />
         </div>
       </header>

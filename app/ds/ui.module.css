@@ -293,3 +293,7 @@
 .check.check.check:not(.checkOn):hover { border-color: var(--check-color, var(--ds-line-strong)); color: var(--check-color, var(--ds-muted)); }
 .checkLate.checkLate.checkLate:not(.checkOn):hover { border-color: var(--ds-danger); color: var(--ds-danger); }
 .check.check.check:not(.checkOn):hover > * { opacity: 0.9; }
+
+/* Botão de ajustes (único): 40px, canto direito do cabeçalho */
+.settingsButton.settingsButton { width: 40px; height: 40px; flex: none; border-radius: 8px; }
+.settingsButton.settingsButton[data-active] { background: var(--ds-accent-soft); color: var(--ds-accent); }

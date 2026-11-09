@@ -1,3 +1,4 @@
+import { forwardRef } from 'react'
 import type { ButtonHTMLAttributes, CSSProperties, HTMLAttributes, ReactNode } from 'react'
 import { LUCIDE_ICONS } from './lucide'
 import styles from './ui.module.css'
@@ -156,6 +157,21 @@ export function IconButton({ icon, label, variant = 'surface', size = 44, badge,
     </button>
   )
 }
+
+/* ------------------------------------------------- Botão de ajustes (único) */
+
+/* Todas as opções de visualização, ordem e filtros de uma tela abrem a partir
+ * deste botão, sempre no canto direito do cabeçalho. Nunca criar outro. */
+export type SettingsButtonProps = Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'children'> & { active?: boolean; badge?: boolean; label?: string }
+
+export const SettingsButton = forwardRef<HTMLButtonElement, SettingsButtonProps>(function SettingsButton({ active, badge, label = 'Ajustes', className, type = 'button', ...rest }, ref) {
+  return (
+    <button ref={ref} type={type} aria-label={label} title={label} aria-haspopup="dialog" data-active={active || undefined} className={cx(styles.iconButton, styles.iconButtonSurface, styles.settingsButton, className)} {...rest}>
+      <Icon name="tune" size={21} filled={false} />
+      {badge ? <span className={styles.badgeDot} /> : null}
+    </button>
+  )
+})
 
 /* ------------------------------------------------------- Ícone em quadrado */
 

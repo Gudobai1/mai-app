@@ -980,10 +980,6 @@ export function TodayModern({ state, today, commit, navigate, inspect, options, 
           </p>
         </div>
         <div className={styles.headerActions}>
-          <div className={styles.viewToggle} role="group" aria-label="Visualização">
-            <button type="button" aria-pressed={!timeline} onClick={() => setTodayView('list')}>Lista</button>
-            <button type="button" aria-pressed={timeline} onClick={() => setTodayView('timeline')}>Linha do tempo</button>
-          </div>
           {timeline ? <OrganizeButton /> : null}
           {timeline ? (
             <div className={styles.dayStepper} role="group" aria-label="Navegar entre dias">

@@ -189,6 +189,18 @@ export function SearchOverlay({ state, today, query, setQuery, onClose, inspect,
     onClose()
   }
 
+  /* Voltar do celular (gesto/botão do sistema) fecha a busca em vez de sair do app. */
+  useEffect(() => {
+    window.history.pushState({ maiSearch: true }, '')
+    const onPop = () => { setQuery(''); onClose() }
+    window.addEventListener('popstate', onPop)
+    return () => {
+      window.removeEventListener('popstate', onPop)
+      if (window.history.state?.maiSearch) window.history.back()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   function open(result: Result) {
     close()
     if (result.kind === 'project') { openProject(result.id); return }
@@ -248,6 +260,7 @@ export function SearchOverlay({ state, today, query, setQuery, onClose, inspect,
               <button type="button" aria-label="Remover filtro" onClick={() => setMuted(current => new Set(current).add(token.kind))}>×</button>
             </span>
           ))}
+          <button type="button" className={styles.close} aria-label="Fechar busca" onClick={close}><Icon name="close" size={22} filled={false} /></button>
         </header>
 
         <div ref={listRef} className={styles.list}>

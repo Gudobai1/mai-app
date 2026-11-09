@@ -1,6 +1,7 @@
 'use client'
 
 import { ReactNode, useEffect, useMemo, useState } from 'react'
+import { SettingsButton } from '../ds'
 import type { MaiState } from '../../lib/v2/state'
 import type { AppView, TaskModuleScope } from './app-types'
 
@@ -137,6 +138,7 @@ export function AppTopBar({ state, today, view, taskScope, commit, onTaskScopeCh
     {view === 'tasks' ? <PanelSection title="Layout"><Choices value={layoutMode} onChange={value => patchControl({ layout:value })} items={[{value:'normal',label:'Normal'},{value:'kanban',label:'Kanban'}]}/></PanelSection> : null}
 
     {view === 'today' ? <>
+      <PanelSection title="Visualização"><Choices value={configs.todayView === 'timeline' ? 'timeline' : 'list'} onChange={value => patchConfig('todayView', value)} items={[{value:'list',label:'Lista'},{value:'timeline',label:'Linha do tempo'}]}/></PanelSection>
       <PanelSection title="Eventos repetidos"><Choices value={(configs.nextOnlyByModule as Record<string, boolean> | undefined)?.today ? 'next' : 'all'} onChange={value => patchConfig('nextOnlyByModule', { ...((configs.nextOnlyByModule as Record<string, boolean> | undefined) || {}), today: value === 'next' })} items={[{value:'all',label:'Todas as ocorrências'},{value:'next',label:'Somente a próxima'}]}/></PanelSection>
       <PanelSection title="Filtros">
         <SelectLine label="Projeto" value={String(todayFilters.project || 'all')} onChange={value => patchToday({ project:value })}>{projectOptions}</SelectLine>
@@ -238,7 +240,7 @@ export function AppTopBar({ state, today, view, taskScope, commit, onTaskScopeCh
 
   return <div className="mai-app-topbar" data-view={String(view)} data-sort-mode={sortMode}>
     <div className="mai-app-topbar-context"><strong>{title}</strong><span>{info}</span></div>
-    <div className="mai-app-topbar-single-action"><button type="button" className="mai-app-topbar-menu-button" data-active={open} title="Opções do módulo" aria-label="Opções do módulo" onClick={() => setOpen(value => !value)}><span className="material-symbols-rounded">tune</span><span>Opções</span></button></div>
+    <div className="mai-app-topbar-single-action"><SettingsButton active={open} aria-expanded={open} onClick={() => setOpen(value => !value)} /></div>
     {open ? panel : null}
   </div>
 }
