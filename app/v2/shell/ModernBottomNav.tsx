@@ -111,7 +111,7 @@ export function ModernBottomNav({ view, searchOpen, navigate, onSearch, onSettin
           <span>Pesquisa</span>
         </button>
         <button type="button" className={styles.tab} aria-expanded={sheetOpen} aria-current={modulesActive && !sheetOpen ? 'page' : undefined} onClick={() => setSheetOpen(value => !value)}>
-          <Icon name="grid_view" size={24} filled={modulesActive} />
+          <Icon name="menu" size={24} filled={false} weight={modulesActive ? 600 : 400} />
           <span>Mais</span>
         </button>
       </nav>
