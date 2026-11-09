@@ -1,7 +1,7 @@
 'use client'
 
 import { useRef, useState, type CSSProperties, type ReactNode } from 'react'
-import { Icon } from '../../ds'
+import { Icon, SettingsButton } from '../../ds'
 import { Floating } from '../detail/Pickers'
 import styles from './UpcomingControls.module.css'
 
@@ -84,10 +84,9 @@ type FilterProps = {
   sources: Option[]
 }
 
-export function UpcomingControls({ filters, onChange, projects, sources, display, onDisplay, onManageCategories, view, onView }: FilterProps & { display: UpcomingDisplay; onDisplay: (next: UpcomingDisplay) => void; onManageCategories?: () => void; view?: 'list' | 'timeline' | null; onView?: (next: 'list' | 'timeline') => void }) {
-  const [open, setOpen] = useState<'' | 'filter' | 'display'>('')
-  const filterRef = useRef<HTMLButtonElement | null>(null)
-  const displayRef = useRef<HTMLButtonElement | null>(null)
+export function UpcomingControls({ filters, onChange, projects, sources, display, onDisplay, onManageCategories, view, onView }: FilterProps & { display: UpcomingDisplay; onDisplay: (next: UpcomingDisplay) => void; onManageCategories?: () => void; view?: string | null; onView?: (view: string) => void }) {
+  const [open, setOpen] = useState(false)
+  const anchorRef = useRef<HTMLButtonElement | null>(null)
   const count = activeFilterCount(filters)
 
   const toggle = <K extends keyof UpcomingFilters>(key: K, value: UpcomingFilters[K] extends (infer U)[] ? U : never) => {
@@ -99,52 +98,15 @@ export function UpcomingControls({ filters, onChange, projects, sources, display
 
   return (
     <>
-      <button ref={filterRef} type="button" className={styles.control} data-active={count > 0 || undefined} onClick={() => setOpen('filter')}>
-        <Icon name="filter_list" size={18} filled={false} /><span>Filtros</span>{count ? <b>{count}</b> : null}
-      </button>
-      <button ref={displayRef} type="button" className={styles.control} onClick={() => setOpen('display')}>
-        <Icon name="tune" size={18} filled={false} /><span>Exibição</span>
-      </button>
+      <SettingsButton ref={anchorRef} active={count > 0} badge={count > 0} aria-expanded={open} onClick={() => setOpen(true)} />
 
-      {open === 'filter' ? (
-        <Floating anchor={filterRef} title="Filtros" width={340} onClose={() => setOpen('')}>
-          <div className={styles.panel}>
-            <Section title="Tipos">
-              {KINDS.map(kind => <Row key={kind.id} icon={kind.icon} label={kind.label} checked={!filters.hiddenKinds.includes(kind.id)} onToggle={() => toggle('hiddenKinds', kind.id)} />)}
-            </Section>
-            <Section title="Status">
-              <Row label="Mostrar concluídos" checked={!filters.hideDone} onToggle={() => onChange({ ...filters, hideDone: !filters.hideDone })} />
-              <Row label="Mostrar tarefas atrasadas" checked={!filters.hideLate} onToggle={() => onChange({ ...filters, hideLate: !filters.hideLate })} />
-            </Section>
-            <Section title="Prioridade">
-              {PRIORITIES.map(item => <Row key={item.id} icon="flag" color={item.color} label={item.label} checked={!filters.hiddenPriorities.includes(item.id)} onToggle={() => toggle('hiddenPriorities', item.id)} />)}
-            </Section>
-            {projects.length ? (
-              <Section title="Projetos" action={<button type="button" className={styles.link} onClick={() => setAll('hiddenProjects', projects, filters.hiddenProjects.length > 0)}>{filters.hiddenProjects.length ? 'Mostrar todos' : 'Esconder todos'}</button>}>
-                {projects.map(item => <Row key={item.id} label={item.label} color={item.color} checked={!filters.hiddenProjects.includes(item.id)} onToggle={() => toggle('hiddenProjects', item.id)} />)}
-              </Section>
-            ) : null}
-            {sources.length ? (
-              <Section title="Agendas e categorias" action={<span style={{ display: 'inline-flex', gap: 10 }}>{onManageCategories ? <button type="button" className={styles.link} onClick={() => { setOpen(''); onManageCategories() }}>Gerenciar</button> : null}<button type="button" className={styles.link} onClick={() => setAll('hiddenSources', sources, filters.hiddenSources.length > 0)}>{filters.hiddenSources.length ? 'Mostrar todas' : 'Esconder todas'}</button></span>}>
-                {sources.map(item => <Row key={item.id} label={item.label} color={item.color} checked={!filters.hiddenSources.includes(item.id)} onToggle={() => toggle('hiddenSources', item.id)} />)}
-              </Section>
-            ) : null}
-            <Section title="Finanças">
-              <Row icon="trending_up" label="Receitas" checked={!filters.hiddenFinance.includes('receita')} onToggle={() => toggle('hiddenFinance', 'receita')} />
-              <Row icon="trending_down" label="Despesas" checked={!filters.hiddenFinance.includes('despesa')} onToggle={() => toggle('hiddenFinance', 'despesa')} />
-            </Section>
-            {count ? <footer className={styles.footer}><button type="button" className={styles.link} onClick={() => onChange(EMPTY_FILTERS)}>Limpar filtros</button></footer> : null}
-          </div>
-        </Floating>
-      ) : null}
-
-      {open === 'display' ? (
-        <Floating anchor={displayRef} title="Exibição" width={280} onClose={() => setOpen('')}>
+      {open ? (
+        <Floating anchor={anchorRef} title="Ajustes" width={340} onClose={() => setOpen(false)}>
           <div className={styles.panel}>
             {onView ? (
               <Section title="Visualização">
-                {([['timeline', 'Linha do tempo'], ['list', 'Lista']] as ['timeline' | 'list', string][]).map(([id, label]) => (
-                  <button key={id} type="button" role="menuitemradio" aria-checked={view === id} className={styles.row} data-on={view === id || undefined} onClick={() => { onView(id); setOpen('') }}>
+                {([['myday', 'Meu dia'], ['week', 'Semana'], ['month', 'Mês'], ['list', 'Lista']] as [string, string][]).map(([id, label]) => (
+                  <button key={id} type="button" role="menuitemradio" aria-checked={view === id} className={styles.row} data-on={view === id || undefined} onClick={() => onView(id)}>
                     <span>{label}</span><span className={styles.tick}>{view === id ? <Icon name="check" size={16} /> : null}</span>
                   </button>
                 ))}
@@ -171,9 +133,35 @@ export function UpcomingControls({ filters, onChange, projects, sources, display
                 </button>
               ))}
             </Section>
+            <Section title="Tipos">
+              {KINDS.map(kind => <Row key={kind.id} icon={kind.icon} label={kind.label} checked={!filters.hiddenKinds.includes(kind.id)} onToggle={() => toggle('hiddenKinds', kind.id)} />)}
+            </Section>
+            <Section title="Status">
+              <Row label="Mostrar concluídos" checked={!filters.hideDone} onToggle={() => onChange({ ...filters, hideDone: !filters.hideDone })} />
+              <Row label="Mostrar tarefas atrasadas" checked={!filters.hideLate} onToggle={() => onChange({ ...filters, hideLate: !filters.hideLate })} />
+            </Section>
+            <Section title="Prioridade">
+              {PRIORITIES.map(item => <Row key={item.id} icon="flag" color={item.color} label={item.label} checked={!filters.hiddenPriorities.includes(item.id)} onToggle={() => toggle('hiddenPriorities', item.id)} />)}
+            </Section>
+            {projects.length ? (
+              <Section title="Projetos" action={<button type="button" className={styles.link} onClick={() => setAll('hiddenProjects', projects, filters.hiddenProjects.length > 0)}>{filters.hiddenProjects.length ? 'Mostrar todos' : 'Esconder todos'}</button>}>
+                {projects.map(item => <Row key={item.id} label={item.label} color={item.color} checked={!filters.hiddenProjects.includes(item.id)} onToggle={() => toggle('hiddenProjects', item.id)} />)}
+              </Section>
+            ) : null}
+            {sources.length ? (
+              <Section title="Agendas e categorias" action={<span style={{ display: 'inline-flex', gap: 10 }}>{onManageCategories ? <button type="button" className={styles.link} onClick={() => { setOpen(false); onManageCategories() }}>Gerenciar</button> : null}<button type="button" className={styles.link} onClick={() => setAll('hiddenSources', sources, filters.hiddenSources.length > 0)}>{filters.hiddenSources.length ? 'Mostrar todas' : 'Esconder todas'}</button></span>}>
+                {sources.map(item => <Row key={item.id} label={item.label} color={item.color} checked={!filters.hiddenSources.includes(item.id)} onToggle={() => toggle('hiddenSources', item.id)} />)}
+              </Section>
+            ) : null}
+            <Section title="Finanças">
+              <Row icon="trending_up" label="Receitas" checked={!filters.hiddenFinance.includes('receita')} onToggle={() => toggle('hiddenFinance', 'receita')} />
+              <Row icon="trending_down" label="Despesas" checked={!filters.hiddenFinance.includes('despesa')} onToggle={() => toggle('hiddenFinance', 'despesa')} />
+            </Section>
+            {count ? <footer className={styles.footer}><button type="button" className={styles.link} onClick={() => onChange(EMPTY_FILTERS)}>Limpar filtros</button></footer> : null}
           </div>
         </Floating>
       ) : null}
+
     </>
   )
 }

@@ -281,3 +281,4 @@
 
 /* Concluído: círculo cinza vazio com um check pequeno. */
 .chip[data-done] .chipCheck { background: transparent; border-color: var(--ds-muted); color: var(--ds-muted); }
+.bar.bar { justify-content: flex-end; }

@@ -3,7 +3,7 @@
 import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState, type DragEvent, type MouseEvent as ReactMouseEvent, type ReactNode } from 'react'
 import { addDays } from '../../../lib/v2/planner'
 import type { LegacyTask, MaiState } from '../../../lib/v2/state'
-import { Icon } from '../../ds'
+import { Icon, SettingsButton } from '../../ds'
 import type { AppView, Row, TaskModuleScope } from '../app-types'
 import type { InspectableItem } from '../ContextDrawer'
 import { DatePicker, Floating, OptionList, type PickerOption } from '../detail/Pickers'
@@ -636,7 +636,7 @@ export function TasksModern(props: Props) {
             </button>
           ))}
         </div>
-        <button ref={optionsRef} type="button" className={styles.pillRound} data-active={priorityFilter !== 'all' || undefined} onClick={() => setOptionsOpen(true)} aria-label="Mais opções"><Icon name="more_horiz" size={20} filled={false} /></button>
+        <SettingsButton ref={optionsRef} active={priorityFilter !== 'all'} aria-expanded={optionsOpen} onClick={() => setOptionsOpen(true)} />
         {optionsOpen ? (
           <Floating anchor={optionsRef} title="Opções" width={300} onClose={() => setOptionsOpen(false)}>
             <div className={styles.optionsPanel}>
