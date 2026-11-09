@@ -64,16 +64,7 @@ export function AppSettingsDrawer(props: Props) {
 
   const go = (id: string) => {
     setActive(id)
-    scroller.current?.querySelector<HTMLElement>(`[data-section="${id}"]`)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-  }
-  const onScroll = () => {
-    const box = scroller.current
-    if (!box) return
-    const top = box.getBoundingClientRect().top + 24
-    let current = sections[0].id
-    box.querySelectorAll<HTMLElement>('[data-section]').forEach(node => { if (node.getBoundingClientRect().top <= top) current = node.dataset.section || current })
-    if (box.scrollTop + box.clientHeight >= box.scrollHeight - 4) current = sections[sections.length - 1].id
-    setActive(current)
+    scroller.current?.scrollTo({ top: 0 })
   }
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => { if (event.key === 'Escape') props.onClose() }
@@ -87,21 +78,20 @@ export function AppSettingsDrawer(props: Props) {
   return (
     <div className={styles.layer} onMouseDown={props.onClose}>
       <section className={styles.dialog} role="dialog" aria-modal="true" aria-label="Configurações" onMouseDown={event => event.stopPropagation()}>
-        <nav className={styles.nav} aria-label="Seções">
-          <h2>Configurações</h2>
-          {sections.map(item => (
-            <button key={item.id} type="button" data-active={active === item.id || undefined} onClick={() => go(item.id)}>
-              <Icon name={item.icon} size={20} filled={false} /><span>{item.label}</span>
-            </button>
-          ))}
-        </nav>
         <div className={styles.content}>
           <header className={styles.top}>
             <h2>Configurações</h2>
             <button type="button" className={styles.close} onClick={props.onClose} aria-label="Fechar"><Icon name="close" size={22} filled={false} /></button>
           </header>
-          <div className={styles.scroll} ref={scroller} onScroll={onScroll}>
-            <section className={styles.section} data-section="conta">
+          <div className={styles.tabs} role="tablist" aria-label="Seções">
+            {sections.map(item => (
+              <button key={item.id} type="button" role="tab" aria-selected={active === item.id} data-active={active === item.id || undefined} onClick={() => go(item.id)}>
+                <Icon name={item.icon} size={18} filled={false} /><span>{item.label}</span>
+              </button>
+            ))}
+          </div>
+          <div className={styles.scroll} ref={scroller}>
+            <section className={styles.section} data-section="conta" hidden={active !== \'conta\'}>
               <h3>Conta</h3>
               <div className={styles.profile}>
                 <span className={styles.avatar}>{props.profile?.picture ? /* eslint-disable-next-line @next/next/no-img-element */ <img src={props.profile.picture} alt="" referrerPolicy="no-referrer" /> : name.trim().slice(0, 1).toLocaleUpperCase('pt-BR')}</span>
@@ -117,7 +107,7 @@ export function AppSettingsDrawer(props: Props) {
               </div>
             </section>
 
-            <section className={styles.section} data-section="tema">
+            <section className={styles.section} data-section="tema" hidden={active !== \'tema\'}>
               <h3>Aparência</h3>
               <ThemePicker
                 mode={props.state.configs.theme}
@@ -131,7 +121,7 @@ export function AppSettingsDrawer(props: Props) {
               </div>
             </section>
 
-            <section className={styles.section} data-section="notificacoes">
+            <section className={styles.section} data-section="notificacoes" hidden={active !== \'notificacoes\'}>
               <h3>Notificações</h3>
               <div className={styles.row}>
                 <span><strong>Lembretes</strong><small>Avisos dos itens com horário.</small></span>
@@ -139,7 +129,7 @@ export function AppSettingsDrawer(props: Props) {
               </div>
             </section>
 
-            <section className={styles.section} data-section="calendarios">
+            <section className={styles.section} data-section="calendarios" hidden={active !== \'calendarios\'}>
               <h3>Calendários</h3>
               {props.googleConnected ? (
                 <>
@@ -164,7 +154,7 @@ export function AppSettingsDrawer(props: Props) {
               )}
             </section>
 
-            <section className={styles.section} data-section="dados">
+            <section className={styles.section} data-section="dados" hidden={active !== \'dados\'}>
               <h3>Dados e backup</h3>
               <div className={styles.row}>
                 <span><strong>Exportar backup</strong><small>Baixa todos os seus dados em um arquivo.</small></span>
@@ -177,7 +167,7 @@ export function AppSettingsDrawer(props: Props) {
             </section>
 
             {props.installPrompt ? (
-              <section className={styles.section} data-section="app">
+              <section className={styles.section} data-section="app" hidden={active !== \'app\'}>
                 <h3>Aplicativo</h3>
                 <div className={styles.row}>
                   <span><strong>Instalar Bukid</strong><small>Usar como aplicativo no aparelho.</small></span>

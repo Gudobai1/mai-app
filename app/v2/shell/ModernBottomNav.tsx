@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Icon, IconButton, IconTile, type Tone } from '../../ds'
+import { Icon, IconButton } from '../../ds'
 import type { AppView } from '../app-types'
 import { NAV_ALIAS, NAV_GROUPS } from './nav'
 import styles from './ModernShell.module.css'
@@ -14,17 +14,6 @@ type Props = {
   onSettings: () => void
   onToggleTheme: () => void
   dark: boolean
-}
-
-const sheetTones: Partial<Record<string, Tone>> = {
-  tasks: 'accent',
-  agenda: 'sky',
-  completed: 'mint',
-  habits: 'mint',
-  goals: 'lilac',
-  notes: 'peach',
-  finance: 'sky',
-  files: 'accent',
 }
 
 /** Áreas com botão próprio na barra; as demais ficam na folha de módulos. */
@@ -84,8 +73,9 @@ export function ModernBottomNav({ view, searchOpen, navigate, onSearch, onSettin
                 <div className={styles.sheetGrid}>
                   {group.items.map(item => (
                     <button key={String(item.id)} type="button" className={styles.sheetItem} aria-current={(NAV_ALIAS[view] ?? view) === item.id ? 'page' : undefined} onClick={() => go(item.id)}>
-                      <IconTile icon={item.icon} tone={sheetTones[String(item.id)] || 'accent'} solid={(NAV_ALIAS[view] ?? view) === item.id} size={44} />
+                      <Icon name={item.icon} size={22} filled={(NAV_ALIAS[view] ?? view) === item.id} />
                       <span>{item.label}</span>
+                      <Icon name="chevron_right" size={20} filled={false} />
                     </button>
                   ))}
                 </div>
