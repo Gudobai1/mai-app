@@ -543,3 +543,12 @@ button.profileRow.profileRow:hover .settingsButton { color: var(--ds-text); }
 .brand { display: flex; align-items: center; gap: 10px; padding: 2px 8px 10px; }
 .brand strong { font-size: 15px; font-weight: 750; letter-spacing: -.01em; color: var(--ds-text, inherit); }
 
+
+/* Menu "Mais": tela cheia, itens em lista (padrão global de janela) */
+.sheetLayer.sheetLayer { align-items: stretch; padding: 0; }
+.sheet.sheet { width: 100%; height: 100dvh; max-height: none; margin: 0; border-radius: 0; box-shadow: none; overflow-y: auto; animation: none; }
+.handle { display: none !important; }
+.sheetGrid.sheetGrid { display: flex; flex-direction: column; gap: 0; grid-template-columns: none; }
+.sheetItem.sheetItem { flex-direction: row; justify-content: flex-start; align-items: center; gap: 14px; width: 100%; min-height: 52px; padding: 4px 16px; text-align: left; border-radius: 8px; }
+.sheetItem.sheetItem > span:last-child { font-size: 16px; }
+.sheetItem.sheetItem { background: transparent; box-shadow: none; } .sheetItem.sheetItem[aria-current='page'] { background: var(--ds-accent-soft); }

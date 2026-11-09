@@ -11,7 +11,6 @@ type Props = {
   searchOpen: boolean
   navigate: (view: AppView) => void
   onSearch: () => void
-  onAdd: () => void
   onSettings: () => void
   onToggleTheme: () => void
   dark: boolean
@@ -31,7 +30,7 @@ const sheetTones: Partial<Record<string, Tone>> = {
 /** Áreas com botão próprio na barra; as demais ficam na folha de módulos. */
 const barViews = new Set(['today', 'upcoming'])
 
-export function ModernBottomNav({ view, searchOpen, navigate, onSearch, onAdd, onSettings, onToggleTheme, dark }: Props) {
+export function ModernBottomNav({ view, searchOpen, navigate, onSearch, onSettings, onToggleTheme, dark }: Props) {
   const [sheetOpen, setSheetOpen] = useState(false)
 
   useEffect(() => {
@@ -71,9 +70,8 @@ export function ModernBottomNav({ view, searchOpen, navigate, onSearch, onAdd, o
         <div className={styles.sheetLayer}>
           <button type="button" className={styles.scrim} aria-label="Fechar" onClick={() => setSheetOpen(false)} />
           <section className={styles.sheet} role="dialog" aria-modal="true" aria-labelledby="mai-modules-title">
-            <div className={styles.handle} aria-hidden="true" />
             <header className={styles.sheetHeader}>
-              <h2 id="mai-modules-title" className={styles.sheetTitle}>Módulos</h2>
+              <h2 id="mai-modules-title" className={styles.sheetTitle}>Mais</h2>
               <div className={styles.sheetHeaderActions}>
                 <IconButton icon={dark ? 'dark_mode' : 'light_mode'} label={dark ? 'Usar tema claro' : 'Usar tema escuro'} size={40} onClick={onToggleTheme} aria-pressed={dark} />
                 <IconButton icon="close" label="Fechar" size={40} onClick={() => setSheetOpen(false)} />
@@ -108,17 +106,13 @@ export function ModernBottomNav({ view, searchOpen, navigate, onSearch, onAdd, o
       <nav className={styles.mobileNav} aria-label="Navegação principal">
         {tab('today', 'Hoje', 'today')}
         {tab('upcoming', 'Em breve', 'event_upcoming')}
-        <button type="button" className={`${styles.tab} ${styles.tabAdd}`} aria-label="Adicionar" onClick={() => { setSheetOpen(false); onAdd() }}>
-          <Icon name="add" size={24} />
-          <span>Novo</span>
-        </button>
         <button type="button" className={styles.tab} aria-current={searchOpen && !sheetOpen ? 'page' : undefined} onClick={() => { setSheetOpen(false); onSearch() }}>
           <Icon name="search" size={24} filled={searchOpen} weight={searchOpen ? 600 : 400} />
           <span>Pesquisa</span>
         </button>
         <button type="button" className={styles.tab} aria-expanded={sheetOpen} aria-current={modulesActive && !sheetOpen ? 'page' : undefined} onClick={() => setSheetOpen(value => !value)}>
           <Icon name="grid_view" size={24} filled={modulesActive} />
-          <span>Módulos</span>
+          <span>Mais</span>
         </button>
       </nav>
     </>
