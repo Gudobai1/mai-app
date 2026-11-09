@@ -91,7 +91,7 @@ export function AppSettingsDrawer(props: Props) {
             ))}
           </div>
           <div className={styles.scroll} ref={scroller}>
-            <section className={styles.section} data-section="conta" hidden={active !== \'conta\'}>
+            <section className={styles.section} data-section="conta" hidden={active !== 'conta'}>
               <h3>Conta</h3>
               <div className={styles.profile}>
                 <span className={styles.avatar}>{props.profile?.picture ? /* eslint-disable-next-line @next/next/no-img-element */ <img src={props.profile.picture} alt="" referrerPolicy="no-referrer" /> : name.trim().slice(0, 1).toLocaleUpperCase('pt-BR')}</span>
@@ -107,7 +107,7 @@ export function AppSettingsDrawer(props: Props) {
               </div>
             </section>
 
-            <section className={styles.section} data-section="tema" hidden={active !== \'tema\'}>
+            <section className={styles.section} data-section="tema" hidden={active !== 'tema'}>
               <h3>Aparência</h3>
               <ThemePicker
                 mode={props.state.configs.theme}
@@ -121,7 +121,7 @@ export function AppSettingsDrawer(props: Props) {
               </div>
             </section>
 
-            <section className={styles.section} data-section="notificacoes" hidden={active !== \'notificacoes\'}>
+            <section className={styles.section} data-section="notificacoes" hidden={active !== 'notificacoes'}>
               <h3>Notificações</h3>
               <div className={styles.row}>
                 <span><strong>Lembretes</strong><small>Avisos dos itens com horário.</small></span>
@@ -129,7 +129,7 @@ export function AppSettingsDrawer(props: Props) {
               </div>
             </section>
 
-            <section className={styles.section} data-section="calendarios" hidden={active !== \'calendarios\'}>
+            <section className={styles.section} data-section="calendarios" hidden={active !== 'calendarios'}>
               <h3>Calendários</h3>
               {props.googleConnected ? (
                 <>
@@ -154,7 +154,7 @@ export function AppSettingsDrawer(props: Props) {
               )}
             </section>
 
-            <section className={styles.section} data-section="dados" hidden={active !== \'dados\'}>
+            <section className={styles.section} data-section="dados" hidden={active !== 'dados'}>
               <h3>Dados e backup</h3>
               <div className={styles.row}>
                 <span><strong>Exportar backup</strong><small>Baixa todos os seus dados em um arquivo.</small></span>
@@ -167,7 +167,7 @@ export function AppSettingsDrawer(props: Props) {
             </section>
 
             {props.installPrompt ? (
-              <section className={styles.section} data-section="app" hidden={active !== \'app\'}>
+              <section className={styles.section} data-section="app" hidden={active !== 'app'}>
                 <h3>Aplicativo</h3>
                 <div className={styles.row}>
                   <span><strong>Instalar Bukid</strong><small>Usar como aplicativo no aparelho.</small></span>
