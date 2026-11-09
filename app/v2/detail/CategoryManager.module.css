@@ -19,3 +19,12 @@
 .add button { appearance: none; height: 34px; padding: 0 14px; border: 0; border-radius: 6px; background: var(--ds-accent); color: var(--ds-on-accent); font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; }
 .add button:disabled { opacity: 0.4; cursor: default; }
 @media (max-width: 900px) { .count { display: none; } }
+
+/* Janela em tela cheia (padrão global) */
+.layer.layer { padding: 0; place-items: stretch; background: var(--ds-bg); }
+.panel.panel { width: 100%; height: 100dvh; max-height: none; border-radius: 0; box-shadow: none; }
+.head { min-height: 48px; padding-top: 0; padding-bottom: 0; border-bottom: 1px solid var(--ds-line); }
+.list { padding-left: max(20px, calc((100% - 880px) / 2)); padding-right: max(20px, calc((100% - 880px) / 2)); }
+@media (max-width: 900px) { .list { padding-left: 16px; padding-right: 16px; } }
+.add { padding-left: max(20px, calc((100% - 880px) / 2)); padding-right: max(20px, calc((100% - 880px) / 2)); padding-bottom: max(14px, env(safe-area-inset-bottom)); }
+@media (max-width: 900px) { .add { padding-left: 16px; padding-right: 16px; } }
