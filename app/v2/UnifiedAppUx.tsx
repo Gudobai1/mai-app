@@ -277,7 +277,7 @@ export function UnifiedAppUx() {
   }
 
   return <div className={`${styles.appShell} mai-v3-shell`} data-view={String(view)}>
-    <ModernSidebar state={runtime.state} today={runtime.today} view={view} navigate={navigate} onSearch={() => setSearchOpen(true)} onSettings={() => setSettingsOpen(true)} onToggleTheme={toggleTheme} onNewProject={parentId => setProjectDialog(parentId ? { parentId } : {})} activeProjectId={activeProjectId} dark={isDark} profile={googleProfile} />
+    <ModernSidebar state={runtime.state} today={runtime.today} view={view} navigate={navigate} onSearch={() => setSearchOpen(true)} onAdd={() => contextualAdd()} onSettings={() => setSettingsOpen(true)} onToggleTheme={toggleTheme} onNewProject={parentId => setProjectDialog(parentId ? { parentId } : {})} activeProjectId={activeProjectId} dark={isDark} profile={googleProfile} />
 
     <main className={`${styles.main} mai-v3-main`}>
       <div key={view} className={`${styles.workspace} mai-v3-workspace mai-view-enter`}>
@@ -309,7 +309,7 @@ export function UnifiedAppUx() {
       </div>
     </main>
 
-    <ModernBottomNav view={view} searchOpen={searchOpen} navigate={navigate} onSearch={() => setSearchOpen(true)} onAdd={() => contextualAdd()} onSettings={() => setSettingsOpen(true)} onToggleTheme={toggleTheme} dark={isDark} />
+    <ModernBottomNav view={view} searchOpen={searchOpen} navigate={navigate} onSearch={() => setSearchOpen(true)} onSettings={() => setSettingsOpen(true)} onToggleTheme={toggleTheme} dark={isDark} />
     <SectionInlineAdd view={view} onAdd={contextualAdd}/>
     {searchOpen ? <SearchOverlay state={runtime.state} today={runtime.today} commit={runtime.commit} query={search} setQuery={setSearch} onClose={() => setSearchOpen(false)} inspect={setSelected} navigate={navigate} openProject={id => setProjectDialog({ projectId:id, tab:'details' })} /> : null}
     {projectDialog ? <ProjectEditor state={runtime.state} commit={runtime.commit} projectId={projectDialog.projectId} parentId={projectDialog.parentId} initialTab={projectDialog.tab} onClose={() => setProjectDialog(null)} onSaved={id => { const wasCreating = !projectDialog.projectId; setProjectDialog(null); if (wasCreating) setTaskScope(`project:${id}`) }} onRemoved={() => { setProjectDialog(null); setTaskScope('entrada') }} /> : null}
