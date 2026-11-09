@@ -277,7 +277,7 @@ export function UnifiedAppUx() {
   }
 
   return <div className={`${styles.appShell} mai-v3-shell`} data-view={String(view)}>
-    <ModernSidebar state={runtime.state} today={runtime.today} view={view} navigate={navigate} onSearch={() => setSearchOpen(true)} onAdd={() => contextualAdd()} onSettings={() => setSettingsOpen(true)} onToggleTheme={toggleTheme} onNewProject={parentId => setProjectDialog(parentId ? { parentId } : {})} activeProjectId={activeProjectId} dark={isDark} profile={googleProfile} />
+    <ModernSidebar state={runtime.state} today={runtime.today} view={view} navigate={navigate} onSearch={() => setSearchOpen(true)} onSettings={() => setSettingsOpen(true)} onToggleTheme={toggleTheme} onNewProject={parentId => setProjectDialog(parentId ? { parentId } : {})} activeProjectId={activeProjectId} dark={isDark} profile={googleProfile} />
 
     <main className={`${styles.main} mai-v3-main`}>
       <div key={view} className={`${styles.workspace} mai-v3-workspace mai-view-enter`}>
