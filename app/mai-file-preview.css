@@ -8,3 +8,7 @@
 .mai-item-attachments-list article>button.mai-item-attachments-open,.mai-item-attachments-list article>button.mai-item-attachment-open,.mai-notes-v4-attachments article>button.mai-note-attachment-open{min-width:0!important;width:auto!important;flex:1;justify-content:flex-start!important;padding:0!important;overflow:hidden;color:inherit!important;text-align:left;background:transparent!important}.mai-item-attachments-list article>button.mai-item-attachments-open,.mai-item-attachments-list article>button.mai-item-attachment-open span,.mai-notes-v4-attachments article>button.mai-note-attachment-open span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 html[data-mai-theme="dark"] .mai-file-preview{background:var(--v3-card);color:var(--v3-text)}html[data-mai-theme="dark"] .mai-file-preview-body{background:#111411}
 @media(max-width:700px){.mai-file-preview-layer{padding:0}.mai-file-preview{width:100vw;height:100dvh;border-radius:0}.mai-file-preview>header{min-height:54px;padding-left:12px}.mai-file-preview>header strong{max-width:55vw}.mai-file-preview-actions a span:last-child{display:none}.mai-file-preview-actions a{width:34px;padding:0;justify-content:center}}
+/* Janela em tela cheia (padrão global) */
+.mai-file-preview-layer{padding:0;background:var(--ds-bg,#fff);backdrop-filter:none}
+.mai-file-preview{width:100vw;height:100dvh;border-radius:0;box-shadow:none}
+.mai-file-preview>header{min-height:48px}
