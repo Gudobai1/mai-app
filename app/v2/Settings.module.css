@@ -62,3 +62,23 @@
   .nav { display: none; }
   .scroll { padding: 0 16px; }
 }
+
+/* Abas no lugar do menu lateral: um assunto por vez */
+.dialog.dialog { grid-template-columns: minmax(0, 1fr); }
+.tabs { display: flex; gap: 4px; padding: 0 max(12px, calc((100% - 880px) / 2)); border-bottom: 1px solid var(--ds-line); overflow-x: auto; scrollbar-width: none; flex: none; }
+.tabs::-webkit-scrollbar { display: none; }
+.tabs button { display: inline-flex; align-items: center; gap: 8px; flex: none; height: 44px; padding: 0 12px; border: 0; border-bottom: 2px solid transparent; border-radius: 0; background: transparent; color: var(--ds-muted); font: inherit; font-size: 14px; font-weight: 500; cursor: pointer; white-space: nowrap; }
+.tabs button:hover { color: var(--ds-text); }
+.tabs button[data-active] { color: var(--ds-accent); border-bottom-color: var(--ds-accent); font-weight: 600; }
+.tabs button:focus-visible { outline: 2px solid var(--ds-accent); outline-offset: -2px; border-radius: 6px; }
+.section[hidden] { display: none; }
+.scroll { padding-left: max(24px, calc((100% - 880px) / 2)); padding-right: max(24px, calc((100% - 880px) / 2)); scroll-behavior: auto; }
+.section { border-bottom: 0; }
+.end { height: 24px; }
+.top { min-height: 48px; padding-top: 0; padding-bottom: 0; }
+@media (max-width: 900px) {
+  .tabs { padding: 0 8px; }
+  .tabs button span { display: inline; }
+  .scroll { padding-left: 16px; padding-right: 16px; }
+  .row { flex-wrap: wrap; }
+}
