@@ -775,7 +775,7 @@ export function TodayModern({ state, today, commit, navigate, inspect, options, 
     const late = due < today
     return (
       <div key={String(item.id)} role="listitem" className={`${styles.item} ${styles.itemWrap} ${payment.status === 'pago' ? styles.itemPassed : ''}`} {...quick.bind(() => financeMenu(item))}>
-        <Check className={styles.itemCheck} checked={payment.status === 'pago'} late={late} label={`${income ? 'Marcar como recebido' : 'Marcar como pago'}: ${title}`} onCheckedChange={() => toggleFinancePaid(item)} />
+        <Check className={styles.itemCheck} checked={payment.status === 'pago'} data-priority={payment.status === 'pago' ? undefined : 'finance'} style={{ '--check-color': income ? 'var(--ds-success)' : 'var(--ds-danger)' } as CSSProperties} label={`${income ? 'Marcar como recebido' : 'Marcar como pago'}: ${title}`} onCheckedChange={() => toggleFinancePaid(item)} />
         <button type="button" className={styles.itemButton} onClick={() => inspect({ kind: 'finance', sourceId: String(item.id), title, date: due, raw: item })}>
           <span className={styles.taskBody}>
             <span className={styles.taskTitle}>{title}{payment.status === 'parcial' ? <span className={styles.partial}>Parcial</span> : null}</span>

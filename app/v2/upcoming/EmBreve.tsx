@@ -421,6 +421,7 @@ export function EmBreve({ state, today, commit, inspect, syncRange }: Props) {
       accounts={rows(state.finance.accounts)}
       cards={rows(state.finance.cards)}
       today={today}
+      compact
       onOpen={() => open(entry)}
       onTogglePaid={() => toggleFinance(entry)}
     />

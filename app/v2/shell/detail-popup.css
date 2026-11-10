@@ -551,3 +551,28 @@ html body .mai-v3-drawer-body {
     box-shadow: var(--ds-popup-shadow) !important;
   }
 }
+
+/* Janelas de criar/editar antigas no mesmo padrão da janela de item (computador):
+ * conteúdo (título, descrição, anexos) à esquerda e propriedades à direita (320px).
+ * No celular segue em uma coluna, como a janela de item. */
+@media (min-width: 901px) {
+  html body .mai-v3-create-drawer .mai-create-unified-body:has(> .mai-create-unified-tools) {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) 320px !important;
+    grid-auto-rows: min-content !important;
+    column-gap: 32px !important;
+    align-content: start !important;
+    padding: 24px 24px !important;
+  }
+  html body .mai-v3-create-drawer .mai-create-unified-body:has(> .mai-create-unified-tools) > * { grid-column: 1 !important; }
+  html body .mai-v3-create-drawer .mai-create-unified-body:has(> .mai-create-unified-tools) > .mai-create-unified-tools {
+    grid-column: 2 !important;
+    grid-row: 1 / span 12 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 2px !important;
+    margin: 0 !important;
+    padding-top: 8px !important;
+  }
+}
