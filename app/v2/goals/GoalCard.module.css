@@ -10,26 +10,34 @@
   color: var(--ds-text);
 }
 
-.check {
+/* Círculo de 18px na cor da meta, igual ao do hábito; só o check por dentro. */
+.circle {
   appearance: none;
+  display: grid;
+  place-items: center;
+  width: var(--ds-row-lead);
+  height: var(--ds-row-lead);
+  margin-top: 1px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.circle:focus-visible { outline: 2px solid var(--ds-accent); outline-offset: 2px; border-radius: 50%; }
+.ring {
   display: grid;
   place-items: center;
   box-sizing: border-box;
   width: var(--ds-row-lead);
   height: var(--ds-row-lead);
-  margin: 1px 0 0;
-  padding: 0;
   border: 2px solid var(--gc);
-  border-radius: 4px;
+  border-radius: 50%;
   background: transparent;
-  color: transparent;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
+  color: var(--gc);
   transition: background-color var(--ds-dur-fast) var(--ds-ease);
 }
-.check:hover { background: color-mix(in srgb, var(--gc) 14%, transparent); color: var(--gc); }
-.check:focus-visible { outline: 2px solid var(--ds-accent); outline-offset: 2px; }
-.card[data-done] .check { background: var(--ds-muted); border-color: var(--ds-muted); color: var(--ds-bg); }
+.circle:hover .ring { background: color-mix(in srgb, var(--gc) 14%, transparent); }
 
 .body {
   appearance: none;
@@ -46,10 +54,13 @@
 }
 .body:focus-visible { outline: 2px solid var(--ds-accent); outline-offset: 2px; border-radius: 6px; }
 .title { font-size: var(--ds-row-title); font-weight: var(--ds-row-weight); line-height: 1.3; color: var(--ds-text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.card[data-done] .title { color: var(--ds-muted); text-decoration: line-through; }
+.card[data-done] .title { color: var(--ds-muted); }
 .sub { display: flex; gap: 4px; min-width: 0; font-size: var(--ds-row-sub); font-weight: var(--ds-row-weight); line-height: 1.3; color: var(--ds-muted); overflow: hidden; white-space: nowrap; }
 .due[data-tone='late'] { color: var(--ds-danger); }
 .due[data-tone='today'] { color: var(--ds-warning, #D99A00); }
 .due[data-tone='future'] { color: var(--ds-success); }
-.pct { font-size: var(--ds-row-sub); font-weight: var(--ds-row-weight); line-height: 19px; color: var(--ds-muted); font-variant-numeric: tabular-nums; }
-.card[data-paused] .title { color: var(--ds-muted); }
+
+.right { display: grid; justify-items: end; gap: 2px; min-width: 0; text-align: right; }
+.pct { font-size: var(--ds-row-title); font-weight: var(--ds-row-weight); line-height: 1.3; color: var(--ds-text); font-variant-numeric: tabular-nums; }
+.amount { font-size: var(--ds-row-sub); font-weight: var(--ds-row-weight); line-height: 1.3; color: var(--ds-muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.card[data-done] .pct, .card[data-paused] .pct { color: var(--ds-muted); }

@@ -16,6 +16,8 @@ import { useQuickMenu, type QuickMenuConfig } from '../shell/QuickMenu'
 import tasksStyles from '../tasks/TasksModern.module.css'
 import todayStyles from '../today/TodayModern.module.css'
 import styles from './EmBreve.module.css'
+import { GoalCard } from '../goals/GoalCard'
+import { goalAmountText, goalColor, goalDone, goalDueInfo, goalPct, setGoalDone } from '../../../lib/v2/goals'
 import { CategoryManager } from '../detail/CategoryManager'
 import { DayNav, DayTimeline, OrganizeButton } from '../DayTimeline'
 import { DEFAULT_DISPLAY, EMPTY_FILTERS, KINDS, UpcomingControls, normalizeFilters, type Kind, type UpcomingDisplay, type UpcomingFilters } from './UpcomingControls'
@@ -191,6 +193,7 @@ export function EmBreve({ state, today, commit, inspect, syncRange }: Props) {
       return { ...base, kind: 'task', time: item.time, title: item.title, late: item.date < today && !item.completed, priority: Number(item.raw.prioridade || 4) >= 1 && Number(item.raw.prioridade || 4) <= 3 ? Number(item.raw.prioridade) : 4, project: projectOf(item.raw.projeto_id), projectId: String(item.raw.projeto_id || 'entrada') }
     }
     if (item.kind === 'habit') return { ...base, kind: 'habit', time: item.time, title: item.title }
+    if (item.kind === 'goal') return { ...base, kind: 'goal', time: '', title: item.title, late: item.date < today && !item.completed, amount: String(item.subtitle || '') }
     if (item.kind === 'finance') {
       const payment = financeCardPaymentState(item.raw)
       const income = item.raw.tipo === 'receita'
@@ -219,9 +222,9 @@ export function EmBreve({ state, today, commit, inspect, syncRange }: Props) {
   const habitLater = useMemo(() => new Set([...hiddenOccurrenceIds(state, today)].filter(id => id.startsWith('habit:'))), [state.habits, state.habitEntries, today])  // eslint-disable-line react-hooks/exhaustive-deps
 
   const entries = useMemo(() => {
-    const rank = (entry: Entry) => (entry.kind === 'event' ? (entry.allDay ? 0 : 1) : entry.kind === 'task' ? 2 : entry.kind === 'habit' ? 3 : 4)
+    const rank = (entry: Entry) => (entry.kind === 'event' ? (entry.allDay ? 0 : 1) : entry.kind === 'task' ? 2 : entry.kind === 'habit' ? 3 : entry.kind === 'finance' ? 4 : 5)
     return plannerItems(state, range.start, range.end)
-      .filter(item => (item.kind === 'event' || item.kind === 'task' || item.kind === 'habit' || item.kind === 'finance') && visible(item.kind))
+      .filter(item => (item.kind === 'event' || item.kind === 'task' || item.kind === 'habit' || item.kind === 'finance' || item.kind === 'goal') && visible(item.kind))
       .filter(item => !(item.kind === 'task' && item.raw.parent_id))
       .filter(item => item.kind !== 'habit' || (item.date < today ? item.completed : !habitLater.has(item.id)))
       .filter(item => !(nextIds && nextIds.has(item.id)))
@@ -304,7 +307,7 @@ export function EmBreve({ state, today, commit, inspect, syncRange }: Props) {
       },
     }))
   }
-  const toggleEntry = (entry: Entry) => (entry.kind === 'task' ? toggleTask(entry) : entry.kind === 'habit' ? toggleHabit(entry) : entry.kind === 'finance' ? toggleFinance(entry) : open(entry))
+  const toggleEntry = (entry: Entry) => (entry.kind === 'task' ? toggleTask(entry) : entry.kind === 'habit' ? toggleHabit(entry) : entry.kind === 'finance' ? toggleFinance(entry) : entry.kind === 'goal' ? toggleGoal(entry) : open(entry))
 
   const nextSunday = addDays(today, 7 - dayDate(today).getDay())
   const choices = [
@@ -322,6 +325,9 @@ export function EmBreve({ state, today, commit, inspect, syncRange }: Props) {
     }
     if (entry.kind === 'finance') {
       return { title: entry.title, subtitle: entry.amount, groups: [{ options: [{ label: entry.done ? 'Marcar como pendente' : 'Marcar como pago', icon: entry.done ? 'undo' : 'paid', onSelect: () => toggleFinance(entry) }, details] }] }
+    }
+    if (entry.kind === 'goal') {
+      return { title: entry.title, subtitle: 'Meta', groups: [{ options: [{ label: entry.done ? 'Reabrir meta' : 'Concluir meta', icon: entry.done ? 'undo' : 'check_circle', onSelect: () => toggleGoal(entry) }, details] }] }
     }
     const raw = entry.planner.raw
     const google = raw.tipo === 'google' || raw.tipo === 'gcalendar'
@@ -418,6 +424,27 @@ export function EmBreve({ state, today, commit, inspect, syncRange }: Props) {
     )
   }
 
+  const toggleGoal = (entry: Entry) => commit(current => ({ ...current, goals: rows(current.goals).map(goal => (String(goal.id) === entry.planner.sourceId ? setGoalDone(goal, !goalDone(goal)) : goal)) }))
+  const renderGoal = (entry: Entry) => {
+    const goal = entry.planner.raw
+    const info = goalDueInfo(entry.day, today, entry.done)
+    return (
+      <GoalCard
+        key={entry.id}
+        title={entry.title}
+        due={info.label}
+        tone={info.tone}
+        amount={goalAmountText(goal)}
+        pct={goalPct(goal)}
+        done={entry.done}
+        color={goalColor(goal)}
+        ariaLabel={entry.done ? `Reabrir ${entry.title}` : `Concluir ${entry.title}`}
+        onToggle={() => toggleGoal(entry)}
+        onOpen={() => open(entry)}
+      />
+    )
+  }
+
   const renderFinance = (entry: Entry) => (
     <FinanceTransactionCard
       key={entry.id}
@@ -471,6 +498,7 @@ export function EmBreve({ state, today, commit, inspect, syncRange }: Props) {
     const tasks = items.filter(entry => entry.kind === 'task')
     const habits = items.filter(entry => entry.kind === 'habit')
     const finance = items.filter(entry => entry.kind === 'finance')
+    const goals = items.filter(entry => entry.kind === 'goal')
     if (display.group === 'none') {
       return (
         <div className={styles.groupBody} role="list">
@@ -478,6 +506,7 @@ export function EmBreve({ state, today, commit, inspect, syncRange }: Props) {
           {tasks.length ? taskList(tasks) : null}
           {habits.map(renderHabit)}
           {finance.map(renderFinance)}
+          {goals.map(renderGoal)}
         </div>
       )
     }
@@ -490,6 +519,7 @@ export function EmBreve({ state, today, commit, inspect, syncRange }: Props) {
         {taskGroups.map(item => group(item.label, taskList(item.items), item.key, item.items.length, day, item.color))}
         {habits.length ? group('Hábitos', <div role="list">{habits.map(renderHabit)}</div>, 'habits', habits.length, day) : null}
         {finance.length ? group('Finanças', <div role="list">{finance.map(renderFinance)}</div>, 'finance', finance.length, day, undefined, (() => { const total = finance.reduce((sum, entry) => sum + (entry.financeType === 'receita' ? 1 : -1) * Math.abs(Number(entry.planner?.raw?.valor || 0)), 0); return `${total < 0 ? '−' : total > 0 ? '+' : ''}${new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Math.abs(total))}` })()) : null}
+        {goals.length ? group('Metas', <div role="list">{goals.map(renderGoal)}</div>, 'goals', goals.length, day) : null}
       </>
     )
   }
@@ -697,7 +727,7 @@ export function EmBreve({ state, today, commit, inspect, syncRange }: Props) {
     <button key={entry.id} type="button" className={styles.chip} data-kind={entry.kind} data-done={entry.done || undefined} style={{ '--ev': entry.kind === 'task' ? (PRIORITY_COLOR[entry.priority] || 'var(--ds-muted)') : entry.color } as CSSProperties} onClick={() => open(entry)} {...quick.bind(() => menuFor(entry))}>
       {entry.kind === 'task'
         ? <span role="checkbox" aria-checked={entry.done} aria-label="Concluir" tabIndex={0} className={styles.chipCheck} onClick={event => { event.stopPropagation(); toggleTask(entry) }} onKeyDown={event => { if (event.key === ' ' || event.key === 'Enter') { event.preventDefault(); event.stopPropagation(); toggleTask(entry) } }}>{entry.done ? <Icon name="check" size={10} /> : null}</span>
-        : <Icon name={entry.kind === 'habit' ? 'autorenew' : entry.kind === 'finance' ? 'payments' : 'event'} size={13} style={{ color: entry.kind === 'finance' ? (entry.financeType === 'receita' ? 'var(--ds-success)' : 'var(--ds-danger)') : entry.color }} />}
+        : <Icon name={entry.kind === 'habit' ? 'autorenew' : entry.kind === 'finance' ? 'payments' : entry.kind === 'goal' ? 'flag' : 'event'} size={13} style={{ color: entry.kind === 'finance' ? (entry.financeType === 'receita' ? 'var(--ds-success)' : 'var(--ds-danger)') : entry.color }} />}
       <span>{entry.title}</span>
     </button>
   )
@@ -759,7 +789,7 @@ export function EmBreve({ state, today, commit, inspect, syncRange }: Props) {
         </button>
       )
     }
-    const lines = items.filter(entry => entry.kind === 'event' || entry.kind === 'task' || entry.kind === 'finance')
+    const lines = items.filter(entry => entry.kind === 'event' || entry.kind === 'task' || entry.kind === 'finance' || entry.kind === 'goal')
     const shown = lines.slice(0, 3)
     const habits = items.filter(entry => entry.kind === 'habit')
     const rest = lines.length - shown.length
@@ -771,7 +801,7 @@ export function EmBreve({ state, today, commit, inspect, syncRange }: Props) {
             ? <span key={entry.id} className={styles.cellEvent} data-passed={passed(entry) || undefined} style={{ '--ev': entry.color } as CSSProperties}><i className={styles.cellDot} />{entry.allDay ? null : <em>{entry.time}</em>}<span className={styles.cellText}>{entry.title}</span></span>
             : entry.kind === 'finance'
             ? <span key={entry.id} className={styles.cellFin} data-done={entry.done || undefined} data-type={entry.financeType}><Icon name="payments" size={11} style={{ color: entry.financeType === 'receita' ? 'var(--ds-success)' : 'var(--ds-danger)' }} /><span className={styles.cellText}>{entry.title}</span>{entry.amount ? <em>{entry.amount}</em> : null}</span>
-            : <span key={entry.id} className={styles.cellTask} data-done={entry.done || undefined} style={{ '--ev': PRIORITY_COLOR[entry.priority] || 'var(--ds-muted)' } as CSSProperties}><u /><span className={styles.cellText}>{entry.title}</span></span>)}
+            : <span key={entry.id} className={styles.cellTask} data-done={entry.done || undefined} style={{ '--ev': entry.kind === 'goal' ? entry.color : PRIORITY_COLOR[entry.priority] || 'var(--ds-muted)' } as CSSProperties}><u /><span className={styles.cellText}>{entry.title}</span></span>)}
           {rest > 0 ? <span className={styles.cellMore}>+{rest} mais</span> : null}
         </span>
         {habits.length ? (

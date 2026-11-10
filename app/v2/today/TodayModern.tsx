@@ -1,7 +1,7 @@
 'use client'
 
 import { GoalCard } from '../goals/GoalCard'
-import { goalCurrent, goalDone, goalDue, goalDueInfo, goalPaused, goalPct, goalPriorityColor, goalTotal, setGoalDone } from '../../../lib/v2/goals'
+import { goalAmountText, goalColor, goalDone, goalDue, goalDueInfo, goalPaused, goalPct, setGoalDone } from '../../../lib/v2/goals'
 import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { financeSummary } from '../../../lib/v2/finance-summary'
 import { addDays, eventColor, plannerItems, type PlannerItem } from '../../../lib/v2/planner'
@@ -464,7 +464,9 @@ export function TodayModern({ state, today, commit, navigate, inspect, options, 
 
   const goals = rows(state.goals).filter(goal => {
     const due = goalDate(goal)
-    return Boolean(due) && (isToday ? due <= today : due === day) && !concluded(goal)
+    if (!due || goalPaused(goal)) return false
+    if (concluded(goal)) return showCompleted(state, 'today') && due === day
+    return isToday ? due <= today : due === day
   }).sort((a, b) => goalDate(a).localeCompare(goalDate(b)))
 
   /* ---------------------------------------------------------------- Finanças */
@@ -884,11 +886,11 @@ export function TodayModern({ state, today, commit, navigate, inspect, options, 
                     title={title}
                     due={info.label}
                     tone={info.tone}
-                    progress={`${goalCurrent(goal)} de ${goalTotal(goal)}`}
+                    amount={goalAmountText(goal)}
                     pct={goalPct(goal)}
                     done={goalDone(goal)}
                     paused={goalPaused(goal)}
-                    color={goalPriorityColor(goal)}
+                    color={goalColor(goal)}
                     ariaLabel={`Concluir ${title}`}
                     onToggle={() => commit(current => ({ ...current, goals: rows(current.goals).map(row => (String(row.id) === String(goal.id) ? setGoalDone(row, !goalDone(row)) : row)) }))}
                     onOpen={() => inspect({ kind: 'goal', sourceId: String(goal.id), title, date: due, raw: goal })}

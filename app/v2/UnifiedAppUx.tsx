@@ -89,22 +89,6 @@ function filteredStateForView(state: MaiState, view: AppView, today: string): Ma
     return { ...state, habits: filtered }
   }
 
-  if (view === 'goals') {
-    const status = String(filters.status || 'all')
-    const priority = String(filters.priority || 'all')
-    const filtered = rows(state.goals).filter(goal => {
-      const text = String(goal.status || '').toLocaleLowerCase('pt-BR')
-      const done = goal.concluida === true || text.includes('conclu')
-      if (done) return false
-      const paused = text.includes('paus')
-      if (status === 'active' && paused) return false
-      if (status === 'paused' && !paused) return false
-      if (priority !== 'all' && String(Number(goal.prioridade || 4)) !== priority) return false
-      return true
-    })
-    return { ...state, goals: filtered }
-  }
-
   if (view === 'notes') {
     const pinned = String(filters.pinned || 'all')
     if (pinned === 'all') return state

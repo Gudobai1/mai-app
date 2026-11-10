@@ -8,7 +8,7 @@ import styles from './UpcomingControls.module.css'
 /* Filtros e exibição do Em breve. Tudo é guardado como "o que está escondido",
  * assim projetos, agendas e categorias novos já aparecem por padrão. */
 
-export type Kind = 'event' | 'task' | 'habit' | 'finance'
+export type Kind = 'event' | 'task' | 'habit' | 'finance' | 'goal'
 
 export type UpcomingFilters = {
   hiddenKinds: Kind[]
@@ -30,6 +30,7 @@ export const KINDS: { id: Kind; label: string; icon: string }[] = [
   { id: 'task', label: 'Tarefas', icon: 'task_alt' },
   { id: 'habit', label: 'Hábitos', icon: 'autorenew' },
   { id: 'finance', label: 'Finanças', icon: 'payments' },
+  { id: 'goal', label: 'Metas', icon: 'flag' },
 ]
 
 const PRIORITIES = [
@@ -40,7 +41,7 @@ const PRIORITIES = [
 ]
 
 export const activeFilterCount = (filters: UpcomingFilters) =>
-  filters.hiddenKinds.length + filters.hiddenProjects.length + filters.hiddenSources.length + filters.hiddenPriorities.length + filters.hiddenFinance.length + (filters.hideDone ? 0 : 1) + (filters.hideLate ? 1 : 0)
+  filters.hiddenKinds.length + filters.hiddenProjects.length + filters.hiddenSources.length + filters.hiddenPriorities.length + filters.hiddenFinance.length + (filters.hideDone ? 1 : 0) + (filters.hideLate ? 1 : 0)
 
 export const normalizeFilters = (value: unknown): UpcomingFilters => {
   const raw = (value && typeof value === 'object' ? value : {}) as Partial<UpcomingFilters>
