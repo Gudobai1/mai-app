@@ -7,9 +7,9 @@ import { LUCIDE_ICONS } from './lucide'
  * Fica em `state.configs.appearance`; `applyAppearance` joga o valor no app inteiro (variáveis CSS + este mesmo estado, que o `Icon` lê).
  */
 export type IconPack = 'lucide' | 'tabler' | 'phosphor-thin' | 'phosphor' | 'phosphor-bold' | 'phosphor-duotone' | 'outlined' | 'sharp' | 'rounded'
-export type Appearance = { iconPack: IconPack; weight: number; corners: 'round' | 'square'; font: string; accent: string }
+export type Appearance = { iconPack: IconPack; weight: number; corners: 'round' | 'square'; font: string; accent: string; palette: string }
 
-export const DEFAULT_APPEARANCE: Appearance = { iconPack: 'lucide', weight: 1.5, corners: 'square', font: 'system', accent: '' }
+export const DEFAULT_APPEARANCE: Appearance = { iconPack: 'lucide', weight: 1.5, corners: 'square', font: 'system', accent: '', palette: 'padrao' }
 
 export const ICON_PACKS: { id: IconPack; label: string; hint: string }[] = [
   { id: 'lucide', label: 'Linhas', hint: 'Lucide: traço contínuo, leve' },
@@ -21,6 +21,17 @@ export const ICON_PACKS: { id: IconPack; label: string; hint: string }[] = [
   { id: 'outlined', label: 'Contorno', hint: 'Material, contorno' },
   { id: 'sharp', label: 'Reto', hint: 'Material, cantos vivos' },
   { id: 'rounded', label: 'Suave', hint: 'Material, cantos redondos' },
+]
+
+/* Paletas: trocam fundo, superfícies, linhas e texto (claro e escuro). A cor de destaque continua separada. As cores vivem em app/ds/palettes.css. */
+export const PALETTES: { id: string; label: string; swatch: [string, string, string, string] }[] = [
+  { id: 'padrao', label: 'Padrão', swatch: ['#FFFFFF', '#F7F8FA', '#EDEDED', '#1E1E1E'] },
+  { id: 'grafite', label: 'Grafite', swatch: ['#FFFFFF', '#F3F4F6', '#E3E5E9', '#14171C'] },
+  { id: 'floresta', label: 'Floresta', swatch: ['#FBFCF9', '#F1F5EE', '#E1E8DC', '#131A14'] },
+  { id: 'oceano', label: 'Oceano', swatch: ['#FAFCFE', '#EFF5FA', '#DDE8F0', '#0F1820'] },
+  { id: 'areia', label: 'Areia', swatch: ['#FFFDF9', '#F8F3EA', '#EBE3D4', '#1A1613'] },
+  { id: 'lavanda', label: 'Lavanda', swatch: ['#FCFBFF', '#F4F1FB', '#E6E1F2', '#17141F'] },
+  { id: 'meia-noite', label: 'Meia-noite', swatch: ['#FFFFFF', '#F3F4F6', '#E3E5E9', '#000000'] },
 ]
 
 const SYSTEM_STACK = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif"
@@ -46,6 +57,7 @@ export function normalizeAppearance(raw: unknown): Appearance {
     corners: value.corners === 'round' ? 'round' : 'square',
     font: FONTS.some(item => item.id === value.font) ? String(value.font) : 'system',
     accent: /^#[0-9a-f]{6}$/i.test(String(value.accent || '')) ? String(value.accent) : '',
+    palette: PALETTES.some(item => item.id === value.palette) ? String(value.palette) : 'padrao',
   }
 }
 
@@ -119,6 +131,8 @@ export function applyAppearance(raw: unknown) {
     const name = next.iconPack === 'sharp' ? 'Material+Symbols+Sharp' : 'Material+Symbols+Rounded'
     if (next.iconPack !== 'outlined') loadFont(`mai-icons-${next.iconPack}`, `https://fonts.googleapis.com/css2?family=${name}:opsz,wght,FILL,GRAD@20..24,200..500,0..1,0&display=swap`)
   }
+  if (next.palette === 'padrao') delete root.dataset.maiPalette
+  else root.dataset.maiPalette = next.palette
   const font = FONTS.find(item => item.id === next.font)
   if (font?.family && font.google) {
     loadFont(`mai-font-${font.id}`, `https://fonts.googleapis.com/css2?family=${font.google}&display=swap`)

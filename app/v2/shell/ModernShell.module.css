@@ -596,3 +596,19 @@
 .userMenu button:hover { background: var(--ds-surface-hover); }
 .userMenu button[data-tone='danger'] { color: var(--ds-danger); }
 .userMenuLine { height: 1px; margin: 4px 6px; background: var(--ds-line); }
+
+/* Painel do sino. */
+.alertPanel { position: fixed; z-index: 400; width: 360px; max-width: calc(100vw - 16px); max-height: min(70vh, 560px); overflow-y: auto; padding: 8px; border: 1px solid var(--ds-line); border-radius: 8px; background: var(--ds-bg); color: var(--ds-text); box-shadow: var(--ds-popup-shadow, 0 12px 32px rgba(0, 0, 0, 0.22)); font-family: var(--ds-font); }
+.alertHead { padding: 6px 8px 8px; font-size: 15px; font-weight: 700; }
+.alertGroup { padding-top: 6px; }
+.alertGroup + .alertGroup { border-top: 1px solid var(--ds-line); margin-top: 6px; }
+.alertGroupTitle { display: flex; align-items: center; gap: 6px; padding: 4px 8px; color: var(--ds-muted); font-size: 12px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; }
+.alertGroupTitle span { margin-left: auto; font-weight: 600; }
+.alertRow { appearance: none; display: flex; align-items: center; gap: 10px; width: 100%; padding: 8px; border: 0; border-radius: 6px; background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.alertRow:hover { background: var(--ds-surface-hover); }
+.alertRow:focus-visible { outline: 2px solid var(--ds-accent); outline-offset: -2px; }
+.alertText { display: grid; gap: 1px; min-width: 0; flex: 1; }
+.alertText strong { font-size: 14px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.alertText small { color: var(--ds-muted); font-size: 12px; }
+.alertMore { padding: 4px 8px 6px 36px; color: var(--ds-muted); font-size: 12px; }
+.alertEmpty { display: flex; align-items: center; gap: 10px; padding: 18px 10px; color: var(--ds-muted); font-size: 14px; }

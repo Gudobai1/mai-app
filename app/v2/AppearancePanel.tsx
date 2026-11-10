@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react'
 import { DEFAULT_APPEARANCE, FONTS, ICON_PACKS, Icon, loadIconPack, normalizeAppearance, type Appearance } from '../ds'
+import { PALETTES } from '../ds/appearance'
 import styles from './AppearancePanel.module.css'
 
 const SAMPLE = ['today', 'event_upcoming', 'task_alt', 'account_balance_wallet', 'repeat', 'flag', 'sticky_note_2', 'folder', 'search', 'settings']
@@ -25,6 +26,18 @@ export function AppearancePanel({ value, onChange }: Props) {
     <div className={styles.panel}>
       <div className={styles.preview} aria-label="Prévia dos ícones">
         {SAMPLE.map(name => <Icon key={name} name={name} size={22} filled={false} />)}
+      </div>
+
+      <div className={styles.group}>
+        <span className={styles.label}>Paleta de cores do app</span>
+        <div className={styles.palettes} role="radiogroup" aria-label="Paleta de cores">
+          {PALETTES.map(palette => (
+            <button key={palette.id} type="button" role="radio" aria-checked={current.palette === palette.id} data-active={current.palette === palette.id || undefined} onClick={() => set({ palette: palette.id })}>
+              <span className={styles.paletteChips} aria-hidden="true">{palette.swatch.map((color, index) => <i key={index} style={{ background: color }} />)}</span>
+              <strong>{palette.label}</strong>
+            </button>
+          ))}
+        </div>
       </div>
 
       <div className={styles.group}>
