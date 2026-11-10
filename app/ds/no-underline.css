@@ -10,6 +10,7 @@ html body button:hover:not(#_) {
 
 /* Mãozinha: visualizações em colunas rolam arrastando (só com mouse; no celular o dedo já rola). */
 @media (hover: hover) and (pointer: fine) {
-  [data-grab] { cursor: grab; }
-  [data-grab][data-grabbing] { cursor: grabbing; user-select: none; scroll-snap-type: none; }
+  [data-grab], [data-grab] > section { cursor: grab; }
+  [data-grab][data-grabbing], [data-grab][data-grabbing] * { cursor: grabbing !important; }
+  [data-grab][data-grabbing] { user-select: none; scroll-snap-type: none; }
 }
