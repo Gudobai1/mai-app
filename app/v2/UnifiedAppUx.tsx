@@ -14,7 +14,7 @@ import { AuthorCtx } from './detail/Comments'
 import { QuickAdd, type QuickAddKind } from './shell/QuickAdd'
 import type { InspectableItem } from './ContextDrawer'
 import { FinanceV4 } from './FinanceV4'
-import { GoalsV4 } from './GoalsV4'
+import { GoalsModern } from './goals/GoalsModern'
 import { HabitsModern } from './habits/HabitsModern'
 import { NotesV4 } from './NotesV4'
 import { ProjectEditor } from './tasks/ProjectEditor'
@@ -286,7 +286,7 @@ export function UnifiedAppUx() {
             onManageSections={id => setProjectDialog({ projectId: id, tab: 'sections' })}
           /> : null}
           {view === 'habits' ? <HabitsModern state={viewState} today={runtime.today} commit={runtime.commit} createRequest={areaCreateRequest} inspect={setSelected}/> : null}
-          {view === 'goals' ? <GoalsV4 state={viewState} today={runtime.today} commit={runtime.commit} createRequest={areaCreateRequest} inspect={setSelected}/> : null}
+          {view === 'goals' ? <GoalsModern state={viewState} today={runtime.today} commit={runtime.commit} createRequest={areaCreateRequest} inspect={setSelected}/> : null}
           {view === 'notes' ? <NotesV4 state={viewState} today={runtime.today} commit={runtime.commit} createRequest={areaCreateRequest} inspect={setSelected}/> : null}
           {view === 'finance' ? <FinanceV4 state={viewState} today={runtime.today} commit={runtime.commit} createRequest={areaCreateRequest} inspect={setSelected} options={<AppTopBar state={runtime.state} today={runtime.today} view={view} taskScope={taskScope} commit={runtime.commit} onTaskScopeChange={setTaskScope} onSettings={() => setSettingsOpen(true)} />}/> : null}
         </>}

@@ -209,7 +209,6 @@ export function AppTopBar({ state, today, view, taskScope, commit, onTaskScopeCh
       <PanelSection title="Concluídos"><Choices value={showCompleted(state, 'goals') ? 'show' : 'hide'} onChange={value => patchConfig('showCompletedByModule', { ...((configs.showCompletedByModule as Record<string, boolean> | undefined) || {}), goals: value === 'show' })} items={[{value:'hide',label:'Ocultar'},{value:'show',label:'Mostrar concluídos'}]}/></PanelSection>
       <PanelSection title="Filtros"><SelectLine label="Situação" value={String(filter.status || 'all')} onChange={value => patchFilter({ status:value })}><option value="all">Em andamento + pausadas</option><option value="active">Em andamento</option><option value="paused">Pausadas</option></SelectLine><SelectLine label="Prioridade" value={String(filter.priority || 'all')} onChange={value => patchFilter({ priority:value })}>{priorityOptions}</SelectLine></PanelSection>
       <PanelSection title="Classificação"><Choices value={sortMode} onChange={value => patchControl({ sort:value })} items={[{value:'date',label:'Prazo'},{value:'priority',label:'Prioridade'},{value:'progress',label:'Progresso'},{value:'name',label:'Nome'}]}/></PanelSection>
-      <PanelSection title="Visualização"><Choices value={advanced.goals ? 'advanced' : 'simple'} onChange={value => setAdvanced('goals', value === 'advanced')} items={[{value:'simple',label:'Simples'},{value:'advanced',label:'Avançada'}]}/></PanelSection>
     </> : null}
 
     {view === 'notes' ? <>

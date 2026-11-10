@@ -1,5 +1,7 @@
 'use client'
 
+import { GoalCard } from '../goals/GoalCard'
+import { goalCurrent, goalDone, goalDue, goalDueInfo, goalPaused, goalPct, goalPriorityColor, goalTotal, setGoalDone } from '../../../lib/v2/goals'
 import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { financeSummary } from '../../../lib/v2/finance-summary'
 import { addDays, eventColor, plannerItems, type PlannerItem } from '../../../lib/v2/planner'
@@ -871,20 +873,26 @@ export function TodayModern({ state, today, commit, navigate, inspect, options, 
         {head('goals', 'Metas', goals.length ? String(goals.length) : undefined)}
         {!collapsed.has('goals') ? (
           goals.length ? (
-            <div className={styles.items}>
+            <div role="list">
               {goals.map(goal => {
-                const total = Math.max(1, Number(goal.progresso_total || 100))
-                const pct = Math.max(0, Math.min(100, Math.round((Number(goal.progresso_atual || 0) / total) * 100)))
-                const due = goalDate(goal)
+                const due = goalDue(goal)
                 const title = String(goal.titulo || 'Meta')
+                const info = goalDueInfo(due, today, goalDone(goal))
                 return (
-                  <button key={String(goal.id)} type="button" className={`${styles.item} ${styles.goal}`} onClick={() => inspect({ kind: 'goal', sourceId: String(goal.id), title, date: due, raw: goal })} aria-label={`${title}, ${pct}%`}>
-                    <Icon name="flag" size={16} className={styles.goalIcon} />
-                    <span className={styles.itemTitle}>{title}</span>
-                    <span className={`${styles.itemMeta} ${due < today ? styles.late : ''}`}>{naturalDate(due, today)}</span>
-                    <span className={styles.goalPct}>{pct}%</span>
-                    <span className={styles.goalBar} style={{ width: `${pct}%` }} />
-                  </button>
+                  <GoalCard
+                    key={String(goal.id)}
+                    title={title}
+                    due={info.label}
+                    tone={info.tone}
+                    progress={`${goalCurrent(goal)} de ${goalTotal(goal)}`}
+                    pct={goalPct(goal)}
+                    done={goalDone(goal)}
+                    paused={goalPaused(goal)}
+                    color={goalPriorityColor(goal)}
+                    ariaLabel={`Concluir ${title}`}
+                    onToggle={() => commit(current => ({ ...current, goals: rows(current.goals).map(row => (String(row.id) === String(goal.id) ? setGoalDone(row, !goalDone(row)) : row)) }))}
+                    onOpen={() => inspect({ kind: 'goal', sourceId: String(goal.id), title, date: due, raw: goal })}
+                  />
                 )
               })}
             </div>

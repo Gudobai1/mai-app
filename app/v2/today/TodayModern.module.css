@@ -844,35 +844,6 @@
   color: var(--ds-on-accent);
 }
 
-/* Metas */
-
-.goal.goal {
-  padding-bottom: 2px;
-}
-
-.goalIcon {
-  flex-shrink: 0;
-  color: var(--ds-lilac-fg);
-}
-
-.goalPct {
-  flex-shrink: 0;
-  min-width: 34px;
-  text-align: right;
-  font-size: 12px;
-  font-weight: var(--ds-fw-heavy);
-  font-variant-numeric: tabular-nums;
-}
-
-.goalBar {
-  position: absolute;
-  left: 0;
-  bottom: 0;
-  height: 2px;
-  background: var(--ds-lilac-fg);
-  opacity: 0.8;
-}
-
 .noteIcon {
   flex-shrink: 0;
   color: var(--ds-peach-fg);
