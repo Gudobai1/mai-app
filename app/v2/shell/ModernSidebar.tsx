@@ -5,7 +5,7 @@ import type { MaiState } from '../../../lib/v2/state'
 import { Icon } from '../../ds'
 import type { AppView } from '../app-types'
 import { ProjectMark } from './ProjectMark'
-import { SidebarIcon } from './SidebarIcons'
+import { normalizeSidebar, sidebarHidden, sidebarIconName } from './sidebar-config'
 import { NAV_ALIAS, todayCounts, type NavItem } from './nav'
 import { NotificationPanel } from './NotificationPanel'
 import { alertCount, buildAlerts, type AlertItem } from '../../../lib/v2/alerts'
@@ -63,6 +63,8 @@ export function ModernSidebar({ state, today, view, navigate, onSearch, onSettin
   const profileName = String(profile?.name || state.configs.profileName || state.configs.userName || 'Meu perfil')
   const profileInitial = profileName.trim().slice(0, 1).toLocaleUpperCase('pt-BR') || 'M'
   const counts = todayCounts(state, today)
+  const side = normalizeSidebar(state.configs.sidebar, Boolean(state.configs.hideInbox))
+  const sideIcon = (id: string, fallback: string, size = 22) => (side.icons ? <Icon name={sidebarIconName(side, id, fallback)} size={size} filled={false} style={{ color: 'var(--sidebar-icon-color, var(--ds-muted))', flexShrink: 0 }} /> : null)
   const [open, setOpen] = useState<Set<string>>(new Set())
   const [menu, setMenu] = useState(false)
   const [bell, setBell] = useState(false)
@@ -103,6 +105,7 @@ export function ModernSidebar({ state, today, view, navigate, onSearch, onSettin
   })
 
   const renderItem = (item: NavItem) => {
+    if (sidebarHidden(side, String(item.id))) return null
     const active = (NAV_ALIAS[view] ?? view) === item.id
     const badge = item.id === 'today' && counts.due > 0 ? counts.due : 0
     return (
@@ -113,7 +116,7 @@ export function ModernSidebar({ state, today, view, navigate, onSearch, onSettin
         aria-current={active ? 'page' : undefined}
         onClick={() => navigate(item.id)}
       >
-        <SidebarIcon name={String(item.id)} />
+        {sideIcon(String(item.id), item.icon)}
         <span className={styles.itemLabel}>{item.label}</span>
         {badge ? (
           <span className={styles.badge} title={counts.overdue ? `${counts.overdue} atrasada(s)` : undefined}>{badge}</span>
@@ -197,18 +200,18 @@ export function ModernSidebar({ state, today, view, navigate, onSearch, onSettin
           <Icon name="left_panel_close" size={20} filled={false} />
         </button>
       </div>
-      <button type="button" className={styles.search} onClick={onSearch}>
-        <SidebarIcon name="search" size={20} />
+      {sidebarHidden(side, 'search') ? null : <button type="button" className={styles.search} onClick={onSearch}>
+        {sideIcon('search', 'search', 20)}
         <span>Buscar</span>
         <span className={styles.kbd}>Ctrl Espaço</span>
-      </button>
+      </button>}
 
       <nav className={styles.nav} aria-label="Áreas">
         <div className={styles.group}>
           <div className={styles.groupLabel}>Planejar</div>
-          {state.configs.hideInbox ? null : (
+          {sidebarHidden(side, 'inbox') ? null : (
             <button type="button" className={styles.item} aria-current={view === 'tasks' && activeProjectId === 'entrada' ? 'page' : undefined} onClick={() => navigate('inbox' as AppView)}>
-              <SidebarIcon name="inbox" />
+              {sideIcon('inbox', 'inbox')}
               <span className={styles.itemLabel}>Entrada</span>
               {inboxCount ? <span className={styles.badge}>{inboxCount}</span> : null}
             </button>
