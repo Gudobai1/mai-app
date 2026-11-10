@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react'
 import { hasStoredSupabaseSession } from '../../lib/supabase/browser'
 import { UnifiedAppUx } from './UnifiedAppUx'
-import { UxController } from './UxController'
 
 export function MaiV2ParityShell() {
   const [authorized, setAuthorized] = useState(false)
@@ -20,6 +19,5 @@ export function MaiV2ParityShell() {
 
   return <>
     <UnifiedAppUx />
-    <UxController />
   </>
 }
