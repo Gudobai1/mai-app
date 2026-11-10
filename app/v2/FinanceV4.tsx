@@ -23,7 +23,7 @@ import { addDays } from '../../lib/v2/planner'
 import { MAI_ENTITY_ICONS, MaiIcon } from './MaiIcons'
 import { useManualDraft } from './useManualDraft'
 import { askConfirm, askText, notify } from './shell/ConfirmDialog'
-import { PALETTE, colorName } from '../../lib/v2/palette'
+import { getPalette, colorName } from '../../lib/v2/palette'
 import { categoryColorOf } from '../../lib/v2/financeColors'
 import { invoiceValue } from '../../lib/v2/financeInvoice'
 import { shiftInstallment } from '../../lib/v2/financeInstallments'
@@ -955,7 +955,7 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
       title: name,
       subtitle: type === 'card' ? `Fatura ${money.format(cardInvoice(item, monthItems, month))}` : type === 'account' ? 'Conta' : type === 'box' ? 'Caixinha' : 'Investimento',
       groups: [
-        { label: 'Cor', inline: true, options: PALETTE.slice(0, 20).map(color => ({ label: color.label, swatch: color.color, active: String(item.cor || '').toLowerCase() === color.color.toLowerCase(), onSelect: () => patchItem({ cor: color.color }) })).map(option => ({ ...option, compact: true })) },
+        { label: 'Cor', inline: true, options: getPalette().slice(0, 20).map(color => ({ label: color.label, swatch: color.color, active: String(item.cor || '').toLowerCase() === color.color.toLowerCase(), onSelect: () => patchItem({ cor: color.color }) })).map(option => ({ ...option, compact: true })) },
         { options: [
           { label: 'Renomear', icon: 'edit', onSelect: async () => {
             const answer = await askText({ title: 'Nome', icon: 'edit', tone: 'default', input: { kind: 'text', value: name } })
@@ -1172,7 +1172,7 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
       const pickRow = (id: string, icon: string, color: string, label: string, value: string, options: { value: string; label: string; icon: string }[], onChange: (value: string) => void) => <SideRow id={id} icon={icon} color={color} label={label} summary={options.find(option => option.value === value)?.label || options[0]?.label || ''} open={createTool} setOpen={setCreateTool}><CreateOptionList value={value} onChange={next => onChange(String(next))} close={() => setCreateTool('')} options={options} /></SideRow>
       const dateRow = (id: string, label: string, value: string, onChange: (value: string) => void) => <SideRow id={id} icon="calendar_today" color="var(--ds-sky-fg)" label={label} summary={value ? createNaturalDate(value, today) : 'Sem data'} open={createTool} setOpen={setCreateTool}><CreateCalendarPicker allowEmpty={false} value={value} today={today} onChange={next => onChange(next)} close={() => setCreateTool('')} /></SideRow>
       const nameRow = (label: string, icon: string, placeholder: string) => <><SideField label={label} icon={icon} color={String(draft.cor || 'var(--ds-muted)')}><input autoFocus={!draft._persisted} value={draft.nome || ''} placeholder={placeholder} onChange={event => setDraft({ ...draft, nome: event.target.value })} /></SideField>{colorRow}</>
-      const colorRow = <SideRow id="item-color" icon="palette" color={String(draft.cor || 'var(--ds-muted)')} label="Cor" summary={draft.cor ? colorName(String(draft.cor)) : 'Sem cor'} open={createTool} setOpen={setCreateTool}><div className={ic.swatches}>{PALETTE.map(item => <button key={item.color} type="button" title={item.label} aria-label={item.label} data-active={String(draft.cor || '').toLowerCase() === item.color.toLowerCase() || undefined} style={{ background: item.color }} onClick={() => setDraft({ ...draft, cor: item.color })} />)}</div></SideRow>
+      const colorRow = <SideRow id="item-color" icon="palette" color={String(draft.cor || 'var(--ds-muted)')} label="Cor" summary={draft.cor ? colorName(String(draft.cor)) : 'Sem cor'} open={createTool} setOpen={setCreateTool}><div className={ic.swatches}>{getPalette().map(item => <button key={item.color} type="button" title={item.label} aria-label={item.label} data-active={String(draft.cor || '').toLowerCase() === item.color.toLowerCase() || undefined} style={{ background: item.color }} onClick={() => setDraft({ ...draft, cor: item.color })} />)}</div></SideRow>
       const fieldIcons: Record<string, [string, string]> = { 'Saldo inicial': ['account_balance', 'var(--ds-muted)'], 'Limite total': ['credit_card', 'var(--ds-sky-fg)'], 'Fechamento (dia)': ['event', 'var(--ds-peach-fg)'], 'Vencimento (dia)': ['event_available', 'var(--ds-danger)'], Meta: ['flag', 'var(--ds-success)'], Aplicado: ['savings', 'var(--ds-success)'], 'Valor atual': ['payments', 'var(--ds-success)'] }
       const numberField = (label: string, key: string, step = '0.01') => <SideField label={label} icon={fieldIcons[label]?.[0]} color={fieldIcons[label]?.[1]}>{step === '1' ? <input type="number" step={step} value={draft[key] || 0} onChange={event => setDraft({ ...draft, [key]: Number(event.target.value) })} /> : <MoneyInput value={Number(draft[key]) || 0} onChange={value => setDraft({ ...draft, [key]: value })} />}</SideField>
 

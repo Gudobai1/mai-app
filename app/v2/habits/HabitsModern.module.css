@@ -34,7 +34,7 @@
 .desc { color: var(--ds-muted); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* círculo de hoje (concluir rápido) */
-.ring, .dot { --p: 0; box-sizing: border-box; display: grid; place-items: center; padding: 0; border-radius: 50%; cursor: pointer; color: #fff; background: transparent; }
+.ring, .dot { --p: 0; box-sizing: border-box; display: grid; place-items: center; padding: 0; border-radius: var(--ds-shape-habits, 50%); cursor: pointer; color: #fff; background: transparent; }
 .ring { width: 26px; height: 26px; border: 2px solid var(--ds-line-strong); }
 .dot { width: 44px; height: 44px; position: relative; border: 0; }
 .ring:disabled, .dot:disabled { cursor: default; }

@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { Icon } from '../../ds'
 import { ColorField } from './ColorField'
-import { EVENT_CATEGORY_COLORS, type EventCategory } from '../../../lib/v2/event-categories'
+import { eventCategoryColors, type EventCategory } from '../../../lib/v2/event-categories'
 import { OptionList } from './Pickers'
 import styles from './CategoryChooser.module.css'
 
@@ -17,7 +17,7 @@ export function CategoryChooser({ categories, value, onSelect, onCreate, onManag
   onManage?: () => void
 }) {
   const [name, setName] = useState('')
-  const [color, setColor] = useState(EVENT_CATEGORY_COLORS[0])
+  const [color, setColor] = useState(eventCategoryColors()[0])
   const create = () => {
     const nome = name.trim()
     if (!nome) return

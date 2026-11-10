@@ -26,7 +26,7 @@
   -webkit-tap-highlight-color: transparent;
 }
 .circle:disabled { cursor: default; opacity: 0.45; }
-.circle:focus-visible { outline: 2px solid var(--ds-accent); outline-offset: 2px; border-radius: 50%; }
+.circle:focus-visible { outline: 2px solid var(--ds-accent); outline-offset: 2px; border-radius: var(--ds-shape-habits, 50%); }
 .ring {
   display: grid;
   place-items: center;
@@ -34,7 +34,7 @@
   width: var(--ds-row-lead);
   height: var(--ds-row-lead);
   border: 2px solid var(--hc);
-  border-radius: 50%;
+  border-radius: var(--ds-shape-habits, 50%);
   background: transparent;
   color: var(--hc);
   transition: background-color var(--ds-dur-fast) var(--ds-ease);

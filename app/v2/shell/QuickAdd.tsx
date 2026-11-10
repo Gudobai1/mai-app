@@ -14,7 +14,7 @@ import { fold, parseNatural, replaceRange, type NlKind } from '../../../lib/v2/n
 import { financeTagSuggestions, parseFinanceTags } from '../../../lib/v2/financeTags'
 import { categoryColorOf } from '../../../lib/v2/financeColors'
 import { INTERVAL_CHOICES, intervalChoice, intervalDays, intervalLabel, shiftInstallment } from '../../../lib/v2/financeInstallments'
-import { PALETTE } from '../../../lib/v2/palette'
+import { getPalette } from '../../../lib/v2/palette'
 import { MoneyInput } from '../MoneyInput'
 import styles from './QuickAdd.module.css'
 
@@ -173,7 +173,7 @@ export function QuickAdd({ kinds, initial, state, today, defaultProjectId, defau
   const cleanTitle = (tags ? tags.title : nl.title).trim() || title.trim()
   const amountValue = Math.abs(Number(String(amount).replace(/\./g, '').replace(',', '.')) || 0)
   const canSubmit = movement ? amountValue > 0 : Boolean(cleanTitle)
-  const finCategoryColor = (() => { if (!finCategoryNow) return ''; const found = finCtx.categories.find(item => String(item.nome) === finCategoryNow); return found ? categoryColorOf(finCategoryNow, finCtx.categories) : PALETTE[finCtx.categories.length % PALETTE.length].color })()
+  const finCategoryColor = (() => { if (!finCategoryNow) return ''; const found = finCtx.categories.find(item => String(item.nome) === finCategoryNow); return found ? categoryColorOf(finCategoryNow, finCtx.categories) : getPalette()[finCtx.categories.length % getPalette().length].color })()
   const originColor = (() => { if (!originNow) return ''; const found = originNow.startsWith('card|') ? finCtx.cards.find(item => String(item.id) === originNow.slice(5)) : accounts.find(item => String(item.id) === originNow); return found?.cor ? String(found.cor) : '' })()
   const project = projects.find(item => String(item.id) === projectId)
 
@@ -260,7 +260,7 @@ export function QuickAdd({ kinds, initial, state, today, defaultProjectId, defau
       if (!installments && finPaid) Object.assign(entry, paidFields)
       const lot = installments ? uid('lote') : ''
       const entries: Row[] = installments ? Array.from({ length: installments.count }, (_, index) => ({ ...entry, id: index === 0 ? entry.id : uid('fin'), lote_id: lot, parcela_numero: index + 1, parcelas_total: installments.count, titulo: `${name} (${index + 1}/${installments.count})`, data: shiftInstallment(date || today, index, installments.interval), ...(index === 0 && finPaid ? paidFields : {}) })) : [entry]
-      commit(current => ({ ...current, finance: { ...current.finance, categories: finCategoryNow && !known ? [...rows(current.finance.categories), { id: uid('cat'), nome: finCategoryNow, cor: PALETTE[rows(current.finance.categories).length % PALETTE.length].color }] : current.finance.categories, transactions: [...entries, ...rows(current.finance.transactions)] } }))
+      commit(current => ({ ...current, finance: { ...current.finance, categories: finCategoryNow && !known ? [...rows(current.finance.categories), { id: uid('cat'), nome: finCategoryNow, cor: getPalette()[rows(current.finance.categories).length % getPalette().length].color }] : current.finance.categories, transactions: [...entries, ...rows(current.finance.transactions)] } }))
     } else if (kind === 'task') {
       const task: Row = {
         id: uid('t'), titulo: name, descricao: description.trim(), data_vencimento: date ? `${date}${taskTime ? `T${taskTime}` : ''}` : '', prioridade: priority, concluida: false,
