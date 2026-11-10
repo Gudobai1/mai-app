@@ -93,8 +93,8 @@ function friendlyDate(key: string, today: string) {
 export function ItemDetail(props: Props) {
   const { item } = props
   if (!item) return null
-  // Lançamentos fixos (regras que se repetem por mês) continuam no editor de Finanças.
-  if (item.kind === 'finance' && (item.raw.fixo_id || item.raw.recorrente === true)) {
+  // Todo lançamento (único, fixo, parcelado) abre na janela do próprio módulo Finanças, igual em todo o app.
+  if (item.kind === 'finance') {
     return <FinanceContextDrawerV4 item={item} state={props.state} today={props.today} commit={props.commit} onClose={props.onClose} />
   }
   return <DetailShell key={`${item.kind}:${item.sourceId}`} {...props} item={item} />
