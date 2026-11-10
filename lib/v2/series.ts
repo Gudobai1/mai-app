@@ -2,7 +2,7 @@ import { addDays, plannerItems, type PlannerItem } from './planner'
 import type { MaiState } from './state'
 
 /**
- * Identifica a "série" de um item repetido (compromisso ou tarefa).
+ * Identifica a "série" de um item repetido (compromisso, tarefa ou hábito).
  * - MAI: o próprio id quando tem repetição.
  * - Google (singleEvents): cada ocorrência vem separada, com id "<serie>_<data>".
  * Compromissos do Google sem esse padrão são agrupados por calendário + título + horário
@@ -10,6 +10,7 @@ import type { MaiState } from './state'
  */
 function seriesKey(item: PlannerItem): { key: string; weak: boolean } | null {
   const raw = item.raw as Record<string, unknown>
+  if (item.kind === 'habit') return { key: `habit:${item.sourceId}`, weak: false }
   if (item.kind === 'task') return raw.repeticao ? { key: `task:${item.sourceId}`, weak: false } : null
   if (item.kind !== 'event') return null
   const google = raw.tipo === 'google' || raw.tipo === 'gcalendar'
