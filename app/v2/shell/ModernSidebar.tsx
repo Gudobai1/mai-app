@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { MaiState } from '../../../lib/v2/state'
 import { Icon } from '../../ds'
 import type { AppView } from '../app-types'
@@ -26,6 +26,14 @@ type Props = {
   activeProjectId?: string
   dark: boolean
   profile?: GoogleProfile
+  /** Barra recolhida (botão ou ocultar automático) e se o recolher é automático. */
+  autoHide: boolean
+  onToggleHidden: () => void
+  onAutoHide: (value: boolean) => void
+  onLogout: () => void
+  /** Chamado ao tirar o mouse da barra (para recolher no modo automático). */
+  onLeave: () => void
+  onEnter: () => void
 }
 
 /*
@@ -46,11 +54,21 @@ const ORGANIZE: NavItem[] = [
 
 const rows = (value: unknown): Row[] => (Array.isArray(value) ? (value as Row[]) : [])
 
-export function ModernSidebar({ state, today, view, navigate, onSearch, onSettings, onNewProject, activeProjectId, profile }: Props) {
+export function ModernSidebar({ state, today, view, navigate, onSearch, onSettings, onToggleTheme, onNewProject, activeProjectId, dark, profile, autoHide, onToggleHidden, onAutoHide, onLogout, onLeave, onEnter }: Props) {
   const profileName = String(profile?.name || state.configs.profileName || state.configs.userName || 'Meu perfil')
   const profileInitial = profileName.trim().slice(0, 1).toLocaleUpperCase('pt-BR') || 'M'
   const counts = todayCounts(state, today)
   const [open, setOpen] = useState<Set<string>>(new Set())
+  const [menu, setMenu] = useState(false)
+  const menuRef = useRef<HTMLDivElement | null>(null)
+  useEffect(() => {
+    if (!menu) return
+    const close = (event: Event) => { if (!menuRef.current?.contains(event.target as Node)) setMenu(false) }
+    const key = (event: KeyboardEvent) => { if (event.key === 'Escape') setMenu(false) }
+    document.addEventListener('pointerdown', close)
+    document.addEventListener('keydown', key)
+    return () => { document.removeEventListener('pointerdown', close); document.removeEventListener('keydown', key) }
+  }, [menu])
 
   const projects = rows(state.projects).filter(project => project.ativo !== false)
   const ids = new Set(projects.map(project => String(project.id)))
@@ -129,14 +147,36 @@ export function ModernSidebar({ state, today, view, navigate, onSearch, onSettin
   }
 
   return (
-    <aside className={styles.sidebar} aria-label="Menu principal">
+    <aside className={styles.sidebar} aria-label="Menu principal" onMouseEnter={onEnter} onMouseLeave={onLeave}>
       <div className={styles.userTop}>
-        <button type="button" className={styles.profileRow} onClick={onSettings} aria-label={`Configurações de ${profileName}`} title="Configurações">
-          <span className={styles.avatar}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            {profile?.picture ? <img src={profile.picture} alt="" referrerPolicy="no-referrer" /> : profileInitial}
-          </span>
-          <span className={styles.profileName} title={profile?.email || profileName}>{profileName}</span>
+        <div className={styles.profileWrap} ref={menuRef}>
+          <button type="button" className={styles.profilePill} aria-haspopup="menu" aria-expanded={menu} onClick={() => setMenu(value => !value)} title={profile?.email || profileName}>
+            <span className={styles.avatar}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              {profile?.picture ? <img src={profile.picture} alt="" referrerPolicy="no-referrer" /> : profileInitial}
+            </span>
+            <span className={styles.profileName}>{profileName}</span>
+            <Icon name="expand_more" size={18} filled={false} />
+          </button>
+          {menu ? (
+            <div className={styles.userMenu} role="menu">
+              <button type="button" role="menuitem" onClick={() => { setMenu(false); onSettings() }}><Icon name="settings" size={18} filled={false} /><span>Configurações</span></button>
+              <button type="button" role="menuitem" onClick={() => { setMenu(false); onToggleTheme() }}><Icon name={dark ? 'light_mode' : 'dark_mode'} size={18} filled={false} /><span>{dark ? 'Tema claro' : 'Tema escuro'}</span></button>
+              <button type="button" role="menuitemcheckbox" aria-checked={autoHide} onClick={() => onAutoHide(!autoHide)}>
+                <Icon name="left_panel_close" size={18} filled={false} /><span>Ocultar a barra automaticamente</span>
+                {autoHide ? <Icon name="check" size={18} filled={false} /> : null}
+              </button>
+              <div className={styles.userMenuLine} />
+              <button type="button" role="menuitem" data-tone="danger" onClick={() => { setMenu(false); onLogout() }}><Icon name="logout" size={18} filled={false} /><span>Sair</span></button>
+            </div>
+          ) : null}
+        </div>
+        <button type="button" className={styles.topIcon} onClick={() => navigate('today')} aria-label={counts.due ? `${counts.due} para hoje ou atrasados` : 'Notificações'} title={counts.due ? `${counts.due} para hoje ou atrasados` : 'Nada pendente'}>
+          <Icon name="notifications" size={20} filled={false} />
+          {counts.due ? <i className={styles.dot} aria-hidden="true" /> : null}
+        </button>
+        <button type="button" className={styles.topIcon} onClick={autoHide ? () => onAutoHide(false) : onToggleHidden} aria-label={autoHide ? 'Fixar a barra lateral' : 'Ocultar a barra lateral'} title={autoHide ? 'Fixar a barra lateral' : 'Ocultar a barra lateral'}>
+          <Icon name="left_panel_close" size={20} filled={false} />
         </button>
       </div>
       <button type="button" className={styles.search} onClick={onSearch}>
