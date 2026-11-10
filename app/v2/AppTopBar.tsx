@@ -88,7 +88,6 @@ export function AppTopBar({ state, today, view, taskScope, commit, onTaskScopeCh
   if (view === 'goals') info = `${goals.filter(goal => goal.concluida !== true && !String(goal.status || '').toLocaleLowerCase('pt-BR').includes('conclu')).length} em andamento`
   if (view === 'notes') info = `${notes.length} nota${notes.length === 1 ? '' : 's'}`
   if (view === 'finance') info = `${transactions.length} lançamento${transactions.length === 1 ? '' : 's'}`
-  if (view === 'files') info = areaTabs.files === 'grid' ? 'Grade' : 'Lista'
   if (view === 'completed') info = 'Histórico geral'
   if (layoutMode === 'kanban') info = `${info} · Kanban`
 
@@ -231,11 +230,6 @@ export function AppTopBar({ state, today, view, taskScope, commit, onTaskScopeCh
     </> : null}
 
 
-    {view === 'files' ? <>
-      <PanelSection title="Filtros"><SelectLine label="Tipo" value={String(filter.kind || 'all')} onChange={value => patchFilter({ kind:value })}><option value="all">Todos</option><option value="folder">Pastas</option><option value="file">Arquivos</option></SelectLine></PanelSection>
-      <PanelSection title="Classificação"><Choices value={sortMode} onChange={value => patchControl({ sort:value })} items={[{value:'name',label:'Nome'},{value:'recent',label:'Recentes'}]}/></PanelSection>
-      <PanelSection title="Visualização"><Choices value={areaTabs.files || 'list'} onChange={value => setAreaTab('files', value)} items={[{value:'list',label:'Lista'},{value:'grid',label:'Grade'}]}/></PanelSection>
-    </> : null}
   </div>
 
   return <div className="mai-app-topbar" data-view={String(view)} data-sort-mode={sortMode}>

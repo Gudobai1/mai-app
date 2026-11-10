@@ -487,10 +487,11 @@ html body .mai-context-v3-section > header strong { font-weight: 700 !important;
 html body .mai-global-search-panel { border-radius: 6px !important; background: var(--ds-bg) !important; box-shadow: 0 12px 40px rgba(0, 0, 0, 0.2) !important; }
 
 /* ===================================================================
- * Padrão global (docs/PADROES.md): janelas de criar/editar item em TELA CHEIA,
- * no computador e no celular, sem folha de baixo. Mesma regra da janela de item
+ * Padrão global (docs/PADROES.md): janelas de criar/editar item em popup de tamanho fixo no
+ * computador e TELA CHEIA no celular (até 900px), sem folha de baixo. Mesma regra da janela de item
  * (app/v2/detail/ItemDetail.module.css). Este bloco vale para as janelas antigas.
  * =================================================================== */
+@media (max-width: 900px) {
 html body .mai-v3-create-layer,
 html body .mai-context-layer,
 html body .mai-task-v4-layer,
@@ -534,4 +535,5 @@ html body .mai-context-v3-scroll,
 html body .mai-v3-drawer-body {
   padding-left: max(24px, calc((100% - 880px) / 2)) !important;
   padding-right: max(24px, calc((100% - 880px) / 2)) !important;
+}
 }

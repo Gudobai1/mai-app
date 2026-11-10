@@ -1578,29 +1578,31 @@
 
 /* ===================================================================
  * Janela de item — padrão global (docs/PADROES.md).
- * Todo item (tarefa, compromisso, hábito, lançamento, meta, nota) abre em TELA CHEIA, igual em
- * computador e celular: cabeçalho em cima; conteúdo à esquerda; propriedades à direita; rodapé com
+ * Todo item (tarefa, compromisso, hábito, lançamento, meta, nota) abre em POPUP DE TAMANHO FIXO no
+ * computador (acima de 900px) e em TELA CHEIA no celular: cabeçalho em cima; conteúdo à esquerda; propriedades à direita; rodapé com
  * Excluir à esquerda e Cancelar / Salvar à direita. Para mudar a janela de todos os itens, é aqui.
  * =================================================================== */
-.layer.layer {
-  padding: 0;
-  align-items: stretch;
-  justify-content: stretch;
-  background: var(--ds-bg);
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
-}
+@media (max-width: 900px) {
+  .layer.layer {
+    padding: 0;
+    align-items: stretch;
+    justify-content: stretch;
+    background: var(--ds-bg);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
 
-.panel.panel,
-.panel[data-kind].panel {
-  width: 100%;
-  height: 100dvh;
-  max-height: none;
-  margin: 0;
-  border: 0;
-  border-radius: 0;
-  box-shadow: none;
-  background: var(--ds-bg);
+  .panel.panel,
+  .panel[data-kind].panel {
+    width: 100%;
+    height: 100dvh;
+    max-height: none;
+    margin: 0;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    background: var(--ds-bg);
+  }
 }
 
 .panel.panel > .header { min-height: 48px; padding: 0 14px 0 24px; border-bottom: var(--ds-hairline-w, 1px) solid var(--ds-line); }
@@ -1617,4 +1619,10 @@
   .panel.panel > .header { padding: 0 8px 0 20px; }
   .panel.panel > .footer { padding: 10px 14px max(12px, env(safe-area-inset-bottom)) 20px; }
   .panel.panel .taskContent { padding: 16px 20px 20px; }
+}
+
+/* Computador: popup de tamanho fixo, igual para todos os cartões. */
+@media (min-width: 901px) {
+  .panel.panel,
+  .panel[data-kind].panel { width: min(960px, 100%); height: min(720px, calc(100dvh - 48px)); max-height: none; }
 }

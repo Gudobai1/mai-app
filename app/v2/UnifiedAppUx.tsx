@@ -14,7 +14,6 @@ import { UndoToast } from './shell/UndoToast'
 import { AuthorCtx } from './detail/Comments'
 import { QuickAdd, type QuickAddKind } from './shell/QuickAdd'
 import type { InspectableItem } from './ContextDrawer'
-import { FilesV4 } from './FilesV4'
 import { FinanceV4 } from './FinanceV4'
 import { GoalsV4 } from './GoalsV4'
 import { HabitsModern } from './habits/HabitsModern'
@@ -32,7 +31,7 @@ import { PullToRefresh } from './PullToRefresh'
 import { useMaiRuntime } from './useMaiRuntime'
 import styles from './unified.module.css'
 
-const secondary: SecondaryView[] = ['habits', 'goals', 'notes', 'finance', 'files']
+const secondary: SecondaryView[] = ['habits', 'goals', 'notes', 'finance']
 type ProjectDialog = { projectId?: string; parentId?: string; tab?: 'details' | 'sections' } | null
 type CreateState = { kind: 'task' | 'event'; switchable?: boolean } | null
 type GoogleProfile = { name: string; picture?: string; email?: string } | null
@@ -164,7 +163,6 @@ export function UnifiedAppUx() {
   const activeProjectId = taskScope.startsWith('project:') ? taskScope.slice(8) : 'entrada'
   const viewState = useMemo(() => filteredStateForView(runtime.state, view, runtime.today), [runtime.state, view, runtime.today])
   const currentModuleFilters = moduleFilterMap(runtime.state)[String(view)] || {}
-  const fileKind = String(currentModuleFilters.kind || 'all')
 
   useEffect(() => {
     let active = true
@@ -265,17 +263,6 @@ export function UnifiedAppUx() {
     return addByType(view)
   }
 
-  async function moduleGoogleRpc(method: string, args?: unknown[]) {
-    const response = await runtime.googleRpc(method, args)
-    if (view !== 'files' || method !== 'getDriveContent' || fileKind === 'all' || !response || typeof response !== 'object') return response
-    const source = response as Row
-    const filteredItems = rows(source.items).filter(item => {
-      const folder = item.tipo === 'folder' || item.mimeType === 'application/vnd.google-apps.folder'
-      return fileKind === 'folder' ? folder : !folder
-    })
-    return { ...source, items: filteredItems }
-  }
-
   return <div className={`${styles.appShell} mai-v3-shell`} data-view={String(view)}>
     <ModernSidebar state={runtime.state} today={runtime.today} view={view} navigate={navigate} onSearch={() => setSearchOpen(true)} onAdd={() => contextualAdd()} onSettings={() => setSettingsOpen(true)} onToggleTheme={toggleTheme} onNewProject={parentId => setProjectDialog(parentId ? { parentId } : {})} activeProjectId={activeProjectId} dark={isDark} profile={googleProfile} />
 
@@ -304,7 +291,6 @@ export function UnifiedAppUx() {
           {view === 'goals' ? <GoalsV4 state={viewState} today={runtime.today} commit={runtime.commit} createRequest={areaCreateRequest} inspect={setSelected}/> : null}
           {view === 'notes' ? <NotesV4 state={viewState} today={runtime.today} commit={runtime.commit} createRequest={areaCreateRequest} inspect={setSelected}/> : null}
           {view === 'finance' ? <FinanceV4 state={viewState} today={runtime.today} commit={runtime.commit} createRequest={areaCreateRequest} inspect={setSelected} options={<AppTopBar state={runtime.state} today={runtime.today} view={view} taskScope={taskScope} commit={runtime.commit} onTaskScopeChange={setTaskScope} onSettings={() => setSettingsOpen(true)} />}/> : null}
-          {view === 'files' ? <FilesV4 state={runtime.state} commit={runtime.commit} createRequest={areaCreateRequest}/> : null}
         </>}
       </div>
     </main>
