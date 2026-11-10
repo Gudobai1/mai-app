@@ -4,6 +4,7 @@ import { useEffect, useState, type ReactNode } from 'react'
 import { Icon, IconButton } from '../../ds'
 import type { AppView, Row } from '../app-types'
 import type { MaiState } from '../../../lib/v2/state'
+import { ProjectMark } from './ProjectMark'
 import { NAV_ALIAS, NAV_GROUPS } from './nav'
 import styles from './ModernShell.module.css'
 
@@ -52,7 +53,7 @@ export function ModernBottomNav({ state, activeProjectId, onNewProject, view, se
     return (
       <div key={id}>
         <button type="button" className={styles.sheetItem} style={depth ? { paddingLeft: 4 + depth * 22 } : undefined} aria-current={current ? 'page' : undefined} onClick={() => go(`project:${id}` as AppView)}>
-          <span className={styles.projectPhoto} style={{ background: String(project.cor || 'var(--ds-line-strong)') }} aria-hidden="true">{String(project.nome || '?').trim().slice(0, 1).toLocaleUpperCase('pt-BR')}</span>
+          <ProjectMark project={project} />
           <span>{String(project.nome || 'Projeto')}</span>
           <Icon name="chevron_right" size={20} filled={false} />
         </button>

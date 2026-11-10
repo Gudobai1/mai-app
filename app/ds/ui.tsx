@@ -51,7 +51,7 @@ export function Icon({ name, size = 22, filled = false, weight = 300, className,
     const solid = filled && (name === 'star' || name === 'flag' || name === 'outlined_flag')
     return (
       <span aria-hidden="true" className={cx(styles.icon, className)} style={{ width: size, height: size, display: 'inline-grid', placeItems: 'center', ...style }}>
-        <Lucide size={size} strokeWidth={size <= 16 ? 2 : 1.75} fill={solid ? 'currentColor' : 'none'} />
+        <Lucide size={size} strokeWidth={size <= 16 ? 1.75 : 1.5} strokeLinecap="square" strokeLinejoin="miter" fill={solid ? 'currentColor' : 'none'} />
       </span>
     )
   }
@@ -189,7 +189,7 @@ export function IconTile({ icon, tone = 'accent', solid = false, size = 40, radi
     <span
       aria-hidden="true"
       className={cx(styles.tile, solid ? solidClass[tone] : toneClass[tone], className)}
-      style={{ width: size, height: size, borderRadius: radius ?? Math.round(size * 0.34) }}
+      style={{ width: size, height: size, borderRadius: radius ?? Math.round(size * 0.2) }}
     >
       <Icon name={icon} size={Math.round(size * 0.52)} />
     </span>
