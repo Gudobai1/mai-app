@@ -1,5 +1,5 @@
 export { Button, Card, Check, DsRoot, Icon, IconButton, IconTile, List, SettingsButton, ListItem, ProgressBar, SectionHeader, Tag } from './ui'
 export type { ButtonProps, CardProps, CheckProps, IconButtonProps, IconProps, IconTileProps, ListItemProps, Tone } from './ui'
 export { useDragScroll } from './useDragScroll'
-export { DEFAULT_APPEARANCE, FONTS, ICON_PACKS, applyAppearance, loadIconPack, normalizeAppearance } from './appearance'
+export { DEFAULT_APPEARANCE, FONTS, ICON_PACKS, applyAppearance, hasStrokeWeight, loadIconPack, normalizeAppearance } from './appearance'
 export type { Appearance, IconPack } from './appearance'

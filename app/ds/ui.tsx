@@ -61,7 +61,7 @@ export function Icon({ name, size: baseSize = 22, filled = false, weight = 300, 
     const Ext = ext.component as React.ComponentType<Record<string, unknown>>
     return (
       <span aria-hidden="true" className={cx(styles.icon, className)} style={{ width: size, height: size, display: 'inline-grid', placeItems: 'center', ...style }}>
-        {ext.kind === 'tabler' ? <Ext size={size} stroke={appearance.weight} color="currentColor" /> : <Ext size={size} weight={phosphorWeight(pack)} color="currentColor" />}
+        {ext.kind === 'tabler' ? <Ext size={size} stroke={appearance.weight} color="currentColor" /> : ext.kind === 'react-icons' ? <Ext size={size} color="currentColor" /> : <Ext size={size} weight={phosphorWeight(pack)} color="currentColor" />}
       </span>
     )
   }

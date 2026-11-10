@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect } from 'react'
-import { DEFAULT_APPEARANCE, FONTS, ICON_PACKS, Icon, loadIconPack, normalizeAppearance, type Appearance } from '../ds'
+import { DEFAULT_APPEARANCE, FONTS, ICON_PACKS, Icon, hasStrokeWeight, loadIconPack, normalizeAppearance, type Appearance } from '../ds'
 import { PALETTES, SHAPE_AREAS } from '../ds/appearance'
 import { COLOR_STYLES, styleColor, PALETTE } from '../../lib/v2/palette'
 import styles from './AppearancePanel.module.css'
@@ -20,7 +20,8 @@ export function AppearancePanel({ value, onChange, mode, onMode }: Props) {
   const set = (patch: Partial<Appearance>) => onChange(normalizeAppearance({ ...current, ...patch }))
   // Carrega os pacotes externos para as prévias dos cartões aparecerem já desenhadas.
   useEffect(() => { for (const pack of ICON_PACKS) void loadIconPack(pack.id) }, [])
-  const phosphor = current.iconPack.startsWith('phosphor')
+  const fixedWeight = !hasStrokeWeight(current.iconPack)
+  const families = [...new Set(ICON_PACKS.map(pack => pack.family))]
   const custom = JSON.stringify(current) !== JSON.stringify(DEFAULT_APPEARANCE)
 
   return (
@@ -77,15 +78,20 @@ export function AppearancePanel({ value, onChange, mode, onMode }: Props) {
       <h4 className={styles.sub}>Ícones</h4>
       <div className={styles.group}>
         <span className={styles.label}>Pacote de ícones</span>
-        <div className={styles.packs} role="radiogroup" aria-label="Pacote de ícones">
-          {ICON_PACKS.map(pack => (
-            <button key={pack.id} type="button" role="radio" aria-checked={current.iconPack === pack.id} data-active={current.iconPack === pack.id || undefined} onClick={() => set({ iconPack: pack.id })}>
-              <span className={styles.packIcons}>{['task_alt', 'flag', 'folder', 'settings'].map(name => <Icon key={name} name={name} size={20} filled={false} look={{ iconPack: pack.id, weight: current.weight, corners: current.corners }} />)}</span>
-              <strong>{pack.label}</strong>
-              <small>{pack.hint}</small>
-            </button>
-          ))}
-        </div>
+        {families.map(family => (
+          <div key={family} className={styles.family}>
+            <span className={styles.familyName}>{family}</span>
+            <div className={styles.packs} role="radiogroup" aria-label={`Pacote de ícones: ${family}`}>
+              {ICON_PACKS.filter(pack => pack.family === family).map(pack => (
+                <button key={pack.id} type="button" role="radio" aria-checked={current.iconPack === pack.id} data-active={current.iconPack === pack.id || undefined} onClick={() => set({ iconPack: pack.id })}>
+                  <span className={styles.packIcons}>{['task_alt', 'flag', 'folder', 'settings'].map(name => <Icon key={name} name={name} size={20} filled={false} look={{ iconPack: pack.id, weight: current.weight, corners: current.corners, iconScale: 1 }} />)}</span>
+                  <strong>{pack.label}</strong>
+                  <small>{pack.hint}</small>
+                </button>
+              ))}
+            </div>
+          </div>
+        ))}
       </div>
 
       <div className={styles.group}>
@@ -97,7 +103,7 @@ export function AppearancePanel({ value, onChange, mode, onMode }: Props) {
         </div>
       </div>
 
-      <div className={styles.group} data-hidden={phosphor || undefined}>
+      <div className={styles.group} data-hidden={fixedWeight || undefined}>
         <label className={styles.label} htmlFor="ap-weight">Grossura dos ícones <em>{current.weight.toFixed(2).replace(/\.?0+$/, '').replace('.', ',')}</em></label>
         <input id="ap-weight" className={styles.range} type="range" min={1} max={2.5} step={0.25} value={current.weight} onChange={event => set({ weight: Number(event.target.value) })} />
         <div className={styles.scale}><span>Fino</span><span>Normal</span><span>Forte</span></div>
