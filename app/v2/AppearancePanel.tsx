@@ -1,6 +1,7 @@
 'use client'
 
-import { DEFAULT_APPEARANCE, FONTS, ICON_PACKS, Icon, normalizeAppearance, type Appearance } from '../ds'
+import { useEffect } from 'react'
+import { DEFAULT_APPEARANCE, FONTS, ICON_PACKS, Icon, loadIconPack, normalizeAppearance, type Appearance } from '../ds'
 import styles from './AppearancePanel.module.css'
 
 const SAMPLE = ['today', 'event_upcoming', 'task_alt', 'account_balance_wallet', 'repeat', 'flag', 'sticky_note_2', 'folder', 'search', 'settings']
@@ -15,6 +16,9 @@ type Props = { value: unknown; onChange: (next: Appearance) => void }
 export function AppearancePanel({ value, onChange }: Props) {
   const current = normalizeAppearance(value)
   const set = (patch: Partial<Appearance>) => onChange(normalizeAppearance({ ...current, ...patch }))
+  // Carrega os pacotes externos para as prévias dos cartões aparecerem já desenhadas.
+  useEffect(() => { for (const pack of ICON_PACKS) void loadIconPack(pack.id) }, [])
+  const phosphor = current.iconPack.startsWith('phosphor')
   const custom = JSON.stringify(current) !== JSON.stringify(DEFAULT_APPEARANCE)
 
   return (
@@ -36,7 +40,7 @@ export function AppearancePanel({ value, onChange }: Props) {
         </div>
       </div>
 
-      <div className={styles.group}>
+      <div className={styles.group} data-hidden={phosphor || undefined}>
         <label className={styles.label} htmlFor="ap-weight">Grossura dos ícones <em>{current.weight.toFixed(2).replace(/\.?0+$/, '').replace('.', ',')}</em></label>
         <input id="ap-weight" className={styles.range} type="range" min={1} max={2.5} step={0.25} value={current.weight} onChange={event => set({ weight: Number(event.target.value) })} />
         <div className={styles.scale}><span>Fino</span><span>Normal</span><span>Forte</span></div>
