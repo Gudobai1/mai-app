@@ -16,7 +16,7 @@ import { compareSubtasks } from '../subtaskOrder'
 import { useTaskQuick } from '../shell/TaskQuick'
 import { useQuickMenu, type QuickMenuConfig } from '../shell/QuickMenu'
 import { hiddenOccurrenceIds } from '../../../lib/v2/series'
-import { DotRing } from '../habits/DotRing'
+import { HabitCard } from '../habits/HabitCard'
 import { ValueDialog } from '../habits/HabitsModern'
 import { abbreviateUnit } from '../../../lib/v2/units'
 import { AgendaStrip } from './AgendaStrip'
@@ -837,21 +837,24 @@ export function TodayModern({ state, today, commit, navigate, inspect, options, 
                 const color = String(item.habit.cor_hex || 'var(--ds-accent)')
                 const streak = streakOf(item.habit)
                 return (
-                  <div key={String(item.habit.id)} role="listitem" className={styles.habitRow} style={{ '--hc': color } as CSSProperties} {...quick.bind(() => habitMenu(item))}>
-                    <button type="button" className={styles.habitBody} onClick={() => inspect({ kind: 'habit', sourceId: String(item.habit.id), title: name, date: day, raw: item.habit })}>
-                      <span className={styles.habitTitle} style={{ color: color }}>{name}</span>
-                      {(() => {
-                        const sub = [item.quantitative || item.failed ? habitValueLabel(item) : '', plainText(item.habit.descricao)].filter(Boolean).join(' · ')
-                        return sub ? <span className={styles.habitDesc}>{sub}</span> : null
-                      })()}
-                    </button>
-                    <span className={styles.habitDots}>
-                      {[day].map(key => (
-                        <button key={key} type="button" className={styles.habitDay} data-day="" style={{ ['--p' as string]: pctOn(item.habit, key) }} data-on={levelOn(item.habit, key) === 'full' || undefined} data-part={levelOn(item.habit, key) === 'part' || undefined} data-failed={failedEntry(entryByKey.get(`${item.habit.id}|${key}`)) || undefined} data-today={key === day || undefined} data-off={!habitEligible(item.habit, key) || undefined} disabled={key > today || !habitEligible(item.habit, key)} onClick={() => logHabitOn(item.habit, key)} aria-label={`${name} em ${naturalDate(key, today)}`}><DotRing pct={levelOn(item.habit, key) === 'full' ? 100 : Number(pctOn(item.habit, key))} value={Number(entryByKey.get(`${item.habit.id}|${key}`)?.valor || 0)} unit={abbreviateUnit(item.habit.unidade)} plain={!item.quantitative} fail={Boolean(failedEntry(entryByKey.get(`${item.habit.id}|${key}`)))} empty={!levelOn(item.habit, key) && !failedEntry(entryByKey.get(`${item.habit.id}|${key}`))} today={key === day} /></button>
-                      ))}
-                    </span>
-                    <span className={styles.streak} data-on={streak > 0 || undefined} title={`Sequência de ${streak} ${streak === 1 ? 'dia' : 'dias'}`}><Icon name="local_fire_department" size={15} />{streak}</span>
-                  </div>
+                  <HabitCard
+                    key={String(item.habit.id)}
+                    color={color}
+                    title={name}
+                    description={[item.quantitative || item.failed ? habitValueLabel(item) : '', plainText(item.habit.descricao)].filter(Boolean).join(' · ')}
+                    streak={streak}
+                    level={failedEntry(entryByKey.get(`${item.habit.id}|${day}`)) ? 'fail' : levelOn(item.habit, day)}
+                    pct={pctOn(item.habit, day)}
+                    value={item.value}
+                    unit={String(item.habit.unidade || '').slice(0, 4)}
+                    plain={!item.quantitative}
+                    today
+                    disabled={!habitEligible(item.habit, day)}
+                    ariaLabel={`${name} em ${day}`}
+                    onToggle={() => logHabitOn(item.habit, day)}
+                    onOpen={() => inspect({ kind: 'habit', sourceId: String(item.habit.id), title: name, date: day, raw: item.habit })}
+                    rootProps={quick.bind(() => habitMenu(item)) as never}
+                  />
                 )
               })}
             </div>
