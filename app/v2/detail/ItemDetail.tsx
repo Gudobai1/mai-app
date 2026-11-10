@@ -3,7 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type CSSProperties, type ReactNode, type RefObject } from 'react'
 import { MoneyInput } from '../MoneyInput'
 import { createPortal } from 'react-dom'
-import { addDays } from '../../../lib/v2/planner'
+import { addDays, habitOccursOn } from '../../../lib/v2/planner'
 import type { MaiState } from '../../../lib/v2/state'
 import { Icon } from '../../ds'
 import type { InspectableItem } from '../ContextDrawer'
@@ -852,11 +852,24 @@ function HabitDetail({ item, state, today, commit, register, close }: DetailProp
     })
   }
 
-  const week = Array.from({ length: 7 }, (_, index) => addDays(day, index - 6)).map(key => {
+  /* Mês atual: um círculo por dia, borda na cor do hábito; toque alterna vazio → feito → falhou. */
+  const color = String(habit.cor_hex || 'var(--ds-accent)')
+  const monthStart = `${day.slice(0, 8)}01`
+  const lead = new Date(`${monthStart}T12:00:00`).getDay()
+  const monthDays = new Date(Number(day.slice(0, 4)), Number(day.slice(5, 7)), 0).getDate()
+  const monthTitle = new Date(`${monthStart}T12:00:00`).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
+  const cells: (string | null)[] = [...Array(lead).fill(null), ...Array.from({ length: monthDays }, (_, index) => `${monthStart.slice(0, 8)}${String(index + 1).padStart(2, '0')}`)]
+  function cycleDay(key: string) {
     const row = entryOn(key)
-    const state = failedEntry(row) ? 'fail' : Number(row?.valor || 0) >= target ? 'done' : Number(row?.valor || 0) > 0 ? 'part' : 'none'
-    return { key, state, letter: new Date(`${key}T12:00:00`).toLocaleDateString('pt-BR', { weekday: 'narrow' }).toUpperCase() }
-  })
+    const next = !row ? { valor: target, falhou: false } : failedEntry(row) ? null : Number(row.valor || 0) >= target ? { valor: 0, falhou: true } : { valor: target, falhou: false }
+    commit(current => {
+      const all = rows(current.habitEntries)
+      const existing = all.find(item2 => String(item2.habito_id) === item.sourceId && dateKey(item2.data) === key)
+      const others = all.filter(item2 => !(String(item2.habito_id) === item.sourceId && dateKey(item2.data) === key))
+      if (!next) return { ...current, habitEntries: others }
+      return { ...current, habitEntries: [...others, { id: existing?.id || uid('hr'), habito_id: item.sourceId, data: key, valor: next.valor, falhou: next.falhou, status: next.falhou ? 'falha' : '', criado_em: existing?.criado_em || new Date().toISOString() }] }
+    })
+  }
 
   async function remove() {
     if (!(await askConfirm({ title: 'Arquivar hábito?', message: `“${draft.nome || 'Hábito'}” sai da sua rotina. O histórico fica guardado.`, confirmLabel: 'Arquivar', icon: 'archive' }))) return
@@ -868,36 +881,29 @@ function HabitDetail({ item, state, today, commit, register, close }: DetailProp
     <>
       <Header kind="habit" onClose={() => void close()} crumbs={<span className={styles.crumb}><i>·</i>{friendlyDate(day, today)}</span>} />
       <ItemLayout side={<>
-          <Prop icon="target" color="var(--ds-accent)" label="Meta por dia" display={<input className={styles.inlineInput} type="number" inputMode="numeric" min={1} value={draft.meta} onChange={event => update({ meta: Math.max(1, Number(event.target.value || 1)) })} aria-label="Meta por dia" />} />
+          <Prop icon="edit" color="var(--ds-text-2)" label="Nome" display={<input className={styles.inlineInput} type="text" value={draft.nome} placeholder="Nome do hábito" onChange={event => update({ nome: event.target.value })} />} />
+          <Prop icon="notes" color="var(--ds-text-2)" label="Descrição" display={<input className={styles.inlineInput} type="text" value={draft.descricao} placeholder="Adicionar descrição" onChange={event => update({ descricao: event.target.value })} />} />
+          <Prop icon="target" color="var(--ds-accent)" label="Meta por dia" display={<input className={styles.inlineInput} type="number" inputMode="numeric" min={1} value={draft.meta} onChange={event => update({ meta: Math.max(1, Number(event.target.value) || 1) })} />} />
           <Prop icon="straighten" color="var(--ds-text-2)" label="Unidade" display={<UnitField className={styles.inlineInput} value={String(draft.unidade || '')} onChange={unidade => update({ unidade })} />} />
       </>}>
-        <div className={styles.titleRow}>
-          <span className={styles.tile} data-tone={done ? 'success' : failed ? 'danger' : undefined}><Icon name={done ? 'check' : failed ? 'close' : 'repeat'} size={18} /></span>
-          <div className={styles.titleBody}>
-            <GrowText className={styles.title} value={draft.nome} placeholder="Nome do hábito" multiline={false} onChange={nome => update({ nome })} />
-            <GrowText className={styles.description} value={draft.descricao} placeholder="Adicionar descrição" onChange={descricao => update({ descricao })} />
+        <div className={styles.monthCal} style={{ '--hc': color } as CSSProperties}>
+          <h3 className={styles.monthTitle}>{monthTitle}</h3>
+          <div className={styles.monthGrid} role="grid" aria-label={monthTitle}>
+            {['D', 'S', 'T', 'Q', 'Q', 'S', 'S'].map((letter, index) => <span key={index} className={styles.monthHead}>{letter}</span>)}
+            {cells.map((key, index) => {
+              if (!key) return <span key={`b${index}`} />
+              const row = entryOn(key)
+              const level = failedEntry(row) ? 'fail' : Number(row?.valor || 0) >= target ? 'full' : Number(row?.valor || 0) > 0 ? 'part' : ''
+              const off = key > today || !habitOccursOn(habit, key)
+              return (
+                <button key={key} type="button" className={styles.monthDay} data-today={key === today || undefined} data-off={off || undefined} disabled={off} aria-label={friendlyDate(key, today)} onClick={() => cycleDay(key)}>
+                  <small>{Number(key.slice(8))}</small>
+                  <i data-level={level || undefined}>{level === 'full' || level === 'part' ? <Icon name="check" size={13} weight={600} filled={false} /> : level === 'fail' ? <Icon name="close" size={13} weight={600} filled={false} /> : null}</i>
+                </button>
+              )
+            })}
           </div>
         </div>
-
-        <div className={styles.habitCard}>
-          <div className={styles.habitStatus}>
-            <span>{failed ? 'Não feito' : done ? 'Feito' : quantitative ? `${value} de ${target}${draft.unidade ? ` ${draft.unidade}` : ''}` : 'Pendente'}</span>
-            {quantitative && !failed ? <div className={styles.bar}><span style={{ width: `${Math.min(100, (value / target) * 100)}%` }} /></div> : null}
-          </div>
-          <div className={styles.habitButtons}>
-            {quantitative ? <>
-              <button type="button" className={styles.stepper} onClick={() => setEntry(value > 1 ? { valor: value - 1, falhou: false } : null)} aria-label="Menos 1" disabled={value <= 0}><Icon name="remove" size={18} filled={false} /></button>
-              <button type="button" className={styles.stepper} onClick={() => setEntry({ valor: value + 1, falhou: false })} aria-label="Mais 1"><Icon name="add" size={18} filled={false} /></button>
-            </> : null}
-            <button type="button" className={styles.pill} data-active={done || undefined} data-tone="success" onClick={() => setEntry(done ? null : { valor: target, falhou: false })}><Icon name="check" size={17} />{done ? 'Feito' : 'Concluir'}</button>
-            <button type="button" className={styles.pill} data-active={failed || undefined} data-tone="danger" onClick={() => setEntry(failed ? null : { valor: 0, falhou: true })}><Icon name="close" size={17} />Falhou</button>
-          </div>
-        </div>
-
-        <div className={styles.week}>
-          {week.map(dayInfo => <span key={dayInfo.key} className={styles.weekDay} data-state={dayInfo.state} data-today={dayInfo.key === day || undefined}><small>{dayInfo.letter}</small><i /></span>)}
-        </div>
-
       </ItemLayout>
       <Footer status={savedStatus} onDelete={() => void remove()} deleteLabel="Arquivar" />
     </>

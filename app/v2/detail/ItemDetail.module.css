@@ -1627,3 +1627,17 @@
   .panel[data-kind].panel { width: min(var(--ds-popup-w), 100%); height: min(var(--ds-popup-h), calc(100dvh - 48px)); max-height: none; border-radius: var(--ds-popup-r); box-shadow: var(--ds-popup-shadow); }
   .layer.layer { background: var(--ds-popup-scrim); }
 }
+
+/* Hábito: mês atual à esquerda (círculos com borda na cor do hábito, só o check) */
+.monthCal { max-width: 420px; }
+.monthTitle { margin: 0 0 var(--ds-s-3); font-size: 17px; font-weight: var(--ds-fw-bold); text-transform: capitalize; color: var(--ds-text); }
+.monthGrid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px 0; justify-items: center; }
+.monthHead { font-size: var(--ds-row-sub); font-weight: var(--ds-fw-medium); color: var(--ds-muted); }
+.monthDay { appearance: none; display: grid; justify-items: center; gap: 4px; width: 100%; padding: 4px 0; border: 0; border-radius: 8px; background: transparent; color: var(--ds-text); font: inherit; cursor: pointer; }
+.monthDay small { font-size: var(--ds-row-sub); color: var(--ds-muted); font-variant-numeric: tabular-nums; }
+.monthDay[data-today] small { color: var(--ds-text); font-weight: var(--ds-fw-bold); }
+.monthDay[data-off] { opacity: 0.35; cursor: default; }
+.monthDay:not(:disabled):hover { background: var(--ds-surface-hover); }
+.monthDay:focus-visible { outline: 2px solid var(--ds-accent); outline-offset: -2px; }
+.monthDay i { display: grid; place-items: center; box-sizing: border-box; width: var(--ds-row-lead); height: var(--ds-row-lead); border: 2px solid var(--hc); border-radius: 50%; color: var(--hc); }
+.monthDay i[data-level='fail'] { border-color: var(--ds-danger); color: var(--ds-danger); }
