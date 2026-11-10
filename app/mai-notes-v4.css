@@ -131,3 +131,9 @@
 .mai-notes-v4-drawer-footer{min-height:56px;border-top:1px solid var(--v3-line,#e6e9e4);padding-bottom:max(9px,env(safe-area-inset-bottom))}
 @media(max-width:900px){.mai-notes-v4-drawer-body{padding:16px 16px 24px}.mai-notes-v4-drawer-footer{flex-wrap:wrap}}
 }
+
+/* Janela única, computador: mesmo tamanho dos demais popups */
+@media(min-width:901px){
+.mai-notes-v4-layer{justify-content:center!important;align-items:center!important;padding:24px!important;background:var(--ds-popup-scrim)!important}
+.mai-notes-v4-drawer{width:min(var(--ds-popup-w),100%)!important;height:min(var(--ds-popup-h),calc(100dvh - 48px))!important;max-height:none!important;border-radius:var(--ds-popup-r)!important;box-shadow:var(--ds-popup-shadow)!important;overflow:hidden}
+}

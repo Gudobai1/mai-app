@@ -29,6 +29,12 @@
   --ds-tracking-tight: -0.02em;
 
   /* Espaçamentos (base 4) */
+  /* Janela única (popups e cartões): mesmo tamanho, canto, sombra e fundo em todo o app */
+  --ds-popup-w: 960px;
+  --ds-popup-h: 720px;
+  --ds-popup-r: 10px;
+  --ds-popup-scrim: rgba(0, 0, 0, 0.45);
+  --ds-popup-shadow: 0 30px 80px rgba(0, 0, 0, 0.35);
   --ds-s-1: 4px;
   --ds-s-2: 8px;
   --ds-s-3: 12px;

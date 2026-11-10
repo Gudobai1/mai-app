@@ -28,3 +28,9 @@
 @media (max-width: 900px) { .list { padding-left: 16px; padding-right: 16px; } }
 .add { padding-left: max(20px, calc((100% - 880px) / 2)); padding-right: max(20px, calc((100% - 880px) / 2)); padding-bottom: max(14px, env(safe-area-inset-bottom)); }
 @media (max-width: 900px) { .add { padding-left: 16px; padding-right: 16px; } }
+
+/* Janela única, computador: popup de tamanho fixo (tokens --ds-popup-*) */
+@media (min-width: 901px) {
+  .layer.layer { padding: 24px; align-items: center; justify-content: center; place-items: center; background: var(--ds-popup-scrim); }
+  .panel.panel { width: min(var(--ds-popup-w), 100%); height: min(var(--ds-popup-h), calc(100dvh - 48px)); max-height: none; margin: auto; border: 1px solid var(--ds-line); border-radius: var(--ds-popup-r); box-shadow: var(--ds-popup-shadow); }
+}
