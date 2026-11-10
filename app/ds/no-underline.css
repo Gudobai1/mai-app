@@ -1,0 +1,9 @@
+/* Padrão: nenhum item recebe sublinhado ao passar o mouse (ou focar). Vale para todo o app. */
+html body *:hover:not(#_),
+html body *:hover:not(#_) *,
+html body *:focus-visible:not(#_),
+html body a:hover:not(#_),
+html body button:hover:not(#_) {
+  text-decoration: none !important;
+  text-decoration-line: none !important;
+}

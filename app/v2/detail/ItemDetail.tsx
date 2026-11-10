@@ -21,6 +21,8 @@ import { useTaskQuick } from '../shell/TaskQuick'
 import { uploadAttachment } from './upload'
 import { CommentsSection, type Comment } from './Comments'
 import { UnitField } from '../habits/UnitField'
+import { FrequencyEditor, cleanHabit } from '../habits/HabitsModern'
+import { ColorField } from './ColorField'
 import { DatePicker, Floating, OptionList, ProjectPicker, ReminderPicker, RepeatPicker, TimePicker, repeatLabel, reminderLabel, type PickerOption } from './Pickers'
 import { CategoryChooser } from './CategoryChooser'
 import { CategoryManager } from './CategoryManager'
@@ -829,9 +831,22 @@ function HabitDetail({ item, state, today, commit, register, close }: DetailProp
   const habit = rows(state.habits).find(row => String(row.id) === item.sourceId) || item.raw
   const day = item.date && item.date <= today ? item.date : today
   const save = useCallback((draft: Row) => {
-    commit(current => ({ ...current, habits: rows(current.habits).map(row => String(row.id) === item.sourceId ? { ...row, ...draft, nome: String(draft.nome || '').trim() || 'Hábito', meta: Math.max(1, Number(draft.meta || 1)) } : row) }))
-  }, [commit, item.sourceId])
-  const { draft, update } = useDraft({ nome: String(habit.nome || ''), descricao: String(habit.descricao || ''), meta: Number(habit.meta || 1), unidade: String(habit.unidade || '') }, save, register)
+    const next = cleanHabit({ ...habit, ...draft, _persisted: true }, today)
+    commit(current => ({ ...current, habits: rows(current.habits).map(row => String(row.id) === item.sourceId ? { ...next, nome: String(next.nome || '').trim() || 'Hábito' } : row) }))
+  }, [commit, item.sourceId, habit, today])
+  const { draft, update } = useDraft({
+    nome: String(habit.nome || ''),
+    descricao: String(habit.descricao || ''),
+    meta: Number(habit.meta || 1),
+    unidade: String(habit.unidade || ''),
+    hora: String(habit.hora || ''),
+    cor_hex: String(habit.cor_hex || ''),
+    repeticao: String(habit.repeticao || 'diariamente'),
+    dias_semana: Array.isArray(habit.dias_semana) ? habit.dias_semana : [0, 1, 2, 3, 4, 5, 6],
+    data_inicio: String(habit.data_inicio || '').slice(0, 10),
+    ocultar_agenda: habit.ocultar_agenda === true,
+    anexos: rows(habit.anexos),
+  }, save, register)
 
   const target = Math.max(1, Number(draft.meta || 1))
   const quantitative = target > 1 || Boolean(draft.unidade)
@@ -896,6 +911,10 @@ function HabitDetail({ item, state, today, commit, register, close }: DetailProp
           <Prop icon="notes" color="var(--ds-text-2)" label="Descrição" display={<input className={styles.inlineInput} type="text" value={draft.descricao} placeholder="Adicionar descrição" onChange={event => update({ descricao: event.target.value })} />} />
           <Prop icon="target" color="var(--ds-accent)" label="Meta por dia" display={<input className={styles.inlineInput} type="number" inputMode="numeric" min={1} value={draft.meta} onChange={event => update({ meta: Math.max(1, Number(event.target.value) || 1) })} />} />
           <Prop icon="straighten" color="var(--ds-text-2)" label="Unidade" display={<UnitField className={styles.inlineInput} value={String(draft.unidade || '')} onChange={unidade => update({ unidade })} />} />
+          <Prop icon="schedule" color="var(--ds-text-2)" label="Horário" display={<input className={styles.inlineInput} type="time" value={String(draft.hora || '')} onChange={event => update({ hora: event.target.value })} />} />
+          <Prop icon="palette" color={String(draft.cor_hex || 'var(--ds-accent)')} label="Cor" display={<ColorField value={draft.cor_hex} onChange={cor_hex => update({ cor_hex })} />} />
+          <Prop icon={draft.ocultar_agenda ? 'visibility_off' : 'visibility'} color="var(--ds-text-2)" label="Hoje e Agenda" display={draft.ocultar_agenda ? 'Oculto de Hoje e da Agenda' : 'Aparece em Hoje e na Agenda'} onOpen={() => update({ ocultar_agenda: !draft.ocultar_agenda })} />
+          <div className={styles.sideBlock}><FrequencyEditor draft={draft} setDraft={next => update(next)} today={today} /></div>
       </>}>
         <div className={styles.monthCal} style={{ '--hc': color } as CSSProperties}>
           <div className={styles.monthBar}>
@@ -921,6 +940,7 @@ function HabitDetail({ item, state, today, commit, register, close }: DetailProp
             })}
           </div>
         </div>
+        <Attachments files={draft.anexos} onChange={anexos => update({ anexos }, true)} />
       </ItemLayout>
       <Footer status={savedStatus} onDelete={() => void remove()} deleteLabel="Arquivar" />
     </>
