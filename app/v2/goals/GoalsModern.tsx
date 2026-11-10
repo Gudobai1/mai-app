@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { Icon } from '../../ds'
-import { GOAL_STATUS, goalCurrent, goalDone, goalDue, goalDueInfo, goalPaused, goalPct, goalPriorityColor, goalTotal, setGoalDone, sortGoals, type GoalSort } from '../../../lib/v2/goals'
+import { GOAL_STATUS, goalAmountText, goalColor, goalDone, goalDue, goalDueInfo, goalPaused, goalPct, setGoalDone, sortGoals, type GoalSort } from '../../../lib/v2/goals'
 import { showCompleted } from '../../../lib/v2/show-completed'
 import type { MaiState } from '../../../lib/v2/state'
 import type { InspectableItem } from '../ContextDrawer'
@@ -33,7 +33,7 @@ export function GoalsModern({ state, today, commit, createRequest, inspect }: Pr
   const open = (goal: Row) => inspect({ kind: 'goal', sourceId: String(goal.id), title: String(goal.titulo || 'Meta'), date: goalDue(goal), raw: goal })
   const toggle = (goal: Row) => commit(current => ({ ...current, goals: rows(current.goals).map(row => (String(row.id) === String(goal.id) ? setGoalDone(row, !goalDone(row)) : row)) }))
   const add = (titulo: string) => {
-    const goal = { id: uid(), titulo, status: GOAL_STATUS.active, prazo: '', progresso_atual: 0, progresso_total: 100, descricao: '', prioridade: 4, anexos: [], concluida: false }
+    const goal = { id: uid(), titulo, tipo: 'percentual', status: GOAL_STATUS.active, prazo: '', progresso_atual: 0, progresso_total: 100, descricao: '', prioridade: 4, anexos: [], concluida: false }
     commit(current => ({ ...current, goals: [goal, ...rows(current.goals)] }))
   }
 
@@ -62,11 +62,11 @@ export function GoalsModern({ state, today, commit, createRequest, inspect }: Pr
                     title={String(goal.titulo || 'Meta')}
                     due={info.label}
                     tone={info.tone}
-                    progress={`${goalCurrent(goal)} de ${goalTotal(goal)}`}
+                    amount={goalAmountText(goal)}
                     pct={goalPct(goal)}
                     done={done}
                     paused={goalPaused(goal)}
-                    color={goalPriorityColor(goal)}
+                    color={goalColor(goal)}
                     ariaLabel={done ? `Reabrir ${String(goal.titulo || 'meta')}` : `Concluir ${String(goal.titulo || 'meta')}`}
                     onToggle={() => toggle(goal)}
                     onOpen={() => open(goal)}

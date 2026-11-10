@@ -1,4 +1,5 @@
 import { dateKey, LegacyTask, MaiState } from './state'
+import { goalAmountText, goalColor, goalDone, goalDue, goalPaused, goalPct } from './goals'
 
 export type PlannerKind = 'task' | 'event' | 'habit' | 'finance' | 'goal'
 export type PlannerItem = {
@@ -185,9 +186,9 @@ export function plannerItems(state: MaiState, start: string, end: string): Plann
   }
 
   for (const goal of rows(state.goals)) {
-    const day = String(goal.prazo || goal.data_fim || '').slice(0, 10)
-    if (!day || day < start || day > end || String(goal.status).toLowerCase().includes('conclu')) continue
-    result.push({ id: `goal:${goal.id}:${day}`, sourceId: String(goal.id), kind: 'goal', date: day, time: '', title: String(goal.titulo || goal.nome || 'Meta'), subtitle: 'Prazo da meta', color: String(goal.cor || '#8a6f98'), completed: false, recurring: false, raw: goal })
+    const day = goalDue(goal)
+    if (!day || day < start || day > end || goalPaused(goal)) continue
+    result.push({ id: `goal:${goal.id}:${day}`, sourceId: String(goal.id), kind: 'goal', date: day, time: '', title: String(goal.titulo || goal.nome || 'Meta'), subtitle: goalAmountText(goal) || `${goalPct(goal)}%`, color: goalColor(goal), completed: goalDone(goal), recurring: false, raw: goal })
   }
 
   return result.sort((a, b) => `${a.date} ${a.time || '99:99'} ${a.title}`.localeCompare(`${b.date} ${b.time || '99:99'} ${b.title}`, 'pt-BR'))

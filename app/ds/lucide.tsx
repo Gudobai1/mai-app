@@ -1,5 +1,7 @@
 import {
   Activity,
+  Pause,
+  Percent,
   Archive,
   ArrowDown,
   ArrowDownLeft,
@@ -197,6 +199,9 @@ export const LUCIDE_ICONS: Record<string, LucideComponent> = {
   palette: Palette,
   pause_circle: CirclePause,
   payments: Banknote,
+  percent: Percent,
+  numbers: Hash,
+  pause: Pause,
   pending_actions: Hourglass,
   photo_camera: Camera,
   play_circle: CirclePlay,

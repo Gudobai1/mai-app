@@ -22,7 +22,7 @@ import { uploadAttachment } from './upload'
 import { CommentsSection, type Comment } from './Comments'
 import { UnitField } from '../habits/UnitField'
 import { cleanHabit } from '../habits/HabitsModern'
-import { GOAL_STATUS, goalCurrent, goalDone, goalDue, goalPaused, goalPct, goalTotal, setGoalDone } from '../../../lib/v2/goals'
+import { GOAL_STATUS, GOAL_TYPES, goalAmountText, goalDone, goalDue, goalPaused, goalPct, goalStep, goalType, normalizeGoal } from '../../../lib/v2/goals'
 import { PALETTE, colorName } from '../../../lib/v2/palette'
 import { DatePicker, Floating, OptionList, ProjectPicker, ReminderPicker, RepeatPicker, TimePicker, repeatLabel, reminderLabel, type PickerOption } from './Pickers'
 import { CategoryChooser } from './CategoryChooser'
@@ -1072,28 +1072,51 @@ const GOAL_STATUSES = [
 function GoalDetail({ item, state, today, commit, register, close }: DetailProps) {
   const goal = rows(state.goals).find(row => String(row.id) === item.sourceId) || item.raw
   const save = useCallback((draft: Row) => {
-    const total = Math.max(1, Number(draft.progresso_total || 100))
-    const current = Math.max(0, Number(draft.progresso_atual || 0))
-    const next = { ...draft, progresso_total: total, progresso_atual: current }
-    commit(state => ({ ...state, goals: rows(state.goals).map(row => String(row.id) === item.sourceId ? { ...row, ...(goalDone(next) ? setGoalDone({ ...row, ...next }, true) : { ...next, concluida: false }) } : row) }))
+    commit(current => ({ ...current, goals: rows(current.goals).map(row => String(row.id) === item.sourceId ? { ...row, ...normalizeGoal({ ...row, ...draft }) } : row) }))
   }, [commit, item.sourceId])
   const { draft, update } = useDraft({
     titulo: String(goal.titulo || ''),
     descricao: String(goal.descricao || ''),
+    tipo: goalType(goal),
     prazo: goalDue(goal),
     status: goalDone(goal) ? GOAL_STATUS.done : goalPaused(goal) ? GOAL_STATUS.paused : GOAL_STATUS.active,
     prioridade: Number(goal.prioridade || 4),
-    progresso_atual: goalCurrent(goal),
-    progresso_total: goalTotal(goal),
+    cor_hex: String(goal.cor_hex || goal.cor || ''),
+    unidade: String(goal.unidade || ''),
+    progresso_atual: Math.max(0, Number(goal.progresso_atual || 0)),
+    progresso_total: Math.max(1, Number(goal.progresso_total || 100)),
+    passos: rows(goal.passos),
     anexos: rows(goal.anexos),
   }, save, register)
+  const type = goalType(draft)
   const pct = goalPct(draft)
   const priority = PRIORITIES.find(option => Number(option.value) === Number(draft.prioridade)) || PRIORITIES[3]
   const status = GOAL_STATUSES.find(option => option.value === draft.status) || GOAL_STATUSES[0]
-  const step = (amount: number) => {
+  const amount = goalAmountText(draft)
+  const amountLabel = type === 'valor' ? 'Valor atual (R$)' : 'Atual'
+  const targetLabel = type === 'valor' ? 'Valor alvo (R$)' : 'Alvo'
+  const [newStep, setNewStep] = useState('')
+
+  /** Muda o progresso e ajusta o status: chegar ao alvo conclui; voltar abaixo reabre. */
+  const setProgress = (value: number) => {
     const total = Number(draft.progresso_total)
-    const value = Math.max(0, Math.min(total, Number(draft.progresso_atual) + amount))
-    update({ progresso_atual: value, status: value >= total ? GOAL_STATUS.done : draft.status === GOAL_STATUS.done ? GOAL_STATUS.active : draft.status }, true)
+    const next = Math.max(0, Math.min(total, value))
+    update({ progresso_atual: next, status: next >= total ? GOAL_STATUS.done : draft.status === GOAL_STATUS.done ? GOAL_STATUS.active : draft.status }, true)
+  }
+  const step = (direction: 1 | -1) => setProgress(Number(draft.progresso_atual) + direction * goalStep(draft))
+  const setSteps = (passos: Row[]) => {
+    const all = passos.length > 0 && passos.every(entry => entry.feito === true)
+    update({ passos, status: all ? GOAL_STATUS.done : draft.status === GOAL_STATUS.done ? GOAL_STATUS.active : draft.status }, true)
+  }
+  const addStep = () => {
+    const titulo = newStep.trim()
+    if (!titulo) return
+    setSteps([...rows(draft.passos), { id: `passo-${crypto.randomUUID()}`, titulo, feito: false }])
+    setNewStep('')
+  }
+  const changeType = (next: string) => {
+    if (next === type) return
+    update(next === 'percentual' ? { tipo: next, progresso_total: 100, progresso_atual: Math.min(100, Number(draft.progresso_atual)) } : { tipo: next }, true)
   }
 
   async function remove() {
@@ -1102,15 +1125,25 @@ function GoalDetail({ item, state, today, commit, register, close }: DetailProps
     void close()
   }
 
+  const number = (value: number, onChange: (value: number) => void, min: number) => (
+    <input className={styles.inlineInput} type="number" inputMode="decimal" min={min} step="any" value={value} onChange={event => onChange(Math.max(min, Number(event.target.value) || min))} />
+  )
+
   return (
     <>
       <Header kind="goal" onClose={() => void close()} />
       <ItemLayout side={<>
-          <SelectProp icon={status.icon} color={status.color} label="Status" value={String(draft.status)} options={GOAL_STATUSES} display={status.label} onChange={value => update(value === GOAL_STATUS.done ? { status: value, progresso_atual: Number(draft.progresso_total) } : { status: value }, true)} />
+          <SelectProp icon={GOAL_TYPES.find(option => option.value === type)?.icon || 'flag'} color="var(--ds-lilac-fg)" label="Tipo" value={type} options={GOAL_TYPES} onChange={changeType} />
+          <SelectProp icon={status.icon} color={status.color} label="Status" value={String(draft.status)} options={GOAL_STATUSES} display={status.label} onChange={value => update(value === GOAL_STATUS.done ? { status: value, ...(type === 'passos' ? { passos: rows(draft.passos).map(entry => ({ ...entry, feito: true })) } : { progresso_atual: Number(draft.progresso_total) }) } : { status: value }, true)} />
           <PickerProp today={today} type="date" icon="calendar_today" color={draft.prazo ? 'var(--ds-accent)' : 'var(--ds-muted)'} label="Prazo" value={draft.prazo} muted={!draft.prazo} display={draft.prazo ? friendlyDate(draft.prazo, today) : 'Sem prazo'} onChange={prazo => update({ prazo }, true)} />
           <SelectProp icon="flag" color={priority.color} label="Prioridade" value={String(draft.prioridade)} onChange={value => update({ prioridade: Number(value) }, true)} options={PRIORITIES} display={priority.label} muted={Number(draft.prioridade) === 4} />
-          <Prop icon="trending_up" color="var(--ds-lilac-fg)" label="Progresso atual" display={<input className={styles.inlineInput} type="number" inputMode="decimal" min={0} value={draft.progresso_atual} onChange={event => update({ progresso_atual: Math.max(0, Number(event.target.value) || 0) })} />} />
-          <Prop icon="target" color="var(--ds-lilac-fg)" label="Alvo" display={<input className={styles.inlineInput} type="number" inputMode="decimal" min={1} value={draft.progresso_total} onChange={event => update({ progresso_total: Math.max(1, Number(event.target.value) || 1) })} />} />
+          <ColorProp value={String(draft.cor_hex || '')} onChange={cor_hex => update({ cor_hex }, true)} />
+          {type === 'percentual' ? <Prop icon="trending_up" color="var(--ds-lilac-fg)" label="Progresso (%)" display={number(Number(draft.progresso_atual), setProgress, 0)} /> : null}
+          {type === 'valor' || type === 'quantidade' ? <>
+            <Prop icon="trending_up" color="var(--ds-lilac-fg)" label={amountLabel} display={number(Number(draft.progresso_atual), setProgress, 0)} />
+            <Prop icon="target" color="var(--ds-lilac-fg)" label={targetLabel} display={number(Number(draft.progresso_total), value => update({ progresso_total: value }), 1)} />
+          </> : null}
+          {type === 'quantidade' ? <Prop icon="straighten" color="var(--ds-lilac-fg)" label="Unidade" display={<UnitField className={styles.inlineInput} value={String(draft.unidade || '')} onChange={unidade => update({ unidade })} />} /> : null}
       </>}>
         <div className={styles.titleRow}>
           <span className={styles.tile} data-tone="lilac"><Icon name="flag" size={17} /></span>
@@ -1122,14 +1155,34 @@ function GoalDetail({ item, state, today, commit, register, close }: DetailProps
 
         <div className={styles.habitCard}>
           <div className={styles.habitStatus}>
-            <span>{pct}% · {draft.progresso_atual} de {draft.progresso_total}</span>
+            <span>{pct}%{amount ? ` · ${amount}` : ''}</span>
             <div className={styles.bar} data-tone="lilac"><span style={{ width: `${pct}%` }} /></div>
           </div>
-          <div className={styles.habitButtons}>
-            <button type="button" className={styles.stepper} onClick={() => step(-1)} aria-label="Menos 1"><Icon name="remove" size={18} filled={false} /></button>
-            <button type="button" className={styles.stepper} onClick={() => step(1)} aria-label="Mais 1"><Icon name="add" size={18} filled={false} /></button>
-          </div>
+          {type !== 'passos' ? (
+            <div className={styles.habitButtons}>
+              <button type="button" className={styles.stepper} onClick={() => step(-1)} aria-label="Diminuir"><Icon name="remove" size={18} filled={false} /></button>
+              <button type="button" className={styles.stepper} onClick={() => step(1)} aria-label="Aumentar"><Icon name="add" size={18} filled={false} /></button>
+            </div>
+          ) : null}
         </div>
+
+        {type === 'passos' ? (
+          <div className={styles.goalSteps}>
+            {rows(draft.passos).map((entry, index) => (
+              <div key={String(entry.id || index)} className={styles.goalStep} data-done={entry.feito === true || undefined}>
+                <button type="button" role="checkbox" aria-checked={entry.feito === true} className={styles.goalStepCheck} aria-label={entry.feito === true ? 'Desmarcar passo' : 'Concluir passo'} onClick={() => setSteps(rows(draft.passos).map((other, position) => position === index ? { ...other, feito: other.feito !== true } : other))}>
+                  {entry.feito === true ? <Icon name="check" size={13} weight={600} filled={false} /> : null}
+                </button>
+                <input className={styles.goalStepInput} value={String(entry.titulo || '')} aria-label={`Passo ${index + 1}`} onChange={event => update({ passos: rows(draft.passos).map((other, position) => position === index ? { ...other, titulo: event.target.value } : other) })} />
+                <button type="button" className={styles.goalStepRemove} aria-label="Remover passo" onClick={() => setSteps(rows(draft.passos).filter((_, position) => position !== index))}><Icon name="close" size={16} filled={false} /></button>
+              </div>
+            ))}
+            <div className={styles.goalStep}>
+              <span className={styles.goalStepPlus}><Icon name="add" size={16} filled={false} /></span>
+              <input className={styles.goalStepInput} value={newStep} placeholder="Adicionar passo" aria-label="Novo passo" onChange={event => setNewStep(event.target.value)} onKeyDown={event => { if (event.key === 'Enter') { event.preventDefault(); addStep() } }} />
+            </div>
+          </div>
+        ) : null}
 
         <Attachments files={draft.anexos} onChange={anexos => update({ anexos }, true)} />
       </ItemLayout>
