@@ -589,3 +589,6 @@ button.profileRow.profileRow:hover .settingsButton { color: var(--ds-text); }
   .sheetRows { margin-top: 16px; border-top: 1px solid var(--ds-line); }
   .sheetRow.sheetRow { padding: 0 4px; border-radius: 0; background: transparent; border-bottom: 1px solid var(--ds-line); }
 }
+
+/* Usuário no topo da barra lateral, antes da busca; sem ícone de ajustes (a linha inteira abre os ajustes). */
+.userTop { padding: 0 0 8px; }

@@ -135,6 +135,15 @@ export function ModernSidebar({ state, today, view, navigate, onSearch, onSettin
         <MaiLogo size={28} color={themeLogoColor(state.configs.accentColor)} />
         <strong>Bukid</strong>
       </div>
+      <div className={styles.userTop}>
+        <button type="button" className={styles.profileRow} onClick={onSettings} aria-label={`Configurações de ${profileName}`} title="Configurações">
+          <span className={styles.avatar}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            {profile?.picture ? <img src={profile.picture} alt="" referrerPolicy="no-referrer" /> : profileInitial}
+          </span>
+          <span className={styles.profileName} title={profile?.email || profileName}>{profileName}</span>
+        </button>
+      </div>
       <button type="button" className={styles.search} onClick={onSearch}>
         <SidebarIcon name="search" size={20} />
         <span>Buscar</span>
@@ -169,18 +178,6 @@ export function ModernSidebar({ state, today, view, navigate, onSearch, onSettin
         </div>
       </nav>
 
-      <div className={styles.footer}>
-        <button type="button" className={styles.profileRow} onClick={onSettings} aria-label={`Configurações de ${profileName}`} title="Configurações">
-          <span className={styles.avatar}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            {profile?.picture ? <img src={profile.picture} alt="" referrerPolicy="no-referrer" /> : profileInitial}
-          </span>
-          <span className={styles.profileName} title={profile?.email || profileName}>{profileName}</span>
-          <span className={styles.settingsButton} aria-hidden="true">
-            <SidebarIcon name="settings" />
-          </span>
-        </button>
-      </div>
     </aside>
   )
 }
