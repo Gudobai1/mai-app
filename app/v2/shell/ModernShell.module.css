@@ -543,8 +543,6 @@ button.profileRow.profileRow:hover { background: var(--ds-surface-hover); }
 button.profileRow.profileRow:focus-visible { outline: 2px solid var(--ds-accent); outline-offset: 2px; }
 button.profileRow.profileRow:hover .settingsButton { color: var(--ds-text); }
 
-.brand { display: flex; align-items: center; gap: 10px; padding: 2px 8px 10px; }
-.brand strong { font-size: 15px; font-weight: 750; letter-spacing: -.01em; color: var(--ds-text, inherit); }
 
 
 /* Menu "Mais": tela cheia, itens em lista (padrão global de janela) */

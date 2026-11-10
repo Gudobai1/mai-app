@@ -6,7 +6,6 @@ import { Icon } from '../../ds'
 import type { AppView } from '../app-types'
 import { ProjectMark } from './ProjectMark'
 import { SidebarIcon } from './SidebarIcons'
-import { MaiLogo, themeLogoColor } from '../logo'
 import { NAV_ALIAS, todayCounts, type NavItem } from './nav'
 import styles from './ModernShell.module.css'
 
@@ -131,10 +130,6 @@ export function ModernSidebar({ state, today, view, navigate, onSearch, onSettin
 
   return (
     <aside className={styles.sidebar} aria-label="Menu principal">
-      <div className={styles.brand}>
-        <MaiLogo size={28} color={themeLogoColor(state.configs.accentColor)} />
-        <strong>Bukid</strong>
-      </div>
       <div className={styles.userTop}>
         <button type="button" className={styles.profileRow} onClick={onSettings} aria-label={`Configurações de ${profileName}`} title="Configurações">
           <span className={styles.avatar}>
