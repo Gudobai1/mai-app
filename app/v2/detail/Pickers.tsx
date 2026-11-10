@@ -303,6 +303,7 @@ export function repeatLabel(value: string) {
   }
   if (value.startsWith('semanal:')) {
     const days = value.split(':')[1].split(',').map(Number).filter(day => day >= 0 && day <= 6)
+    if (days.length === 2 && days.includes(0) && days.includes(6)) return 'Fins de semana'
     if (days.length === 1) return `Toda ${['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'][days[0]]}`
     return days.length ? days.map(day => WEEK_NAMES[day]).join(', ') : 'Personalizado'
   }
@@ -340,8 +341,15 @@ function CustomRow({ onClick, active }: { onClick: () => void; active: boolean }
   )
 }
 
-export function RepeatPicker({ value, onSelect }: { value: string; onSelect: (value: string) => void }) {
-  const isCustom = Boolean(value) && !REPEAT_PRESETS.some(item => item.value === value)
+const HABIT_REPEAT_PRESETS = [
+  { value: 'diariamente', label: 'Todos os dias' },
+  { value: 'semanal:1,2,3,4,5', label: 'Dias úteis' },
+  { value: 'semanal:0,6', label: 'Fins de semana' },
+]
+
+export function RepeatPicker({ value, onSelect, habit = false }: { value: string; onSelect: (value: string) => void; habit?: boolean }) {
+  const presets = habit ? HABIT_REPEAT_PRESETS : REPEAT_PRESETS
+  const isCustom = Boolean(value) && !presets.some(item => item.value === value)
   const [custom, setCustom] = useState(false)
   const intervalDays = value.startsWith('intervalo:') ? Math.max(1, Number(value.split(':')[1]) || 1) : 1
   const [mode, setMode] = useState<'interval' | 'weekdays'>(value.startsWith('semanal:') && isCustom ? 'weekdays' : 'interval')
@@ -352,7 +360,7 @@ export function RepeatPicker({ value, onSelect }: { value: string; onSelect: (va
   if (!custom) {
     return (
       <div className={styles.options} role="listbox">
-        <OptionList options={REPEAT_PRESETS} value={isCustom ? '__custom__' : value} onSelect={onSelect} />
+        <OptionList options={presets} value={isCustom ? '__custom__' : value} onSelect={onSelect} />
         <CustomRow active={isCustom} onClick={() => setCustom(true)} />
       </div>
     )
