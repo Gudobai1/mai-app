@@ -69,12 +69,12 @@ export function AppTopBar({ state, today, view, taskScope, commit, onTaskScopeCh
   const upcomingOccurrence = upcomingFilters.occurrenceMode && typeof upcomingFilters.occurrenceMode === 'object' ? { ...occurrenceDefaults, ...upcomingFilters.occurrenceMode } : occurrenceDefaults
 
   const defaultSort: Partial<Record<AppView,string>> = {
-    today:'overdue', upcoming:'time', completed:'recent', tasks:'manual', habits:'name', goals:'date', notes:'recent', finance:'date_desc', files:'name'
+    today:'overdue', upcoming:'time', completed:'recent', tasks:'manual', habits:'name', goals:'date', notes:'recent', finance:'date_desc'
   }
   const sortMode = String(control.sort || defaultSort[view] || 'manual')
   const layoutMode = control.layout === 'kanban' ? 'kanban' : 'normal'
   const activeProject = taskScope.startsWith('project:') ? projects.find(project => String(project.id) === taskScope.slice(8)) : null
-  const titleMap: Partial<Record<AppView,string>> = { today:'Hoje', upcoming:'Em breve', completed:'Concluídos', tasks:'Tarefas', habits:'Hábitos', goals:'Metas', notes:'Notas', finance:'Finanças', files:'Arquivos' }
+  const titleMap: Partial<Record<AppView,string>> = { today:'Hoje', upcoming:'Em breve', completed:'Concluídos', tasks:'Tarefas', habits:'Hábitos', goals:'Metas', notes:'Notas', finance:'Finanças' }
   const title = titleMap[view] || 'Bukid'
   const dayLabel = new Date(`${today}T12:00:00`).toLocaleDateString('pt-BR', { weekday:'short', day:'numeric', month:'short' }).replace('.', '')
   const overdueTasks = activeTasks.filter(task => dateKey(task.data_vencimento) && dateKey(task.data_vencimento) < today).length
