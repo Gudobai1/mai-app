@@ -5,6 +5,7 @@ import type { MaiState } from '../../../lib/v2/state'
 import { Icon } from '../../ds'
 import type { AppView } from '../app-types'
 import { ProjectMark } from './ProjectMark'
+import { normalizeReminders } from '../../../lib/v2/reminders'
 import { normalizeSidebar, sidebarHidden, sidebarIconName } from './sidebar-config'
 import { NAV_ALIAS, todayCounts, type NavItem } from './nav'
 import { NotificationPanel } from './NotificationPanel'
@@ -73,6 +74,7 @@ export function ModernSidebar({ state, today, view, navigate, onSearch, onSettin
   useEffect(() => { const timer = window.setInterval(() => setMinute(value => value + 1), 60_000); return () => window.clearInterval(timer) }, [])
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const alerts = useMemo(() => buildAlerts(state, today, new Date()), [state, today, minute])
+  const remindersLook = normalizeReminders(state.configs.reminders).look
   const attention = alertCount(alerts)
   const openAlert = (entry: AlertItem) => {
     setBell(false)
@@ -193,9 +195,10 @@ export function ModernSidebar({ state, today, view, navigate, onSearch, onSettin
         </div>
         <button ref={bellRef} type="button" className={styles.topIcon} onClick={() => setBell(value => !value)} aria-haspopup="dialog" aria-expanded={bell} aria-label={attention ? `${attention} avisos` : 'Notificações'} title={attention ? `${attention} avisos` : 'Notificações'}>
           <Icon name="notifications" size={20} filled={false} />
-          {attention ? <i className={styles.dot} aria-hidden="true" /> : null}
+          {attention && remindersLook.bell === 'dot' ? <i className={styles.dot} aria-hidden="true" /> : null}
+          {attention && remindersLook.bell === 'count' ? <b className={styles.bellCount} aria-hidden="true">{attention > 9 ? '9+' : attention}</b> : null}
         </button>
-        {bell ? <NotificationPanel alerts={alerts} anchor={bellRef.current} onOpen={openAlert} onClose={() => setBell(false)} /> : null}
+        {bell ? <NotificationPanel look={remindersLook} alerts={alerts} anchor={bellRef.current} onOpen={openAlert} onClose={() => setBell(false)} /> : null}
         <button type="button" className={styles.topIcon} onClick={autoHide ? () => onAutoHide(false) : onToggleHidden} aria-label={autoHide ? 'Fixar a barra lateral' : 'Ocultar a barra lateral'} title={autoHide ? 'Fixar a barra lateral' : 'Ocultar a barra lateral'}>
           <Icon name="left_panel_close" size={20} filled={false} />
         </button>

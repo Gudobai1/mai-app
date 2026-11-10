@@ -7,6 +7,7 @@ import { restyleColors } from '../../lib/v2/palette'
 import styles from './Settings.module.css'
 import { AppearancePanel } from './AppearancePanel'
 import { SidebarSettings } from './SidebarSettings'
+import { RemindersSettings } from './RemindersSettings'
 import { normalizeMode } from './theme'
 
 
@@ -25,6 +26,7 @@ type Props = {
   saveCalendars: () => Promise<void>
   disconnectGoogle: () => Promise<void>
   requestNotifications: () => Promise<void>
+  testReminder: () => Promise<void>
   installPrompt: unknown
   install: () => Promise<void>
   exportData: () => void
@@ -151,10 +153,7 @@ export function AppSettingsDrawer(props: Props) {
 
             <section className={styles.section} data-section="notificacoes" hidden={active !== 'notificacoes'}>
               <h3>Notificações</h3>
-              <div className={styles.row}>
-                <span><strong>Lembretes</strong><small>Avisos dos itens com horário.</small></span>
-                <button type="button" role="switch" aria-checked={notifications} className={styles.switch} data-on={notifications || undefined} onClick={() => void props.requestNotifications()}><i /></button>
-              </div>
+              <RemindersSettings value={props.state.configs.reminders} enabled={notifications} permission={permission} onToggle={() => void props.requestNotifications()} onTest={() => void props.testReminder()} onChange={reminders => props.commit(current => ({ ...current, configs: { ...current.configs, reminders } }))} />
             </section>
 
             <section className={styles.section} data-section="google" hidden={active !== 'google'}>
