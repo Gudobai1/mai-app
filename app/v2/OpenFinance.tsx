@@ -425,7 +425,18 @@ export function useOpenFinance(state: MaiState, commit: Commit, auto = true) {
     const link = data.itens.find(i => i.itemId === itemId)
     const url = link ? meuPluggyUrl(link) : ''
     if (url && isNativeApp()) { void nativePlugin('Browser')?.open?.({ url }) }
-    else if (url) { try { window.open(url, `meu-pluggy-${itemId}`, 'popup,width=520,height=780') } catch { /* popup bloqueado: segue só com a leitura */ } }
+    else if (url) {
+      try {
+        const popup = window.open(url, `meu-pluggy-${itemId}`, 'popup,width=520,height=780')
+        // Quando a janela do MeuPluggy fecha (você ou o script scripts/meupluggy-atualizar-e-fechar.user.js), lê de novo o que a Pluggy já atualizou.
+        if (popup) {
+          const startedAt = Date.now()
+          const watch = window.setInterval(() => {
+            if (popup.closed || Date.now() - startedAt > 10 * 60_000) { window.clearInterval(watch); if (popup.closed) void latest.current.sync([itemId], true, false) }
+          }, 1500)
+        }
+      } catch { /* popup bloqueado: segue só com a leitura */ }
+    }
     else setMessage('Defina o link desta conexão no MeuPluggy para abrir a página de atualização.')
     void sync([itemId], false, false)
   }
