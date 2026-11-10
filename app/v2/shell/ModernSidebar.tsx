@@ -135,7 +135,7 @@ export function ModernSidebar({ state, today, view, navigate, onSearch, onSettin
         <div className={styles.projectRow} style={depth ? { paddingLeft: 12 + depth * 18 } : undefined} data-active={current || undefined}>
           <button type="button" className={styles.projectButton} aria-current={current ? 'page' : undefined} onClick={() => navigate(`project:${id}`)}>
             {photo(project)}
-            <span className={styles.itemLabel} style={{ color: String(project.cor || '') || undefined }}>{String(project.nome || 'Projeto')}</span>
+            <span className={styles.itemLabel}>{String(project.nome || 'Projeto')}</span>
             {count ? <span className={styles.projectCount}>{count}</span> : null}
           </button>
           <button
