@@ -115,17 +115,6 @@
 .mai-context-error { margin:0; padding:8px; border-radius:6px; background:color-mix(in srgb,var(--danger,#c84c40) 8%,transparent); color:var(--danger,#c84c40); font-size:10px; }
 
 /* Paleta fechada para qualquer seletor de cor existente */
-.mai-preset-layer { position:fixed; inset:0; z-index:1800; }
-.mai-preset-popover { position:fixed; width:255px; padding:8px; border:1px solid #dde2dc; border-radius:6px; background:#fff; color:#202321; box-shadow:0 16px 45px rgba(0,0,0,.18); }
-:root[data-mai-theme="dark"] .mai-preset-popover { background:#1d211d; color:#e5e9e3; border-color:#303630; }
-.mai-preset-popover header { display:flex; align-items:center; justify-content:space-between; min-height:30px; padding:0 3px 5px; }
-.mai-preset-popover header strong { font-size:11px; }
-.mai-preset-popover header button { width:26px; height:26px; border:0; border-radius:5px; background:transparent; color:inherit; }
-.mai-preset-popover > div { display:grid; grid-template-columns:1fr 1fr; gap:4px; }
-.mai-preset-popover > div button { min-height:36px; display:flex; align-items:center; gap:7px; padding:0 7px; border:1px solid transparent; border-radius:6px; background:transparent; color:inherit; font:inherit; font-size:9px; text-align:left; }
-.mai-preset-popover > div button:hover,.mai-preset-popover > div button[data-active="true"] { border-color:#d9ded8; background:#f3f5f2; }
-:root[data-mai-theme="dark"] .mai-preset-popover > div button:hover,:root[data-mai-theme="dark"] .mai-preset-popover > div button[data-active="true"] { border-color:#384038; background:#262c26; }
-.mai-preset-popover i { width:18px; height:18px; border-radius:50%; box-shadow:inset 0 0 0 1px rgba(0,0,0,.08); }
 
 /* Paleta do aplicativo nas configurações */
 .mai-app-palettes { display:flex; flex-wrap:wrap; gap:7px; }
