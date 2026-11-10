@@ -100,6 +100,18 @@ export function TasksModern(props: Props) {
   const isProjectLike = scope === 'entrada' || Boolean(projectId)
   const kanban = Boolean(projectId) && String(project?.visualizacao || '') === 'quadro'
 
+  const scopeKey = projectId ? `project:${projectId}` : scope === 'entrada' ? 'inbox' : String(scope)
+  /* Ajustes individuais por projeto/lista (ordenação, prioridade, mostrar concluídos). Sem ajuste próprio, vale o padrão antigo do módulo. */
+  const scopedAll = (state.configs.taskScopeSettings && typeof state.configs.taskScopeSettings === 'object' ? state.configs.taskScopeSettings : {}) as Record<string, Row>
+  const scoped = scopedAll[scopeKey] || {}
+  const legacyFilters = (state.configs.moduleFilters && typeof state.configs.moduleFilters === 'object' ? (state.configs.moduleFilters as Record<string, Row>).tasks : null) || {}
+  const rawSort = String(scoped.sort ?? controls.tasks?.sort ?? 'manual')
+  const sortMode: SortMode = (['manual', 'date', 'priority', 'project', 'name'].includes(rawSort) ? rawSort : 'manual') as SortMode
+  const priorityFilter = String(scoped.priority ?? legacyFilters.priority ?? 'all')
+  const setScoped = (patch: Row) => commit(current => {
+    const map = (current.configs.taskScopeSettings && typeof current.configs.taskScopeSettings === 'object' ? current.configs.taskScopeSettings : {}) as Record<string, Row>
+    return { ...current, configs: { ...current.configs, taskScopeSettings: { ...map, [scopeKey]: { ...(map[scopeKey] || {}), ...patch } } } }
+  })
   const all = state.tasks.filter(task => standalone(task) && (priorityFilter === 'all' || String(task.prioridade || 4) === priorityFilter))
   const open = all.filter(task => !task.concluida)
   const counts = {
@@ -121,19 +133,7 @@ export function TasksModern(props: Props) {
   const familyCount = (id: string): number => projectCount(id) + childrenOf(id).reduce((sum, child) => sum + familyCount(String(child.id)), 0)
 
   const prefsAll = (state.configs.taskWorkspaces && typeof state.configs.taskWorkspaces === 'object' ? state.configs.taskWorkspaces : {}) as Record<string, Row>
-  const scopeKey = projectId ? `project:${projectId}` : scope === 'entrada' ? 'inbox' : String(scope)
   const prefs = prefsAll[scopeKey] || {}
-  /* Ajustes individuais por projeto/lista (ordenação, prioridade, mostrar concluídos). Sem ajuste próprio, vale o padrão antigo do módulo. */
-  const scopedAll = (state.configs.taskScopeSettings && typeof state.configs.taskScopeSettings === 'object' ? state.configs.taskScopeSettings : {}) as Record<string, Row>
-  const scoped = scopedAll[scopeKey] || {}
-  const legacyFilters = (state.configs.moduleFilters && typeof state.configs.moduleFilters === 'object' ? (state.configs.moduleFilters as Record<string, Row>).tasks : null) || {}
-  const rawSort = String(scoped.sort ?? controls.tasks?.sort ?? 'manual')
-  const sortMode: SortMode = (['manual', 'date', 'priority', 'project', 'name'].includes(rawSort) ? rawSort : 'manual') as SortMode
-  const priorityFilter = String(scoped.priority ?? legacyFilters.priority ?? 'all')
-  const setScoped = (patch: Row) => commit(current => {
-    const map = (current.configs.taskScopeSettings && typeof current.configs.taskScopeSettings === 'object' ? current.configs.taskScopeSettings : {}) as Record<string, Row>
-    return { ...current, configs: { ...current.configs, taskScopeSettings: { ...map, [scopeKey]: { ...(map[scopeKey] || {}), ...patch } } } }
-  })
   const collapsed = new Set(rows(prefs.collapsed).map(String))
   const toggleCollapsed = (id: string) => {
     const next = new Set(collapsed)
