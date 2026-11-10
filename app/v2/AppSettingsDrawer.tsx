@@ -5,6 +5,7 @@ import type { MaiState, SyncStatus } from '../../lib/v2/state'
 import { Icon } from '../ds'
 import styles from './Settings.module.css'
 import { AppearancePanel } from './AppearancePanel'
+import { SidebarSettings } from './SidebarSettings'
 import { normalizeMode } from './theme'
 
 
@@ -140,10 +141,7 @@ export function AppSettingsDrawer(props: Props) {
                 <span><strong>Ocultar a barra lateral automaticamente</strong><small>A barra some quando o mouse sai dela e volta ao encostar na borda esquerda.</small></span>
                 <button type="button" role="switch" aria-checked={Boolean(props.state.configs.sidebarAutoHide)} aria-label="Ocultar a barra lateral automaticamente" className={styles.switch} data-on={Boolean(props.state.configs.sidebarAutoHide) || undefined} onClick={() => props.commit(current => ({ ...current, configs: { ...current.configs, sidebarAutoHide: !current.configs.sidebarAutoHide, sidebarHidden: false } }))}><i /></button>
               </div>
-              <div className={styles.row}>
-                <span><strong>Ocultar Entrada</strong><small>Esconde a Entrada da lista de projetos no menu lateral.</small></span>
-                <button type="button" role="switch" aria-checked={hideInbox} aria-label="Ocultar Entrada" className={styles.switch} data-on={hideInbox || undefined} onClick={() => props.commit(current => ({ ...current, configs: { ...current.configs, hideInbox: !current.configs.hideInbox } }))}><i /></button>
-              </div>
+              <SidebarSettings value={props.state.configs.sidebar} legacyHideInbox={hideInbox} onChange={sidebar => props.commit(current => ({ ...current, configs: { ...current.configs, sidebar, hideInbox: false } }))} />
             </section>
 
             <section className={styles.section} data-section="notificacoes" hidden={active !== 'notificacoes'}>

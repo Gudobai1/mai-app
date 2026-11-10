@@ -1,4 +1,10 @@
 import {
+  Brush,
+  Code,
+  GraduationCap,
+  Heart,
+  Lightbulb,
+  Rocket,
   Activity,
   Pause,
   Percent,
@@ -167,6 +173,13 @@ import type { ComponentType, SVGProps } from 'react'
 export type LucideComponent = ComponentType<SVGProps<SVGSVGElement> & { size?: number | string; strokeWidth?: number | string }>
 
 export const LUCIDE_ICONS: Record<string, LucideComponent> = {
+  favorite: Heart,
+  rocket_launch: Rocket,
+  lightbulb: Lightbulb,
+  home: House,
+  school: GraduationCap,
+  code: Code,
+  brush: Brush,
   left_panel_close: PanelLeft,
   logout: LogOut,
   coffee: Coffee,

@@ -6,6 +6,7 @@ import type { AppView, Row } from '../app-types'
 import type { MaiState } from '../../../lib/v2/state'
 import { ProjectMark } from './ProjectMark'
 import { NAV_ALIAS, NAV_GROUPS } from './nav'
+import { normalizeSidebar, sidebarHidden, sidebarIconName } from './sidebar-config'
 import styles from './ModernShell.module.css'
 
 type Props = {
@@ -78,7 +79,8 @@ export function ModernBottomNav({ state, activeProjectId, onNewProject, view, se
   }
 
   const modulesActive = sheetOpen || (!barViews.has(String(view)) && !searchOpen)
-  const sheetGroups = NAV_GROUPS.map(group => ({ ...group, items: group.items.filter(item => !hiddenFromSheet.has(String(item.id))) })).filter(group => group.items.length)
+  const side = normalizeSidebar(state.configs.sidebar, Boolean(state.configs.hideInbox))
+  const sheetGroups = NAV_GROUPS.map(group => ({ ...group, items: group.items.filter(item => !hiddenFromSheet.has(String(item.id)) && !sidebarHidden(side, String(item.id))) })).filter(group => group.items.length)
 
   return (
     <>
@@ -100,7 +102,7 @@ export function ModernBottomNav({ state, activeProjectId, onNewProject, view, se
                 <div className={styles.sheetGrid}>
                   {group.items.map(item => (
                     <button key={String(item.id)} type="button" className={styles.sheetItem} aria-current={(NAV_ALIAS[view] ?? view) === item.id ? 'page' : undefined} onClick={() => go(item.id)}>
-                      <Icon name={item.icon} size={22} filled={(NAV_ALIAS[view] ?? view) === item.id} />
+                      {side.icons ? <Icon name={sidebarIconName(side, String(item.id), item.icon)} size={22} filled={(NAV_ALIAS[view] ?? view) === item.id} /> : <span aria-hidden="true" />}
                       <span>{item.label}</span>
                       <Icon name="chevron_right" size={20} filled={false} />
                     </button>
@@ -112,9 +114,9 @@ export function ModernBottomNav({ state, activeProjectId, onNewProject, view, se
             <div>
               <h3 className={styles.sheetGroupLabel}>Projetos</h3>
               <div className={styles.sheetGrid}>
-                {state.configs.hideInbox ? null : (
+                {sidebarHidden(side, 'inbox') ? null : (
                   <button type="button" className={styles.sheetItem} aria-current={view === 'tasks' && activeProjectId === 'entrada' ? 'page' : undefined} onClick={() => go('inbox' as AppView)}>
-                    <Icon name="inbox" size={22} filled={view === 'tasks' && activeProjectId === 'entrada'} />
+                    {side.icons ? <Icon name={sidebarIconName(side, 'inbox', 'inbox')} size={22} filled={view === 'tasks' && activeProjectId === 'entrada'} /> : <span aria-hidden="true" />}
                     <span>Entrada</span>
                     <Icon name="chevron_right" size={20} filled={false} />
                   </button>
