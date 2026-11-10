@@ -161,8 +161,8 @@
 }
 
 /* ===== Padrão de pop-up ===== */
-.layer.layer { background: rgba(0, 0, 0, 0.4); }
-.card.card { border-radius: 6px; background: var(--ds-bg); box-shadow: 0 12px 40px rgba(0, 0, 0, 0.2); }
+.layer.layer { background: var(--ds-popup-scrim); }
+.card.card { border-radius: var(--ds-popup-r); background: var(--ds-bg); box-shadow: var(--ds-popup-shadow); }
 .icon.icon, .icon.icon[data-danger] { background: transparent; width: 36px; height: 36px; }
 .title.title { font-size: 16px; font-weight: var(--ds-fw-bold); }
 .cancel.cancel, .confirm.confirm { height: 38px; border-radius: 6px; font-size: 14px; }
