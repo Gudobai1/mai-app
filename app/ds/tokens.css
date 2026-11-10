@@ -41,6 +41,7 @@
   --ds-row-gap: 12px;
   --ds-row-lead: 18px;
   --ds-row-title: 14.5px;
+  --ds-row-weight: 400; /* títulos e valores das linhas: peso normal; negrito só em títulos de bloco */
   --ds-row-sub: 12.5px;
   --ds-s-1: 4px;
   --ds-s-2: 8px;
