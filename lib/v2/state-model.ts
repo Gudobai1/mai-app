@@ -7,6 +7,8 @@ export type LegacyTask = {
   concluida?: boolean
   projeto_id?: string
   parent_id?: string
+  /** Meta a que esta tarefa pertence como passo (módulo Metas). */
+  meta_id?: string
   criado_em?: string
   concluida_em?: string
   ordem?: number
