@@ -14,3 +14,6 @@ html body button:hover:not(#_) {
   [data-grab][data-grabbing], [data-grab][data-grabbing] * { cursor: grabbing !important; }
   [data-grab][data-grabbing] { user-select: none; scroll-snap-type: none; }
 }
+
+/* Fonte escolhida em Configurações → Aparência vale também para o CSS antigo que fixa família. */
+html[data-mai-font] body, html[data-mai-font] button, html[data-mai-font] input, html[data-mai-font] textarea, html[data-mai-font] select { font-family: var(--ds-font) !important; }

@@ -1,5 +1,6 @@
 'use client'
 
+import { applyAppearance } from '../ds'
 import { isDarkMode, normalizeMode, normalizeTheme } from './theme'
 import { logoDataUrl, themeLogoColor } from './logo'
 import { useEffect, useRef, useState } from 'react'
@@ -140,6 +141,9 @@ export function useMaiRuntime() {
     query.addEventListener('change', apply)
     return () => query.removeEventListener('change', apply)
   }, [state.configs.theme, state.configs.accentColor])
+
+  // Aparência personalizada (ícones, fonte, cor): vale para o app todo.
+  useEffect(() => { applyAppearance(state.configs.appearance) }, [state.configs.appearance])
 
   // Regra global de persistência do MAI:
   // dados/configs/referências ficam no estado (cache + Supabase); bytes ficam no Drive.
