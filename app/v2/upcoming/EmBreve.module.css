@@ -282,3 +282,10 @@
 /* Concluído: círculo cinza vazio com um check pequeno. */
 .chip[data-done] .chipCheck { background: transparent; border-color: var(--ds-muted); color: var(--ds-muted); }
 .bar.bar { justify-content: flex-end; }
+
+/* Lançamentos financeiros nos dias do mês */
+.cellFin { display: flex; align-items: center; gap: 5px; min-width: 0; padding: 0 2px; font-size: 11.5px; font-weight: var(--ds-fw-medium); color: var(--ds-text-2); white-space: nowrap; overflow: hidden; }
+.cellFin > svg { flex: none; color: var(--ds-danger); }
+.cellFin[data-type='receita'] > svg { color: var(--ds-success, #058527); }
+.cellFin em { margin-left: auto; padding-left: 4px; font-style: normal; font-size: 10.5px; font-weight: var(--ds-fw-bold); color: var(--ds-muted); font-variant-numeric: tabular-nums; }
+.cellFin[data-done] { opacity: 0.5; }

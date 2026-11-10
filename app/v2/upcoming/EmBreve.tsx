@@ -212,7 +212,7 @@ export function EmBreve({ state, today, commit, inspect, syncRange }: Props) {
   }
 
   // "Somente a próxima": cada série de eventos repetidos aparece só na primeira ocorrência de hoje em diante.
-  const nextIds = useMemo(() => (display.nextOnly ? hiddenOccurrenceIds(state, today) : null), [state.events, state.tasks, today, display.nextOnly])  // eslint-disable-line react-hooks/exhaustive-deps
+  const nextIds = useMemo(() => (display.nextOnly ? hiddenOccurrenceIds(state, today) : null), [state.events, state.tasks, state.habits, today, display.nextOnly])  // eslint-disable-line react-hooks/exhaustive-deps
 
   const entries = useMemo(() => {
     const rank = (entry: Entry) => (entry.kind === 'event' ? (entry.allDay ? 0 : 1) : entry.kind === 'task' ? 2 : entry.kind === 'habit' ? 3 : 4)
@@ -741,10 +741,9 @@ export function EmBreve({ state, today, commit, inspect, syncRange }: Props) {
         </button>
       )
     }
-    const lines = items.filter(entry => entry.kind === 'event' || entry.kind === 'task')
+    const lines = items.filter(entry => entry.kind === 'event' || entry.kind === 'task' || entry.kind === 'finance')
     const shown = lines.slice(0, 3)
     const habits = items.filter(entry => entry.kind === 'habit')
-    const finance = items.filter(entry => entry.kind === 'finance')
     const rest = lines.length - shown.length
     return (
       <div key={day} role="button" tabIndex={0} className={styles.cell} data-today={day === today || undefined} data-selected={selected === day || undefined} onClick={() => setSelected(day)} onKeyDown={event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); setSelected(day) } }}>
@@ -752,13 +751,14 @@ export function EmBreve({ state, today, commit, inspect, syncRange }: Props) {
         <span className={styles.cellItems}>
           {shown.map(entry => entry.kind === 'event'
             ? <span key={entry.id} className={styles.cellEvent} data-passed={passed(entry) || undefined} style={{ '--ev': entry.color } as CSSProperties}><i className={styles.cellDot} />{entry.allDay ? null : <em>{entry.time}</em>}<span className={styles.cellText}>{entry.title}</span></span>
+            : entry.kind === 'finance'
+            ? <span key={entry.id} className={styles.cellFin} data-done={entry.done || undefined} data-type={entry.financeType}><Icon name="payments" size={11} /><span className={styles.cellText}>{entry.title}</span>{entry.amount ? <em>{entry.amount}</em> : null}</span>
             : <span key={entry.id} className={styles.cellTask} data-done={entry.done || undefined} style={{ '--ev': PRIORITY_COLOR[entry.priority] || 'var(--ds-muted)' } as CSSProperties}><u /><span className={styles.cellText}>{entry.title}</span></span>)}
           {rest > 0 ? <span className={styles.cellMore}>+{rest} mais</span> : null}
         </span>
-        {habits.length || finance.length ? (
+        {habits.length ? (
           <span className={styles.cellMeta}>
             {habits.length ? <span><Icon name="autorenew" size={11} />{habits.length}</span> : null}
-            {finance.length ? <span><Icon name="payments" size={11} />{finance.length}</span> : null}
           </span>
         ) : null}
       </div>
