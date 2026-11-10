@@ -7,3 +7,9 @@ html body button:hover:not(#_) {
   text-decoration: none !important;
   text-decoration-line: none !important;
 }
+
+/* Mãozinha: visualizações em colunas rolam arrastando (só com mouse; no celular o dedo já rola). */
+@media (hover: hover) and (pointer: fine) {
+  [data-grab] { cursor: grab; }
+  [data-grab][data-grabbing] { cursor: grabbing; user-select: none; scroll-snap-type: none; }
+}

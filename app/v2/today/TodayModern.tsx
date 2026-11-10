@@ -1,7 +1,7 @@
 'use client'
 
 import { GoalCard } from '../goals/GoalCard'
-import { goalAmountText, goalColor, goalDone, goalDue, goalDueInfo, goalPaused, goalPct, setGoalDone } from '../../../lib/v2/goals'
+import { goalAmountText, goalColor, goalDone, goalDue, goalDueInfo, goalPaused, goalPct, toggleGoalInState, withSteps } from '../../../lib/v2/goals'
 import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { financeSummary } from '../../../lib/v2/finance-summary'
 import { addDays, eventColor, plannerItems, type PlannerItem } from '../../../lib/v2/planner'
@@ -462,7 +462,7 @@ export function TodayModern({ state, today, commit, navigate, inspect, options, 
 
   /* ------------------------------------------------------------------ Metas */
 
-  const goals = rows(state.goals).filter(goal => {
+  const goals = rows(state.goals).map(goal => withSteps(goal, state.tasks)).filter(goal => {
     const due = goalDate(goal)
     if (!due || goalPaused(goal)) return false
     if (concluded(goal)) return showCompleted(state, 'today') && due === day
@@ -892,7 +892,7 @@ export function TodayModern({ state, today, commit, navigate, inspect, options, 
                     paused={goalPaused(goal)}
                     color={goalColor(goal)}
                     ariaLabel={`Concluir ${title}`}
-                    onToggle={() => commit(current => ({ ...current, goals: rows(current.goals).map(row => (String(row.id) === String(goal.id) ? setGoalDone(row, !goalDone(row)) : row)) }))}
+                    onToggle={() => commit(current => toggleGoalInState(current, String(goal.id), !goalDone(goal)))}
                     onOpen={() => inspect({ kind: 'goal', sourceId: String(goal.id), title, date: due, raw: goal })}
                   />
                 )

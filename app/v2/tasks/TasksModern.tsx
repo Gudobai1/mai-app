@@ -3,7 +3,7 @@
 import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState, type DragEvent, type MouseEvent as ReactMouseEvent, type ReactNode } from 'react'
 import { addDays } from '../../../lib/v2/planner'
 import type { LegacyTask, MaiState } from '../../../lib/v2/state'
-import { Icon, SettingsButton } from '../../ds'
+import { Icon, SettingsButton, useDragScroll } from '../../ds'
 import { showCompleted } from '../../../lib/v2/show-completed'
 import type { AppView, Row, TaskModuleScope } from '../app-types'
 import type { InspectableItem } from '../ContextDrawer'
@@ -99,6 +99,7 @@ export function TasksModern(props: Props) {
   const project = projectId ? projectMap.get(projectId) : undefined
   const isProjectLike = scope === 'entrada' || Boolean(projectId)
   const kanban = Boolean(projectId) && String(project?.visualizacao || '') === 'quadro'
+  const boardGrab = useDragScroll()
 
   const scopeKey = projectId ? `project:${projectId}` : scope === 'entrada' ? 'inbox' : String(scope)
   /* Ajustes individuais por projeto/lista (ordenação, prioridade, mostrar concluídos). Sem ajuste próprio, vale o padrão antigo do módulo. */
@@ -713,7 +714,7 @@ export function TasksModern(props: Props) {
       ) : null}
 
       {kanban ? (
-        <div className={styles.board}>
+        <div className={styles.board} data-grab {...boardGrab}>
           {groups.map(group => (
             <section key={group.id} className={styles.column} {...groupDropProps(group)} data-drop-zone={dragId ? 'true' : undefined}>
               <div className={styles.groupHead}>

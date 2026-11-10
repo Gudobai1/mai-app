@@ -1,8 +1,9 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { Icon } from '../../ds'
-import { GOAL_STATUS, goalAmountText, goalColor, goalDone, goalDue, goalDueInfo, goalPaused, goalPct, setGoalDone, sortGoals, type GoalSort } from '../../../lib/v2/goals'
+import { Icon, useDragScroll } from '../../ds'
+import { GOAL_STATUS, goalAmountText, goalColor, goalDone, goalDue, goalDueInfo, goalPaused, goalPct, goalType, GOAL_TYPES, toggleGoalInState, withSteps, sortGoals, type GoalSort } from '../../../lib/v2/goals'
+import { addDays } from '../../../lib/v2/planner'
 import { showCompleted } from '../../../lib/v2/show-completed'
 import type { MaiState } from '../../../lib/v2/state'
 import type { InspectableItem } from '../ContextDrawer'
@@ -22,70 +23,115 @@ type Props = { state: MaiState; today: string; commit: Commit; createRequest?: s
  * popup global (`ItemDetail`) para ver/editar. Não há painel nem gaveta própria do módulo.
  */
 export function GoalsModern({ state, today, commit, createRequest, inspect }: Props) {
-  const goals = rows(state.goals)
+  const goals = rows(state.goals).map(goal => withSteps(goal, state.tasks))
   const [adding, setAdding] = useState(false)
+  const grab = useDragScroll()
   const showDone = showCompleted(state, 'goals')
-  const sort = (String(record(record(state.configs.moduleControls).goals).sort || 'date') as GoalSort)
-  const status = String(record(record(state.configs.moduleFilters).goals).status || 'all')
+  const control = record(record(state.configs.moduleControls).goals)
+  const filter = record(record(state.configs.moduleFilters).goals)
+  const sort = String(control.sort || 'date') as GoalSort
+  const group = String(control.group || 'status')
+  const board = state.configs.goalsView === 'board'
+  const status = String(filter.status || 'all')
+  const typeFilter = String(filter.type || 'all')
+  const priority = String(filter.priority || 'all')
 
   useEffect(() => { if (createRequest?.startsWith('goals:')) setAdding(true) }, [createRequest])
 
   const open = (goal: Row) => inspect({ kind: 'goal', sourceId: String(goal.id), title: String(goal.titulo || 'Meta'), date: goalDue(goal), raw: goal })
-  const toggle = (goal: Row) => commit(current => ({ ...current, goals: rows(current.goals).map(row => (String(row.id) === String(goal.id) ? setGoalDone(row, !goalDone(row)) : row)) }))
+  const toggle = (goal: Row) => commit(current => toggleGoalInState(current, String(goal.id), !goalDone(goal)))
   const add = (titulo: string) => {
     const goal = { id: uid(), titulo, tipo: 'percentual', status: GOAL_STATUS.active, prazo: '', progresso_atual: 0, progresso_total: 100, descricao: '', prioridade: 4, anexos: [], concluida: false }
     commit(current => ({ ...current, goals: [goal, ...rows(current.goals)] }))
   }
 
-  const visible = goals.filter(goal => (showDone || !goalDone(goal)))
-  const blocks = [
-    { id: 'active', title: 'Em andamento', list: sortGoals(visible.filter(goal => !goalPaused(goal)), sort), hidden: status === 'paused' },
-    { id: 'paused', title: 'Pausadas', list: sortGoals(visible.filter(goalPaused), sort), hidden: status === 'active' },
-  ].filter(block => !block.hidden && (block.id === 'active' || block.list.length))
+  const visible = goals.filter(goal =>
+    (showDone || !goalDone(goal))
+    && (status === 'all' || (status === 'paused' ? goalPaused(goal) : !goalPaused(goal)))
+    && (typeFilter === 'all' || goalType(goal) === typeFilter)
+    && (priority === 'all' || Number(goal.prioridade || 4) === Number(priority)))
+
+  type Block = { id: string; title: string; list: Row[]; always?: boolean }
+  const periodOf = (goal: Row) => {
+    const due = goalDue(goal)
+    return !due ? 'none' : due < today ? 'late' : due === today ? 'today' : due <= addDays(today, 7) ? 'week' : 'later'
+  }
+  const blocks: Block[] = board
+    ? [
+        { id: 'active', title: 'Em andamento', list: sortGoals(visible.filter(goal => !goalPaused(goal) && !goalDone(goal)), sort), always: true },
+        { id: 'paused', title: 'Pausadas', list: sortGoals(visible.filter(goal => goalPaused(goal) && !goalDone(goal)), sort), always: true },
+        ...(showDone ? [{ id: 'done', title: 'Concluídas', list: sortGoals(visible.filter(goalDone), sort), always: true }] : []),
+      ]
+    : group === 'type'
+      ? GOAL_TYPES.map(type => ({ id: type.value, title: type.label, list: sortGoals(visible.filter(goal => goalType(goal) === type.value), sort) }))
+      : group === 'due'
+        ? [['late', 'Atrasadas'], ['today', 'Hoje'], ['week', 'Próximos 7 dias'], ['later', 'Mais adiante'], ['none', 'Sem prazo']].map(([id, title]) => ({ id, title, list: sortGoals(visible.filter(goal => periodOf(goal) === id), sort) }))
+        : [
+            { id: 'active', title: 'Em andamento', list: sortGoals(visible.filter(goal => !goalPaused(goal)), sort), always: true },
+            { id: 'paused', title: 'Pausadas', list: sortGoals(visible.filter(goalPaused), sort) },
+          ]
+  const shown = blocks.filter(block => block.always || block.list.length)
+  const adder = shown.find(block => block.id === 'active') || shown[0]
+
+  const card = (goal: Row) => {
+    const done = goalDone(goal)
+    const info = goalDueInfo(goalDue(goal), today, done)
+    return (
+      <GoalCard
+        key={String(goal.id)}
+        title={String(goal.titulo || 'Meta')}
+        due={info.label}
+        tone={info.tone}
+        amount={goalAmountText(goal)}
+        pct={goalPct(goal)}
+        done={done}
+        paused={goalPaused(goal)}
+        color={goalColor(goal)}
+        ariaLabel={done ? `Reabrir ${String(goal.titulo || 'meta')}` : `Concluir ${String(goal.titulo || 'meta')}`}
+        onToggle={() => toggle(goal)}
+        onOpen={() => open(goal)}
+      />
+    )
+  }
+  const adderRow = adding ? <Composer onAdd={add} onClose={() => setAdding(false)} /> : (
+    <button type="button" className={styles.addRow} onClick={() => setAdding(true)}>
+      <Icon name="add" size={20} filled={false} /><span>Adicionar meta</span>
+    </button>
+  )
+  const emptyText = goals.length ? 'Nenhuma meta neste filtro.' : 'Nenhuma meta criada ainda.'
+
+  if (board) {
+    return (
+      <div className={styles.page}>
+        <div className={styles.board} data-grab {...grab}>
+          {shown.map(block => (
+            <section key={block.id} className={styles.column} aria-label={block.title}>
+              <div className={styles.head}>
+                <span className={styles.headTitle}>{block.title}</span>
+                <span className={styles.headCount}>{block.list.length}</span>
+              </div>
+              {block.list.length ? <div role="list">{block.list.map(card)}</div> : <div className={styles.empty}>{emptyText}</div>}
+              {block === adder ? adderRow : null}
+            </section>
+          ))}
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className={styles.page}>
-      {blocks.map(block => (
+      {shown.map(block => (
         <section key={block.id} className={styles.block} aria-label={block.title}>
           <div className={styles.head}>
             <span className={styles.headTitle}>{block.title}</span>
             <span className={styles.headCount}>{block.list.length}</span>
           </div>
-          {block.list.length ? (
-            <div role="list">
-              {block.list.map(goal => {
-                const done = goalDone(goal)
-                const info = goalDueInfo(goalDue(goal), today, done)
-                return (
-                  <GoalCard
-                    key={String(goal.id)}
-                    title={String(goal.titulo || 'Meta')}
-                    due={info.label}
-                    tone={info.tone}
-                    amount={goalAmountText(goal)}
-                    pct={goalPct(goal)}
-                    done={done}
-                    paused={goalPaused(goal)}
-                    color={goalColor(goal)}
-                    ariaLabel={done ? `Reabrir ${String(goal.titulo || 'meta')}` : `Concluir ${String(goal.titulo || 'meta')}`}
-                    onToggle={() => toggle(goal)}
-                    onOpen={() => open(goal)}
-                  />
-                )
-              })}
-            </div>
-          ) : (
-            <div className={styles.empty}>{goals.length ? 'Nenhuma meta neste filtro.' : 'Nenhuma meta criada ainda.'}</div>
-          )}
-          {block.id === 'active' ? (
-            adding ? <Composer onAdd={add} onClose={() => setAdding(false)} /> : (
-              <button type="button" className={styles.addRow} onClick={() => setAdding(true)}>
-                <Icon name="add" size={20} filled={false} /><span>Adicionar meta</span>
-              </button>
-            )
-          ) : null}
+          {block.list.length ? <div role="list">{block.list.map(card)}</div> : <div className={styles.empty}>{emptyText}</div>}
+          {block === adder ? adderRow : null}
         </section>
       ))}
+      {!shown.length ? <div className={styles.empty}>{emptyText}</div> : null}
     </div>
   )
 }

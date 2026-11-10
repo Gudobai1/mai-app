@@ -1,5 +1,5 @@
 import { dateKey, LegacyTask, MaiState } from './state'
-import { goalAmountText, goalColor, goalDone, goalDue, goalPaused, goalPct } from './goals'
+import { goalAmountText, goalColor, goalDone, goalDue, goalPaused, goalPct, withSteps } from './goals'
 
 export type PlannerKind = 'task' | 'event' | 'habit' | 'finance' | 'goal'
 export type PlannerItem = {
@@ -185,7 +185,8 @@ export function plannerItems(state: MaiState, start: string, end: string): Plann
     result.push({ id: `finance:${item.id}:${day}`, sourceId: String(item.id), kind: 'finance', date: day, time: '', title: String(item.titulo || 'Lançamento'), subtitle: `${item.tipo === 'receita' ? 'Receita' : 'Despesa'} · ${new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(item.valor || 0))}`, color: item.tipo === 'receita' ? '#4f8a66' : '#b75b55', completed: paid, recurring: item.recorrente === true, raw: item })
   }
 
-  for (const goal of rows(state.goals)) {
+  for (const savedGoal of rows(state.goals)) {
+    const goal = withSteps(savedGoal, state.tasks)
     const day = goalDue(goal)
     if (!day || day < start || day > end || goalPaused(goal)) continue
     result.push({ id: `goal:${goal.id}:${day}`, sourceId: String(goal.id), kind: 'goal', date: day, time: '', title: String(goal.titulo || goal.nome || 'Meta'), subtitle: goalAmountText(goal) || `${goalPct(goal)}%`, color: goalColor(goal), completed: goalDone(goal), recurring: false, raw: goal })
