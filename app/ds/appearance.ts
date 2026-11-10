@@ -8,6 +8,7 @@ import { COLOR_STYLES, setPaletteStyle, type ColorStyle } from '../../lib/v2/pal
  * Fica em `state.configs.appearance`; `applyAppearance` joga o valor no app inteiro (variáveis CSS + este mesmo estado, que o `Icon` lê).
  */
 export type IconPack = 'lucide' | 'tabler' | 'phosphor-thin' | 'phosphor' | 'phosphor-bold' | 'phosphor-duotone' | 'outlined' | 'sharp' | 'rounded'
+  | 'ios' | 'ios-filled' | 'ios-sharp' | 'remix' | 'remix-fill' | 'bootstrap' | 'bootstrap-fill' | 'heroicons' | 'heroicons-solid' | 'fontawesome' | 'material-classic' | 'material-classic-outline'
 export type Shape = 'round' | 'square'
 export const SHAPE_AREAS: { id: 'tasks' | 'habits' | 'projects'; label: string; hint: string }[] = [
   { id: 'tasks', label: 'Tarefas', hint: 'Marcador de concluir' },
@@ -19,17 +20,31 @@ export type Appearance = { iconPack: IconPack; weight: number; iconScale: number
 
 export const DEFAULT_APPEARANCE: Appearance = { iconPack: 'lucide', weight: 1.5, iconScale: 1, corners: 'square', font: 'system', accent: '', palette: 'padrao', colorStyle: 'padrao', shapes: { tasks: 'round', habits: 'round', projects: 'round' } }
 
-export const ICON_PACKS: { id: IconPack; label: string; hint: string }[] = [
-  { id: 'lucide', label: 'Linhas', hint: 'Lucide: traço contínuo, leve' },
-  { id: 'tabler', label: 'Tabler', hint: 'Traço técnico, muitos desenhos' },
-  { id: 'phosphor-thin', label: 'Phosphor fino', hint: 'Contorno finíssimo' },
-  { id: 'phosphor', label: 'Phosphor', hint: 'Contorno regular' },
-  { id: 'phosphor-bold', label: 'Phosphor forte', hint: 'Contorno grosso' },
-  { id: 'phosphor-duotone', label: 'Phosphor duplo', hint: 'Duas camadas de tom' },
-  { id: 'outlined', label: 'Contorno', hint: 'Material, contorno' },
-  { id: 'sharp', label: 'Reto', hint: 'Material, cantos vivos' },
-  { id: 'rounded', label: 'Suave', hint: 'Material, cantos redondos' },
+export const ICON_PACKS: { id: IconPack; label: string; hint: string; family: string }[] = [
+  { id: 'lucide', label: 'Linhas', hint: 'Lucide: traço contínuo, leve', family: 'Linhas' },
+  { id: 'tabler', label: 'Tabler', hint: 'Traço técnico, muitos desenhos', family: 'Linhas' },
+  { id: 'remix', label: 'Remix linha', hint: 'Contorno firme e limpo', family: 'Linhas' },
+  { id: 'bootstrap', label: 'Bootstrap', hint: 'Contorno fino, geométrico', family: 'Linhas' },
+  { id: 'heroicons', label: 'Heroicons', hint: 'Contorno do Tailwind', family: 'Linhas' },
+  { id: 'ios', label: 'iOS contorno', hint: 'Estilo Apple (Ionicons)', family: 'Apple / iOS' },
+  { id: 'ios-filled', label: 'iOS cheio', hint: 'Estilo Apple, preenchido', family: 'Apple / iOS' },
+  { id: 'ios-sharp', label: 'iOS reto', hint: 'Estilo Apple, cantos vivos', family: 'Apple / iOS' },
+  { id: 'outlined', label: 'Material contorno', hint: 'Material Symbols, contorno', family: 'Material' },
+  { id: 'sharp', label: 'Material reto', hint: 'Material Symbols, cantos vivos', family: 'Material' },
+  { id: 'rounded', label: 'Material suave', hint: 'Material Symbols, cantos redondos', family: 'Material' },
+  { id: 'material-classic', label: 'Material cheio', hint: 'Material clássico, preenchido', family: 'Material' },
+  { id: 'material-classic-outline', label: 'Material linha', hint: 'Material clássico, contorno', family: 'Material' },
+  { id: 'phosphor-thin', label: 'Phosphor fino', hint: 'Contorno finíssimo', family: 'Phosphor' },
+  { id: 'phosphor', label: 'Phosphor', hint: 'Contorno regular', family: 'Phosphor' },
+  { id: 'phosphor-bold', label: 'Phosphor forte', hint: 'Contorno grosso', family: 'Phosphor' },
+  { id: 'phosphor-duotone', label: 'Phosphor duplo', hint: 'Duas camadas de tom', family: 'Phosphor' },
+  { id: 'remix-fill', label: 'Remix cheio', hint: 'Sólido e marcado', family: 'Cheios' },
+  { id: 'bootstrap-fill', label: 'Bootstrap cheio', hint: 'Sólido, geométrico', family: 'Cheios' },
+  { id: 'heroicons-solid', label: 'Heroicons cheio', hint: 'Sólido do Tailwind', family: 'Cheios' },
+  { id: 'fontawesome', label: 'Font Awesome', hint: 'Glifos sólidos, pesados', family: 'Cheios' },
 ]
+/** Pacotes de traço fixo: a grossura não se aplica a eles. */
+export const hasStrokeWeight = (pack: IconPack) => pack === 'lucide' || pack === 'tabler' || pack === 'outlined' || pack === 'sharp' || pack === 'rounded'
 
 /* Paletas: trocam fundo, superfícies, linhas e texto (claro e escuro). A cor de destaque continua separada. As cores vivem em app/ds/palettes.css. */
 export const PALETTES: { id: string; label: string; swatch: [string, string, string, string] }[] = [
@@ -90,15 +105,43 @@ const listeners = new Set<() => void>()
 const notify = () => { snapshot = { ...current, loaded: snapshot.loaded }; listeners.forEach(listener => listener()) }
 export const getAppearance = () => snapshot
 
-/* Pacotes externos (Tabler e Phosphor) carregam sob demanda, em arquivo separado, só quando alguém escolhe. */
+/* Pacotes externos carregam sob demanda, cada um em arquivo separado, só quando alguém escolhe. */
 type IconModule = Record<string, unknown>
-const external: { tabler?: IconModule; phosphor?: IconModule } = {}
+const external: Record<string, IconModule | undefined> = {}
 const inflight: Record<string, Promise<void> | undefined> = {}
+const LOADERS: Record<string, () => Promise<unknown>> = {
+  tabler: () => import('@tabler/icons-react'),
+  phosphor: () => import('@phosphor-icons/react'),
+  io5: () => import('react-icons/io5'),
+  ri: () => import('react-icons/ri'),
+  bs: () => import('react-icons/bs'),
+  hi2: () => import('react-icons/hi2'),
+  fa6: () => import('react-icons/fa6'),
+  md: () => import('react-icons/md'),
+}
+/* Famílias do react-icons: qual arquivo e como reconhecer, pelo nome exportado, o desenho "base" de cada variante. */
+type Family = { module: string; match: (key: string) => string | undefined }
+const take = (regex: RegExp) => (key: string) => regex.exec(key)?.[1]
+const FAMILIES: Partial<Record<IconPack, Family>> = {
+  ios: { module: 'io5', match: take(/^Io(.+)Outline$/) },
+  'ios-filled': { module: 'io5', match: key => (/(Outline|Sharp)$/.test(key) ? undefined : take(/^Io(.+)$/)(key)) },
+  'ios-sharp': { module: 'io5', match: take(/^Io(.+)Sharp$/) },
+  remix: { module: 'ri', match: take(/^Ri(.+)Line$/) },
+  'remix-fill': { module: 'ri', match: take(/^Ri(.+)Fill$/) },
+  bootstrap: { module: 'bs', match: key => (/Fill$/.test(key) ? undefined : take(/^Bs(.+)$/)(key)) },
+  'bootstrap-fill': { module: 'bs', match: take(/^Bs(.+)Fill$/) },
+  heroicons: { module: 'hi2', match: take(/^HiOutline(.+)$/) },
+  'heroicons-solid': { module: 'hi2', match: key => (/^Hi(Outline|Mini)/.test(key) ? undefined : take(/^Hi(.+)$/)(key)) },
+  fontawesome: { module: 'fa6', match: key => (/^FaReg/.test(key) ? undefined : take(/^Fa(.+)$/)(key)) },
+  'material-classic': { module: 'md', match: key => (/^Md(Outline|Sharp|Round|TwoTone)/.test(key) ? undefined : take(/^Md(.+)$/)(key)) },
+  'material-classic-outline': { module: 'md', match: take(/^MdOutline(.+)$/) },
+}
+const moduleKey = (pack: IconPack) => (pack === 'tabler' ? 'tabler' : pack.startsWith('phosphor') ? 'phosphor' : FAMILIES[pack]?.module || '')
 export function loadIconPack(pack: IconPack) {
-  const key = pack === 'tabler' ? 'tabler' : pack.startsWith('phosphor') ? 'phosphor' : ''
-  if (!key || external[key as 'tabler' | 'phosphor']) return Promise.resolve()
-  inflight[key] ??= (key === 'tabler' ? import('@tabler/icons-react') : import('@phosphor-icons/react'))
-    .then(module => { external[key as 'tabler' | 'phosphor'] = module as unknown as IconModule; snapshot = { ...current, loaded: snapshot.loaded + 1 }; listeners.forEach(listener => listener()) })
+  const key = moduleKey(pack)
+  if (!key || external[key]) return Promise.resolve()
+  inflight[key] ??= LOADERS[key]()
+    .then(module => { external[key] = module as unknown as IconModule; snapshot = { ...current, loaded: snapshot.loaded + 1 }; listeners.forEach(listener => listener()) })
     .catch(() => { inflight[key] = undefined })
   return inflight[key] as Promise<void>
 }
@@ -107,7 +150,73 @@ export function loadIconPack(pack: IconPack) {
 const TABLER: Record<string, string> = { Trash2: 'Trash', Building2: 'Building', Gamepad2: 'DeviceGamepad2', Utensils: 'ToolsKitchen2', PawPrint: 'Paw', Wrench: 'Tool', Globe: 'World', Smile: 'MoodSmile', Baby: 'BabyCarriage', Store: 'BuildingStore', Laptop: 'DeviceLaptop', Smartphone: 'DeviceMobile', Clapperboard: 'Movie', Mic: 'Microphone', HeartPulse: 'HeartRateMonitor', Flower2: 'Plant', FlaskConical: 'Flask', Zap: 'Bolt', Gem: 'Diamond', Languages: 'Language', Landmark: 'BuildingBank', CircleUser: 'UserCircle', Network: 'Hierarchy', RefreshCw: 'Refresh', DeleteIcon: 'Backspace', CalendarDays: 'CalendarMonth', ListChecks: 'Checklist', CalendarRange: 'CalendarWeek', FolderInput: 'FolderShare', PenLine: 'Pencil', Pencil: 'Pencil', CircleAlert: 'AlertCircle', CalendarClock: 'CalendarTime', ListFilter: 'Filter', Dumbbell: 'Barbell', Menu: 'Menu2', ImageIcon: 'Photo', Image: 'Photo', Info: 'InfoCircle', House: 'Home', BookOpen: 'Book', Ellipsis: 'Dots', Maximize2: 'Maximize', CirclePause: 'PlayerPause', Banknote: 'Cash', Percent: 'Percentage', Pause: 'PlayerPause', CirclePlay: 'PlayerPlay', Sprout: 'Plant2', StickyNote: 'Note', CircleCheckBig: 'CircleCheck', SlidersHorizontal: 'AdjustmentsHorizontal', Undo2: 'ArrowBackUp', Rows3: 'LayoutRows', Kanban: 'LayoutKanban', TriangleAlert: 'AlertTriangle', Link2: 'Link', Search: 'Search', Columns2: 'Columns2', Clipboard: 'Clipboard' }
 const PHOSPHOR: Record<string, string> = { CalendarDays: 'CalendarDots', CalendarClock: 'CalendarDots', CalendarRange: 'CalendarDots', SquareCheck: 'CheckSquare', CircleCheck: 'CheckCircle', CircleCheckBig: 'CheckCircle', Trash2: 'Trash', ChevronRight: 'CaretRight', ChevronLeft: 'CaretLeft', ChevronUp: 'CaretUp', ChevronDown: 'CaretDown', CloudUpload: 'CloudArrowUp', GripVertical: 'DotsSixVertical', Pencil: 'PencilSimple', PenLine: 'PencilLine', Inbox: 'Tray', CircleAlert: 'WarningCircle', TriangleAlert: 'Warning', ListFilter: 'Funnel', LayoutGrid: 'SquaresFour', Menu: 'List', Ellipsis: 'DotsThree', Maximize2: 'ArrowsOut', ExternalLink: 'ArrowSquareOut', CirclePause: 'PauseCircle', CirclePlay: 'PlayCircle', TrendingUp: 'TrendUp', TrendingDown: 'TrendDown', CircleMinus: 'MinusCircle', Search: 'MagnifyingGlass', Sprout: 'Plant', Settings: 'Gear', Columns2: 'Columns', StickyNote: 'Note', Undo2: 'ArrowCounterClockwise', Rows3: 'Rows', Bold: 'TextB', Italic: 'TextItalic', Link2: 'Link', FileSpreadsheet: 'FileXls', Ban: 'Prohibit', RefreshCw: 'ArrowsClockwise', DeleteIcon: 'Backspace', Landmark: 'Bank', CircleUser: 'UserCircle', Network: 'TreeStructure', Music: 'MusicNotes', Plane: 'Airplane', Gamepad2: 'GameController', Utensils: 'ForkKnife', Map: 'MapTrifold', Bike: 'Bicycle', Building2: 'Buildings', Store: 'Storefront', Smartphone: 'DeviceMobile', Wifi: 'WifiHigh', Mail: 'Envelope', Shirt: 'TShirt', Clapperboard: 'FilmSlate', Mic: 'Microphone', HeartPulse: 'Heartbeat', Flower2: 'Flower', FlaskConical: 'Flask', Zap: 'Lightning', Languages: 'Translate', FolderInput: 'FolderSimple', Percent: 'Percent', Banknote: 'Money', Hourglass: 'Hourglass', ImageIcon: 'Image', CornerDownRight: 'ArrowElbowDownRight', ArrowLeftRight: 'ArrowsLeftRight', SlidersHorizontal: 'SlidersHorizontal', Droplet: 'Drop', House: 'House', Activity: 'Pulse', Dumbbell: 'Barbell', Layout: 'Layout', SquareDashed: 'SelectionAll', Hash: 'Hash', PiggyBank: 'PiggyBank', Tag: 'Tag', Gem: 'Diamond', Wrench: 'Wrench', PawPrint: 'PawPrint', Baby: 'Baby', Globe: 'Globe', Smile: 'Smiley', Scale: 'Scales', Clock: 'Clock', Ruler: 'Ruler', Briefcase: 'Briefcase' }
 
-export type ExternalIcon = { component: unknown; kind: 'tabler' | 'phosphor' }
+export type ExternalIcon = { component: unknown; kind: 'tabler' | 'phosphor' | 'react-icons' }
+/* Sinônimos: o mesmo conceito tem nomes diferentes em cada família (engrenagem = gear/cog/settings). Chaves e valores em minúsculas, sem separador. */
+const SYNONYMS: Record<string, string[]> = {
+  settings: ['gear', 'cog', 'settings', 'setting', 'adjustments'], search: ['search', 'magnifyingglass', 'magnify'], trash: ['trash', 'delete', 'bin', 'dustbin'], trash2: ['trash', 'delete', 'bin'],
+  pencil: ['pencil', 'edit', 'create', 'pen'], penline: ['pencil', 'edit', 'pen'], check: ['check', 'checkmark', 'done', 'tick'], x: ['close', 'x', 'xmark', 'cross', 'times'], plus: ['add', 'plus'], minus: ['minus', 'remove', 'subtract'],
+  calendardays: ['calendar', 'calendarmonth', 'calendardays', 'event'], calendarclock: ['calendar', 'calendartime', 'event'], calendar: ['calendar', 'event'], clock: ['clock', 'time', 'watch'],
+  house: ['home', 'house'], user: ['user', 'person', 'account'], circleuser: ['usercircle', 'person', 'account', 'circleuser'], users: ['users', 'people', 'group', 'usergroup'], bell: ['bell', 'notifications', 'notification', 'alarm'],
+  tag: ['tag', 'label', 'pricetag'], wallet: ['wallet', 'wallet2', 'accountbalancewallet'], creditcard: ['creditcard', 'card'], menu: ['menu', 'bars', 'list', 'burger'], ellipsis: ['ellipsis', 'more', 'dots', 'threedots', 'moreHoriz'],
+  chevronright: ['chevronright', 'arrowright', 'caretright', 'angleright', 'right'], chevronleft: ['chevronleft', 'arrowleft', 'caretleft', 'angleleft', 'left'], chevronup: ['chevronup', 'caretup', 'angleup', 'up'], chevrondown: ['chevrondown', 'caretdown', 'angledown', 'down'],
+  circlecheck: ['checkmarkcircle', 'checkcircle', 'circlecheck', 'taskalt', 'circlecheckfill'], circlecheckbig: ['checkmarkcircle', 'checkcircle', 'circlecheck'], squarecheck: ['checkbox', 'checksquare', 'squarecheck', 'checkboxmarked'], listchecks: ['checklist', 'listcheck', 'listchecks', 'tasklist'],
+  repeat: ['repeat', 'loop', 'sync', 'autorenew', 'refresh', 'arrowrepeat'], refreshcw: ['refresh', 'sync', 'reload', 'arrowclockwise'], flag: ['flag'], folder: ['folder', 'folder2'], file: ['file', 'document'], filetext: ['document', 'filetext', 'file', 'text'],
+  stickynote: ['note', 'stickynote', 'document', 'filetext'], notebook: ['book', 'notebook', 'journal'], bookopen: ['book', 'bookopen', 'openbook', 'menubook'], image: ['image', 'photo', 'picture', 'images'], imageicon: ['image', 'photo', 'picture'],
+  star: ['star'], heart: ['heart', 'favorite'], lock: ['lock', 'locked'], eye: ['eye', 'visibility'], eyeoff: ['eyeoff', 'eyeslash', 'visibilityoff', 'eyeinvisible'], link: ['link', 'link2'], link2: ['link', 'link2'], paperclip: ['attach', 'paperclip', 'attachment', 'attachfile'],
+  download: ['download', 'cloudarrowdown', 'arrowdowntray'], upload: ['upload', 'cloudarrowup', 'arrowuptray'], cloudupload: ['cloudupload', 'cloudarrowup', 'upload'], share2: ['share', 'sharesocial', 'shareandroid'], filter: ['filter', 'funnel'], listfilter: ['filter', 'funnel', 'filterlist'],
+  arrowupdown: ['swapvert', 'arrowdownup', 'arrowsvertical', 'sort'], arrowleftright: ['swaphoriz', 'arrowleftright', 'arrowsalt', 'swap'], copy: ['copy', 'documentduplicate', 'files'], save: ['save', 'floppy', 'disc'], info: ['information', 'info', 'infocircle'],
+  circlealert: ['alertcircle', 'warningcircle', 'exclamationcircle', 'erroroutline'], trianglealert: ['warning', 'alert', 'exclamationtriangle', 'alerttriangle'], logout: ['logout', 'logoutbox', 'boxarrowright', 'exit'], layoutgrid: ['grid', 'squares', 'apps', 'dashboard', 'gridview'],
+  sun: ['sun', 'sunny', 'lightmode'], moon: ['moon', 'darkmode', 'moonstars'], zap: ['flash', 'bolt', 'zap', 'lightning'], target: ['target', 'bullseye', 'adsclick'], rocket: ['rocket', 'rocketlaunch'], trophy: ['trophy', 'award', 'emojievents'],
+  piggybank: ['piggybank', 'savings', 'cash'], banknote: ['cash', 'money', 'banknote', 'cashstack'], landmark: ['bank', 'landmark', 'accountbalance', 'building'], dumbbell: ['barbell', 'dumbbell', 'fitnesscenter', 'gym'], utensils: ['restaurant', 'fastfood', 'utensils', 'cutlery', 'silverware', 'forkknife'],
+  car: ['car', 'directionscar', 'caralt'], plane: ['airplane', 'plane', 'flight', 'planedeparture'], bike: ['bicycle', 'bike', 'pedalbike'], pawprint: ['paw', 'pawprint', 'pets'], graduationcap: ['school', 'graduationcap', 'mortarboard', 'schoolhat'], briefcase: ['briefcase', 'work', 'case'],
+  lightbulb: ['bulb', 'lightbulb', 'lightbulbfill'], brain: ['brain', 'psychology'], flaskconical: ['flask', 'science', 'beaker'], music: ['musical', 'music', 'musicnote', 'musicnotes'], film: ['film', 'movie', 'filmslate'], clapperboard: ['film', 'movie', 'clapperboard', 'filmslate'],
+  smartphone: ['phone', 'smartphone', 'phoneportrait', 'devicemobile'], laptop: ['laptop', 'computer', 'laptopoutline'], wifi: ['wifi'], mail: ['mail', 'envelope', 'email'], phone: ['call', 'phone', 'telephone'], mic: ['mic', 'microphone'], map: ['map'], globe: ['globe', 'public', 'world', 'earth'],
+  sprout: ['leaf', 'seedling', 'sprout', 'eco', 'plant'], flower2: ['flower', 'flowerlotus', 'flower2'], leaf: ['leaf', 'eco'], gem: ['diamond', 'gem', 'diamondfill'], anchor: ['anchor'], bookmark: ['bookmark'], coffee: ['cafe', 'coffee', 'mugHot', 'cup'],
+  palette: ['colorpalette', 'palette', 'paint'], brush: ['brush', 'paintbrush', 'paintbrushfill'], code: ['code', 'codeslash', 'terminal'], hash: ['hash', 'number'], percent: ['percent', 'percentage', 'percentagecircle'], undo2: ['arrowundo', 'undo', 'arrowcounterclockwise', 'arrowuturnleft'],
+  sticky: ['note'], inbox: ['inbox', 'tray', 'mailbox'], store: ['storefront', 'store', 'shop', 'building'], shoppingcart: ['cart', 'shoppingcart', 'basket'], gift: ['gift', 'giftcard', 'present'], scale: ['scale', 'balance', 'scales'], hourglass: ['hourglass', 'hourglassSplit', 'timer'],
+  activity: ['pulse', 'activity', 'heartpulse', 'monitorheart'], heartpulse: ['heartpulse', 'pulse', 'heartbeat', 'monitorheart', 'healthandsafety'], baby: ['baby', 'childcare'], smile: ['happy', 'smile', 'emoji', 'mood', 'faceSmile'],
+  wrench: ['build', 'wrench', 'tools', 'hammer'], scissors: ['cut', 'scissors', 'contentcut'], shirt: ['shirt', 'tshirt', 'checkroom'], droplet: ['water', 'droplet', 'drop', 'opacity'], pause: ['pause'], play: ['play'], circleplay: ['playcircle', 'circleplay'], circlepause: ['pausecircle', 'circlepause'],
+  list: ['list', 'listul', 'listbullet'], rows3: ['rows', 'viewagenda', 'listrows', 'bars'], columns2: ['columns', 'viewcolumn', 'layoutsplit'], kanban: ['kanban', 'viewkanban', 'columns', 'layoutthreecolumns'], slidershorizontal: ['sliders', 'options', 'tune', 'adjustments'], network: ['network', 'hierarchy', 'sitemap', 'accounttree'],
+  maximize2: ['expand', 'maximize', 'arrowsfullscreen', 'arrowsout', 'openinfull'], externallink: ['openinnew', 'externallink', 'boxarrowupright', 'arrowtoprightonsquare'], gripvertical: ['drag', 'gripvertical', 'dragindicator', 'draghandle'], ban: ['ban', 'block', 'prohibit'],
+  bold: ['bold', 'formatbold', 'typebold', 'textb'], italic: ['italic', 'formatitalic', 'typeitalic', 'textitalic'], building2: ['business', 'building', 'buildings', 'apartment'], mappin: ['location', 'pin', 'mappin', 'place'], timer: ['timer', 'stopwatch'],
+}
+const tokensOf = (name: string) => name.replace(/(\d+)$/, '').split(/(?=[A-Z])/).map(item => item.toLowerCase()).filter(Boolean)
+const indexes: Record<string, Map<string, string> | undefined> = {}
+const resolved = new Map<string, unknown>()
+function indexOfPack(pack: IconPack, mod: IconModule) {
+  const family = FAMILIES[pack]!
+  const cached = indexes[pack]
+  if (cached) return cached
+  const map = new Map<string, string>()
+  for (const key of Object.keys(mod)) {
+    const stem = family.match(key)
+    if (stem) map.set(stem.toLowerCase().replace(/[^a-z0-9]/g, ''), key)
+  }
+  return (indexes[pack] = map)
+}
+function resolveFamily(pack: IconPack, base: string, mod: IconModule) {
+  const map = indexOfPack(pack, mod)
+  const joined = base.toLowerCase()
+  const tokens = tokensOf(base)
+  const noDigits = joined.replace(/\d+$/, '')
+  const candidates = [joined, noDigits, ...(SYNONYMS[joined] || SYNONYMS[noDigits] || []).map(item => item.toLowerCase()), ...tokens.slice(0, 1), tokens.slice(0, 2).join(''), tokens[tokens.length - 1]]
+  for (const candidate of candidates) {
+    const hit = map.get(candidate)
+    if (hit) return mod[hit]
+  }
+  // Aproximação: prefixo comum longo entre o nome procurado e o desenho (só quando não há outra saída).
+  let best: string | undefined
+  let bestScore = 0
+  for (const [stem, key] of map) {
+    for (const candidate of candidates) {
+      if (candidate.length < 4 || stem.length < 4) continue
+      const score = stem.startsWith(candidate) || candidate.startsWith(stem) ? Math.min(stem.length, candidate.length) - Math.abs(stem.length - candidate.length) * 0.25 : 0
+      if (score > bestScore) { bestScore = score; best = key }
+    }
+  }
+  return best && bestScore >= 4 ? mod[best] : undefined
+}
+
 /** Componente do pacote externo para um nome de ícone do app, ou nada (aí o Icon usa Lucide). */
 export function externalIcon(pack: IconPack, name: string): ExternalIcon | undefined {
   const base = (LUCIDE_ICONS[name] as unknown as { displayName?: string } | undefined)?.displayName
@@ -119,6 +228,14 @@ export function externalIcon(pack: IconPack, name: string): ExternalIcon | undef
   if (pack.startsWith('phosphor') && external.phosphor) {
     const candidate = external.phosphor[PHOSPHOR[base] || base] ?? external.phosphor[base.replace(/\d+$/, '')]
     return candidate ? { component: candidate, kind: 'phosphor' } : undefined
+  }
+  const family = FAMILIES[pack]
+  const mod = family ? external[family.module] : undefined
+  if (family && mod) {
+    const cacheKey = `${pack}:${base}`
+    if (!resolved.has(cacheKey)) resolved.set(cacheKey, resolveFamily(pack, base, mod))
+    const component = resolved.get(cacheKey)
+    return component ? { component, kind: 'react-icons' } : undefined
   }
   return undefined
 }

@@ -812,7 +812,7 @@ export function TodayModern({ state, today, commit, navigate, inspect, options, 
             {taskGroups.map(group => (
               <section key={group.id} className={styles.projectGroup} aria-label={group.name}>
                 <header className={styles.projectHead}>
-                  {projectImage(group.id) ? <img className={styles.projectHeadImg} src={projectImage(group.id)} alt="" loading="lazy" /> : <span className={styles.projectHeadDot} style={{ background: group.id === 'entrada' ? 'var(--ds-accent)' : projectColor(group.id) }} aria-hidden="true">{group.name.trim().slice(0, 1).toLocaleUpperCase('pt-BR')}</span>}
+                  {projectImage(group.id) ? <img className={styles.projectHeadImg} src={projectImage(group.id)} alt="" loading="lazy" /> : <span className={styles.projectHeadDot} style={{ background: group.id === 'entrada' ? 'var(--ds-accent)' : projectColor(group.id) }} aria-hidden="true"><Icon name={group.id === 'entrada' ? 'inbox' : String(projectMap.get(group.id)?.icone || 'folder')} size={16} filled={false} /></span>}
                   <strong>{group.name}</strong>
                   <span className={styles.projectCount}>{group.items.length}</span>
                   {chevronFor(`p:${group.id}`, group.name)}
