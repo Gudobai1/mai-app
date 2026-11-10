@@ -1,12 +1,15 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type { MaiState } from '../../../lib/v2/state'
 import { Icon } from '../../ds'
 import type { AppView } from '../app-types'
 import { ProjectMark } from './ProjectMark'
 import { SidebarIcon } from './SidebarIcons'
 import { NAV_ALIAS, todayCounts, type NavItem } from './nav'
+import { NotificationPanel } from './NotificationPanel'
+import { alertCount, buildAlerts, type AlertItem } from '../../../lib/v2/alerts'
+import type { InspectableItem } from '../ContextDrawer'
 import styles from './ModernShell.module.css'
 
 type GoogleProfile = { name: string; picture?: string; email?: string } | null
@@ -34,6 +37,8 @@ type Props = {
   /** Chamado ao tirar o mouse da barra (para recolher no modo automático). */
   onLeave: () => void
   onEnter: () => void
+  /** Abre um item (aviso do sino) no popup padrão. */
+  onInspect: (item: InspectableItem) => void
 }
 
 /*
@@ -54,12 +59,24 @@ const ORGANIZE: NavItem[] = [
 
 const rows = (value: unknown): Row[] => (Array.isArray(value) ? (value as Row[]) : [])
 
-export function ModernSidebar({ state, today, view, navigate, onSearch, onSettings, onToggleTheme, onNewProject, activeProjectId, dark, profile, autoHide, onToggleHidden, onAutoHide, onLogout, onLeave, onEnter }: Props) {
+export function ModernSidebar({ state, today, view, navigate, onSearch, onSettings, onToggleTheme, onNewProject, activeProjectId, dark, profile, autoHide, onToggleHidden, onAutoHide, onLogout, onLeave, onEnter, onInspect }: Props) {
   const profileName = String(profile?.name || state.configs.profileName || state.configs.userName || 'Meu perfil')
   const profileInitial = profileName.trim().slice(0, 1).toLocaleUpperCase('pt-BR') || 'M'
   const counts = todayCounts(state, today)
   const [open, setOpen] = useState<Set<string>>(new Set())
   const [menu, setMenu] = useState(false)
+  const [bell, setBell] = useState(false)
+  const bellRef = useRef<HTMLButtonElement | null>(null)
+  const [minute, setMinute] = useState(0)
+  useEffect(() => { const timer = window.setInterval(() => setMinute(value => value + 1), 60_000); return () => window.clearInterval(timer) }, [])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const alerts = useMemo(() => buildAlerts(state, today, new Date()), [state, today, minute])
+  const attention = alertCount(alerts)
+  const openAlert = (entry: AlertItem) => {
+    setBell(false)
+    const { item } = entry
+    onInspect({ kind: item.kind === 'finance' ? 'finance' : item.kind === 'goal' ? 'goal' : item.kind === 'event' ? 'event' : item.kind === 'habit' ? 'habit' : 'task', sourceId: item.sourceId, title: item.title, date: item.date, time: item.time, raw: item.raw })
+  }
   const menuRef = useRef<HTMLDivElement | null>(null)
   useEffect(() => {
     if (!menu) return
@@ -171,10 +188,11 @@ export function ModernSidebar({ state, today, view, navigate, onSearch, onSettin
             </div>
           ) : null}
         </div>
-        <button type="button" className={styles.topIcon} onClick={() => navigate('today')} aria-label={counts.due ? `${counts.due} para hoje ou atrasados` : 'Notificações'} title={counts.due ? `${counts.due} para hoje ou atrasados` : 'Nada pendente'}>
+        <button ref={bellRef} type="button" className={styles.topIcon} onClick={() => setBell(value => !value)} aria-haspopup="dialog" aria-expanded={bell} aria-label={attention ? `${attention} avisos` : 'Notificações'} title={attention ? `${attention} avisos` : 'Notificações'}>
           <Icon name="notifications" size={20} filled={false} />
-          {counts.due ? <i className={styles.dot} aria-hidden="true" /> : null}
+          {attention ? <i className={styles.dot} aria-hidden="true" /> : null}
         </button>
+        {bell ? <NotificationPanel alerts={alerts} anchor={bellRef.current} onOpen={openAlert} onClose={() => setBell(false)} /> : null}
         <button type="button" className={styles.topIcon} onClick={autoHide ? () => onAutoHide(false) : onToggleHidden} aria-label={autoHide ? 'Fixar a barra lateral' : 'Ocultar a barra lateral'} title={autoHide ? 'Fixar a barra lateral' : 'Ocultar a barra lateral'}>
           <Icon name="left_panel_close" size={20} filled={false} />
         </button>
