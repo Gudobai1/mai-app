@@ -145,7 +145,11 @@ export function TasksModern(props: Props) {
     return String(projectMap.get(key)?.nome || 'Sem projeto')
   }
 
+  const showDone = showCompleted(state, 'tasks')
+  /* Concluídos ficam no lugar de origem, sempre abaixo dos abertos; ao reabrir, a tarefa volta à posição normal. */
+  const incl = (task: LegacyTask) => !task.concluida || (showDone && (scope !== 'today' || dayOf(task) === today))
   const sortTasks = (list: LegacyTask[]) => [...list].sort((a, b) => {
+    if (Boolean(a.concluida) !== Boolean(b.concluida)) return a.concluida ? 1 : -1
     const aDay = dayOf(a) || '9999-99-99', bDay = dayOf(b) || '9999-99-99'
     const aTime = timeOf(a) || '99:99', bTime = timeOf(b) || '99:99'
     const byTitle = String(a.titulo || '').localeCompare(String(b.titulo || ''), 'pt-BR', { sensitivity: 'base' })
@@ -175,7 +179,7 @@ export function TasksModern(props: Props) {
   let scopeTasks: LegacyTask[] = []
   if (projectId) {
     scopeTasks = all.filter(task => String(task.projeto_id || '') === projectId)
-    const openHere = sortTasks(scopeTasks.filter(task => !task.concluida && tabMatch(task)))
+    const openHere = sortTasks(scopeTasks.filter(task => incl(task) && tabMatch(task)))
     groups = [
       ...sections.map(section => ({ id: `s:${section}`, label: section, section, tasks: openHere.filter(task => sectionOf(task) === section) })),
       { id: 's:', label: sections.length ? 'Sem seção' : 'Tarefas', section: '', tasks: openHere.filter(task => !sectionOf(task)) },
@@ -183,36 +187,35 @@ export function TasksModern(props: Props) {
     if (sections.length && !groups[groups.length - 1].tasks.length && !kanban) groups = groups.slice(0, -1)
   } else if (scope === 'entrada') {
     scopeTasks = all.filter(task => String(task.projeto_id || 'entrada') === 'entrada')
-    groups = [{ id: 'entrada', label: 'Tarefas', section: '', tasks: sortTasks(scopeTasks.filter(task => !task.concluida && tabMatch(task))) }]
+    groups = [{ id: 'entrada', label: 'Tarefas', section: '', tasks: sortTasks(scopeTasks.filter(task => incl(task) && tabMatch(task))) }]
   } else if (scope === 'today') {
     scopeTasks = all.filter(task => dayOf(task) && dayOf(task) <= today)
-    const openHere = sortTasks(scopeTasks.filter(task => !task.concluida))
-    const late = openHere.filter(task => dayOf(task) < today)
+    const openHere = sortTasks(scopeTasks.filter(incl))
+    const late = openHere.filter(task => dayOf(task) < today && !task.concluida)
     groups = [
       ...(late.length ? [{ id: 'late', label: 'Atrasadas', tasks: late, tone: 'danger' as const }] : []),
       { id: 'today', label: 'Hoje', tasks: openHere.filter(task => dayOf(task) === today), addDate: today },
     ]
     scopeTasks = scopeTasks.filter(task => !task.concluida || dayOf(task) === today)
   } else if (scope === 'late') {
-    scopeTasks = all.filter(task => dayOf(task) && dayOf(task) < today && !task.concluida)
+    scopeTasks = all.filter(task => dayOf(task) && dayOf(task) < today && incl(task))
     const openHere = sortTasks(scopeTasks)
     const days = [...new Set(openHere.map(dayOf))].sort()
     groups = days.map(day => ({ id: `d:${day}`, label: naturalDate(day, today), tasks: openHere.filter(task => dayOf(task) === day), tone: 'danger' as const }))
   } else if (scope === 'nodate' || scope === 'all') {
     scopeTasks = all.filter(task => scope === 'all' || !dayOf(task))
-    const openHere = sortTasks(scopeTasks.filter(task => !task.concluida))
+    const openHere = sortTasks(scopeTasks.filter(incl))
     const order = ['entrada', ...projects.map(item => String(item.id))]
     const ids = [...new Set(openHere.map(task => String(task.projeto_id || 'entrada')))].sort((a, b) => order.indexOf(a) - order.indexOf(b))
     groups = ids.map(id => ({ id: `p:${id}`, label: projectName(id), projectId: id, canAdd: scope === 'nodate', tasks: openHere.filter(task => String(task.projeto_id || 'entrada') === id) }))
-    scopeTasks = scope === 'all' ? scopeTasks : scopeTasks.filter(task => !task.concluida)
+    scopeTasks = scope === 'all' ? scopeTasks : scopeTasks.filter(incl)
   } else {
     scopeTasks = all.filter(task => dayOf(task) > today)
-    const openHere = sortTasks(scopeTasks.filter(task => !task.concluida))
+    const openHere = sortTasks(scopeTasks.filter(incl))
     const days = [...new Set(openHere.map(dayOf))].sort()
     groups = days.map(day => ({ id: `d:${day}`, label: naturalDate(day, today), tasks: openHere.filter(task => dayOf(task) === day), addDate: day }))
   }
   const ctxTasks = projectId ? all.filter(task => String(task.projeto_id || '') === projectId) : all.filter(task => String(task.projeto_id || 'entrada') === 'entrada')
-  const showDone = showCompleted(state, 'tasks')
   const completed = scopeTasks.filter(task => task.concluida).sort((a, b) => String(b.concluida_em || '').localeCompare(String(a.concluida_em || '')))
 
   /* -------------------------------------------------------------- Ações */
@@ -626,7 +629,6 @@ export function TasksModern(props: Props) {
             { id: 'nodate', label: 'Sem data', icon: 'event_busy', color: 'var(--ds-muted)', count: ctxTasks.filter(task => !task.concluida && !dayOf(task)).length },
             { id: 'today', label: 'Hoje', icon: 'today', color: 'var(--ds-muted)', count: ctxTasks.filter(task => !task.concluida && dayOf(task) && dayOf(task) <= today).length },
             { id: 'upcoming', label: 'Em breve', icon: 'event_upcoming', color: 'var(--ds-muted)', count: ctxTasks.filter(task => !task.concluida && dayOf(task) > today).length },
-            { id: 'done', label: 'Concluídos', icon: 'task_alt', color: 'var(--ds-muted)', count: ctxTasks.filter(task => task.concluida).length },
           ] as { id: CtxFilter; label: string; icon: string; color: string; count: number }[]).map(tab => (
             <button key={tab.id} type="button" role="tab" className={styles.pill} data-active={ctxFilter === tab.id || undefined} aria-selected={ctxFilter === tab.id} onClick={() => {
               if (!isProjectLike) props.onScopeChange('entrada')
@@ -759,12 +761,6 @@ export function TasksModern(props: Props) {
             </div>
           ) : null}
 
-          {completed.length && showDone ? (
-            <section className={styles.group}>
-              <h3 className={styles.doneToggle}>{`Concluídas (${completed.length})`}</h3>
-              {true ? <div className={styles.cards} role="list">{completed.slice(0, 60).map(task => renderTask(task, { id: 'done', label: '', tasks: [] }))}</div> : null}
-            </section>
-          ) : null}
         </div>
       )}
 

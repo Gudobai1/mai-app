@@ -227,7 +227,7 @@ export function EmBreve({ state, today, commit, inspect, syncRange }: Props) {
         const byTime = (a.time || '99:99').localeCompare(b.time || '99:99')
         const byName = a.title.localeCompare(b.title, 'pt-BR')
         const inner = display.sort === 'priority' ? a.priority - b.priority || byTime || byName : display.sort === 'name' ? byName : byTime || a.priority - b.priority || byName
-        return a.day.localeCompare(b.day) || rank(a) - rank(b) || inner
+        return a.day.localeCompare(b.day) || rank(a) - rank(b) || Number(a.done) - Number(b.done) || inner
       })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state, range.start, range.end, filtersKey, display.sort, today, projects, nextIds])

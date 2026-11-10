@@ -378,6 +378,7 @@ export function TodayModern({ state, today, commit, navigate, inspect, options, 
     if (filters.priority !== 'all' && String(Number(task.prioridade || 4)) !== filters.priority) return false
     return true
   }).sort((a, b) => {
+    if (Boolean(a.concluida) !== Boolean(b.concluida)) return a.concluida ? 1 : -1
     const aDay = dateKey(a.data_vencimento)
     const bDay = dateKey(b.data_vencimento)
     const aTime = timeKey(a.data_vencimento) || '99:99'
