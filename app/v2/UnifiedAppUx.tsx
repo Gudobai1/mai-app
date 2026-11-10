@@ -293,7 +293,7 @@ export function UnifiedAppUx() {
       </div>
     </main>
 
-    <ModernBottomNav view={view} searchOpen={searchOpen} navigate={navigate} onSearch={() => setSearchOpen(true)} onSettings={() => setSettingsOpen(true)} onToggleTheme={toggleTheme} dark={isDark} />
+    <ModernBottomNav state={runtime.state} activeProjectId={activeProjectId} onNewProject={parentId => setProjectDialog(parentId ? { parentId } : {})} view={view} searchOpen={searchOpen} navigate={navigate} onSearch={() => setSearchOpen(true)} onSettings={() => setSettingsOpen(true)} onToggleTheme={toggleTheme} dark={isDark} />
     <SectionInlineAdd view={view} onAdd={contextualAdd}/>
     {searchOpen ? <SearchOverlay state={runtime.state} today={runtime.today} commit={runtime.commit} query={search} setQuery={setSearch} onClose={() => setSearchOpen(false)} inspect={setSelected} navigate={navigate} openProject={id => setProjectDialog({ projectId:id, tab:'details' })} /> : null}
     {projectDialog ? <ProjectEditor state={runtime.state} commit={runtime.commit} projectId={projectDialog.projectId} parentId={projectDialog.parentId} initialTab={projectDialog.tab} onClose={() => setProjectDialog(null)} onSaved={id => { const wasCreating = !projectDialog.projectId; setProjectDialog(null); if (wasCreating) setTaskScope(`project:${id}`) }} onRemoved={() => { setProjectDialog(null); setTaskScope('entrada') }} /> : null}
