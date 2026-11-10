@@ -42,10 +42,10 @@ export function ModernBottomNav({ state, activeProjectId, onNewProject, view, se
   }, [sheetOpen])
 
   /* Projetos como no menu do desktop: Entrada + árvore de projetos (sem item "Tarefas"). */
-  const projects = (Array.isArray(state.projects) ? state.projects : []).filter((project: Row) => project.ativo !== false)
-  const ids = new Set(projects.map((project: Row) => String(project.id)))
-  const roots = projects.filter((project: Row) => !project.parent_id || !ids.has(String(project.parent_id)))
-  const childrenOf = (id: string) => projects.filter((project: Row) => String(project.parent_id || '') === id)
+  const projects = ((Array.isArray(state.projects) ? state.projects : []) as Row[]).filter(project => project.ativo !== false)
+  const ids = new Set(projects.map(project => String(project.id)))
+  const roots = projects.filter(project => !project.parent_id || !ids.has(String(project.parent_id)))
+  const childrenOf = (id: string) => projects.filter(project => String(project.parent_id || '') === id)
   const renderProject = (project: Row, depth = 0): ReactNode => {
     const id = String(project.id)
     const current = view === 'tasks' && activeProjectId === id
@@ -118,7 +118,7 @@ export function ModernBottomNav({ state, activeProjectId, onNewProject, view, se
                     <Icon name="chevron_right" size={20} filled={false} />
                   </button>
                 )}
-                {roots.map((project: Row) => renderProject(project))}
+                {roots.map(project => renderProject(project))}
                 {onNewProject ? (
                   <button type="button" className={styles.sheetItem} onClick={() => { setSheetOpen(false); onNewProject() }}>
                     <Icon name="add" size={22} filled={false} />
