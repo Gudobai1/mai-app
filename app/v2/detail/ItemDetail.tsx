@@ -3,7 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type CSSProperties, type ReactNode, type RefObject } from 'react'
 import { MoneyInput } from '../MoneyInput'
 import { createPortal } from 'react-dom'
-import { addDays, habitOccursOn } from '../../../lib/v2/planner'
+import { addDays, habitOccursOn, habitStreak } from '../../../lib/v2/planner'
 import type { MaiState } from '../../../lib/v2/state'
 import { Icon } from '../../ds'
 import type { InspectableItem } from '../ContextDrawer'
@@ -852,13 +852,24 @@ function HabitDetail({ item, state, today, commit, register, close }: DetailProp
     })
   }
 
-  /* Mês atual: um círculo por dia, borda na cor do hábito; toque alterna vazio → feito → falhou. */
+  /* Calendário do mês (navegável): um círculo por dia, borda na cor do hábito; toque alterna vazio → feito → falhou.
+   * Tudo dentro da grade: valor do dia (hábitos com meta) e, no cabeçalho, o resumo do mês em texto. */
   const color = String(habit.cor_hex || 'var(--ds-accent)')
-  const monthStart = `${day.slice(0, 8)}01`
+  const [month, setMonth] = useState(`${day.slice(0, 7)}-01`)
+  const monthStart = month
   const lead = new Date(`${monthStart}T12:00:00`).getDay()
-  const monthDays = new Date(Number(day.slice(0, 4)), Number(day.slice(5, 7)), 0).getDate()
+  const monthDays = new Date(Number(month.slice(0, 4)), Number(month.slice(5, 7)), 0).getDate()
   const monthTitle = new Date(`${monthStart}T12:00:00`).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
   const cells: (string | null)[] = [...Array(lead).fill(null), ...Array.from({ length: monthDays }, (_, index) => `${monthStart.slice(0, 8)}${String(index + 1).padStart(2, '0')}`)]
+  const shiftMonth = (amount: number) => { const next = new Date(Number(month.slice(0, 4)), Number(month.slice(5, 7)) - 1 + amount, 1, 12); setMonth(`${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, '0')}-01`) }
+  const monthKeys = cells.filter((key): key is string => Boolean(key))
+  const expected = monthKeys.filter(key => key <= today && habitOccursOn(habit, key))
+  const doneCount = expected.filter(key => { const row = entryOn(key); return !failedEntry(row) && Number(row?.valor || 0) >= target }).length
+  const failCount = expected.filter(key => failedEntry(entryOn(key))).length
+  const rate = expected.length ? Math.round((doneCount / expected.length) * 100) : 0
+  const streakNow = habitStreak(state, habit, today)
+  const summary = [`${doneCount} de ${expected.length} dias`, `${rate}%`, failCount ? `${failCount} ${failCount === 1 ? 'falha' : 'falhas'}` : '', `sequência ${streakNow}`].filter(Boolean).join(' · ')
+  const unitShort = String(draft.unidade || '').trim().slice(0, 4)
   function cycleDay(key: string) {
     const row = entryOn(key)
     const next = !row ? { valor: target, falhou: false } : failedEntry(row) ? null : Number(row.valor || 0) >= target ? { valor: 0, falhou: true } : { valor: target, falhou: false }
@@ -887,7 +898,12 @@ function HabitDetail({ item, state, today, commit, register, close }: DetailProp
           <Prop icon="straighten" color="var(--ds-text-2)" label="Unidade" display={<UnitField className={styles.inlineInput} value={String(draft.unidade || '')} onChange={unidade => update({ unidade })} />} />
       </>}>
         <div className={styles.monthCal} style={{ '--hc': color } as CSSProperties}>
-          <h3 className={styles.monthTitle}>{monthTitle}</h3>
+          <div className={styles.monthBar}>
+            <button type="button" className={styles.monthNav} onClick={() => shiftMonth(-1)} aria-label="Mês anterior"><Icon name="chevron_left" size={20} filled={false} /></button>
+            <h3 className={styles.monthTitle}>{monthTitle}</h3>
+            <button type="button" className={styles.monthNav} onClick={() => shiftMonth(1)} aria-label="Próximo mês"><Icon name="chevron_right" size={20} filled={false} /></button>
+          </div>
+          <p className={styles.monthSummary}>{summary}</p>
           <div className={styles.monthGrid} role="grid" aria-label={monthTitle}>
             {['D', 'S', 'T', 'Q', 'Q', 'S', 'S'].map((letter, index) => <span key={index} className={styles.monthHead}>{letter}</span>)}
             {cells.map((key, index) => {
@@ -899,6 +915,7 @@ function HabitDetail({ item, state, today, commit, register, close }: DetailProp
                 <button key={key} type="button" className={styles.monthDay} data-today={key === today || undefined} data-off={off || undefined} disabled={off} aria-label={friendlyDate(key, today)} onClick={() => cycleDay(key)}>
                   <small>{Number(key.slice(8))}</small>
                   <i data-level={level || undefined}>{level === 'full' || level === 'part' ? <Icon name="check" size={13} weight={600} filled={false} /> : level === 'fail' ? <Icon name="close" size={13} weight={600} filled={false} /> : null}</i>
+                  {quantitative ? <em>{level === 'fail' || !row ? '' : `${Number(row.valor || 0)}${unitShort ? ` ${unitShort}` : ''}`}</em> : null}
                 </button>
               )
             })}
