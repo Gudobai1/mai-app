@@ -1,0 +1,23 @@
+/* Metas — padrão visual do app: blocos só com linhas, tokens --ds-*. */
+.page { width: 100%; box-sizing: border-box; padding: 0 var(--ds-s-5, 20px) 80px; font-family: var(--ds-font); color: var(--ds-text); }
+
+.block { padding-top: 14px; }
+.head { display: flex; align-items: baseline; gap: 8px; padding: 0 0 8px; border-bottom: 1px solid var(--ds-line); }
+.headTitle { font-size: 16px; font-weight: 700; }
+.headCount { font-size: 13px; color: var(--ds-muted); }
+
+.empty { padding: 20px 0; color: var(--ds-muted); font-size: 14px; border-bottom: 1px solid var(--ds-line); }
+.addRow { display: flex; align-items: center; gap: 8px; width: 100%; padding: 12px var(--ds-row-px); border: 0; background: transparent; color: var(--ds-muted); font: inherit; font-size: 14px; text-align: left; cursor: pointer; }
+.addRow:hover { color: var(--ds-accent); }
+.addRow:focus-visible { outline: 2px solid var(--ds-accent); outline-offset: -2px; border-radius: 6px; }
+
+.composer { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 10px var(--ds-row-px); }
+.composerInput { flex: 1 1 200px; min-width: 0; height: 36px; box-sizing: border-box; padding: 0 10px; border: 1px solid var(--ds-line-strong); border-radius: 6px; background: transparent; color: var(--ds-text); font: inherit; font-size: 14px; }
+.composerInput:focus { outline: 2px solid var(--ds-accent); outline-offset: -2px; border-color: transparent; }
+.composerButton { display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 12px; border: 0; border-radius: 6px; background: transparent; color: var(--ds-muted); font: inherit; font-size: 14px; cursor: pointer; }
+.composerButton:hover { background: var(--ds-surface-hover); color: var(--ds-text); }
+.composerButton[data-primary] { background: var(--ds-accent); color: var(--ds-on-accent); }
+.composerButton[data-primary]:hover { background: var(--ds-accent-strong); }
+.composerButton:disabled { opacity: 0.5; cursor: default; }
+.composerButton:focus-visible { outline: 2px solid var(--ds-accent-strong); outline-offset: 2px; }
+@media (max-width: 900px) { .composerInput, .composerButton { height: 40px; } .page { padding-left: var(--ds-s-4, 16px); padding-right: var(--ds-s-4, 16px); } }

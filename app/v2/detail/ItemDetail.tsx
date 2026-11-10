@@ -22,6 +22,7 @@ import { uploadAttachment } from './upload'
 import { CommentsSection, type Comment } from './Comments'
 import { UnitField } from '../habits/UnitField'
 import { cleanHabit } from '../habits/HabitsModern'
+import { GOAL_STATUS, goalCurrent, goalDone, goalDue, goalPaused, goalPct, goalTotal, setGoalDone } from '../../../lib/v2/goals'
 import { PALETTE, colorName } from '../../../lib/v2/palette'
 import { DatePicker, Floating, OptionList, ProjectPicker, ReminderPicker, RepeatPicker, TimePicker, repeatLabel, reminderLabel, type PickerOption } from './Pickers'
 import { CategoryChooser } from './CategoryChooser'
@@ -1062,20 +1063,38 @@ function FinanceDetail({ item, state, today, commit, register, close }: DetailPr
 
 /* ------------------------------------------------------------------- Meta */
 
+const GOAL_STATUSES = [
+  { value: GOAL_STATUS.active, label: 'Em andamento', icon: 'trending_up', color: 'var(--ds-accent)' },
+  { value: GOAL_STATUS.paused, label: 'Pausada', icon: 'pause', color: 'var(--ds-muted)' },
+  { value: GOAL_STATUS.done, label: 'Concluída', icon: 'check', color: 'var(--ds-success)' },
+]
+
 function GoalDetail({ item, state, today, commit, register, close }: DetailProps) {
   const goal = rows(state.goals).find(row => String(row.id) === item.sourceId) || item.raw
   const save = useCallback((draft: Row) => {
-    commit(current => ({ ...current, goals: rows(current.goals).map(row => String(row.id) === item.sourceId ? { ...row, ...draft, progresso_atual: Math.max(0, Number(draft.progresso_atual || 0)), progresso_total: Math.max(1, Number(draft.progresso_total || 100)) } : row) }))
+    const total = Math.max(1, Number(draft.progresso_total || 100))
+    const current = Math.max(0, Number(draft.progresso_atual || 0))
+    const next = { ...draft, progresso_total: total, progresso_atual: current }
+    commit(state => ({ ...state, goals: rows(state.goals).map(row => String(row.id) === item.sourceId ? { ...row, ...(goalDone(next) ? setGoalDone({ ...row, ...next }, true) : { ...next, concluida: false }) } : row) }))
   }, [commit, item.sourceId])
   const { draft, update } = useDraft({
     titulo: String(goal.titulo || ''),
     descricao: String(goal.descricao || ''),
-    prazo: dateKey(goal.prazo || goal.data || goal.data_limite || goal.deadline),
-    progresso_atual: Number(goal.progresso_atual || 0),
-    progresso_total: Math.max(1, Number(goal.progresso_total || 100)),
+    prazo: goalDue(goal),
+    status: goalDone(goal) ? GOAL_STATUS.done : goalPaused(goal) ? GOAL_STATUS.paused : GOAL_STATUS.active,
+    prioridade: Number(goal.prioridade || 4),
+    progresso_atual: goalCurrent(goal),
+    progresso_total: goalTotal(goal),
+    anexos: rows(goal.anexos),
   }, save, register)
-  const pct = Math.max(0, Math.min(100, Math.round((Number(draft.progresso_atual) / Math.max(1, Number(draft.progresso_total))) * 100)))
-  const step = (amount: number) => update({ progresso_atual: Math.max(0, Math.min(Number(draft.progresso_total), Number(draft.progresso_atual) + amount)) }, true)
+  const pct = goalPct(draft)
+  const priority = PRIORITIES.find(option => Number(option.value) === Number(draft.prioridade)) || PRIORITIES[3]
+  const status = GOAL_STATUSES.find(option => option.value === draft.status) || GOAL_STATUSES[0]
+  const step = (amount: number) => {
+    const total = Number(draft.progresso_total)
+    const value = Math.max(0, Math.min(total, Number(draft.progresso_atual) + amount))
+    update({ progresso_atual: value, status: value >= total ? GOAL_STATUS.done : draft.status === GOAL_STATUS.done ? GOAL_STATUS.active : draft.status }, true)
+  }
 
   async function remove() {
     if (!(await askConfirm({ title: 'Excluir meta?', message: `“${draft.titulo || 'Meta'}” será excluída. Não dá para desfazer.` }))) return
@@ -1087,9 +1106,11 @@ function GoalDetail({ item, state, today, commit, register, close }: DetailProps
     <>
       <Header kind="goal" onClose={() => void close()} />
       <ItemLayout side={<>
-          <PickerProp today={today} type="date" icon="event" color="var(--ds-accent)" label="Prazo" value={draft.prazo} display={friendlyDate(draft.prazo, today)} onChange={prazo => update({ prazo }, true)} />
-          <Prop icon="trending_up" color="var(--ds-lilac-fg)" label="Progresso atual" display={<input className={styles.inlineInput} type="number" inputMode="decimal" min={0} value={draft.progresso_atual} onChange={event => update({ progresso_atual: Number(event.target.value || 0) })} aria-label="Progresso atual" />} />
-          <Prop icon="flag" color="var(--ds-lilac-fg)" label="Total" display={<input className={styles.inlineInput} type="number" inputMode="decimal" min={1} value={draft.progresso_total} onChange={event => update({ progresso_total: Math.max(1, Number(event.target.value || 1)) })} aria-label="Total" />} />
+          <SelectProp icon={status.icon} color={status.color} label="Status" value={String(draft.status)} options={GOAL_STATUSES} display={status.label} onChange={value => update(value === GOAL_STATUS.done ? { status: value, progresso_atual: Number(draft.progresso_total) } : { status: value }, true)} />
+          <PickerProp today={today} type="date" icon="calendar_today" color={draft.prazo ? 'var(--ds-accent)' : 'var(--ds-muted)'} label="Prazo" value={draft.prazo} muted={!draft.prazo} display={draft.prazo ? friendlyDate(draft.prazo, today) : 'Sem prazo'} onChange={prazo => update({ prazo }, true)} />
+          <SelectProp icon="flag" color={priority.color} label="Prioridade" value={String(draft.prioridade)} onChange={value => update({ prioridade: Number(value) }, true)} options={PRIORITIES} display={priority.label} muted={Number(draft.prioridade) === 4} />
+          <Prop icon="trending_up" color="var(--ds-lilac-fg)" label="Progresso atual" display={<input className={styles.inlineInput} type="number" inputMode="decimal" min={0} value={draft.progresso_atual} onChange={event => update({ progresso_atual: Math.max(0, Number(event.target.value) || 0) })} />} />
+          <Prop icon="target" color="var(--ds-lilac-fg)" label="Alvo" display={<input className={styles.inlineInput} type="number" inputMode="decimal" min={1} value={draft.progresso_total} onChange={event => update({ progresso_total: Math.max(1, Number(event.target.value) || 1) })} />} />
       </>}>
         <div className={styles.titleRow}>
           <span className={styles.tile} data-tone="lilac"><Icon name="flag" size={17} /></span>
@@ -1110,6 +1131,7 @@ function GoalDetail({ item, state, today, commit, register, close }: DetailProps
           </div>
         </div>
 
+        <Attachments files={draft.anexos} onChange={anexos => update({ anexos }, true)} />
       </ItemLayout>
       <Footer status={savedStatus} onDelete={() => void remove()} />
     </>
