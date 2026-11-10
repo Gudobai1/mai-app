@@ -22,7 +22,7 @@ export type UpcomingFilters = {
 
 export type UpcomingDisplay = { group: 'kind' | 'project' | 'none'; sort: 'time' | 'priority' | 'name'; nextOnly: boolean }
 
-export const EMPTY_FILTERS: UpcomingFilters = { hiddenKinds: [], hiddenProjects: [], hiddenSources: [], hiddenPriorities: [], hiddenFinance: [], hideDone: false, hideLate: false }
+export const EMPTY_FILTERS: UpcomingFilters = { hiddenKinds: [], hiddenProjects: [], hiddenSources: [], hiddenPriorities: [], hiddenFinance: [], hideDone: true, hideLate: false }
 export const DEFAULT_DISPLAY: UpcomingDisplay = { group: 'kind', sort: 'time', nextOnly: false }
 
 export const KINDS: { id: Kind; label: string; icon: string }[] = [
@@ -40,7 +40,7 @@ const PRIORITIES = [
 ]
 
 export const activeFilterCount = (filters: UpcomingFilters) =>
-  filters.hiddenKinds.length + filters.hiddenProjects.length + filters.hiddenSources.length + filters.hiddenPriorities.length + filters.hiddenFinance.length + (filters.hideDone ? 1 : 0) + (filters.hideLate ? 1 : 0)
+  filters.hiddenKinds.length + filters.hiddenProjects.length + filters.hiddenSources.length + filters.hiddenPriorities.length + filters.hiddenFinance.length + (filters.hideDone ? 0 : 1) + (filters.hideLate ? 1 : 0)
 
 export const normalizeFilters = (value: unknown): UpcomingFilters => {
   const raw = (value && typeof value === 'object' ? value : {}) as Partial<UpcomingFilters>
@@ -51,7 +51,7 @@ export const normalizeFilters = (value: unknown): UpcomingFilters => {
     hiddenSources: list<string>(raw.hiddenSources).map(String),
     hiddenPriorities: list<number>(raw.hiddenPriorities).map(Number),
     hiddenFinance: list<string>(raw.hiddenFinance).map(String),
-    hideDone: raw.hideDone === true,
+    hideDone: raw.hideDone !== false,
     hideLate: raw.hideLate === true,
   }
 }

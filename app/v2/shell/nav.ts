@@ -6,7 +6,7 @@ export type NavGroup = { label: string; items: NavItem[] }
 
 /**
  * Navegação do menu, em blocos separados por um respiro (sem títulos):
- * Hoje · Em breve · Concluídos / Tarefas · Finanças / Hábitos · Metas / Notas · Arquivos.
+ * Hoje · Em breve / Tarefas · Finanças / Hábitos · Metas / Notas · Arquivos.
  * "Em breve" é o módulo de agenda; Bem-estar fica dentro de Hábitos.
  */
 export const NAV_GROUPS: NavGroup[] = [
@@ -15,7 +15,6 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       { id: 'today', label: 'Hoje', icon: 'today' },
       { id: 'upcoming', label: 'Em breve', icon: 'event_upcoming' },
-      { id: 'completed', label: 'Concluídos', icon: 'task_alt' },
     ],
   },
   {

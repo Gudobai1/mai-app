@@ -17,6 +17,7 @@ import { useTaskQuick } from '../shell/TaskQuick'
 import { useQuickMenu, type QuickMenuConfig } from '../shell/QuickMenu'
 import { hiddenOccurrenceIds } from '../../../lib/v2/series'
 import { HabitCard } from '../habits/HabitCard'
+import { showCompleted } from '../../../lib/v2/show-completed'
 import { ValueDialog } from '../habits/HabitsModern'
 import { abbreviateUnit } from '../../../lib/v2/units'
 import { AgendaStrip } from './AgendaStrip'
@@ -367,9 +368,11 @@ export function TodayModern({ state, today, commit, navigate, inspect, options, 
 
   /* ---------------------------------------------------------------- Tarefas */
 
+  const showDone = showCompleted(state, 'today')
   const tasks = useMemo(() => state.tasks.filter(task => {
     const due = dateKey(task.data_vencimento)
-    if (task.concluida || !due) return false
+    if (!due) return false
+    if (task.concluida && (!showDone || dateKey(task.concluida_em) !== day)) return false
     if (isToday ? due > today : due !== day) return false
     if (filters.project !== 'all' && String(task.projeto_id || 'entrada') !== filters.project) return false
     if (filters.priority !== 'all' && String(Number(task.prioridade || 4)) !== filters.priority) return false
@@ -389,7 +392,7 @@ export function TodayModern({ state, today, commit, navigate, inspect, options, 
     if (aLate !== bLate) return aLate ? -1 : 1
     return aDay.localeCompare(bDay) || aTime.localeCompare(bTime) || Number(a.ordem || 0) - Number(b.ordem || 0) || titleCompare
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }), [state.tasks, today, day, isToday, filters.project, filters.priority, sortMode, projectMap])
+  }), [state.tasks, today, day, isToday, filters.project, filters.priority, sortMode, projectMap, showDone])
 
 
   function toggleTask(id: string) {

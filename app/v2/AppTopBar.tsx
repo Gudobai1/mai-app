@@ -2,6 +2,7 @@
 
 import { ReactNode, useEffect, useMemo, useState } from 'react'
 import { SettingsButton } from '../ds'
+import { showCompleted } from '../../lib/v2/show-completed'
 import type { MaiState } from '../../lib/v2/state'
 import type { AppView, TaskModuleScope } from './app-types'
 
@@ -88,7 +89,6 @@ export function AppTopBar({ state, today, view, taskScope, commit, onTaskScopeCh
   if (view === 'goals') info = `${goals.filter(goal => goal.concluida !== true && !String(goal.status || '').toLocaleLowerCase('pt-BR').includes('conclu')).length} em andamento`
   if (view === 'notes') info = `${notes.length} nota${notes.length === 1 ? '' : 's'}`
   if (view === 'finance') info = `${transactions.length} lançamento${transactions.length === 1 ? '' : 's'}`
-  if (view === 'completed') info = 'Histórico geral'
   if (layoutMode === 'kanban') info = `${info} · Kanban`
 
   const patchConfig = (key:string, value:unknown) => commit(current => ({ ...current, configs:{ ...current.configs, [key]:value } }))
@@ -137,6 +137,7 @@ export function AppTopBar({ state, today, view, taskScope, commit, onTaskScopeCh
     {view === 'tasks' ? <PanelSection title="Layout"><Choices value={layoutMode} onChange={value => patchControl({ layout:value })} items={[{value:'normal',label:'Normal'},{value:'kanban',label:'Kanban'}]}/></PanelSection> : null}
 
     {view === 'today' ? <>
+      <PanelSection title="Concluídos"><Choices value={showCompleted(state, 'today') ? 'show' : 'hide'} onChange={value => patchConfig('showCompletedByModule', { ...((configs.showCompletedByModule as Record<string, boolean> | undefined) || {}), today: value === 'show' })} items={[{value:'hide',label:'Ocultar'},{value:'show',label:'Mostrar concluídos'}]}/></PanelSection>
       <PanelSection title="Visualização"><Choices value={configs.todayView === 'timeline' ? 'timeline' : 'list'} onChange={value => patchConfig('todayView', value)} items={[{value:'list',label:'Lista'},{value:'timeline',label:'Linha do tempo'}]}/></PanelSection>
       <PanelSection title="Eventos repetidos"><Choices value={(configs.nextOnlyByModule as Record<string, boolean> | undefined)?.today ? 'next' : 'all'} onChange={value => patchConfig('nextOnlyByModule', { ...((configs.nextOnlyByModule as Record<string, boolean> | undefined) || {}), today: value === 'next' })} items={[{value:'all',label:'Todas as ocorrências'},{value:'next',label:'Somente a próxima'}]}/></PanelSection>
       <PanelSection title="Filtros">
@@ -184,12 +185,9 @@ export function AppTopBar({ state, today, view, taskScope, commit, onTaskScopeCh
       <PanelSection title="Eventos repetidos"><Choices value={(configs.nextOnlyByModule as Record<string, boolean> | undefined)?.agenda ? 'next' : 'all'} onChange={value => patchConfig('nextOnlyByModule', { ...((configs.nextOnlyByModule as Record<string, boolean> | undefined) || {}), agenda: value === 'next' })} items={[{value:'all',label:'Todas as ocorrências'},{value:'next',label:'Somente a próxima'}]}/></PanelSection>
     </> : null}
 
-    {view === 'completed' ? <>
-      <PanelSection title="Filtros"><SelectLine label="Tipo" value={String(filter.kind || 'all')} onChange={value => patchFilter({ kind:value })}><option value="all">Todos</option><option value="task">Tarefas</option><option value="event">Compromissos</option><option value="habit">Hábitos</option><option value="goal">Metas</option><option value="finance">Finanças</option><option value="note">Notas</option></SelectLine></PanelSection>
-      <PanelSection title="Classificação"><Choices value={sortMode} onChange={value => patchControl({ sort:value })} items={[{value:'recent',label:'Recentes'},{value:'oldest',label:'Antigos'},{value:'title',label:'Título'}]}/></PanelSection>
-    </> : null}
 
     {view === 'tasks' ? <>
+      <PanelSection title="Concluídos"><Choices value={showCompleted(state, 'tasks') ? 'show' : 'hide'} onChange={value => patchConfig('showCompletedByModule', { ...((configs.showCompletedByModule as Record<string, boolean> | undefined) || {}), tasks: value === 'show' })} items={[{value:'hide',label:'Ocultar'},{value:'show',label:'Mostrar concluídos'}]}/></PanelSection>
       <PanelSection title="Filtros">
         <SelectLine label="Prioridade" value={String(filter.priority || 'all')} onChange={value => patchFilter({ priority:value })}>{priorityOptions}</SelectLine>
         <SelectLine label="Data" value={String(filter.due || 'all')} onChange={value => patchFilter({ due:value })}><option value="all">Todas</option><option value="overdue">Atrasadas</option><option value="today">Hoje</option><option value="future">Futuras</option><option value="none">Sem data</option></SelectLine>
@@ -208,6 +206,7 @@ export function AppTopBar({ state, today, view, taskScope, commit, onTaskScopeCh
     </> : null}
 
     {view === 'goals' ? <>
+      <PanelSection title="Concluídos"><Choices value={showCompleted(state, 'goals') ? 'show' : 'hide'} onChange={value => patchConfig('showCompletedByModule', { ...((configs.showCompletedByModule as Record<string, boolean> | undefined) || {}), goals: value === 'show' })} items={[{value:'hide',label:'Ocultar'},{value:'show',label:'Mostrar concluídos'}]}/></PanelSection>
       <PanelSection title="Filtros"><SelectLine label="Situação" value={String(filter.status || 'all')} onChange={value => patchFilter({ status:value })}><option value="all">Em andamento + pausadas</option><option value="active">Em andamento</option><option value="paused">Pausadas</option></SelectLine><SelectLine label="Prioridade" value={String(filter.priority || 'all')} onChange={value => patchFilter({ priority:value })}>{priorityOptions}</SelectLine></PanelSection>
       <PanelSection title="Classificação"><Choices value={sortMode} onChange={value => patchControl({ sort:value })} items={[{value:'date',label:'Prazo'},{value:'priority',label:'Prioridade'},{value:'progress',label:'Progresso'},{value:'name',label:'Nome'}]}/></PanelSection>
       <PanelSection title="Visualização"><Choices value={advanced.goals ? 'advanced' : 'simple'} onChange={value => setAdvanced('goals', value === 'advanced')} items={[{value:'simple',label:'Simples'},{value:'advanced',label:'Avançada'}]}/></PanelSection>
@@ -220,6 +219,7 @@ export function AppTopBar({ state, today, view, taskScope, commit, onTaskScopeCh
     </> : null}
 
     {view === 'finance' ? <>
+      <PanelSection title="Concluídos"><Choices value={showCompleted(state, 'finance') ? 'show' : 'hide'} onChange={value => patchConfig('showCompletedByModule', { ...((configs.showCompletedByModule as Record<string, boolean> | undefined) || {}), finance: value === 'show' })} items={[{value:'hide',label:'Ocultar'},{value:'show',label:'Mostrar concluídos'}]}/></PanelSection>
       <PanelSection title="Filtros">
         <SelectLine label="Tipo" value={String(filter.type || 'all')} onChange={value => patchFilter({ type:value })}><option value="all">Todos</option><option value="expense">Despesas</option><option value="income">Receitas</option></SelectLine>
         <SelectLine label="Status" value={String(filter.status || 'all')} onChange={value => patchFilter({ status:value })}><option value="all">Todos</option><option value="pending">Pendentes</option><option value="partial">Parciais</option><option value="paid">Pagos</option><option value="overdue">Atrasados</option></SelectLine>

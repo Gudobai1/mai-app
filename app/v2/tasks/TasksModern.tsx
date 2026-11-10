@@ -4,6 +4,7 @@ import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState, type D
 import { addDays } from '../../../lib/v2/planner'
 import type { LegacyTask, MaiState } from '../../../lib/v2/state'
 import { Icon, SettingsButton } from '../../ds'
+import { showCompleted } from '../../../lib/v2/show-completed'
 import type { AppView, Row, TaskModuleScope } from '../app-types'
 import type { InspectableItem } from '../ContextDrawer'
 import { DatePicker, Floating, OptionList, type PickerOption } from '../detail/Pickers'
@@ -211,6 +212,7 @@ export function TasksModern(props: Props) {
     groups = days.map(day => ({ id: `d:${day}`, label: naturalDate(day, today), tasks: openHere.filter(task => dayOf(task) === day), addDate: day }))
   }
   const ctxTasks = projectId ? all.filter(task => String(task.projeto_id || '') === projectId) : all.filter(task => String(task.projeto_id || 'entrada') === 'entrada')
+  const showDone = showCompleted(state, 'tasks')
   const completed = scopeTasks.filter(task => task.concluida).sort((a, b) => String(b.concluida_em || '').localeCompare(String(a.concluida_em || '')))
 
   /* -------------------------------------------------------------- Ações */
@@ -649,6 +651,10 @@ export function TasksModern(props: Props) {
                   </div>
                 </>
               ) : null}
+              <span className={styles.optionsLabel}>Concluídos</span>
+              <div className={styles.chips}>
+                <button type="button" data-active={showDone || undefined} onClick={() => commit(current => ({ ...current, configs: { ...current.configs, showCompletedByModule: { ...((current.configs.showCompletedByModule as Record<string, boolean> | undefined) || {}), tasks: !showDone } } }))}><Icon name="task_alt" size={15} />Mostrar concluídos</button>
+              </div>
               <span className={styles.optionsLabel}>Ordenar por</span>
               <div className={styles.chips}>
                 {([['manual', 'Manual', 'drag_indicator'], ['date', 'Data', 'calendar_today'], ['priority', 'Prioridade', 'flag'], ['name', 'Nome', 'sort_by_alpha']] as const).map(([value, label, icon]) => (
@@ -753,14 +759,10 @@ export function TasksModern(props: Props) {
             </div>
           ) : null}
 
-          {completed.length ? (
+          {completed.length && showDone ? (
             <section className={styles.group}>
-              {ctxFilter === 'done' ? null : (
-                <button type="button" className={styles.doneToggle} onClick={() => toggleCollapsed('done')} aria-expanded={collapsed.has('done')}>
-                  {collapsed.has('done') ? 'Esconder concluídas' : `Concluídas (${completed.length})`}
-                </button>
-              )}
-              {collapsed.has('done') || ctxFilter === 'done' ? <div className={styles.cards} role="list">{completed.slice(0, 60).map(task => renderTask(task, { id: 'done', label: '', tasks: [] }))}</div> : null}
+              <h3 className={styles.doneToggle}>{`Concluídas (${completed.length})`}</h3>
+              {true ? <div className={styles.cards} role="list">{completed.slice(0, 60).map(task => renderTask(task, { id: 'done', label: '', tasks: [] }))}</div> : null}
             </section>
           ) : null}
         </div>

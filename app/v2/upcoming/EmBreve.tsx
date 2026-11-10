@@ -194,7 +194,7 @@ export function EmBreve({ state, today, commit, inspect, syncRange }: Props) {
     if (item.kind === 'finance') {
       const payment = financeCardPaymentState(item.raw)
       const income = item.raw.tipo === 'receita'
-      return { ...base, kind: 'finance', financeType: income ? 'receita' : 'despesa', time: '', title: item.title, done: payment.status === 'pago', source: String(item.raw.categoria || (income ? 'Receita' : 'Despesa')), amount: `${income ? '+' : ''}${money(payment.status === 'parcial' ? payment.remaining : payment.total)}`, color: income ? 'var(--ds-mint-fg)' : 'var(--ds-rose-fg)', priority: income ? 1 : 0 }
+      return { ...base, kind: 'finance', financeType: income ? 'receita' : 'despesa', time: '', title: item.title, done: payment.status === 'pago', source: String(item.raw.categoria || (income ? 'Receita' : 'Despesa')), amount: `${income ? '+' : ''}${money(payment.status === 'parcial' ? payment.remaining : payment.total)}`, color: income ? 'var(--ds-success)' : 'var(--ds-danger)', priority: income ? 1 : 0 }
     }
     const google = item.raw.tipo === 'google' || item.raw.tipo === 'gcalendar'
     return {
@@ -692,7 +692,7 @@ export function EmBreve({ state, today, commit, inspect, syncRange }: Props) {
     <button key={entry.id} type="button" className={styles.chip} data-kind={entry.kind} data-done={entry.done || undefined} style={{ '--ev': entry.kind === 'task' ? (PRIORITY_COLOR[entry.priority] || 'var(--ds-muted)') : entry.color } as CSSProperties} onClick={() => open(entry)} {...quick.bind(() => menuFor(entry))}>
       {entry.kind === 'task'
         ? <span role="checkbox" aria-checked={entry.done} aria-label="Concluir" tabIndex={0} className={styles.chipCheck} onClick={event => { event.stopPropagation(); toggleTask(entry) }} onKeyDown={event => { if (event.key === ' ' || event.key === 'Enter') { event.preventDefault(); event.stopPropagation(); toggleTask(entry) } }}>{entry.done ? <Icon name="check" size={10} /> : null}</span>
-        : <Icon name={entry.kind === 'habit' ? 'autorenew' : entry.kind === 'finance' ? 'payments' : 'event'} size={13} style={{ color: entry.color }} />}
+        : <Icon name={entry.kind === 'habit' ? 'autorenew' : entry.kind === 'finance' ? 'payments' : 'event'} size={13} style={{ color: entry.kind === 'finance' ? (entry.financeType === 'receita' ? 'var(--ds-success)' : 'var(--ds-danger)') : entry.color }} />}
       <span>{entry.title}</span>
     </button>
   )
@@ -728,7 +728,7 @@ export function EmBreve({ state, today, commit, inspect, syncRange }: Props) {
           return (
             <button key={day} type="button" data-active={selected === day || undefined} data-today={day === today || undefined} onClick={() => setSelected(day)}>
               <span>{WEEKDAY[dayDate(day).getDay()]}</span>
-              <em><b>{Number(day.slice(8))}</b><i>{items.slice(0, 3).map(entry => <u key={entry.id} style={{ background: entry.color }} />)}</i></em>
+              <em><b>{Number(day.slice(8))}</b><i>{items.slice(0, 3).map(entry => <u key={entry.id} style={{ background: entry.kind === 'finance' ? (entry.financeType === 'receita' ? 'var(--ds-success)' : 'var(--ds-danger)') : entry.color }} />)}</i></em>
             </button>
           )
         })}

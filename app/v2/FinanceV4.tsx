@@ -3,6 +3,7 @@
 import { ColorField } from './detail/ColorField'
 import { MoneyInput } from './MoneyInput'
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { showCompleted } from '../../lib/v2/show-completed'
 import type { MaiState } from '../../lib/v2/state'
 import type { InspectableItem } from './ContextDrawer'
 import { CreateCalendarPicker, CreateNumberEditor, CreateOptionList, createNaturalDate } from './CreateDrawerTools'
@@ -742,6 +743,7 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
 
   function matchesFilters(item: Row) {
     const status = String(item.status || 'pendente')
+    if (!showCompleted(state, 'finance') && status === 'pago' && statusFilter !== 'paid') return false
     if (typeFilter === 'income' && item.tipo !== 'receita') return false
     if (typeFilter === 'expense' && item.tipo === 'receita') return false
     if (statusFilter === 'paid' && status !== 'pago') return false

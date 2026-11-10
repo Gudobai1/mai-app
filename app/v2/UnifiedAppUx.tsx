@@ -7,7 +7,6 @@ import { AgendaView } from './AgendaView'
 import { AppSettingsDrawer } from './AppSettingsDrawer'
 import { AppTopBar } from './AppTopBar'
 import type { AppView, SecondaryView, TaskModuleScope } from './app-types'
-import { CompletedV4 } from './CompletedV4'
 import { ItemDetail } from './detail/ItemDetail'
 import { ConfirmHost } from './shell/ConfirmDialog'
 import { UndoToast } from './shell/UndoToast'
@@ -135,7 +134,7 @@ function filteredStateForView(state: MaiState, view: AppView, today: string): Ma
 
 const validView = (value: unknown): value is AppView => {
   const text = String(value || '')
-  return ['home', 'tasks', 'today', 'inbox', 'upcoming', 'completed', 'agenda', ...secondary].includes(text as any) || text.startsWith('project:')
+  return ['home', 'tasks', 'today', 'inbox', 'upcoming', 'agenda', ...secondary].includes(text as any) || text.startsWith('project:')
 }
 const scopeFromLegacy = (value: unknown): TaskModuleScope => {
   const text = String(value || '')
@@ -273,7 +272,6 @@ export function UnifiedAppUx() {
           {view === 'today' ? <TodayModern state={viewState} today={runtime.today} commit={runtime.commit} navigate={navigate} inspect={setSelected} onAddTask={projectId => setQuickAdd({ kinds: ['task'], initial: 'task', projectId, date: runtime.today })} onAddEvent={() => setQuickAdd({ kinds: ['event'], initial: 'event', date: runtime.today })} options={<AppTopBar state={runtime.state} today={runtime.today} view={view} taskScope={taskScope} commit={runtime.commit} onTaskScopeChange={setTaskScope} onSettings={() => setSettingsOpen(true)} />}/> : null}
           {view === 'agenda' ? <AgendaView state={runtime.state} today={runtime.today} connected={runtime.googleConnected} commit={runtime.commit} googleRpc={runtime.googleRpc} refreshEvents={(start, end) => runtime.syncCalendar(runtime.state.configs.calendarios || [], start, end)} openTask={() => navigate('tasks')} openArea={area => navigate(area)} /> : null}
           {view === 'upcoming' ? <EmBreve state={viewState} today={runtime.today} commit={runtime.commit} inspect={setSelected} syncRange={(start, end) => { runtime.syncCalendar(runtime.state.configs.calendarios || [], start, end) }} /> : null}
-          {view === 'completed' ? <CompletedV4 state={viewState} today={runtime.today} commit={runtime.commit} inspect={setSelected}/> : null}
           {view === 'tasks' ? <TasksModern
             state={runtime.state}
             today={runtime.today}
