@@ -17,3 +17,16 @@ html body button:hover:not(#_) {
 
 /* Fonte escolhida em Configurações → Aparência vale também para o CSS antigo que fixa família. */
 html[data-mai-font] body, html[data-mai-font] button, html[data-mai-font] input, html[data-mai-font] textarea, html[data-mai-font] select { font-family: var(--ds-font) !important; }
+
+/* Barra lateral recolhida (botão ou ocultar automático): desliza para fora, o conteúdo ocupa a largura toda.
+   "peek" = aparece por cima ao encostar o mouse na borda esquerda. Só no desktop; no celular a barra de baixo manda. */
+@media (min-width: 901px) {
+  .mai-v3-shell aside[aria-label='Menu principal'] { transition: transform 0.2s ease, box-shadow 0.2s ease, visibility 0s; }
+  .mai-v3-shell[data-sidebar='hidden'] aside[aria-label='Menu principal'] { transform: translateX(-100%); visibility: hidden; transition: transform 0.2s ease, visibility 0s 0.2s; }
+  .mai-v3-shell[data-sidebar='peek'] aside[aria-label='Menu principal'] { transform: translateX(0); z-index: 300; box-shadow: 0 0 0 1px var(--ds-line), 0 12px 32px rgba(0, 0, 0, 0.25); }
+  .mai-v3-shell[data-sidebar='hidden'] .mai-v3-main, .mai-v3-shell[data-sidebar='peek'] .mai-v3-main { margin-left: 0 !important; }
+  .mai-edge { position: fixed; z-index: 250; inset: 0 auto 0 0; width: 8px; }
+  .mai-reveal { position: fixed; z-index: 90; top: 10px; left: 10px; display: grid; place-items: center; width: 36px; height: 36px; border: 0; border-radius: 8px; background: var(--ds-surface-2); color: var(--ds-muted); cursor: pointer; }
+  .mai-reveal:hover { background: var(--ds-surface-hover); color: var(--ds-text); }
+}
+@media (max-width: 900px) { .mai-edge, .mai-reveal { display: none; } }

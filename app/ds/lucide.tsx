@@ -158,6 +158,8 @@ import {
   Anchor,
   Bookmark,
   Languages,
+  PanelLeft,
+  LogOut,
 } from 'lucide-react'
 import type { ComponentType, SVGProps } from 'react'
 
@@ -165,6 +167,8 @@ import type { ComponentType, SVGProps } from 'react'
 export type LucideComponent = ComponentType<SVGProps<SVGSVGElement> & { size?: number | string; strokeWidth?: number | string }>
 
 export const LUCIDE_ICONS: Record<string, LucideComponent> = {
+  left_panel_close: PanelLeft,
+  logout: LogOut,
   coffee: Coffee,
   music_note: Music,
   directions_car: Car,
