@@ -7,7 +7,8 @@ import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { describeChange, type ChangeInfo } from '../../lib/v2/changes'
 import { animateExit, trackItems } from '../../lib/v2/exit'
-import { addDays, plannerItems } from '../../lib/v2/planner'
+import { addDays } from '../../lib/v2/planner'
+import { buildReminders, normalizeReminders, reminderTitle } from '../../lib/v2/reminders'
 import { createTask, dateKey, emptyState, flushRemoteSync, hydrateRemoteState, loadState, type MaiState, normalizeState, persistState, subscribeSyncStatus, type SyncStatus } from '../../lib/v2/state'
 import { drivePreviewUrl, uploadDataUrlToDrive } from './DriveAsset'
 import { isNativeApp, nativePlugin, syncSystemBars } from '../../lib/native/native'
@@ -181,19 +182,16 @@ export function useMaiRuntime() {
     return () => { window.removeEventListener('beforeinstallprompt', install); window.clearInterval(timer) }
   }, [])
 
+  // Navegador/desktop: avisa enquanto o app está aberto (regra única em lib/v2/reminders.ts).
   useEffect(() => {
     if (!ready || !today || state.configs.notificationsEnabled !== true || notificationPermission !== 'granted' || !('Notification' in window) || isNativeApp()) return
+    const config = normalizeReminders(state.configs.reminders)
     const notify = () => {
-      const now = new Date()
-      if (dateKey(now) !== today) return
-      const current = now.getHours() * 60 + now.getMinutes()
-      plannerItems(state, today, today).forEach(item => {
-        if (item.completed || !item.time) return
-        const [hour, minute] = item.time.split(':').map(Number)
-        const difference = current - (hour * 60 + minute)
-        const key = `mai-notified-${item.id}`
-        if (difference < 0 || difference > 2 || localStorage.getItem(key)) return
-        new Notification(`MAI · ${item.title}`, { body: `${item.subtitle} · ${item.time}`, icon: '/mai-icon.svg', tag: item.id })
+      const now = Date.now()
+      buildReminders(state, today, today, addDays(today, 8), config).forEach(reminder => {
+        const key = `bukid-reminder-${reminder.id}-${new Date(reminder.at).toISOString()}`
+        if (reminder.at > now || now - reminder.at > 120_000 || localStorage.getItem(key)) return
+        new Notification(reminder.title, { body: reminder.body, icon: '/mai-icon.svg', tag: reminder.id, silent: config.look.silent })
         localStorage.setItem(key, new Date().toISOString())
       })
     }
@@ -213,13 +211,10 @@ export function useMaiRuntime() {
         if (pending?.notifications?.length) await plugin.cancel({ notifications: pending.notifications })
         if (state.configs.notificationsEnabled !== true || notificationPermission !== 'granted') return
         const now = Date.now()
-        const notifications = plannerItems(state, today, addDays(today, 7))
-          .filter(item => !item.completed && item.time && item.date)
-          .map(item => ({ item, at: new Date(`${item.date}T${item.time}:00`) }))
-          .filter(entry => entry.at.getTime() > now + 5_000)
-          .sort((a, b) => a.at.getTime() - b.at.getTime())
+        const notifications = buildReminders(state, today, today, addDays(today, 8), normalizeReminders(state.configs.reminders))
+          .filter(reminder => reminder.at > now + 5_000 && reminder.at < now + 7 * 86_400_000)
           .slice(0, 60)
-          .map(({ item, at }) => ({ id: Math.abs([...`${item.id}`].reduce((hash, char) => (hash * 31 + char.charCodeAt(0)) | 0, 7)) % 2_000_000_000 + 1, title: `Bukid · ${item.title}`, body: `${item.subtitle} · ${item.time}`, schedule: { at, allowWhileIdle: true } }))
+          .map(reminder => ({ id: Math.abs([...reminder.id].reduce((hash, char) => (hash * 31 + char.charCodeAt(0)) | 0, 7)) % 2_000_000_000 + 1, title: reminder.title, body: reminder.body, schedule: { at: new Date(reminder.at), allowWhileIdle: true } }))
         if (notifications.length) await plugin.schedule({ notifications })
       } catch { /* sem plugin ou sem permissão: o aviso por navegador não se aplica aqui */ }
     }, 1500)
@@ -336,6 +331,22 @@ export function useMaiRuntime() {
     router.refresh()
   }
 
+  /** Dispara um aviso agora, com o texto e a aparência configurados, para conferir se está funcionando. */
+  async function testReminder() {
+    const config = normalizeReminders(state.configs.reminders)
+    const title = reminderTitle(config, 'Aviso de teste')
+    const body = [config.look.project ? 'Projeto de exemplo' : '', config.look.time ? `às ${new Date().toTimeString().slice(0, 5)}` : ''].filter(Boolean).join(' · ') || 'Está funcionando'
+    if (isNativeApp()) {
+      const plugin = nativePlugin('LocalNotifications')
+      if (!plugin) return alert('As notificações do app não estão disponíveis nesta versão.')
+      await plugin.schedule({ notifications: [{ id: 2_000_000_001, title, body, schedule: { at: new Date(Date.now() + 3000), allowWhileIdle: true } }] })
+      return
+    }
+    if (!('Notification' in window)) return alert('Este navegador não oferece notificações.')
+    if (Notification.permission !== 'granted') return alert('Ative as notificações primeiro.')
+    new Notification(title, { body, icon: '/mai-icon.svg', tag: 'bukid-teste', silent: config.look.silent })
+  }
+
   async function requestNotifications() {
     if (isNativeApp()) {
       const plugin = nativePlugin('LocalNotifications')
@@ -404,7 +415,7 @@ export function useMaiRuntime() {
   return {
     refreshItems, toast, dismissToast: () => setToast(null), state, setState, ready, today, googleConnected, calendars, calendarDraft, setCalendarDraft, calendarBusy,
     syncStatus, undoCount, installPrompt, importRef, commit, undo, googleRpc, syncCalendar, openGoogle,
-    saveCalendars, disconnectGoogle, requestNotifications, install, exportData, importData, logout, flushRemoteSync,
+    saveCalendars, disconnectGoogle, requestNotifications, testReminder, install, exportData, importData, logout, flushRemoteSync,
   }
 }
 

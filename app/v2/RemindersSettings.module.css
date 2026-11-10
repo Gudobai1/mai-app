@@ -1,0 +1,21 @@
+.wrap { display: grid; font-family: var(--ds-font); color: var(--ds-text); }
+.row { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 56px; padding: 8px 0; border-top: 1px solid var(--ds-line); }
+.row > span:first-child { display: grid; gap: 2px; min-width: 0; }
+.row strong { font-size: 14px; font-weight: 600; }
+.row small { color: var(--ds-muted); font-size: 12px; }
+.sub { margin: 18px 0 2px; font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ds-muted); }
+.sub:first-of-type { margin-top: 14px; }
+.inline { display: flex; align-items: center; gap: 8px; flex-shrink: 0; font-size: 12px; color: var(--ds-muted); }
+.time, .select { height: 34px; padding: 0 8px; border: 1px solid var(--ds-line); border-radius: 6px; background: var(--ds-bg); color: var(--ds-text); font: inherit; font-size: 14px; }
+.button { height: 34px; padding: 0 14px; border: 1px solid var(--ds-line); border-radius: 6px; background: transparent; color: var(--ds-text); font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; }
+.button:hover:not(:disabled) { background: var(--ds-surface-hover); }
+.button:disabled { color: var(--ds-muted); cursor: default; }
+.segment { display: inline-flex; flex-shrink: 0; border: 1px solid var(--ds-line); border-radius: 6px; overflow: hidden; }
+.segment button { height: 32px; padding: 0 12px; border: 0; background: transparent; color: var(--ds-muted); font: inherit; font-size: 13px; cursor: pointer; }
+.segment button[data-active] { background: var(--ds-accent-soft); color: var(--ds-accent); font-weight: 600; }
+.switch { position: relative; flex-shrink: 0; width: 40px; height: 22px; padding: 0; border: 0; border-radius: 999px; background: var(--ds-line-strong); cursor: pointer; transition: background var(--ds-dur-fast); }
+.switch:disabled { opacity: 0.5; cursor: default; }
+.switch i { position: absolute; top: 2px; left: 2px; width: 18px; height: 18px; border-radius: 50%; background: #fff; transition: transform var(--ds-dur-fast) var(--ds-ease); }
+.switch[data-on] { background: var(--ds-accent); }
+.switch[data-on] i { transform: translateX(18px); }
+@media (max-width: 560px) { .row { flex-wrap: wrap; } .inline { flex-wrap: wrap; justify-content: flex-end; } }
