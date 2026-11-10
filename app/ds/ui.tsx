@@ -50,9 +50,10 @@ export type IconProps = {
   look?: Partial<Appearance>
 }
 
-export function Icon({ name, size = 22, filled = false, weight = 300, className, style, look }: IconProps) {
+export function Icon({ name, size: baseSize = 22, filled = false, weight = 300, className, style, look }: IconProps) {
   const global = useSyncExternalStore(subscribeAppearance, getAppearance, getAppearance)
   const appearance = { ...global, ...look }
+  const size = Math.round(baseSize * appearance.iconScale * 10) / 10
   const pack = appearance.iconPack
   const material = pack === 'outlined' || pack === 'sharp' || pack === 'rounded'
   const ext = externalIcon(pack, name)

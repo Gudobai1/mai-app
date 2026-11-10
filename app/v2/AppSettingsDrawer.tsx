@@ -5,7 +5,7 @@ import type { MaiState, SyncStatus } from '../../lib/v2/state'
 import { Icon } from '../ds'
 import styles from './Settings.module.css'
 import { AppearancePanel } from './AppearancePanel'
-import { ThemePicker } from './ThemePicker'
+import { normalizeMode } from './theme'
 
 
 type Calendar = { id: string; nome: string; cor: string; primary?: boolean }
@@ -51,16 +51,17 @@ export function AppSettingsDrawer(props: Props) {
   }, [props.calendarDraft, props.googleConnected])
 
   const scroller = useRef<HTMLDivElement | null>(null)
-  const [active, setActive] = useState('conta')
+  const [active, setActive] = useState('geral')
   const name = String(props.profile?.name || props.state.configs.profileName || props.state.configs.userName || 'Meu perfil')
   const email = props.profile?.email
   const sections = [
+    { id: 'geral', label: 'Visão geral', icon: 'monitor_heart' },
     { id: 'conta', label: 'Conta', icon: 'account_circle' },
     { id: 'tema', label: 'Aparência', icon: 'palette' },
+    { id: 'barra', label: 'Barra lateral', icon: 'menu' },
     { id: 'notificacoes', label: 'Notificações', icon: 'notifications' },
-    { id: 'calendarios', label: 'Calendários', icon: 'calendar_month' },
+    { id: 'google', label: 'Google', icon: 'calendar_month' },
     { id: 'dados', label: 'Dados e backup', icon: 'cloud_upload' },
-    ...(props.installPrompt ? [{ id: 'app', label: 'Aplicativo', icon: 'install_mobile' }] : []),
   ]
 
   const go = (id: string) => {
@@ -74,6 +75,19 @@ export function AppSettingsDrawer(props: Props) {
   }, [props])
 
   const notifications = Boolean(props.state.configs.notificationsEnabled)
+  const permission = typeof Notification !== 'undefined' ? Notification.permission : 'unsupported'
+  const standalone = typeof window !== 'undefined' && typeof window.matchMedia === 'function' && window.matchMedia('(display-mode: standalone)').matches
+  const phase = props.syncStatus.phase
+  const updatedAt = String(props.state.meta?.updatedAt || '')
+  const updatedLabel = updatedAt && !Number.isNaN(Date.parse(updatedAt)) ? new Date(updatedAt).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) : ''
+  type Health = { id: string; tone: 'ok' | 'warn' | 'bad' | 'off'; title: string; detail: string; action?: { label: string; run: () => void } }
+  const health: Health[] = [
+    { id: 'sync', tone: phase === 'synced' ? 'ok' : phase === 'error' ? 'bad' : phase === 'offline' ? 'warn' : phase === 'local' ? 'warn' : 'ok', title: 'Sincronização', detail: props.syncStatus.message + (updatedLabel ? ` · última alteração ${updatedLabel}` : ''), action: { label: 'Sincronizar agora', run: () => void props.flushRemoteSync() } },
+    { id: 'google', tone: props.googleConnected === null ? 'off' : props.googleConnected ? 'ok' : 'bad', title: 'Google Agenda e Drive', detail: props.googleConnected === null ? 'Verificando…' : props.googleConnected ? `Conectado · ${props.calendarDraft.length} calendário(s) em uso` : 'Desconectado: agenda e anexos não funcionam', action: props.googleConnected === false ? { label: 'Reconectar', run: () => { window.location.href = '/api/google/connect' } } : props.googleConnected ? { label: 'Ver', run: () => go('google') } : undefined },
+    { id: 'notif', tone: permission === 'denied' ? 'bad' : notifications && permission === 'granted' ? 'ok' : permission === 'unsupported' ? 'off' : 'warn', title: 'Notificações', detail: permission === 'denied' ? 'Bloqueadas no navegador: libere nas permissões do site' : notifications && permission === 'granted' ? 'Lembretes ativos' : permission === 'unsupported' ? 'Este navegador não oferece notificações' : 'Lembretes desligados', action: permission === 'denied' || permission === 'unsupported' ? undefined : { label: notifications ? 'Ver' : 'Ativar', run: () => (notifications ? go('notificacoes') : void props.requestNotifications()) } },
+    { id: 'app', tone: standalone ? 'ok' : props.installPrompt ? 'warn' : 'off', title: 'Aplicativo', detail: standalone ? 'Rodando como aplicativo instalado' : props.installPrompt ? 'Pode ser instalado neste aparelho' : 'Aberto no navegador', action: props.installPrompt ? { label: 'Instalar', run: () => void props.install() } : undefined },
+  ]
+  const attention = health.filter(item => item.tone === 'bad' || item.tone === 'warn').length
   const hideInbox = Boolean(props.state.configs.hideInbox)
 
   return (
@@ -92,15 +106,22 @@ export function AppSettingsDrawer(props: Props) {
             ))}
           </div>
           <div className={styles.scroll} ref={scroller}>
+            <section className={styles.section} data-section="geral" hidden={active !== 'geral'}>
+              <h3>Visão geral</h3>
+              <p className={styles.summary} data-attention={attention || undefined}>{attention ? `${attention} ponto(s) pedem atenção` : 'Tudo funcionando'}</p>
+              {health.map(item => (
+                <div key={item.id} className={styles.row}>
+                  <span className={styles.health}><i data-tone={item.tone} aria-hidden="true" /><span><strong>{item.title}</strong><small>{item.detail}</small></span></span>
+                  {item.action ? <button type="button" className={styles.button} onClick={item.action.run}>{item.action.label}</button> : null}
+                </div>
+              ))}
+            </section>
+
             <section className={styles.section} data-section="conta" hidden={active !== 'conta'}>
               <h3>Conta</h3>
               <div className={styles.profile}>
                 <span className={styles.avatar}>{props.profile?.picture ? /* eslint-disable-next-line @next/next/no-img-element */ <img src={props.profile.picture} alt="" referrerPolicy="no-referrer" /> : name.trim().slice(0, 1).toLocaleUpperCase('pt-BR')}</span>
                 <div><strong>{name}</strong>{email ? <small>{email}</small> : null}</div>
-              </div>
-              <div className={styles.row}>
-                <span><strong>{props.syncStatus.message}</strong><small>Seus dados ficam sincronizados entre os aparelhos.</small></span>
-                <button type="button" className={styles.button} onClick={() => void props.flushRemoteSync()}>Sincronizar agora</button>
               </div>
               <div className={styles.row}>
                 <span><strong>Sair</strong><small>Encerra a sessão neste aparelho.</small></span>
@@ -110,13 +131,11 @@ export function AppSettingsDrawer(props: Props) {
 
             <section className={styles.section} data-section="tema" hidden={active !== 'tema'}>
               <h3>Aparência</h3>
-              <ThemePicker
-                mode={props.state.configs.theme}
-                theme={props.state.configs.accentColor}
-                onMode={mode => props.commit(current => ({ ...current, configs: { ...current.configs, theme: mode } }))}
-                onTheme={theme => props.commit(current => ({ ...current, configs: { ...current.configs, accentColor: theme } }))}
-              />
-              <AppearancePanel value={props.state.configs.appearance} onChange={appearance => props.commit(current => ({ ...current, configs: { ...current.configs, appearance } }))} />
+              <AppearancePanel mode={normalizeMode(props.state.configs.theme)} onMode={mode => props.commit(current => ({ ...current, configs: { ...current.configs, theme: mode } }))} value={props.state.configs.appearance} onChange={appearance => props.commit(current => ({ ...current, configs: { ...current.configs, appearance } }))} />
+            </section>
+
+            <section className={styles.section} data-section="barra" hidden={active !== 'barra'}>
+              <h3>Barra lateral</h3>
               <div className={styles.row}>
                 <span><strong>Ocultar a barra lateral automaticamente</strong><small>A barra some quando o mouse sai dela e volta ao encostar na borda esquerda.</small></span>
                 <button type="button" role="switch" aria-checked={Boolean(props.state.configs.sidebarAutoHide)} aria-label="Ocultar a barra lateral automaticamente" className={styles.switch} data-on={Boolean(props.state.configs.sidebarAutoHide) || undefined} onClick={() => props.commit(current => ({ ...current, configs: { ...current.configs, sidebarAutoHide: !current.configs.sidebarAutoHide, sidebarHidden: false } }))}><i /></button>
@@ -135,8 +154,8 @@ export function AppSettingsDrawer(props: Props) {
               </div>
             </section>
 
-            <section className={styles.section} data-section="calendarios" hidden={active !== 'calendarios'}>
-              <h3>Calendários</h3>
+            <section className={styles.section} data-section="google" hidden={active !== 'google'}>
+              <h3>Google Agenda e Drive</h3>
               {props.googleConnected ? (
                 <>
                   <div className={styles.calendars}>
@@ -172,15 +191,6 @@ export function AppSettingsDrawer(props: Props) {
               </div>
             </section>
 
-            {props.installPrompt ? (
-              <section className={styles.section} data-section="app" hidden={active !== 'app'}>
-                <h3>Aplicativo</h3>
-                <div className={styles.row}>
-                  <span><strong>Instalar Bukid</strong><small>Usar como aplicativo no aparelho.</small></span>
-                  <button type="button" className={styles.button} onClick={() => void props.install()}>Instalar</button>
-                </div>
-              </section>
-            ) : null}
             <div className={styles.end} />
           </div>
         </div>

@@ -15,9 +15,9 @@ export const SHAPE_AREAS: { id: 'tasks' | 'habits' | 'projects'; label: string; 
   { id: 'projects', label: 'Projetos', hint: 'Foto e ícone do projeto' },
 ]
 export type Shapes = Record<'tasks' | 'habits' | 'projects', Shape>
-export type Appearance = { iconPack: IconPack; weight: number; corners: 'round' | 'square'; font: string; accent: string; palette: string; colorStyle: ColorStyle; shapes: Shapes }
+export type Appearance = { iconPack: IconPack; weight: number; iconScale: number; corners: 'round' | 'square'; font: string; accent: string; palette: string; colorStyle: ColorStyle; shapes: Shapes }
 
-export const DEFAULT_APPEARANCE: Appearance = { iconPack: 'lucide', weight: 1.5, corners: 'square', font: 'system', accent: '', palette: 'padrao', colorStyle: 'padrao', shapes: { tasks: 'round', habits: 'round', projects: 'round' } }
+export const DEFAULT_APPEARANCE: Appearance = { iconPack: 'lucide', weight: 1.5, iconScale: 1, corners: 'square', font: 'system', accent: '', palette: 'padrao', colorStyle: 'padrao', shapes: { tasks: 'round', habits: 'round', projects: 'round' } }
 
 export const ICON_PACKS: { id: IconPack; label: string; hint: string }[] = [
   { id: 'lucide', label: 'Linhas', hint: 'Lucide: traço contínuo, leve' },
@@ -73,6 +73,7 @@ export function normalizeAppearance(raw: unknown): Appearance {
   return {
     iconPack: pack,
     weight,
+    iconScale: Math.min(1.4, Math.max(0.8, Number(value.iconScale) || 1)),
     corners: value.corners === 'round' ? 'round' : 'square',
     font: FONTS.some(item => item.id === value.font) ? String(value.font) : 'system',
     accent: /^#[0-9a-f]{6}$/i.test(String(value.accent || '')) ? String(value.accent) : '',

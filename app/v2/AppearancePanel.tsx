@@ -5,16 +5,17 @@ import { DEFAULT_APPEARANCE, FONTS, ICON_PACKS, Icon, loadIconPack, normalizeApp
 import { PALETTES, SHAPE_AREAS } from '../ds/appearance'
 import { COLOR_STYLES, styleColor, PALETTE } from '../../lib/v2/palette'
 import styles from './AppearancePanel.module.css'
+import type { ThemeMode } from './theme'
 
 const ACCENTS = ['#DE4C4A', '#D9782B', '#C9A227', '#3E8E5A', '#2F8F9D', '#246FE0', '#6B5BD2', '#B0488F', '#5B6470']
 
-type Props = { value: unknown; onChange: (next: Appearance) => void }
+type Props = { value: unknown; onChange: (next: Appearance) => void; mode: ThemeMode; onMode: (mode: ThemeMode) => void }
 
 /**
  * Aparência personalizável (único): pacote de ícones, grossura, cantos, fonte e cor de destaque.
  * Cada escolha vale para o app inteiro na hora e fica salva na conta. Ver docs/PADROES.md ("Aparência").
  */
-export function AppearancePanel({ value, onChange }: Props) {
+export function AppearancePanel({ value, onChange, mode, onMode }: Props) {
   const current = normalizeAppearance(value)
   const set = (patch: Partial<Appearance>) => onChange(normalizeAppearance({ ...current, ...patch }))
   // Carrega os pacotes externos para as prévias dos cartões aparecerem já desenhadas.
@@ -24,6 +25,16 @@ export function AppearancePanel({ value, onChange }: Props) {
 
   return (
     <div className={styles.panel}>
+      <h4 className={styles.sub}>Cores</h4>
+      <div className={styles.group}>
+        <span className={styles.label}>Modo</span>
+        <div className={styles.segment} role="radiogroup" aria-label="Modo">
+          {([['light', 'Claro'], ['dark', 'Escuro'], ['system', 'Sistema']] as const).map(([id, label]) => (
+            <button key={id} type="button" role="radio" aria-checked={mode === id} data-active={mode === id || undefined} onClick={() => onMode(id)}>{label}</button>
+          ))}
+        </div>
+      </div>
+
       <div className={styles.group}>
         <span className={styles.label}>Paleta de cores do app</span>
         <div className={styles.palettes} role="radiogroup" aria-label="Paleta de cores">
@@ -37,6 +48,34 @@ export function AppearancePanel({ value, onChange }: Props) {
       </div>
 
       <div className={styles.group}>
+        <span className={styles.label}>Cor de destaque</span>
+        <div className={styles.swatches} role="radiogroup" aria-label="Cor de destaque">
+          <button type="button" role="radio" aria-checked={!current.accent} data-active={!current.accent || undefined} className={styles.swatchAuto} onClick={() => set({ accent: '' })}>Tema</button>
+          {ACCENTS.map(color => (
+            <button key={color} type="button" role="radio" aria-checked={current.accent.toLowerCase() === color.toLowerCase()} aria-label={color} data-active={current.accent.toLowerCase() === color.toLowerCase() || undefined} className={styles.swatch} style={{ background: color }} onClick={() => set({ accent: color })} />
+          ))}
+          <label className={styles.swatchCustom} title="Outra cor">
+            <input type="color" value={current.accent || '#DE4C4A'} onChange={event => set({ accent: event.target.value })} aria-label="Escolher outra cor" />
+            <Icon name="palette" size={16} filled={false} />
+          </label>
+        </div>
+      </div>
+
+      <div className={styles.group}>
+        <span className={styles.label}>Estilo das cores de escolha</span>
+        <div className={styles.packs} role="radiogroup" aria-label="Estilo das cores">
+          {COLOR_STYLES.map(style => (
+            <button key={style.id} type="button" role="radio" aria-checked={current.colorStyle === style.id} data-active={current.colorStyle === style.id || undefined} onClick={() => set({ colorStyle: style.id })}>
+              <strong>{style.label}</strong>
+              <small>{style.hint}</small>
+              <span className={styles.dots}>{[0, 3, 6, 9, 11, 12, 15].map(index => <i key={index} style={{ background: styleColor(PALETTE[index].color, style.id) }} />)}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <h4 className={styles.sub}>Ícones</h4>
+      <div className={styles.group}>
         <span className={styles.label}>Pacote de ícones</span>
         <div className={styles.packs} role="radiogroup" aria-label="Pacote de ícones">
           {ICON_PACKS.map(pack => (
@@ -45,6 +84,15 @@ export function AppearancePanel({ value, onChange }: Props) {
               <strong>{pack.label}</strong>
               <small>{pack.hint}</small>
             </button>
+          ))}
+        </div>
+      </div>
+
+      <div className={styles.group}>
+        <span className={styles.label}>Tamanho dos ícones</span>
+        <div className={styles.segment} role="radiogroup" aria-label="Tamanho dos ícones">
+          {([[0.875, 'Pequeno'], [1, 'Normal'], [1.15, 'Grande'], [1.3, 'Extra']] as const).map(([id, label]) => (
+            <button key={id} type="button" role="radio" aria-checked={current.iconScale === id} data-active={current.iconScale === id || undefined} onClick={() => set({ iconScale: id })}>{label}</button>
           ))}
         </div>
       </div>
@@ -64,19 +112,15 @@ export function AppearancePanel({ value, onChange }: Props) {
         </div>
       </div>
 
+      <h4 className={styles.sub}>Texto</h4>
       <div className={styles.group}>
-        <span className={styles.label}>Estilo das cores de escolha</span>
-        <div className={styles.packs} role="radiogroup" aria-label="Estilo das cores">
-          {COLOR_STYLES.map(style => (
-            <button key={style.id} type="button" role="radio" aria-checked={current.colorStyle === style.id} data-active={current.colorStyle === style.id || undefined} onClick={() => set({ colorStyle: style.id })}>
-              <strong>{style.label}</strong>
-              <small>{style.hint}</small>
-              <span className={styles.dots}>{[0, 3, 6, 9, 11, 12, 15].map(index => <i key={index} style={{ background: styleColor(PALETTE[index].color, style.id) }} />)}</span>
-            </button>
-          ))}
-        </div>
+        <label className={styles.label} htmlFor="ap-font">Fonte</label>
+        <select id="ap-font" className={styles.select} value={current.font} onChange={event => set({ font: event.target.value })}>
+          {FONTS.map(font => <option key={font.id} value={font.id}>{font.label}</option>)}
+        </select>
       </div>
 
+      <h4 className={styles.sub}>Formas</h4>
       <div className={styles.group}>
         <span className={styles.label}>Formato dos marcadores</span>
         {SHAPE_AREAS.map(area => (
@@ -89,27 +133,6 @@ export function AppearancePanel({ value, onChange }: Props) {
             </div>
           </div>
         ))}
-      </div>
-
-      <div className={styles.group}>
-        <label className={styles.label} htmlFor="ap-font">Fonte</label>
-        <select id="ap-font" className={styles.select} value={current.font} onChange={event => set({ font: event.target.value })}>
-          {FONTS.map(font => <option key={font.id} value={font.id}>{font.label}</option>)}
-        </select>
-      </div>
-
-      <div className={styles.group}>
-        <span className={styles.label}>Cor de destaque</span>
-        <div className={styles.swatches} role="radiogroup" aria-label="Cor de destaque">
-          <button type="button" role="radio" aria-checked={!current.accent} data-active={!current.accent || undefined} className={styles.swatchAuto} onClick={() => set({ accent: '' })}>Tema</button>
-          {ACCENTS.map(color => (
-            <button key={color} type="button" role="radio" aria-checked={current.accent.toLowerCase() === color.toLowerCase()} aria-label={color} data-active={current.accent.toLowerCase() === color.toLowerCase() || undefined} className={styles.swatch} style={{ background: color }} onClick={() => set({ accent: color })} />
-          ))}
-          <label className={styles.swatchCustom} title="Outra cor">
-            <input type="color" value={current.accent || '#DE4C4A'} onChange={event => set({ accent: event.target.value })} aria-label="Escolher outra cor" />
-            <Icon name="palette" size={16} filled={false} />
-          </label>
-        </div>
       </div>
 
       {custom ? <button type="button" className={styles.reset} onClick={() => onChange(DEFAULT_APPEARANCE)}>Restaurar padrão</button> : null}
