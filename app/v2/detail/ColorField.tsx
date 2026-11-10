@@ -2,16 +2,16 @@
 
 import { useRef, useState } from 'react'
 import { Icon } from '../../ds'
-import { PALETTE, colorName } from '../../../lib/v2/palette'
+import { getPalette, colorName } from '../../../lib/v2/palette'
 import { Floating, OptionList, type PickerOption } from './Pickers'
 import styles from './ColorField.module.css'
 
-const OPTIONS: PickerOption[] = PALETTE.map(item => ({ value: item.color, label: item.label, color: item.color }))
 
 /* Seletor de cor no padrão do Todoist: ponto + nome, lista de 20 cores. */
 export function ColorField({ value, onChange, className, label = 'Cor', compact }: { value: unknown; onChange: (color: string) => void; className?: string; label?: string; compact?: boolean }) {
   const anchor = useRef<HTMLButtonElement | null>(null)
   const [open, setOpen] = useState(false)
+  const OPTIONS: PickerOption[] = getPalette().map(item => ({ value: item.color, label: item.label, color: item.color }))
   const current = String(value || '')
   const known = OPTIONS.some(item => item.value.toLowerCase() === current.toLowerCase())
   const options = known || !current ? OPTIONS : [{ value: current, label: 'Personalizada', color: current }, ...OPTIONS]

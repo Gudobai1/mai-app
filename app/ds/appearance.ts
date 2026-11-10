@@ -1,15 +1,23 @@
 'use client'
 
 import { LUCIDE_ICONS } from './lucide'
+import { COLOR_STYLES, setPaletteStyle, type ColorStyle } from '../../lib/v2/palette'
 
 /**
  * Aparência personalizável (docs/PADROES.md, "Aparência"): pacote de ícones, grossura, cantos, fonte e cor de destaque.
  * Fica em `state.configs.appearance`; `applyAppearance` joga o valor no app inteiro (variáveis CSS + este mesmo estado, que o `Icon` lê).
  */
 export type IconPack = 'lucide' | 'tabler' | 'phosphor-thin' | 'phosphor' | 'phosphor-bold' | 'phosphor-duotone' | 'outlined' | 'sharp' | 'rounded'
-export type Appearance = { iconPack: IconPack; weight: number; corners: 'round' | 'square'; font: string; accent: string; palette: string }
+export type Shape = 'round' | 'square'
+export const SHAPE_AREAS: { id: 'tasks' | 'habits' | 'projects'; label: string; hint: string }[] = [
+  { id: 'tasks', label: 'Tarefas', hint: 'Marcador de concluir' },
+  { id: 'habits', label: 'Hábitos', hint: 'Marcador de cada dia' },
+  { id: 'projects', label: 'Projetos', hint: 'Foto e ícone do projeto' },
+]
+export type Shapes = Record<'tasks' | 'habits' | 'projects', Shape>
+export type Appearance = { iconPack: IconPack; weight: number; corners: 'round' | 'square'; font: string; accent: string; palette: string; colorStyle: ColorStyle; shapes: Shapes }
 
-export const DEFAULT_APPEARANCE: Appearance = { iconPack: 'lucide', weight: 1.5, corners: 'square', font: 'system', accent: '', palette: 'padrao' }
+export const DEFAULT_APPEARANCE: Appearance = { iconPack: 'lucide', weight: 1.5, corners: 'square', font: 'system', accent: '', palette: 'padrao', colorStyle: 'padrao', shapes: { tasks: 'round', habits: 'round', projects: 'round' } }
 
 export const ICON_PACKS: { id: IconPack; label: string; hint: string }[] = [
   { id: 'lucide', label: 'Linhas', hint: 'Lucide: traço contínuo, leve' },
@@ -69,6 +77,8 @@ export function normalizeAppearance(raw: unknown): Appearance {
     font: FONTS.some(item => item.id === value.font) ? String(value.font) : 'system',
     accent: /^#[0-9a-f]{6}$/i.test(String(value.accent || '')) ? String(value.accent) : '',
     palette: PALETTES.some(item => item.id === value.palette) ? String(value.palette) : 'padrao',
+    colorStyle: COLOR_STYLES.some(item => item.id === value.colorStyle) ? (value.colorStyle as ColorStyle) : 'padrao',
+    shapes: Object.fromEntries(SHAPE_AREAS.map(area => [area.id, value.shapes?.[area.id] === 'square' ? 'square' : 'round'])) as Shapes,
   }
 }
 
@@ -141,6 +151,11 @@ export function applyAppearance(raw: unknown) {
   if (next.iconPack === 'outlined' || next.iconPack === 'sharp' || next.iconPack === 'rounded') {
     const name = next.iconPack === 'sharp' ? 'Material+Symbols+Sharp' : 'Material+Symbols+Rounded'
     if (next.iconPack !== 'outlined') loadFont(`mai-icons-${next.iconPack}`, `https://fonts.googleapis.com/css2?family=${name}:opsz,wght,FILL,GRAD@20..24,200..500,0..1,0&display=swap`)
+  }
+  setPaletteStyle(next.colorStyle)
+  for (const area of SHAPE_AREAS) {
+    if (next.shapes[area.id] === 'square') root.style.setProperty(`--ds-shape-${area.id}`, '4px')
+    else root.style.removeProperty(`--ds-shape-${area.id}`)
   }
   if (next.palette === 'padrao') delete root.dataset.maiPalette
   else root.dataset.maiPalette = next.palette

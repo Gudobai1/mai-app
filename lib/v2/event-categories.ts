@@ -1,10 +1,10 @@
-import { PALETTE } from './palette'
+import { getPalette } from './palette'
 import { stateRows, type MaiState } from './state-model'
 
 /** Categoria de compromisso: nome + cor. A lista fica salva em configs.categoriasEvento. */
 export type EventCategory = { nome: string; cor: string }
 
-export const EVENT_CATEGORY_COLORS = PALETTE.map(item => item.color)
+export const eventCategoryColors = () => getPalette().map(item => item.color)
 
 const clean = (value: unknown) => String(value ?? '').trim()
 
@@ -19,7 +19,7 @@ export function eventCategories(state: MaiState): EventCategory[] {
     const key = nome.toLowerCase()
     if (!nome || seen.has(key)) return
     seen.add(key)
-    result.push({ nome, cor: cor || EVENT_CATEGORY_COLORS[0] })
+    result.push({ nome, cor: cor || eventCategoryColors()[0] })
   }
   for (const item of stateRows(state.configs?.categoriasEvento) as Record<string, unknown>[]) push(clean(item?.nome), clean(item?.cor))
   for (const event of stateRows(state.events) as Record<string, unknown>[]) push(clean(event?.categoria), clean(event?.categoria_cor || event?.cor))

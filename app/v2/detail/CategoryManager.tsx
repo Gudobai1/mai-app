@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { Icon } from '../../ds'
-import { eventCategories, removeEventCategory, updateEventCategory, withEventCategory, EVENT_CATEGORY_COLORS } from '../../../lib/v2/event-categories'
+import { eventCategories, removeEventCategory, updateEventCategory, withEventCategory, eventCategoryColors } from '../../../lib/v2/event-categories'
 import type { MaiState } from '../../../lib/v2/state'
 import { askConfirm } from '../shell/ConfirmDialog'
 import { ColorField } from './ColorField'
@@ -47,7 +47,8 @@ export function CategoryManager({ state, commit, onClose }: { state: MaiState; c
     const nome = name.trim()
     if (!nome) return
     const used = new Set(categories.map(item => item.cor))
-    const cor = EVENT_CATEGORY_COLORS.find(item => !used.has(item)) || EVENT_CATEGORY_COLORS[categories.length % EVENT_CATEGORY_COLORS.length]
+    const colors = eventCategoryColors()
+    const cor = colors.find(item => !used.has(item)) || colors[categories.length % colors.length]
     commit(current => withEventCategory(current, { nome, cor }))
     setName('')
   }

@@ -23,7 +23,7 @@ import { CommentsSection, type Comment } from './Comments'
 import { UnitField } from '../habits/UnitField'
 import { cleanHabit } from '../habits/HabitsModern'
 import { GOAL_STATUS, GOAL_TYPES, goalAmountText, goalDone, goalDue, goalPaused, goalPct, goalStep, goalStepTasks, goalType, normalizeGoal, toggleGoalInState, withSteps } from '../../../lib/v2/goals'
-import { PALETTE, colorName } from '../../../lib/v2/palette'
+import { getPalette, colorName } from '../../../lib/v2/palette'
 import { DatePicker, Floating, OptionList, ProjectPicker, ReminderPicker, RepeatPicker, TimePicker, repeatLabel, reminderLabel, type PickerOption } from './Pickers'
 import { CategoryChooser } from './CategoryChooser'
 import { CategoryManager } from './CategoryManager'
@@ -422,7 +422,7 @@ function PickerProp({ type, icon, color, label, value, display, onChange, muted,
 function ColorProp({ value, onChange }: { value: string; onChange: (color: string) => void }) {
   const [open, setOpen] = useState(false)
   const anchor = useRef<HTMLButtonElement | null>(null)
-  const options: PickerOption[] = PALETTE.map(item => ({ value: item.color, label: item.label, color: item.color }))
+  const options: PickerOption[] = getPalette().map(item => ({ value: item.color, label: item.label, color: item.color }))
   const known = options.some(item => item.value.toLowerCase() === value.toLowerCase())
   const list = known || !value ? options : [{ value, label: 'Personalizada', color: value }, ...options]
   const selected = list.find(item => item.value.toLowerCase() === value.toLowerCase())

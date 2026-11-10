@@ -2,7 +2,8 @@
 
 import { useEffect } from 'react'
 import { DEFAULT_APPEARANCE, FONTS, ICON_PACKS, Icon, loadIconPack, normalizeAppearance, type Appearance } from '../ds'
-import { PALETTES } from '../ds/appearance'
+import { PALETTES, SHAPE_AREAS } from '../ds/appearance'
+import { COLOR_STYLES, styleColor, PALETTE } from '../../lib/v2/palette'
 import styles from './AppearancePanel.module.css'
 
 const ACCENTS = ['#DE4C4A', '#D9782B', '#C9A227', '#3E8E5A', '#2F8F9D', '#246FE0', '#6B5BD2', '#B0488F', '#5B6470']
@@ -61,6 +62,33 @@ export function AppearancePanel({ value, onChange }: Props) {
             <button key={id} type="button" role="radio" aria-checked={current.corners === id} data-active={current.corners === id || undefined} onClick={() => set({ corners: id })}>{label}</button>
           ))}
         </div>
+      </div>
+
+      <div className={styles.group}>
+        <span className={styles.label}>Estilo das cores de escolha</span>
+        <div className={styles.packs} role="radiogroup" aria-label="Estilo das cores">
+          {COLOR_STYLES.map(style => (
+            <button key={style.id} type="button" role="radio" aria-checked={current.colorStyle === style.id} data-active={current.colorStyle === style.id || undefined} onClick={() => set({ colorStyle: style.id })}>
+              <strong>{style.label}</strong>
+              <small>{style.hint}</small>
+              <span className={styles.dots}>{[0, 3, 6, 9, 11, 12, 15].map(index => <i key={index} style={{ background: styleColor(PALETTE[index].color, style.id) }} />)}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className={styles.group}>
+        <span className={styles.label}>Formato dos marcadores</span>
+        {SHAPE_AREAS.map(area => (
+          <div key={area.id} className={styles.shapeRow}>
+            <span><strong>{area.label}</strong><small>{area.hint}</small></span>
+            <div className={styles.segment} role="radiogroup" aria-label={`Formato: ${area.label}`}>
+              {([['round', 'Redondo'], ['square', 'Quadrado']] as const).map(([id, label]) => (
+                <button key={id} type="button" role="radio" aria-checked={current.shapes[area.id] === id} data-active={current.shapes[area.id] === id || undefined} onClick={() => set({ shapes: { ...current.shapes, [area.id]: id } })}>{label}</button>
+              ))}
+            </div>
+          </div>
+        ))}
       </div>
 
       <div className={styles.group}>
