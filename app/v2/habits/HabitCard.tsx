@@ -2,7 +2,6 @@
 
 import type { CSSProperties, HTMLAttributes, ReactNode } from 'react'
 import { Icon } from '../../ds'
-import { DotRing } from './DotRing'
 import styles from './HabitCard.module.css'
 
 export type HabitCardProps = {
@@ -14,10 +13,9 @@ export type HabitCardProps = {
   /** Dias seguidos; aparece sempre à direita. */
   streak: number
   level: '' | 'full' | 'part' | 'fail'
-  pct: number
+  pct?: number
   value?: number | string
   unit?: string
-  /** Hábito sem métrica: o círculo mostra um check. */
   plain?: boolean
   today?: boolean
   /** Dia fora da frequência ou no futuro: círculo desativado. */
@@ -33,25 +31,26 @@ export type HabitCardProps = {
 
 /**
  * Cartão de hábito — único para todo o app (Hoje, Em breve, Hábitos).
- * Círculo à esquerda na cor do hábito · título (cor do texto) com a descrição embaixo · sequência à direita.
+ * Círculo (borda na cor do hábito, só o check por dentro, mesmo tamanho do check de tarefa) à esquerda · título (cor do texto) com a descrição embaixo · sequência à direita.
  * Ver docs/PADROES.md ("Cartão de hábito"). Não criar outra versão.
  */
 export function HabitCard(props: HabitCardProps) {
-  const { color, title, description, streak, level, pct, value, unit, plain, today, disabled, ariaLabel, onToggle, onOpen, onContextMenu, rootProps, trailing } = props
+  const { color, title, description, streak, level, disabled, ariaLabel, onToggle, onOpen, onContextMenu, rootProps, trailing } = props
   return (
     <div role="listitem" className={styles.card} style={{ '--hc': color } as CSSProperties} {...rootProps}>
       <button
         type="button"
         className={styles.circle}
         data-level={level || undefined}
-        style={{ ['--p' as string]: pct } as CSSProperties}
         disabled={disabled}
         aria-label={ariaLabel}
         aria-pressed={level === 'full'}
         onClick={onToggle}
         onContextMenu={onContextMenu}
       >
-        <DotRing pct={level === 'full' ? 100 : pct} value={value} unit={unit} plain={plain} fail={level === 'fail'} empty={!level} today={today} />
+        <span className={styles.ring}>
+          {level === 'full' || level === 'part' ? <Icon name="check" size={13} weight={600} filled={false} /> : level === 'fail' ? <Icon name="close" size={13} weight={600} filled={false} /> : null}
+        </span>
       </button>
       <button type="button" className={styles.body} onClick={onOpen}>
         <span className={styles.title}>{title}</span>
