@@ -169,7 +169,7 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
   const [kind, setKind] = useState<DraftKind>('transaction')
   const [createTool, setCreateTool] = useState('')
   const quick = useQuickMenu()
-  const openFinance = useOpenFinance(state, commit)
+  const openFinance = useOpenFinance(state, commit, !popupOnly)
   const [quickAdding, setQuickAdding] = useState(false)
   const [cardAdding, setCardAdding] = useState(false)
   const [popupMonth, setPopupMonth] = useState<string | null>(null)

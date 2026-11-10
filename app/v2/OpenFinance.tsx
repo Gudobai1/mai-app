@@ -17,7 +17,7 @@ export const matchConfig = (link?: { vinc?: Partial<MatchConfig> }): MatchConfig
   const days = (value: unknown, fallback: number) => Number.isFinite(Number(value)) && Number(value) >= 0 ? Math.min(365, Math.round(Number(value))) : fallback
   return { ligado: raw.ligado !== false, depois: days(raw.depois, MATCH_DEFAULTS.depois), antes: days(raw.antes, MATCH_DEFAULTS.antes), palavra: raw.palavra !== false }
 }
-type Link = { itemId: string; banco: string; ultimaSync?: string; url?: string; vinc?: Partial<MatchConfig> }
+type Link = { itemId: string; banco: string; ultimaSync?: string; ultimaForcada?: string; url?: string; vinc?: Partial<MatchConfig> }
 type Pending = { id: string; accountId: string; itemId: string; data: string; titulo: string; valor: number; tipo: 'receita' | 'despesa'; pendente: boolean; categoria: string; parcela: string; billId?: string }
 export type BankAccount = { id: string; itemId: string; nome: string; tipo: 'conta' | 'cartao'; saldo: number; limite: number; limite_disponivel: number; vencimento_dia?: number; fechamento_dia?: number }
 export type OpenFinanceData = { itens: Link[]; contas: BankAccount[]; vinculos: Record<string, string>; pendentes: Pending[]; vistos: string[]; dispensadas: string[] }
@@ -295,7 +295,7 @@ function loadWidget() {
 }
 
 /** Estado e ações do Open Finance. Roda no módulo inteiro: sincroniza sozinho, sem precisar abrir a aba Contas. */
-export function useOpenFinance(state: MaiState, commit: Commit) {
+export function useOpenFinance(state: MaiState, commit: Commit, auto = true) {
   const data = useMemo(() => readOpenFinance(state), [state])
   const [busy, setBusy] = useState<'' | 'connect' | 'sync'>('')
   const [message, setMessage] = useState('')
@@ -349,7 +349,7 @@ export function useOpenFinance(state: MaiState, commit: Commit) {
         const auto = autoLinkRows(imported0.rows, row => cfgByTarget.get(String(row.conta_id || '')) || MATCH_DEFAULTS)
         autoLinked = auto.linked
         const imported = { ...imported0, rows: auto.rows.map(settleCardPurchase) }
-        const itens = current.itens.map(link => { const hit = items.find(i => i.itemId === link.itemId); return hit ? { ...link, banco: hit.banco, ultimaSync: new Date().toISOString() } : link })
+        const itens = current.itens.map(link => { const hit = items.find(i => i.itemId === link.itemId); return hit ? { ...link, banco: hit.banco, ultimaSync: new Date().toISOString(), ...(refresh ? { ultimaForcada: new Date().toISOString() } : {}) } : link })
         return {
           finance: { categories: withBankCategories((finance.categories || []) as Row[], imported.rows), ...(() => { const billed = applyCardBills(imported.rows, resolved.cards, resolved.links, bank, items); return { accounts: resolved.accounts.map((account: Row) => account.pluggy_id ? { ...account, pago_base: cents(billed.transactions.filter((tx: Row) => tx.ajuste_fatura === true && String(tx.conta_pagamento_id || '') === String(account.id)).reduce((sum: number, tx: Row) => sum + num(tx.valor_pago), 0)) } : account), ...billed } })(), investments: upsertInvestments((finance.investments || []) as Row[], items) },
           data: { ...current, itens, contas: bank, vinculos: resolved.links, dispensadas: resolved.dismissed, pendentes: imported.remaining, vistos: [...current.vistos, ...imported.skipped] },
@@ -472,29 +472,36 @@ export function useOpenFinance(state: MaiState, commit: Commit) {
     })
   }
 
-  // Sincronização automática: ao abrir, a cada 15 min e quando o app volta ao primeiro plano.
+  // Sincronização automática: sempre que o Financeiro é aberto, depois a cada 15 min e quando o app volta ao primeiro plano.
+  // A atualização forçada (pedido ao banco) respeita 1 por hora por conexão, guardada em `ultimaForcada` (vale entre sessões e aparelhos).
   const latest = useRef({ data, busy, sync })
   latest.current = { data, busy, sync }
   const lastAttempt = useRef(0)
-  const lastForced = useRef(0)
+  const entered = useRef(false)
   useEffect(() => {
+    if (!auto) return
     const tick = () => {
       const { data: current, busy: working, sync: run } = latest.current
       if (working !== '' || !current.itens.length || document.visibilityState === 'hidden') return
       const now = Date.now()
       if (now - lastAttempt.current < 60_000) return // evita laço se o banco der erro
       const stale = current.itens.some(item => !item.ultimaSync || now - Date.parse(item.ultimaSync) > AUTO_MINUTES * 60_000)
-      if (!stale) return
+      if (entered.current && !stale) return
+      entered.current = true
       lastAttempt.current = now
-      const forced = now - lastForced.current > 61 * 60_000 // a Pluggy só aceita 1 atualização forçada por hora
-      if (forced) lastForced.current = now
-      void run(current.itens.map(item => item.itemId), true, forced)
+      const due = (item: Link) => !item.ultimaForcada || now - Date.parse(item.ultimaForcada) > 61 * 60_000 // a Pluggy só aceita 1 atualização forçada por hora
+      const forcedIds = current.itens.filter(due).map(item => item.itemId)
+      const readIds = current.itens.filter(item => !due(item)).map(item => item.itemId)
+      void (async () => {
+        if (forcedIds.length) await run(forcedIds, true, true)
+        if (readIds.length) await run(readIds, true, false)
+      })()
     }
     tick()
     const timer = window.setInterval(tick, 60_000)
     document.addEventListener('visibilitychange', tick)
     return () => { window.clearInterval(timer); document.removeEventListener('visibilitychange', tick) }
-  }, [])
+  }, [auto])
 
   const info = (pluggyId?: string) => {
     const bank = pluggyId ? data.contas.find(c => c.id === pluggyId) : undefined
