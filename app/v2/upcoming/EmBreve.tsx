@@ -215,11 +215,15 @@ export function EmBreve({ state, today, commit, inspect, syncRange }: Props) {
   // "Somente a próxima": cada série de eventos repetidos aparece só na primeira ocorrência de hoje em diante.
   const nextIds = useMemo(() => (display.nextOnly ? hiddenOccurrenceIds(state, today) : null), [state.events, state.tasks, state.habits, today, display.nextOnly])  // eslint-disable-line react-hooks/exhaustive-deps
 
+  /* Hábitos: só a próxima ocorrência (de hoje em diante); dias passados só aparecem se foram concluídos. */
+  const habitLater = useMemo(() => new Set([...hiddenOccurrenceIds(state, today)].filter(id => id.startsWith('habit:'))), [state.habits, state.habitEntries, today])  // eslint-disable-line react-hooks/exhaustive-deps
+
   const entries = useMemo(() => {
     const rank = (entry: Entry) => (entry.kind === 'event' ? (entry.allDay ? 0 : 1) : entry.kind === 'task' ? 2 : entry.kind === 'habit' ? 3 : 4)
     return plannerItems(state, range.start, range.end)
       .filter(item => (item.kind === 'event' || item.kind === 'task' || item.kind === 'habit' || item.kind === 'finance') && visible(item.kind))
       .filter(item => !(item.kind === 'task' && item.raw.parent_id))
+      .filter(item => item.kind !== 'habit' || (item.date < today ? item.completed : !habitLater.has(item.id)))
       .filter(item => !(nextIds && nextIds.has(item.id)))
       .map(toEntry)
       .filter(passes)
@@ -230,7 +234,7 @@ export function EmBreve({ state, today, commit, inspect, syncRange }: Props) {
         return a.day.localeCompare(b.day) || rank(a) - rank(b) || Number(a.done) - Number(b.done) || inner
       })
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state, range.start, range.end, filtersKey, display.sort, today, projects, nextIds])
+  }, [state, range.start, range.end, filtersKey, display.sort, today, projects, nextIds, habitLater])
 
   const byDay = useMemo(() => {
     const map = new Map<string, Entry[]>()
