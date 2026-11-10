@@ -22,7 +22,7 @@ import { uploadAttachment } from './upload'
 import { CommentsSection, type Comment } from './Comments'
 import { UnitField } from '../habits/UnitField'
 import { cleanHabit } from '../habits/HabitsModern'
-import { GOAL_STATUS, GOAL_TYPES, goalAmountText, goalDone, goalDue, goalPaused, goalPct, goalStep, goalType, normalizeGoal } from '../../../lib/v2/goals'
+import { GOAL_STATUS, GOAL_TYPES, goalAmountText, goalDone, goalDue, goalPaused, goalPct, goalStep, goalStepTasks, goalType, normalizeGoal, toggleGoalInState, withSteps } from '../../../lib/v2/goals'
 import { PALETTE, colorName } from '../../../lib/v2/palette'
 import { DatePicker, Floating, OptionList, ProjectPicker, ReminderPicker, RepeatPicker, TimePicker, repeatLabel, reminderLabel, type PickerOption } from './Pickers'
 import { CategoryChooser } from './CategoryChooser'
@@ -46,6 +46,8 @@ type Props = {
   googleRpc: (method: string, args?: unknown[]) => Promise<any>
   refreshEvents?: () => Promise<void> | void
   onClose: () => void
+  /** Abre outro item no lugar deste (ex.: um passo da meta, que é uma tarefa). */
+  onOpenItem?: (item: InspectableItem) => void
 }
 
 const rows = (value: unknown): Row[] => (Array.isArray(value) ? (value as Row[]) : [])
@@ -1069,12 +1071,27 @@ const GOAL_STATUSES = [
   { value: GOAL_STATUS.done, label: 'Concluída', icon: 'check', color: 'var(--ds-success)' },
 ]
 
-function GoalDetail({ item, state, today, commit, register, close }: DetailProps) {
-  const goal = rows(state.goals).find(row => String(row.id) === item.sourceId) || item.raw
+function GoalDetail({ item, state, today, commit, register, close, onOpenItem }: DetailProps) {
+  const id = item.sourceId
+  const stored = rows(state.goals).find(row => String(row.id) === id) || item.raw
+  const goal = withSteps(stored, state.tasks)
+  const steps = goalStepTasks(goal, state.tasks) as Row[]
+  const doneSteps = steps.filter(row => row.concluida).length
   const save = useCallback((draft: Row) => {
-    commit(current => ({ ...current, goals: rows(current.goals).map(row => String(row.id) === item.sourceId ? { ...row, ...normalizeGoal({ ...row, ...draft }) } : row) }))
-  }, [commit, item.sourceId])
-  const { draft, update } = useDraft({
+    commit(current => ({
+      ...current,
+      goals: rows(current.goals).map(row => {
+        if (String(row.id) !== id) return row
+        const { passos: _legacy, ...base } = row
+        // Passos: situação e progresso vêm das tarefas ligadas (só "Pausada" é escolha da pessoa).
+        const derived = goalType(draft) === 'passos' && goalStepTasks(row, current.tasks).length
+          ? withSteps({ ...base, ...draft, status: draft.status === GOAL_STATUS.paused ? GOAL_STATUS.paused : GOAL_STATUS.active, concluida: false }, current.tasks)
+          : { ...base, ...draft }
+        return { ...row, ...normalizeGoal(derived) }
+      }),
+    }))
+  }, [commit, id])
+  const { draft, update, dirty, save: saveDraft } = useDraft({
     titulo: String(goal.titulo || ''),
     descricao: String(goal.descricao || ''),
     tipo: goalType(goal),
@@ -1085,17 +1102,48 @@ function GoalDetail({ item, state, today, commit, register, close }: DetailProps
     unidade: String(goal.unidade || ''),
     progresso_atual: Math.max(0, Number(goal.progresso_atual || 0)),
     progresso_total: Math.max(1, Number(goal.progresso_total || 100)),
-    passos: rows(goal.passos),
+    comentarios: rows(goal.comentarios),
     anexos: rows(goal.anexos),
   }, save, register)
   const type = goalType(draft)
-  const pct = goalPct(draft)
+  const live = type === 'passos' ? goal : draft
+  const pct = goalPct(live)
   const priority = PRIORITIES.find(option => Number(option.value) === Number(draft.prioridade)) || PRIORITIES[3]
-  const status = GOAL_STATUSES.find(option => option.value === draft.status) || GOAL_STATUSES[0]
-  const amount = goalAmountText(draft)
+  const status = GOAL_STATUSES.find(option => option.value === (type === 'passos' && draft.status !== GOAL_STATUS.paused ? (goalDone(goal) ? GOAL_STATUS.done : GOAL_STATUS.active) : draft.status)) || GOAL_STATUSES[0]
+  const amount = goalAmountText(live)
   const amountLabel = type === 'valor' ? 'Valor atual (R$)' : 'Atual'
   const targetLabel = type === 'valor' ? 'Valor alvo (R$)' : 'Alvo'
-  const [newStep, setNewStep] = useState('')
+  const [composing, setComposing] = useState(false)
+  const [showDone, setShowDone] = useState(true)
+  const sortedSteps = [...steps].filter(row => showDone || !row.concluida).sort(compareSubtasks)
+
+  // Metas antigas guardavam os passos dentro da meta: viram tarefas independentes na primeira abertura.
+  useEffect(() => {
+    const legacy = rows(stored.passos)
+    if (goalType(stored) !== 'passos' || !legacy.length || goalStepTasks(stored, state.tasks).length) return
+    commit(current => ({
+      ...current,
+      tasks: [...current.tasks, ...legacy.map((entry, index) => ({
+        id: `t-${crypto.randomUUID()}`, titulo: String(entry.titulo || 'Passo'), descricao: '', data_vencimento: '', prioridade: 4, concluida: entry.feito === true,
+        concluida_em: entry.feito === true ? new Date().toISOString() : '', projeto_id: 'entrada', parent_id: '', meta_id: id, secao: '', criado_em: new Date().toISOString(), ordem: Date.now() + index,
+        notas: [], anexos: [], subtarefas: [], lembretes: [], etiquetas: [], repeticao: '', ocultar_agenda: false,
+      })) as (typeof current.tasks)],
+      goals: rows(current.goals).map(row => (String(row.id) === id ? { ...row, passos: [] } : row)),
+    }))
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const subQuick = useQuickMenu()
+  async function openStep(taskId: string) {
+    if (dirty) {
+      const answer = await askUnsaved('meta')
+      if (answer === 'stay') return
+      if (answer === 'save') saveDraft()
+    }
+    const row = rows(state.tasks).find(entry => String(entry.id) === taskId)
+    if (row) onOpenItem?.({ kind: 'task', sourceId: taskId, title: String(row.titulo || 'Tarefa'), date: dateKey(row.data_vencimento), raw: row })
+  }
+  const subTaskQuick = useTaskQuick({ state, today, commit, onOpen: row => void openStep(String(row.id)) })
+  const toggleStep = (taskId: string) => commit(current => ({ ...current, tasks: current.tasks.map(row => String(row.id) === taskId ? { ...row, concluida: !row.concluida, concluida_em: !row.concluida ? new Date().toISOString() : '' } : row) }))
 
   /** Muda o progresso e ajusta o status: chegar ao alvo conclui; voltar abaixo reabre. */
   const setProgress = (value: number) => {
@@ -1104,24 +1152,19 @@ function GoalDetail({ item, state, today, commit, register, close }: DetailProps
     update({ progresso_atual: next, status: next >= total ? GOAL_STATUS.done : draft.status === GOAL_STATUS.done ? GOAL_STATUS.active : draft.status }, true)
   }
   const step = (direction: 1 | -1) => setProgress(Number(draft.progresso_atual) + direction * goalStep(draft))
-  const setSteps = (passos: Row[]) => {
-    const all = passos.length > 0 && passos.every(entry => entry.feito === true)
-    update({ passos, status: all ? GOAL_STATUS.done : draft.status === GOAL_STATUS.done ? GOAL_STATUS.active : draft.status }, true)
-  }
-  const addStep = () => {
-    const titulo = newStep.trim()
-    if (!titulo) return
-    setSteps([...rows(draft.passos), { id: `passo-${crypto.randomUUID()}`, titulo, feito: false }])
-    setNewStep('')
-  }
   const changeType = (next: string) => {
     if (next === type) return
     update(next === 'percentual' ? { tipo: next, progresso_total: 100, progresso_atual: Math.min(100, Number(draft.progresso_atual)) } : { tipo: next }, true)
   }
+  const changeStatus = (value: string) => {
+    if (type === 'passos' && steps.length && (value === GOAL_STATUS.done || goalDone(goal))) commit(current => toggleGoalInState(current, id, value === GOAL_STATUS.done))
+    update({ status: value }, true)
+  }
 
   async function remove() {
-    if (!(await askConfirm({ title: 'Excluir meta?', message: `“${draft.titulo || 'Meta'}” será excluída. Não dá para desfazer.` }))) return
-    commit(current => ({ ...current, goals: rows(current.goals).filter(row => String(row.id) !== item.sourceId) }))
+    const linked = steps.length
+    if (!(await askConfirm({ title: 'Excluir meta?', message: `“${draft.titulo || 'Meta'}” será excluída.${linked ? ' Os passos continuam como tarefas.' : ''} Não dá para desfazer.` }))) return
+    commit(current => ({ ...current, goals: rows(current.goals).filter(row => String(row.id) !== id), tasks: current.tasks.map(row => String(row.meta_id || '') === id ? { ...row, meta_id: '' } : row) }))
     void close()
   }
 
@@ -1134,11 +1177,11 @@ function GoalDetail({ item, state, today, commit, register, close }: DetailProps
       <Header kind="goal" onClose={() => void close()} />
       <ItemLayout side={<>
           <SelectProp icon={GOAL_TYPES.find(option => option.value === type)?.icon || 'flag'} color="var(--ds-lilac-fg)" label="Tipo" value={type} options={GOAL_TYPES} onChange={changeType} />
-          <SelectProp icon={status.icon} color={status.color} label="Status" value={String(draft.status)} options={GOAL_STATUSES} display={status.label} onChange={value => update(value === GOAL_STATUS.done ? { status: value, ...(type === 'passos' ? { passos: rows(draft.passos).map(entry => ({ ...entry, feito: true })) } : { progresso_atual: Number(draft.progresso_total) }) } : { status: value }, true)} />
+          <SelectProp icon={status.icon} color={status.color} label="Status" value={status.value} options={GOAL_STATUSES} display={status.label} onChange={changeStatus} />
+          <Prop icon="percent" color="var(--ds-lilac-fg)" label="Conclusão" display={type === 'percentual' ? <span className={styles.pctField}>{number(Number(draft.progresso_atual), setProgress, 0)}<i>%</i></span> : `${pct}%`} />
           <PickerProp today={today} type="date" icon="calendar_today" color={draft.prazo ? 'var(--ds-accent)' : 'var(--ds-muted)'} label="Prazo" value={draft.prazo} muted={!draft.prazo} display={draft.prazo ? friendlyDate(draft.prazo, today) : 'Sem prazo'} onChange={prazo => update({ prazo }, true)} />
           <SelectProp icon="flag" color={priority.color} label="Prioridade" value={String(draft.prioridade)} onChange={value => update({ prioridade: Number(value) }, true)} options={PRIORITIES} display={priority.label} muted={Number(draft.prioridade) === 4} />
           <ColorProp value={String(draft.cor_hex || '')} onChange={cor_hex => update({ cor_hex }, true)} />
-          {type === 'percentual' ? <Prop icon="trending_up" color="var(--ds-lilac-fg)" label="Progresso (%)" display={number(Number(draft.progresso_atual), setProgress, 0)} /> : null}
           {type === 'valor' || type === 'quantidade' ? <>
             <Prop icon="trending_up" color="var(--ds-lilac-fg)" label={amountLabel} display={number(Number(draft.progresso_atual), setProgress, 0)} />
             <Prop icon="target" color="var(--ds-lilac-fg)" label={targetLabel} display={number(Number(draft.progresso_total), value => update({ progresso_total: value }), 1)} />
@@ -1155,10 +1198,10 @@ function GoalDetail({ item, state, today, commit, register, close }: DetailProps
 
         <div className={styles.habitCard}>
           <div className={styles.habitStatus}>
-            <span>{pct}%{amount ? ` · ${amount}` : ''}</span>
+            {amount ? <span>{amount}</span> : null}
             <div className={styles.bar} data-tone="lilac"><span style={{ width: `${pct}%` }} /></div>
           </div>
-          {type !== 'passos' ? (
+          {type === 'percentual' || type === 'valor' || type === 'quantidade' ? (
             <div className={styles.habitButtons}>
               <button type="button" className={styles.stepper} onClick={() => step(-1)} aria-label="Diminuir"><Icon name="remove" size={18} filled={false} /></button>
               <button type="button" className={styles.stepper} onClick={() => step(1)} aria-label="Aumentar"><Icon name="add" size={18} filled={false} /></button>
@@ -1167,26 +1210,37 @@ function GoalDetail({ item, state, today, commit, register, close }: DetailProps
         </div>
 
         {type === 'passos' ? (
-          <div className={styles.goalSteps}>
-            {rows(draft.passos).map((entry, index) => (
-              <div key={String(entry.id || index)} className={styles.goalStep} data-done={entry.feito === true || undefined}>
-                <button type="button" role="checkbox" aria-checked={entry.feito === true} className={styles.goalStepCheck} aria-label={entry.feito === true ? 'Desmarcar passo' : 'Concluir passo'} onClick={() => setSteps(rows(draft.passos).map((other, position) => position === index ? { ...other, feito: other.feito !== true } : other))}>
-                  {entry.feito === true ? <Icon name="check" size={13} weight={600} filled={false} /> : null}
-                </button>
-                <input className={styles.goalStepInput} value={String(entry.titulo || '')} aria-label={`Passo ${index + 1}`} onChange={event => update({ passos: rows(draft.passos).map((other, position) => position === index ? { ...other, titulo: event.target.value } : other) })} />
-                <button type="button" className={styles.goalStepRemove} aria-label="Remover passo" onClick={() => setSteps(rows(draft.passos).filter((_, position) => position !== index))}><Icon name="close" size={16} filled={false} /></button>
-              </div>
-            ))}
-            <div className={styles.goalStep}>
-              <span className={styles.goalStepPlus}><Icon name="add" size={16} filled={false} /></span>
-              <input className={styles.goalStepInput} value={newStep} placeholder="Adicionar passo" aria-label="Novo passo" onChange={event => setNewStep(event.target.value)} onKeyDown={event => { if (event.key === 'Enter') { event.preventDefault(); addStep() } }} />
+          <section className={styles.section}>
+            <div className={styles.subHead}>
+              <h3>Passos</h3>
+              {steps.length ? <span className={styles.subCount}>{doneSteps}/{steps.length}</span> : null}
+              <span className={styles.subHeadGrow} />
+              {doneSteps ? <button type="button" className={styles.subDoneToggle} onClick={() => setShowDone(value => !value)}>{showDone ? 'Ocultar concluídos' : `Mostrar concluídos (${doneSteps})`}</button> : null}
             </div>
-          </div>
+            <div className={styles.list}>
+              {sortedSteps.map(child => <SubtaskCard key={String(child.id)} task={child} state={state} today={today} bind={subQuick.bind(() => subTaskQuick.menu(child))} onToggle={() => toggleStep(String(child.id))} onOpen={() => void openStep(String(child.id))} />)}
+              {composing ? (
+                <QuickAdd inline kinds={['task']} initial="task" metaId={id} state={state} today={today} defaultProjectId="entrada" defaultSection="" commit={commit} onFinance={() => undefined} onClose={() => setComposing(false)} />
+              ) : (
+                <div className={styles.subAddRow}>
+                  <button type="button" className={styles.subAdd} onClick={() => setComposing(true)}>
+                    <Icon name="add" size={17} filled={false} />Adicionar passo
+                  </button>
+                </div>
+              )}
+            </div>
+          </section>
         ) : null}
 
-        <Attachments files={draft.anexos} onChange={anexos => update({ anexos }, true)} />
+        {draft.anexos.length ? <Attachments files={draft.anexos} onChange={anexos => update({ anexos }, true)} /> : null}
+
+        <div className={styles.commentsSlot}>
+          <CommentsSection comments={draft.comentarios as Comment[]} onChange={comentarios => update({ comentarios }, true)} />
+        </div>
       </ItemLayout>
       <Footer status={savedStatus} onDelete={() => void remove()} />
+      {subQuick.element}
+      {subTaskQuick.element}
     </>
   )
 }

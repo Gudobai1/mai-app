@@ -17,7 +17,7 @@ import tasksStyles from '../tasks/TasksModern.module.css'
 import todayStyles from '../today/TodayModern.module.css'
 import styles from './EmBreve.module.css'
 import { GoalCard } from '../goals/GoalCard'
-import { goalAmountText, goalColor, goalDone, goalDueInfo, goalPct, setGoalDone } from '../../../lib/v2/goals'
+import { goalAmountText, goalColor, goalDone, goalDueInfo, goalPct, toggleGoalInState } from '../../../lib/v2/goals'
 import { CategoryManager } from '../detail/CategoryManager'
 import { DayNav, DayTimeline, OrganizeButton } from '../DayTimeline'
 import { DEFAULT_DISPLAY, EMPTY_FILTERS, KINDS, UpcomingControls, normalizeFilters, type Kind, type UpcomingDisplay, type UpcomingFilters } from './UpcomingControls'
@@ -424,7 +424,7 @@ export function EmBreve({ state, today, commit, inspect, syncRange }: Props) {
     )
   }
 
-  const toggleGoal = (entry: Entry) => commit(current => ({ ...current, goals: rows(current.goals).map(goal => (String(goal.id) === entry.planner.sourceId ? setGoalDone(goal, !goalDone(goal)) : goal)) }))
+  const toggleGoal = (entry: Entry) => commit(current => toggleGoalInState(current, entry.planner.sourceId, !goalDone(entry.planner.raw)))
   const renderGoal = (entry: Entry) => {
     const goal = entry.planner.raw
     const info = goalDueInfo(entry.day, today, entry.done)

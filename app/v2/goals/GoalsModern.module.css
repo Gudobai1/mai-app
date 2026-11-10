@@ -21,3 +21,8 @@
 .composerButton:disabled { opacity: 0.5; cursor: default; }
 .composerButton:focus-visible { outline: 2px solid var(--ds-accent-strong); outline-offset: 2px; }
 @media (max-width: 900px) { .composerInput, .composerButton { height: 40px; } .page { padding-left: var(--ds-s-4, 16px); padding-right: var(--ds-s-4, 16px); } }
+
+/* Quadro: colunas por situação, com a mãozinha de arrastar no desktop (useDragScroll). */
+.board { display: flex; align-items: flex-start; gap: 16px; overflow-x: auto; padding-bottom: 12px; scrollbar-width: thin; scroll-snap-type: x proximity; }
+.column { flex: 0 0 320px; width: 320px; min-width: 0; scroll-snap-align: start; padding-top: 14px; }
+@media (max-width: 900px) { .column { flex-basis: 85%; width: 85%; } }

@@ -3,6 +3,7 @@
 import { ReactNode, useEffect, useMemo, useState } from 'react'
 import { SettingsButton } from '../ds'
 import { showCompleted } from '../../lib/v2/show-completed'
+import { GOAL_TYPES } from '../../lib/v2/goals'
 import type { MaiState } from '../../lib/v2/state'
 import type { AppView, TaskModuleScope } from './app-types'
 
@@ -206,8 +207,14 @@ export function AppTopBar({ state, today, view, taskScope, commit, onTaskScopeCh
     </> : null}
 
     {view === 'goals' ? <>
+      <PanelSection title="Visualização"><Choices value={configs.goalsView === 'board' ? 'board' : 'list'} onChange={value => patchConfig('goalsView', value)} items={[{value:'list',label:'Lista'},{value:'board',label:'Quadro'}]}/></PanelSection>
+      {configs.goalsView !== 'board' ? <PanelSection title="Agrupar por"><Choices value={String(control.group || 'status')} onChange={value => patchControl({ group:value })} items={[{value:'status',label:'Situação'},{value:'type',label:'Tipo'},{value:'due',label:'Prazo'}]}/></PanelSection> : null}
       <PanelSection title="Concluídos"><Choices value={showCompleted(state, 'goals') ? 'show' : 'hide'} onChange={value => patchConfig('showCompletedByModule', { ...((configs.showCompletedByModule as Record<string, boolean> | undefined) || {}), goals: value === 'show' })} items={[{value:'hide',label:'Ocultar'},{value:'show',label:'Mostrar concluídos'}]}/></PanelSection>
-      <PanelSection title="Filtros"><SelectLine label="Situação" value={String(filter.status || 'all')} onChange={value => patchFilter({ status:value })}><option value="all">Em andamento + pausadas</option><option value="active">Em andamento</option><option value="paused">Pausadas</option></SelectLine><SelectLine label="Prioridade" value={String(filter.priority || 'all')} onChange={value => patchFilter({ priority:value })}>{priorityOptions}</SelectLine></PanelSection>
+      <PanelSection title="Filtros">
+        <SelectLine label="Situação" value={String(filter.status || 'all')} onChange={value => patchFilter({ status:value })}><option value="all">Todas</option><option value="active">Em andamento</option><option value="paused">Pausadas</option></SelectLine>
+        <SelectLine label="Tipo" value={String(filter.type || 'all')} onChange={value => patchFilter({ type:value })}><option value="all">Todos</option>{GOAL_TYPES.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}</SelectLine>
+        <SelectLine label="Prioridade" value={String(filter.priority || 'all')} onChange={value => patchFilter({ priority:value })}>{priorityOptions}</SelectLine>
+      </PanelSection>
       <PanelSection title="Classificação"><Choices value={sortMode} onChange={value => patchControl({ sort:value })} items={[{value:'date',label:'Prazo'},{value:'priority',label:'Prioridade'},{value:'progress',label:'Progresso'},{value:'name',label:'Nome'}]}/></PanelSection>
     </> : null}
 

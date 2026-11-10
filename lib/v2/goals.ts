@@ -114,3 +114,34 @@ export function normalizeGoal(goal: Row): Row {
   if (goalDone(base) || (reached && !goalPaused(base))) return { ...base, concluida: true, status: GOAL_STATUS.done }
   return { ...base, concluida: false }
 }
+
+/* ---------------------------------------------------- Passos = tarefas independentes */
+
+/** Cada passo é uma tarefa de verdade (igual às do módulo Tarefas), ligada à meta pelo campo `meta_id`. */
+export const goalStepTasks = (goal: Row, tasks: unknown) => rowsOf(tasks).filter(task => String(task.meta_id || '') === String(goal.id)).sort((a, b) => Number(a.ordem || 0) - Number(b.ordem || 0))
+
+/** Meta de passos com o progresso lido das tarefas ligadas (concluir uma tarefa em qualquer lugar atualiza a meta). Outros tipos voltam iguais. */
+export function withSteps(goal: Row, tasks: unknown): Row {
+  if (goalType(goal) !== 'passos') return goal
+  const linked = goalStepTasks(goal, tasks)
+  if (!linked.length) return goal
+  const passos = linked.map(task => ({ id: task.id, titulo: task.titulo, feito: Boolean(task.concluida) }))
+  if (goalPaused(goal)) return { ...goal, passos }
+  const all = passos.every(step => step.feito)
+  return all ? { ...goal, passos, concluida: true, status: GOAL_STATUS.done } : { ...goal, passos, concluida: false, status: goalDone(goal) ? GOAL_STATUS.active : goal.status }
+}
+
+/** Conclui ou reabre a meta no estado inteiro: nos passos, conclui (ou reabre o último) as tarefas ligadas. */
+export function toggleGoalInState<T extends { goals: unknown[]; tasks: unknown[] }>(state: T, goalId: string, done: boolean): T {
+  const goals = rowsOf(state.goals)
+  const goal = goals.find(row => String(row.id) === goalId)
+  if (!goal) return state
+  let tasks = rowsOf(state.tasks)
+  if (goalType(goal) === 'passos') {
+    const linked = goalStepTasks(goal, tasks)
+    const targets = done ? linked.filter(task => !task.concluida) : linked.length && linked.every(task => task.concluida) ? [linked[linked.length - 1]] : []
+    const ids = new Set(targets.map(task => String(task.id)))
+    if (ids.size) tasks = tasks.map(task => (ids.has(String(task.id)) ? { ...task, concluida: done, concluida_em: done ? new Date().toISOString() : '' } : task))
+  }
+  return { ...state, tasks, goals: goals.map(row => (String(row.id) === goalId ? setGoalDone(row, done) : row)) } as T
+}

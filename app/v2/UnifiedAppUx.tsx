@@ -289,7 +289,7 @@ export function UnifiedAppUx() {
     <ConfirmHost />
     <AuthorCtx.Provider value={googleProfile}>
       {selected?.kind === 'finance' ? <FinanceV4 popupOnly state={runtime.state} today={runtime.today} commit={runtime.commit} inspect={setSelected} openRequest={{ key: `${selected.sourceId}:${selected.date || ''}`, item: selected.raw }} onPopupClose={() => setSelected(null)} /> : null}
-      <ItemDetail item={selected?.kind === 'finance' ? null : selected} state={runtime.state} today={runtime.today} commit={runtime.commit} googleRpc={runtime.googleRpc} refreshEvents={() => runtime.syncCalendar(runtime.state.configs.calendarios || [])} onClose={() => setSelected(null)} />
+      <ItemDetail item={selected?.kind === 'finance' ? null : selected} state={runtime.state} today={runtime.today} commit={runtime.commit} googleRpc={runtime.googleRpc} refreshEvents={() => runtime.syncCalendar(runtime.state.configs.calendarios || [])} onOpenItem={setSelected} onClose={() => setSelected(null)} />
     </AuthorCtx.Provider>
   </div>
 }

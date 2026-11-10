@@ -52,6 +52,8 @@ type Props = {
   inline?: boolean
   /** Cria a tarefa como subtarefa desta. */
   parentId?: string
+  /** Cria a tarefa como passo desta meta (campo meta_id). */
+  metaId?: string
   /** Modo lançamento de caixinha/investimento (guardar/retirar, aportar/resgatar). */
   movement?: MovementConfig
 }
@@ -96,7 +98,7 @@ const plusHour = (time: string) => {
 
 type Picker = '' | 'ftype' | 'account' | 'date' | 'time' | 'reminder' | 'priority' | 'project' | 'repeat' | 'start' | 'end' | 'category' | 'fcat' | 'finstall' | 'fstatus'
 
-export function QuickAdd({ kinds, initial, state, today, defaultProjectId, defaultDate, defaultAccount, defaultSection, commit, onFinance, onClose, inline, parentId, movement }: Props) {
+export function QuickAdd({ kinds, initial, state, today, defaultProjectId, defaultDate, defaultAccount, defaultSection, commit, onFinance, onClose, inline, parentId, metaId, movement }: Props) {
   const [kind, setKind] = useState<QuickAddKind>(initial)
   const [title, setTitle] = useState(movement?.initial?.titulo ?? '')
   const [description, setDescription] = useState('')
@@ -261,7 +263,7 @@ export function QuickAdd({ kinds, initial, state, today, defaultProjectId, defau
     } else if (kind === 'task') {
       const task: Row = {
         id: uid('t'), titulo: name, descricao: description.trim(), data_vencimento: date ? `${date}${taskTime ? `T${taskTime}` : ''}` : '', prioridade: priority, concluida: false,
-        projeto_id: projectId, parent_id: parentId || '', secao: section, criado_em: new Date().toISOString(), ordem: Date.now(),
+        projeto_id: projectId, parent_id: parentId || '', meta_id: metaId || '', secao: section, criado_em: new Date().toISOString(), ordem: Date.now(),
         notas: [], anexos: [], subtarefas: [], lembretes: reminder ? [reminder] : [], etiquetas: [], repeticao: repeat, ocultar_agenda: false,
       }
       commit(current => ({ ...current, tasks: [...current.tasks, task as (typeof current.tasks)[number]] }))
@@ -316,7 +318,7 @@ export function QuickAdd({ kinds, initial, state, today, defaultProjectId, defau
               autoFocus
               className={styles.title}
               value={title}
-              placeholder={kind === 'task' ? (parentId ? 'Nome da subtarefa' : 'Nome da tarefa') : kind === 'finance' ? (movement ? 'Nome do lançamento (opcional)' : 'Nome do lançamento') : 'Nome do compromisso'}
+              placeholder={kind === 'task' ? (metaId ? 'Nome do passo' : parentId ? 'Nome da subtarefa' : 'Nome da tarefa') : kind === 'finance' ? (movement ? 'Nome do lançamento (opcional)' : 'Nome do lançamento') : 'Nome do compromisso'}
               enterKeyHint="done"
               onChange={event => { setTitle(event.target.value); setCaret(event.target.selectionStart ?? event.target.value.length); setSuggestIndex(0) }}
               onSelect={event => setCaret(event.currentTarget.selectionStart ?? 0)}
@@ -426,7 +428,7 @@ export function QuickAdd({ kinds, initial, state, today, defaultProjectId, defau
           <div className={styles.actions}>
           <button type="button" className={styles.ghost} onClick={onClose}>Cancelar</button>
           {movement?.onDelete ? <button type="button" className={styles.ghost} onClick={() => { movement.onDelete?.(); onClose() }}>Excluir</button> : null}
-          <button type="button" className={styles.primary} disabled={!canSubmit} onClick={submit}>{movement ? movement.submitLabel : kind === 'task' ? (parentId ? 'Adicionar subtarefa' : 'Adicionar tarefa') : kind === 'finance' ? 'Adicionar lançamento' : 'Adicionar compromisso'}</button>
+          <button type="button" className={styles.primary} disabled={!canSubmit} onClick={submit}>{movement ? movement.submitLabel : kind === 'task' ? (metaId ? 'Adicionar passo' : parentId ? 'Adicionar subtarefa' : 'Adicionar tarefa') : kind === 'finance' ? 'Adicionar lançamento' : 'Adicionar compromisso'}</button>
           </div>
         </div>
       </div>
