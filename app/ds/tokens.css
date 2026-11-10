@@ -35,6 +35,13 @@
   --ds-popup-r: 10px;
   --ds-popup-scrim: rgba(0, 0, 0, 0.45);
   --ds-popup-shadow: 0 30px 80px rgba(0, 0, 0, 0.35);
+  /* Linha de lista (tarefa, compromisso, hábito, lançamento): mesmas medidas em todo o app */
+  --ds-row-py: 11px;
+  --ds-row-px: 6px;
+  --ds-row-gap: 12px;
+  --ds-row-lead: 18px;
+  --ds-row-title: 14.5px;
+  --ds-row-sub: 12.5px;
   --ds-s-1: 4px;
   --ds-s-2: 8px;
   --ds-s-3: 12px;
