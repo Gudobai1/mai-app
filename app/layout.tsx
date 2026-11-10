@@ -50,6 +50,7 @@ import './ds/tokens.css'
 import './v2/shell/shell-overrides.css'
 import './v2/shell/detail-popup.css'
 import './motion.css'
+import './ds/no-underline.css'
 
 export const metadata: Metadata = {
   title: 'Bukid',

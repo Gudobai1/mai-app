@@ -436,7 +436,12 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
     openTransaction(item)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [popupOnly, openRequest?.key])
-  useEffect(() => { if (popupOnly && popupOpened.current && !draft) { popupOpened.current = false; onPopupClose?.() } }, [popupOnly, draft])  // eslint-disable-line react-hooks/exhaustive-deps
+  const popupSawDraft = useRef(false)
+  useEffect(() => {
+    if (!popupOnly || !popupOpened.current) return
+    if (draft) { popupSawDraft.current = true; return }
+    if (popupSawDraft.current) { popupOpened.current = false; popupSawDraft.current = false; onPopupClose?.() }
+  }, [popupOnly, draft])  // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     const updated = investments.map(item => applyInvestmentAutomation(item, today))
