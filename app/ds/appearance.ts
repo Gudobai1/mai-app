@@ -32,6 +32,17 @@ export const PALETTES: { id: string; label: string; swatch: [string, string, str
   { id: 'areia', label: 'Areia', swatch: ['#FFFDF9', '#F8F3EA', '#EBE3D4', '#1A1613'] },
   { id: 'lavanda', label: 'Lavanda', swatch: ['#FCFBFF', '#F4F1FB', '#E6E1F2', '#17141F'] },
   { id: 'meia-noite', label: 'Meia-noite', swatch: ['#FFFFFF', '#F3F4F6', '#E3E5E9', '#000000'] },
+  { id: 'cereja', label: 'Cereja', swatch: ['#FDFCFC', '#F8F1F3', '#EFE1E5', '#1B0E11'] },
+  { id: 'menta', label: 'Menta', swatch: ['#FCFDFD', '#F2F8F6', '#E2EEEA', '#0F1A16'] },
+  { id: 'ceu', label: 'Céu', swatch: ['#FCFDFD', '#F1F6F8', '#E1EAEF', '#0E161B'] },
+  { id: 'ambar', label: 'Âmbar', swatch: ['#FDFDFC', '#F9F6F1', '#F0EAE0', '#1C160D'] },
+  { id: 'ardosia', label: 'Ardósia', swatch: ['#FCFCFD', '#F3F5F6', '#E5E8EB', '#121417'] },
+  { id: 'terra', label: 'Terra', swatch: ['#FDFCFC', '#F8F4F2', '#EEE6E2', '#1A120F'] },
+  { id: 'uva', label: 'Uva', swatch: ['#FDFCFD', '#F5F2F8', '#E9E2EE', '#150F1A'] },
+  { id: 'limao', label: 'Limão', swatch: ['#FDFDFC', '#F7F8F1', '#ECEFE1', '#181B0E'] },
+  { id: 'petroleo', label: 'Petróleo', swatch: ['#FCFDFD', '#F1F7F8', '#E1EDEF', '#0E191B'] },
+  { id: 'rosa', label: 'Rosa', swatch: ['#FDFCFD', '#F8F2F6', '#EEE2EA', '#1A0F16'] },
+  { id: 'oliva', label: 'Oliva', swatch: ['#FCFDFC', '#F5F7F3', '#E8EDE4', '#141810'] },
 ]
 
 const SYSTEM_STACK = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif"

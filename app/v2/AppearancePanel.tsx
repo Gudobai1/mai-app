@@ -5,7 +5,6 @@ import { DEFAULT_APPEARANCE, FONTS, ICON_PACKS, Icon, loadIconPack, normalizeApp
 import { PALETTES } from '../ds/appearance'
 import styles from './AppearancePanel.module.css'
 
-const SAMPLE = ['today', 'event_upcoming', 'task_alt', 'account_balance_wallet', 'repeat', 'flag', 'sticky_note_2', 'folder', 'search', 'settings']
 const ACCENTS = ['#DE4C4A', '#D9782B', '#C9A227', '#3E8E5A', '#2F8F9D', '#246FE0', '#6B5BD2', '#B0488F', '#5B6470']
 
 type Props = { value: unknown; onChange: (next: Appearance) => void }
@@ -24,10 +23,6 @@ export function AppearancePanel({ value, onChange }: Props) {
 
   return (
     <div className={styles.panel}>
-      <div className={styles.preview} aria-label="Prévia dos ícones">
-        {SAMPLE.map(name => <Icon key={name} name={name} size={22} filled={false} />)}
-      </div>
-
       <div className={styles.group}>
         <span className={styles.label}>Paleta de cores do app</span>
         <div className={styles.palettes} role="radiogroup" aria-label="Paleta de cores">

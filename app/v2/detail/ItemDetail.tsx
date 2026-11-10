@@ -868,6 +868,7 @@ function HabitDetail({ item, state, today, commit, register, close }: DetailProp
     data_inicio: String(habit.data_inicio || '').slice(0, 10),
     ocultar_agenda: habit.ocultar_agenda === true,
     anexos: rows(habit.anexos),
+    comentarios: rows(habit.comentarios),
   }, save, register)
 
   const target = Math.max(1, Number(draft.meta || 1))
@@ -896,7 +897,14 @@ function HabitDetail({ item, state, today, commit, register, close }: DetailProp
   const monthStart = month
   const lead = new Date(`${monthStart}T12:00:00`).getDay()
   const monthDays = new Date(Number(month.slice(0, 4)), Number(month.slice(5, 7)), 0).getDate()
-  const monthTitle = new Date(`${monthStart}T12:00:00`).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
+  const monthLabel = new Date(`${monthStart}T12:00:00`).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
+  const monthTitle = monthLabel.charAt(0).toLocaleUpperCase('pt-BR') + monthLabel.slice(1)
+  // Comentários e arquivos são de um dia só: o dia escolhido no calendário (começa no dia do popup).
+  const [picked, setPicked] = useState(day)
+  const allNotes = draft.comentarios as (Comment & { dia?: string })[]
+  const dayNotes = allNotes.filter(note => (note.dia || '') === picked)
+  const noteDays = new Set(allNotes.filter(note => note.dia && (String(note.texto || '').trim() || note.anexos?.length)).map(note => String(note.dia)))
+  const setDayNotes = (next: Comment[]) => update({ comentarios: [...allNotes.filter(note => (note.dia || '') !== picked), ...next.map(note => ({ ...note, dia: picked }))] }, true)
   const cells: (string | null)[] = [...Array(lead).fill(null), ...Array.from({ length: monthDays }, (_, index) => `${monthStart.slice(0, 8)}${String(index + 1).padStart(2, '0')}`)]
   const shiftMonth = (amount: number) => { const next = new Date(Number(month.slice(0, 4)), Number(month.slice(5, 7)) - 1 + amount, 1, 12); setMonth(`${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, '0')}-01`) }
   const monthKeys = cells.filter((key): key is string => Boolean(key))
@@ -940,9 +948,11 @@ function HabitDetail({ item, state, today, commit, register, close }: DetailProp
       </>}>
         <div className={styles.monthCal} style={{ '--hc': color } as CSSProperties}>
           <div className={styles.monthBar}>
-            <button type="button" className={styles.monthNav} onClick={() => shiftMonth(-1)} aria-label="Mês anterior"><Icon name="chevron_left" size={20} filled={false} /></button>
             <h3 className={styles.monthTitle}>{monthTitle}</h3>
-            <button type="button" className={styles.monthNav} onClick={() => shiftMonth(1)} aria-label="Próximo mês"><Icon name="chevron_right" size={20} filled={false} /></button>
+            <span className={styles.monthNavs}>
+              <button type="button" className={styles.monthNav} onClick={() => shiftMonth(-1)} aria-label="Mês anterior"><Icon name="chevron_left" size={20} filled={false} /></button>
+              <button type="button" className={styles.monthNav} onClick={() => shiftMonth(1)} aria-label="Próximo mês"><Icon name="chevron_right" size={20} filled={false} /></button>
+            </span>
           </div>
           <p className={styles.monthSummary}>{summary}</p>
           <div className={styles.monthGrid} role="grid" aria-label={monthTitle}>
@@ -953,16 +963,23 @@ function HabitDetail({ item, state, today, commit, register, close }: DetailProp
               const level = failedEntry(row) ? 'fail' : Number(row?.valor || 0) >= target ? 'full' : Number(row?.valor || 0) > 0 ? 'part' : ''
               const off = key > today || !habitOccursOn(habit, key)
               return (
-                <button key={key} type="button" className={styles.monthDay} data-today={key === today || undefined} data-off={off || undefined} disabled={off} aria-label={friendlyDate(key, today)} onClick={() => cycleDay(key)}>
-                  <small>{Number(key.slice(8))}</small>
-                  <i data-level={level || undefined}>{level === 'full' || level === 'part' ? <Icon name="check" size={13} weight={600} filled={false} /> : level === 'fail' ? <Icon name="close" size={13} weight={600} filled={false} /> : null}</i>
+                <div key={key} className={styles.monthDay} data-today={key === today || undefined} data-off={off || undefined} data-selected={key === picked || undefined} data-note={noteDays.has(key) || undefined}>
+                  <button type="button" className={styles.monthNum} onClick={() => setPicked(key)} aria-pressed={key === picked} aria-label={`${friendlyDate(key, today)}${noteDays.has(key) ? ', com comentário' : ''}`}>{Number(key.slice(8))}</button>
+                  <button type="button" className={styles.monthCircle} disabled={off} onClick={() => { setPicked(key); cycleDay(key) }} aria-label={`Marcar ${friendlyDate(key, today)}`}>
+                    <i data-level={level || undefined}>{level === 'full' || level === 'part' ? <Icon name="check" size={13} weight={600} filled={false} /> : level === 'fail' ? <Icon name="close" size={13} weight={600} filled={false} /> : null}</i>
+                  </button>
                   {quantitative ? <em>{level === 'fail' || !row ? '' : `${Number(row.valor || 0)}${unitShort ? ` ${unitShort}` : ''}`}</em> : null}
-                </button>
+                </div>
               )
             })}
           </div>
         </div>
-        <Attachments files={draft.anexos} onChange={anexos => update({ anexos }, true)} />
+        {draft.anexos.length ? <Attachments files={draft.anexos} onChange={anexos => update({ anexos }, true)} /> : null}
+
+        <div className={styles.commentsSlot}>
+          <div className={styles.dayNoteHead}><Icon name="event" size={16} filled={false} />Comentários de {friendlyDate(picked, today)}</div>
+          <CommentsSection key={picked} comments={dayNotes} onChange={setDayNotes} />
+        </div>
       </ItemLayout>
       <Footer status={savedStatus} onDelete={() => void remove()} deleteLabel="Arquivar" />
     </>
