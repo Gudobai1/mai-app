@@ -1648,4 +1648,3 @@
 .monthDay i { display: grid; place-items: center; box-sizing: border-box; width: var(--ds-row-lead); height: var(--ds-row-lead); border: 2px solid var(--hc); border-radius: 50%; color: var(--hc); }
 .monthDay i[data-level='fail'] { border-color: var(--ds-danger); color: var(--ds-danger); }
 
-.sideBlock { padding: 10px 0 4px; border-top: 1px solid var(--ds-line); }

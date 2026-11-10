@@ -21,8 +21,8 @@ import { useTaskQuick } from '../shell/TaskQuick'
 import { uploadAttachment } from './upload'
 import { CommentsSection, type Comment } from './Comments'
 import { UnitField } from '../habits/UnitField'
-import { FrequencyEditor, cleanHabit } from '../habits/HabitsModern'
-import { ColorField } from './ColorField'
+import { cleanHabit } from '../habits/HabitsModern'
+import { PALETTE, colorName } from '../../../lib/v2/palette'
 import { DatePicker, Floating, OptionList, ProjectPicker, ReminderPicker, RepeatPicker, TimePicker, repeatLabel, reminderLabel, type PickerOption } from './Pickers'
 import { CategoryChooser } from './CategoryChooser'
 import { CategoryManager } from './CategoryManager'
@@ -394,7 +394,7 @@ function CategoryProp({ categories, value, display, onPick, onCreate, state, com
   )
 }
 
-function PickerProp({ type, icon, color, label, value, display, onChange, muted, today = '', allowEmpty = true, emptyLabel }: { type: 'date' | 'time' | 'repeat' | 'reminder'; icon: string; color?: string; label: string; value: string; display: ReactNode; onChange: (value: string) => void; muted?: boolean; today?: string; allowEmpty?: boolean; emptyLabel?: string }) {
+function PickerProp({ type, icon, color, label, value, display, onChange, muted, today = '', allowEmpty = true, emptyLabel, habit = false }: { habit?: boolean; type: 'date' | 'time' | 'repeat' | 'reminder'; icon: string; color?: string; label: string; value: string; display: ReactNode; onChange: (value: string) => void; muted?: boolean; today?: string; allowEmpty?: boolean; emptyLabel?: string }) {
   const [open, setOpen] = useState(false)
   const anchor = useRef<HTMLButtonElement | null>(null)
   const pick = (next: string) => { setOpen(false); if (next !== value) onChange(next) }
@@ -408,8 +408,27 @@ function PickerProp({ type, icon, color, label, value, display, onChange, muted,
             : type === 'time'
               ? <TimePicker value={value} onSelect={pick} allowEmpty={allowEmpty} emptyLabel={emptyLabel} />
               : type === 'repeat'
-                ? <RepeatPicker value={value} onSelect={pick} />
+                ? <RepeatPicker value={value} onSelect={pick} habit={habit} />
                 : <ReminderPicker value={value} onSelect={pick} />}
+        </Floating>
+      ) : null}
+    </>
+  )
+}
+
+function ColorProp({ value, onChange }: { value: string; onChange: (color: string) => void }) {
+  const [open, setOpen] = useState(false)
+  const anchor = useRef<HTMLButtonElement | null>(null)
+  const options: PickerOption[] = PALETTE.map(item => ({ value: item.color, label: item.label, color: item.color }))
+  const known = options.some(item => item.value.toLowerCase() === value.toLowerCase())
+  const list = known || !value ? options : [{ value, label: 'Personalizada', color: value }, ...options]
+  const selected = list.find(item => item.value.toLowerCase() === value.toLowerCase())
+  return (
+    <>
+      <Prop icon="palette" color={value || 'var(--ds-muted)'} label="Cor" display={selected?.label || (value ? colorName(value) : 'Sem cor')} muted={!value} onOpen={() => setOpen(true)} buttonRef={anchor} open={open} />
+      {open ? (
+        <Floating anchor={anchor} title="Cor" width={240} onClose={() => setOpen(false)}>
+          <OptionList options={list} value={selected?.value || ''} onSelect={next => { setOpen(false); if (next !== value) onChange(next) }} />
         </Floating>
       ) : null}
     </>
@@ -911,10 +930,10 @@ function HabitDetail({ item, state, today, commit, register, close }: DetailProp
           <Prop icon="notes" color="var(--ds-text-2)" label="Descrição" display={<input className={styles.inlineInput} type="text" value={draft.descricao} placeholder="Adicionar descrição" onChange={event => update({ descricao: event.target.value })} />} />
           <Prop icon="target" color="var(--ds-accent)" label="Meta por dia" display={<input className={styles.inlineInput} type="number" inputMode="numeric" min={1} value={draft.meta} onChange={event => update({ meta: Math.max(1, Number(event.target.value) || 1) })} />} />
           <Prop icon="straighten" color="var(--ds-text-2)" label="Unidade" display={<UnitField className={styles.inlineInput} value={String(draft.unidade || '')} onChange={unidade => update({ unidade })} />} />
-          <Prop icon="schedule" color="var(--ds-text-2)" label="Horário" display={<input className={styles.inlineInput} type="time" value={String(draft.hora || '')} onChange={event => update({ hora: event.target.value })} />} />
-          <Prop icon="palette" color={String(draft.cor_hex || 'var(--ds-accent)')} label="Cor" display={<ColorField value={draft.cor_hex} onChange={cor_hex => update({ cor_hex })} />} />
-          <Prop icon={draft.ocultar_agenda ? 'visibility_off' : 'visibility'} color="var(--ds-text-2)" label="Hoje e Agenda" display={draft.ocultar_agenda ? 'Oculto de Hoje e da Agenda' : 'Aparece em Hoje e na Agenda'} onOpen={() => update({ ocultar_agenda: !draft.ocultar_agenda })} />
-          <div className={styles.sideBlock}><FrequencyEditor draft={draft} setDraft={next => update(next)} today={today} /></div>
+          <PickerProp type="time" icon="schedule" color="var(--ds-lilac-fg)" label="Horário" value={String(draft.hora || '')} display={String(draft.hora || '') || 'Sem horário'} muted={!draft.hora} onChange={hora => update({ hora }, true)} />
+          <PickerProp type="repeat" habit icon="repeat" color="var(--ds-mint-fg)" label="Frequência" allowEmpty={false} value={String(draft.repeticao || 'diariamente')} display={repeatLabel(String(draft.repeticao || 'diariamente'))} onChange={repeticao => update({ repeticao, ...(repeticao.startsWith('intervalo:') && !draft.data_inicio ? { data_inicio: today } : {}) }, true)} />
+          <ColorProp value={String(draft.cor_hex || '')} onChange={cor_hex => update({ cor_hex }, true)} />
+          <Prop icon={draft.ocultar_agenda ? 'visibility_off' : 'visibility'} color="var(--ds-text-2)" label="Hoje e Agenda" display={draft.ocultar_agenda ? 'Oculto de Hoje e da Agenda' : 'Aparece em Hoje e na Agenda'} onOpen={() => update({ ocultar_agenda: !draft.ocultar_agenda }, true)} />
       </>}>
         <div className={styles.monthCal} style={{ '--hc': color } as CSSProperties}>
           <div className={styles.monthBar}>
