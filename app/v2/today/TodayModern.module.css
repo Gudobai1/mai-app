@@ -2124,3 +2124,15 @@ html body .itemButton.itemButton:hover .taskTitle { text-decoration: underline; 
 .page .items .taskDesc,
 .page .items .evWhen { font-size: var(--ds-row-sub); }
 .page .habitList { padding: 0; margin: 0; }
+
+/* Peso normal nas linhas (tarefa, compromisso, hábito, lançamento): negrito só em títulos de bloco */
+.page .items .taskTitle,
+.page .items .evRow .taskTitle,
+.page .items .taskDesc,
+.page .items .evWhen,
+.page .items .projectTag,
+.page .items .evGoogle,
+.page .items .evSource,
+.page .items [class*='itemMeta'],
+.page .items .taskSub,
+.page .items .taskSub * { font-weight: var(--ds-row-weight); }

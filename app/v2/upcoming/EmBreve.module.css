@@ -289,3 +289,7 @@
 .cellFin[data-type='receita'] > svg { color: var(--ds-success, #058527); }
 .cellFin em { margin-left: auto; padding-left: 4px; font-style: normal; font-size: 10.5px; font-weight: var(--ds-fw-bold); color: var(--ds-muted); font-variant-numeric: tabular-nums; }
 .cellFin[data-done] { opacity: 0.5; }
+
+/* Peso normal nas linhas (tokens --ds-row-*) */
+.eventTitle, .eventWhen, .eventSource, .eventSource b { font-weight: var(--ds-row-weight); }
+.cellEvent, .cellTask, .cellFin, .cellFin em { font-weight: var(--ds-row-weight); }
