@@ -2,7 +2,7 @@
 
 import { ColorField } from './detail/ColorField'
 import { MoneyInput } from './MoneyInput'
-import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { showCompleted } from '../../lib/v2/show-completed'
 import type { MaiState } from '../../lib/v2/state'
 import type { InspectableItem } from './ContextDrawer'
@@ -128,7 +128,7 @@ function paymentState(item: Row, value: unknown = item.pagamentos) {
   return { payments, paid: legacyPaid, remaining: Math.max(0, total - legacyPaid), status: total > 0 && legacyPaid >= total ? 'pago' : legacyPaid > 0 ? 'parcial' : 'pendente' }
 }
 
-export function FinanceV4({ state, today, commit, createRequest, inspect: _inspect, options }: { options?: ReactNode; state: MaiState; today: string; commit: Commit; createRequest?: string; inspect: (item: InspectableItem) => void }) {
+export function FinanceV4({ state, today, commit, createRequest, inspect: _inspect, options, popupOnly, openRequest, onPopupClose }: { popupOnly?: boolean; openRequest?: { key: string; item: Row } | null; onPopupClose?: () => void; options?: ReactNode; state: MaiState; today: string; commit: Commit; createRequest?: string; inspect: (item: InspectableItem) => void }) {
   const savedTabs = state.configs.areaTabs && typeof state.configs.areaTabs === 'object' ? state.configs.areaTabs as Record<string, string> : {}
   const savedTab = String(savedTabs.finance || 'overview')
   const allowedTabs: Tab[] = ['transactions', 'accounts', 'cards', 'boxes', 'investments', 'reports']
@@ -424,6 +424,19 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
   }
 
   useEffect(() => { if (createRequest?.startsWith('finance:')) openNew('transaction') }, [createRequest, today])
+
+  /* Modo só-janela: qualquer tela (Hoje, Em breve, busca) abre o lançamento na mesma janela do módulo Finanças. */
+  const popupOpened = useRef(false)
+  useEffect(() => {
+    if (!popupOnly || !openRequest) return
+    const raw = openRequest.item
+    const ruleId = String(raw.fixo_id || '')
+    const item: Row = ruleId ? { ...raw, id: ruleId, _isFixed: true, occurrenceKey: `${ruleId}|${dateKey(raw.data).slice(0, 7)}` } : raw
+    popupOpened.current = true
+    openTransaction(item)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [popupOnly, openRequest?.key])
+  useEffect(() => { if (popupOnly && popupOpened.current && !draft) { popupOpened.current = false; onPopupClose?.() } }, [popupOnly, draft])  // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     const updated = investments.map(item => applyInvestmentAutomation(item, today))
@@ -1007,7 +1020,7 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
     </section>
   }
 
-  return <div className={`mai-v3-area-page mai-v4-finance ${fm.page}`} onContextMenu={event => { const target = event.target as HTMLElement; if (!target.closest('input, textarea')) event.preventDefault() }}>
+  return <div className={`mai-v3-area-page mai-v4-finance ${fm.page}`} style={popupOnly ? { display: 'none' } : undefined} onContextMenu={event => { const target = event.target as HTMLElement; if (!target.closest('input, textarea')) event.preventDefault() }}>
     <div className={fm.top}>
       <h1 className={fm.title}>Financeiro</h1>
       <div className={fm.topRight}>

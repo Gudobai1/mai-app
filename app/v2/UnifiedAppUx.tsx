@@ -304,7 +304,8 @@ export function UnifiedAppUx() {
     <UndoToast toast={runtime.toast} onUndo={runtime.undo} onClose={runtime.dismissToast} />
     <ConfirmHost />
     <AuthorCtx.Provider value={googleProfile}>
-      <ItemDetail item={selected} state={runtime.state} today={runtime.today} commit={runtime.commit} googleRpc={runtime.googleRpc} refreshEvents={() => runtime.syncCalendar(runtime.state.configs.calendarios || [])} onClose={() => setSelected(null)} />
+      {selected?.kind === 'finance' ? <FinanceV4 popupOnly state={runtime.state} today={runtime.today} commit={runtime.commit} inspect={setSelected} openRequest={{ key: `${selected.sourceId}:${selected.date || ''}`, item: selected.raw }} onPopupClose={() => setSelected(null)} /> : null}
+      <ItemDetail item={selected?.kind === 'finance' ? null : selected} state={runtime.state} today={runtime.today} commit={runtime.commit} googleRpc={runtime.googleRpc} refreshEvents={() => runtime.syncCalendar(runtime.state.configs.calendarios || [])} onClose={() => setSelected(null)} />
     </AuthorCtx.Provider>
   </div>
 }
