@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, type RefObject } from 'react'
 import type { MaiState, SyncStatus } from '../../lib/v2/state'
 import { Icon } from '../ds'
 import styles from './Settings.module.css'
+import { AppearancePanel } from './AppearancePanel'
 import { ThemePicker } from './ThemePicker'
 
 
@@ -115,6 +116,7 @@ export function AppSettingsDrawer(props: Props) {
                 onMode={mode => props.commit(current => ({ ...current, configs: { ...current.configs, theme: mode } }))}
                 onTheme={theme => props.commit(current => ({ ...current, configs: { ...current.configs, accentColor: theme } }))}
               />
+              <AppearancePanel value={props.state.configs.appearance} onChange={appearance => props.commit(current => ({ ...current, configs: { ...current.configs, appearance } }))} />
               <div className={styles.row}>
                 <span><strong>Ocultar Entrada</strong><small>Esconde a Entrada da lista de projetos no menu lateral.</small></span>
                 <button type="button" role="switch" aria-checked={hideInbox} aria-label="Ocultar Entrada" className={styles.switch} data-on={hideInbox || undefined} onClick={() => props.commit(current => ({ ...current, configs: { ...current.configs, hideInbox: !current.configs.hideInbox } }))}><i /></button>
