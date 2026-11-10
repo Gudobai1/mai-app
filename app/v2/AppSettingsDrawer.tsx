@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState, type RefObject } from 'react'
 import type { MaiState, SyncStatus } from '../../lib/v2/state'
-import { Icon } from '../ds'
+import { Icon, normalizeAppearance } from '../ds'
+import { restyleColors } from '../../lib/v2/palette'
 import styles from './Settings.module.css'
 import { AppearancePanel } from './AppearancePanel'
 import { SidebarSettings } from './SidebarSettings'
@@ -132,7 +133,11 @@ export function AppSettingsDrawer(props: Props) {
 
             <section className={styles.section} data-section="tema" hidden={active !== 'tema'}>
               <h3>Aparência</h3>
-              <AppearancePanel mode={normalizeMode(props.state.configs.theme)} onMode={mode => props.commit(current => ({ ...current, configs: { ...current.configs, theme: mode } }))} value={props.state.configs.appearance} onChange={appearance => props.commit(current => ({ ...current, configs: { ...current.configs, appearance } }))} />
+              <AppearancePanel mode={normalizeMode(props.state.configs.theme)} onMode={mode => props.commit(current => ({ ...current, configs: { ...current.configs, theme: mode } }))} value={props.state.configs.appearance} onChange={appearance => props.commit(current => {
+                const before = normalizeAppearance(current.configs.appearance)
+                const base = before.colorStyle !== appearance.colorStyle ? restyleColors(current, appearance.colorStyle) : current
+                return { ...base, configs: { ...base.configs, appearance } }
+              })} />
             </section>
 
             <section className={styles.section} data-section="barra" hidden={active !== 'barra'}>
