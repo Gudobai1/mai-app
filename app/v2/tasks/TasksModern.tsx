@@ -78,11 +78,6 @@ function nextMonday(today: string) {
 export function TasksModern(props: Props) {
   const { state, today, scope, commit, inspect } = props
   const controls = (state.configs.moduleControls && typeof state.configs.moduleControls === 'object' ? state.configs.moduleControls : {}) as Record<string, Row>
-  const rawSort = String(controls.tasks?.sort || 'manual')
-  const sortMode: SortMode = (['manual', 'date', 'priority', 'project', 'name'].includes(rawSort) ? rawSort : 'manual') as SortMode
-  const filters = (state.configs.moduleFilters && typeof state.configs.moduleFilters === 'object' ? (state.configs.moduleFilters as Record<string, Row>).tasks : null) || {}
-  const priorityFilter = String(filters.priority || 'all')
-
   const projects = useMemo(() => {
     const active = rows(state.projects).filter(project => project.ativo !== false)
     const sorted = [...active].sort((a, b) => Number(Boolean(b.favorito)) - Number(Boolean(a.favorito)) || Number(a.ordem || 0) - Number(b.ordem || 0) || String(a.nome || '').localeCompare(String(b.nome || ''), 'pt-BR'))
@@ -128,6 +123,17 @@ export function TasksModern(props: Props) {
   const prefsAll = (state.configs.taskWorkspaces && typeof state.configs.taskWorkspaces === 'object' ? state.configs.taskWorkspaces : {}) as Record<string, Row>
   const scopeKey = projectId ? `project:${projectId}` : scope === 'entrada' ? 'inbox' : String(scope)
   const prefs = prefsAll[scopeKey] || {}
+  /* Ajustes individuais por projeto/lista (ordenação, prioridade, mostrar concluídos). Sem ajuste próprio, vale o padrão antigo do módulo. */
+  const scopedAll = (state.configs.taskScopeSettings && typeof state.configs.taskScopeSettings === 'object' ? state.configs.taskScopeSettings : {}) as Record<string, Row>
+  const scoped = scopedAll[scopeKey] || {}
+  const legacyFilters = (state.configs.moduleFilters && typeof state.configs.moduleFilters === 'object' ? (state.configs.moduleFilters as Record<string, Row>).tasks : null) || {}
+  const rawSort = String(scoped.sort ?? controls.tasks?.sort ?? 'manual')
+  const sortMode: SortMode = (['manual', 'date', 'priority', 'project', 'name'].includes(rawSort) ? rawSort : 'manual') as SortMode
+  const priorityFilter = String(scoped.priority ?? legacyFilters.priority ?? 'all')
+  const setScoped = (patch: Row) => commit(current => {
+    const map = (current.configs.taskScopeSettings && typeof current.configs.taskScopeSettings === 'object' ? current.configs.taskScopeSettings : {}) as Record<string, Row>
+    return { ...current, configs: { ...current.configs, taskScopeSettings: { ...map, [scopeKey]: { ...(map[scopeKey] || {}), ...patch } } } }
+  })
   const collapsed = new Set(rows(prefs.collapsed).map(String))
   const toggleCollapsed = (id: string) => {
     const next = new Set(collapsed)
@@ -145,7 +151,7 @@ export function TasksModern(props: Props) {
     return String(projectMap.get(key)?.nome || 'Sem projeto')
   }
 
-  const showDone = showCompleted(state, 'tasks')
+  const showDone = typeof scoped.showDone === 'boolean' ? scoped.showDone : showCompleted(state, 'tasks')
   /* Concluídos ficam no lugar de origem, sempre abaixo dos abertos; ao reabrir, a tarefa volta à posição normal. */
   const incl = (task: LegacyTask) => !task.concluida || (showDone && (scope !== 'today' || dayOf(task) === today))
   const sortTasks = (list: LegacyTask[]) => [...list].sort((a, b) => {
@@ -446,14 +452,8 @@ export function TasksModern(props: Props) {
   const [openSubs, setOpenSubs] = useState<Set<string>>(new Set())
   const [optionsOpen, setOptionsOpen] = useState(false)
   const optionsRef = useRef<HTMLButtonElement | null>(null)
-  const setControl = (patch: Row) => commit(current => {
-    const map = (current.configs.moduleControls && typeof current.configs.moduleControls === 'object' ? current.configs.moduleControls : {}) as Record<string, Row>
-    return { ...current, configs: { ...current.configs, moduleControls: { ...map, tasks: { ...(map.tasks || {}), ...patch } } } }
-  })
-  const setFilter = (patch: Row) => commit(current => {
-    const map = (current.configs.moduleFilters && typeof current.configs.moduleFilters === 'object' ? current.configs.moduleFilters : {}) as Record<string, Row>
-    return { ...current, configs: { ...current.configs, moduleFilters: { ...map, tasks: { ...(map.tasks || {}), ...patch } } } }
-  })
+  const setControl = setScoped
+  const setFilter = setScoped
 
   /* ------------------------------------------------------------- Cartão */
 
@@ -655,7 +655,7 @@ export function TasksModern(props: Props) {
               ) : null}
               <span className={styles.optionsLabel}>Concluídos</span>
               <div className={styles.chips}>
-                <button type="button" data-active={showDone || undefined} onClick={() => commit(current => ({ ...current, configs: { ...current.configs, showCompletedByModule: { ...((current.configs.showCompletedByModule as Record<string, boolean> | undefined) || {}), tasks: !showDone } } }))}><Icon name="task_alt" size={15} />Mostrar concluídos</button>
+                <button type="button" data-active={showDone || undefined} onClick={() => setScoped({ showDone: !showDone })}><Icon name="task_alt" size={15} />Mostrar concluídos</button>
               </div>
               <span className={styles.optionsLabel}>Ordenar por</span>
               <div className={styles.chips}>
