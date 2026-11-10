@@ -160,14 +160,14 @@ export function ModernSidebar({ state, today, view, navigate, onSearch, onSettin
           </button>
           {menu ? (
             <div className={styles.userMenu} role="menu">
-              <button type="button" role="menuitem" onClick={() => { setMenu(false); onSettings() }}><Icon name="settings" size={18} filled={false} /><span>Configurações</span></button>
-              <button type="button" role="menuitem" onClick={() => { setMenu(false); onToggleTheme() }}><Icon name={dark ? 'light_mode' : 'dark_mode'} size={18} filled={false} /><span>{dark ? 'Tema claro' : 'Tema escuro'}</span></button>
+              <button type="button" role="menuitem" onClick={() => { setMenu(false); onSettings() }}><Icon name="settings" size={18} filled={false} /><span className={styles.userMenuLabel}>Configurações</span></button>
+              <button type="button" role="menuitem" onClick={() => { setMenu(false); onToggleTheme() }}><Icon name={dark ? 'light_mode' : 'dark_mode'} size={18} filled={false} /><span className={styles.userMenuLabel}>{dark ? 'Tema claro' : 'Tema escuro'}</span></button>
               <button type="button" role="menuitemcheckbox" aria-checked={autoHide} onClick={() => onAutoHide(!autoHide)}>
-                <Icon name="left_panel_close" size={18} filled={false} /><span>Ocultar a barra automaticamente</span>
+                <Icon name="left_panel_close" size={18} filled={false} /><span className={styles.userMenuLabel}>Ocultar a barra automaticamente</span>
                 {autoHide ? <Icon name="check" size={18} filled={false} /> : null}
               </button>
               <div className={styles.userMenuLine} />
-              <button type="button" role="menuitem" data-tone="danger" onClick={() => { setMenu(false); onLogout() }}><Icon name="logout" size={18} filled={false} /><span>Sair</span></button>
+              <button type="button" role="menuitem" data-tone="danger" onClick={() => { setMenu(false); onLogout() }}><Icon name="logout" size={18} filled={false} /><span className={styles.userMenuLabel}>Sair</span></button>
             </div>
           ) : null}
         </div>
