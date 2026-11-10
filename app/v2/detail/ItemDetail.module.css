@@ -1624,5 +1624,6 @@
 /* Computador: popup de tamanho fixo, igual para todos os cartões. */
 @media (min-width: 901px) {
   .panel.panel,
-  .panel[data-kind].panel { width: min(960px, 100%); height: min(720px, calc(100dvh - 48px)); max-height: none; }
+  .panel[data-kind].panel { width: min(var(--ds-popup-w), 100%); height: min(var(--ds-popup-h), calc(100dvh - 48px)); max-height: none; border-radius: var(--ds-popup-r); box-shadow: var(--ds-popup-shadow); }
+  .layer.layer { background: var(--ds-popup-scrim); }
 }

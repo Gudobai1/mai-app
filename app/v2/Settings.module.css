@@ -82,3 +82,9 @@
   .scroll { padding-left: 16px; padding-right: 16px; }
   .row { flex-wrap: wrap; }
 }
+
+/* Janela única, computador: popup de tamanho fixo (tokens --ds-popup-*) */
+@media (min-width: 901px) {
+  .layer.layer { padding: 24px; align-items: center; justify-content: center; place-items: center; background: var(--ds-popup-scrim); }
+  .dialog.dialog { width: min(var(--ds-popup-w), 100%); height: min(var(--ds-popup-h), calc(100dvh - 48px)); max-height: none; margin: auto; border: 1px solid var(--ds-line); border-radius: var(--ds-popup-r); box-shadow: var(--ds-popup-shadow); }
+}

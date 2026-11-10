@@ -537,3 +537,17 @@ html body .mai-v3-drawer-body {
   padding-right: max(24px, calc((100% - 880px) / 2)) !important;
 }
 }
+
+/* Janela única, computador: mesmo tamanho dos demais popups (tokens --ds-popup-*) */
+@media (min-width: 901px) {
+  html body .mai-v3-create-drawer,
+  html body .mai-context-drawer,
+  html body .mai-task-v4-drawer,
+  html body .mai-context-v3-drawer {
+    width: min(var(--ds-popup-w), 100%) !important;
+    height: min(var(--ds-popup-h), calc(100dvh - 48px)) !important;
+    max-height: none !important;
+    border-radius: var(--ds-popup-r) !important;
+    box-shadow: var(--ds-popup-shadow) !important;
+  }
+}
