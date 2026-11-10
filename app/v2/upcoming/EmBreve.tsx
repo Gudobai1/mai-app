@@ -1,13 +1,14 @@
 'use client'
 
 import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react'
-import { addDays, eventColor, plannerItems, type PlannerItem } from '../../../lib/v2/planner'
+import { addDays, eventColor, habitStreak, plannerItems, type PlannerItem } from '../../../lib/v2/planner'
 import { hiddenOccurrenceIds } from '../../../lib/v2/series'
 import { dateKey, type MaiState } from '../../../lib/v2/state'
 import { Check, Icon } from '../../ds'
 import type { Row } from '../app-types'
 import type { InspectableItem } from '../ContextDrawer'
 import { driveAssetUrl } from '../DriveAsset'
+import { HabitCard } from '../habits/HabitCard'
 import { FinanceTransactionCard, financeCardPaymentState } from '../FinanceTransactionCard'
 import { askConfirm } from '../shell/ConfirmDialog'
 import { useTaskQuick } from '../shell/TaskQuick'
@@ -390,14 +391,26 @@ export function EmBreve({ state, today, commit, inspect, syncRange }: Props) {
     const full = entry.done || value >= target
     const part = !full && value > 0
     const desc = String(habit.descricao || '').replace(/<[^>]*>/g, '').trim()
+    const unit = String(habit.unidade || '')
     return (
-      <div key={entry.id} role="listitem" className={styles.habitRow} style={{ '--hc': color } as CSSProperties} {...quick.bind(() => menuFor(entry))}>
-        <button type="button" className={styles.habitBody} onClick={() => open(entry)}>
-          <span className={styles.habitTitle} style={{ color }}>{entry.title}</span>
-          {entry.time || desc ? <span className={styles.habitDesc}>{[entry.time, desc].filter(Boolean).join(' · ')}</span> : null}
-        </button>
-        <button type="button" className={styles.habitDay} data-day="" style={{ ['--p' as string]: Math.min(100, Math.round((value / target) * 100)) }} data-on={full || undefined} data-part={part || undefined} data-failed={failedEntry(dayEntry) || undefined} data-today={entry.day === today || undefined} disabled={entry.day > today} onClick={() => toggleHabit(entry)} aria-label={`${entry.title} em ${naturalDate(entry.day, today)}`} />
-      </div>
+      <HabitCard
+        key={entry.id}
+        color={color}
+        title={entry.title}
+        description={[entry.time, target > 1 || unit ? `${value} de ${target}${unit ? ` ${unit}` : ''}` : '', desc].filter(Boolean).join(' · ')}
+        streak={habitStreak(state, habit, today)}
+        level={failedEntry(dayEntry) ? 'fail' : full ? 'full' : part ? 'part' : ''}
+        pct={Math.min(100, Math.round((value / target) * 100))}
+        value={value}
+        unit={unit.slice(0, 4)}
+        plain={!(target > 1 || unit)}
+        today={entry.day === today}
+        disabled={entry.day > today}
+        ariaLabel={`${entry.title} em ${naturalDate(entry.day, today)}`}
+        onToggle={() => toggleHabit(entry)}
+        onOpen={() => open(entry)}
+        rootProps={quick.bind(() => menuFor(entry)) as never}
+      />
     )
   }
 

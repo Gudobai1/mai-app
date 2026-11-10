@@ -69,7 +69,7 @@ function eventOccursOn(event: Record<string, any>, day: string) {
   return occursOn(event, day, 'data_inicio')
 }
 
-function habitOccursOn(habit: Record<string, any>, day: string) {
+export function habitOccursOn(habit: Record<string, any>, day: string) {
   const start = String(habit.data_inicio || habit.criado_em || '').slice(0, 10)
   if (start && day < start) return false
   const rule = String(habit.repeticao || '')
@@ -191,4 +191,23 @@ export function plannerItems(state: MaiState, start: string, end: string): Plann
   }
 
   return result.sort((a, b) => `${a.date} ${a.time || '99:99'} ${a.title}`.localeCompare(`${b.date} ${b.time || '99:99'} ${b.title}`, 'pt-BR'))
+}
+
+/** Sequência atual de um hábito: dias seguidos (só os previstos) com registro, contando de hoje (ou ontem, se hoje ainda não foi feito). */
+export function habitStreak(state: MaiState, habit: Record<string, any>, today: string) {
+  const entries = rows(state.habitEntries).filter(item => String(item.habito_id) === String(habit.id))
+  const done = (day: string) => {
+    const entry = entries.find(item => String(item.data).slice(0, 10) === day)
+    return Boolean(entry) && !failedHabitEntry(entry) && Number(entry?.valor || 0) > 0
+  }
+  let count = 0
+  let cursor = today
+  if (!done(cursor)) cursor = addDays(cursor, -1)
+  for (let step = 0; step < 800; step += 1) {
+    if (!habitOccursOn(habit, cursor)) { cursor = addDays(cursor, -1); continue }
+    if (!done(cursor)) break
+    count += 1
+    cursor = addDays(cursor, -1)
+  }
+  return count
 }

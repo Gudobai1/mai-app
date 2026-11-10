@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import type { MaiState } from '../../../lib/v2/state'
 import { Icon } from '../../ds'
 import { DotRing } from './DotRing'
+import { HabitCard } from './HabitCard'
 import { UnitField } from './UnitField'
 import { abbreviateUnit } from '../../../lib/v2/units'
 import type { Row } from '../app-types'
@@ -203,28 +204,12 @@ export function HabitsModern({ state, today, commit, createRequest }: Props) {
             </button>
           ))}
         </div>
-        <div className={styles.weekNav}>
-          <button type="button" className={styles.navButton} onClick={() => setAnchor(moveDate(weekStart, -7))} aria-label="Semana anterior"><Icon name="chevron_left" size={20} filled={false} /></button>
-          <button type="button" className={styles.weekLabel} onClick={() => setAnchor(today)} title="Voltar para a semana atual">
-            {currentWeek ? 'Esta semana' : `${longDate(week[0])} – ${longDate(week[6])}`}
-          </button>
-          <button type="button" className={styles.navButton} onClick={() => setAnchor(moveDate(weekStart, 7))} aria-label="Próxima semana"><Icon name="chevron_right" size={20} filled={false} /></button>
-        </div>
       </div>
 
       <section className={styles.block} aria-label="Hábitos">
         <div className={styles.head}>
           <span className={styles.headTitle}>Hábitos</span>
           <span className={styles.headCount}>{visible.length}</span>
-          <div className={styles.headDays} aria-hidden="true">
-            {week.map(day => (
-              <span key={day} data-today={day === today || undefined}>
-                <small>{INITIALS[new Date(`${day}T12:00:00`).getDay()]}</small>
-                <b>{Number(day.slice(8))}</b>
-              </span>
-            ))}
-          </div>
-          <span className={styles.headStreak} />
         </div>
 
         {visible.length ? (
@@ -234,41 +219,25 @@ export function HabitsModern({ state, today, commit, createRequest }: Props) {
               const streak = streakOf(habit)
               const detailText = [target(habit) > 1 || habit.unidade ? `${amountOf(habit, today)} de ${target(habit)}${habit.unidade ? ` ${habit.unidade}` : ''}` : '', String(habit.descricao || '').trim()].filter(Boolean).join(' · ')
               return (
-                <div key={String(habit.id)} role="listitem" className={styles.row} style={{ '--hc': color } as CSSProperties}>
-                  <button type="button" className={styles.body} onClick={() => setDetailId(String(habit.id))}>
-                    <span className={styles.title}>{String(habit.nome)}</span>
-                    <span className={styles.desc}>{detailText || frequencyLabel(habit)}</span>
-                  </button>
-                  <div className={styles.dots}>
-                    {week.map(day => {
-                      const level = levelOf(habit, day)
-                      const ok = eligible(habit, day) && day <= today
-                      return (
-                        <button
-                          key={day}
-                          type="button"
-                          className={styles.dot}
-                          data-day=""
-                          data-level={level || undefined}
-                          data-today={day === today || undefined}
-                          data-off={!eligible(habit, day) || undefined}
-                          disabled={!ok}
-                          style={level === 'part' ? ({ '--p': progressOf(habit, day) } as CSSProperties) : undefined}
-                          onClick={() => toggleDay(habit, day)}
-                          onContextMenu={event => { event.preventDefault(); if (ok) setValueFor({ habit, day }) }}
-                          aria-label={`${String(habit.nome)} em ${longDate(day)}`}
-                          title={level === 'fail' ? 'Falha' : level === 'part' ? `${progressOf(habit, day)}%` : !eligible(habit, day) ? 'Fora da frequência' : longDate(day)}
-                        >
-                          <DotRing pct={level === 'full' ? 100 : progressOf(habit, day)} value={amountOf(habit, day)} unit={abbreviateUnit(habit.unidade)} plain={!(target(habit) > 1 || habit.unidade)} fail={level === 'fail'} empty={!level} today={day === today} />
-                        </button>
-                      )
-                    })}
-                  </div>
-                  <span className={styles.streak} data-on={streak > 0 || undefined} title={`Sequência de ${streak} ${streak === 1 ? 'dia' : 'dias'}`}>
-                    <Icon name="local_fire_department" size={16} />{streak}
-                  </span>
-                  <QuickEdit habit={habit} today={today} commit={commit} />
-                </div>
+                <HabitCard
+                  key={String(habit.id)}
+                  color={color}
+                  title={String(habit.nome)}
+                  description={detailText || frequencyLabel(habit)}
+                  streak={streak}
+                  level={levelOf(habit, today)}
+                  pct={progressOf(habit, today)}
+                  value={amountOf(habit, today)}
+                  unit={abbreviateUnit(habit.unidade)}
+                  plain={!(target(habit) > 1 || habit.unidade)}
+                  today
+                  disabled={!eligible(habit, today)}
+                  ariaLabel={`${String(habit.nome)} em ${longDate(today)}`}
+                  onToggle={() => toggleDay(habit, today)}
+                  onOpen={() => setDetailId(String(habit.id))}
+                  onContextMenu={event => { event.preventDefault(); if (eligible(habit, today)) setValueFor({ habit, day: today }) }}
+                  trailing={<QuickEdit habit={habit} today={today} commit={commit} />}
+                />
               )
             })}
           </div>

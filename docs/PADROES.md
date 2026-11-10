@@ -57,6 +57,7 @@ Fonte única da verdade: o quadro "Sistema de design Bukid" (quadros 0 a 12). Os
 - **Ícones:** Ionicons (licença MIT), um só conjunto (`Icon` do DS). Contorno por padrão, preenchido = ativo. Tamanhos 16 / 20 / 24, cor herdada do texto. Sem emoji como ícone. Manter o aviso de licença MIT no repositório.
 - Estados: normal, hover, foco visível, desativado, carregando, vazio e erro existem em todo componente interativo.
 
+- **Cartão de hábito (único):** `HabitCard` (`app/v2/habits/HabitCard.tsx`), usado em Hoje, Em breve e Hábitos. **Círculo à esquerda na cor do hábito** (anel de progresso; check nos sem meta; toque registra o dia), **título na cor do texto** (branco no escuro) com a **descrição embaixo** (valor do dia, descrição ou frequência, cinza 13) e a **sequência à direita** (chama + dias). Linha de 56px, divisória fina. Sequência calculada por `habitStreak` (`lib/v2/planner.ts`). Não criar outra versão do cartão de hábito.
 - **Módulos do app:** Hoje, Em breve, Concluídos, Tarefas, Finanças, Hábitos, Metas, Notas. O módulo Arquivos foi removido; anexos continuam dentro dos itens.
 
 ## 5. Comportamento
