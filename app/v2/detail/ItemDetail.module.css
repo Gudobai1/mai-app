@@ -1629,8 +1629,14 @@
 }
 
 /* Hábito: mês atual à esquerda (círculos com borda na cor do hábito, só o check) */
-.monthCal { max-width: 420px; }
-.monthTitle { margin: 0 0 var(--ds-s-3); font-size: 17px; font-weight: var(--ds-fw-bold); text-transform: capitalize; color: var(--ds-text); }
+.monthCal { max-width: 460px; }
+.monthBar { display: flex; align-items: center; gap: var(--ds-s-2); }
+.monthTitle { margin: 0; flex: 1; font-size: 17px; font-weight: var(--ds-fw-bold); text-transform: capitalize; color: var(--ds-text); }
+.monthNav { appearance: none; display: grid; place-items: center; width: 32px; height: 32px; border: 0; border-radius: 8px; background: transparent; color: var(--ds-muted); cursor: pointer; }
+.monthNav:hover { background: var(--ds-surface-hover); color: var(--ds-text); }
+.monthNav:focus-visible { outline: 2px solid var(--ds-accent); outline-offset: -2px; }
+.monthSummary { margin: 2px 0 var(--ds-s-3); font-size: var(--ds-row-sub); color: var(--ds-muted); font-variant-numeric: tabular-nums; }
+.monthDay em { min-height: 12px; font-style: normal; font-size: 10.5px; line-height: 1; color: var(--ds-muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .monthGrid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px 0; justify-items: center; }
 .monthHead { font-size: var(--ds-row-sub); font-weight: var(--ds-fw-medium); color: var(--ds-muted); }
 .monthDay { appearance: none; display: grid; justify-items: center; gap: 4px; width: 100%; padding: 4px 0; border: 0; border-radius: 8px; background: transparent; color: var(--ds-text); font: inherit; cursor: pointer; }
