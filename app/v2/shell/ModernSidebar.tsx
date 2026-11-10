@@ -37,7 +37,6 @@ type Props = {
 const PLAN: NavItem[] = [
   { id: 'today', label: 'Hoje', icon: 'today' },
   { id: 'upcoming', label: 'Em breve', icon: 'event_upcoming' },
-  { id: 'completed', label: 'Concluídos', icon: 'task_alt' },
 ]
 const ORGANIZE: NavItem[] = [
   { id: 'finance', label: 'Finanças', icon: 'account_balance_wallet' },
