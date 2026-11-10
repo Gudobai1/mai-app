@@ -242,6 +242,9 @@
   display: grid;
   grid-template-columns: repeat(8, minmax(0, 1fr));
   gap: 6px;
+  max-height: 216px;
+  overflow-y: auto;
+  padding: 2px;
 }
 
 .iconChoice {

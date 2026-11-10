@@ -29,7 +29,7 @@ type SectionDraft = { id: string; name: string; original: string }
 
 const rows = (value: unknown): Row[] => (Array.isArray(value) ? (value as Row[]) : [])
 const COLORS = [DEFAULT_COLOR]
-const ICONS = ['folder', 'work', 'home', 'rocket_launch', 'target', 'school', 'fitness_center', 'payments', 'favorite', 'flight', 'lightbulb', 'inventory_2', 'shopping_cart', 'groups', 'code', 'brush']
+const ICONS = ['folder', 'work', 'home', 'rocket_launch', 'target', 'school', 'fitness_center', 'payments', 'favorite', 'flight', 'lightbulb', 'inventory_2', 'shopping_cart', 'groups', 'code', 'brush', 'menu_book', 'coffee', 'music_note', 'directions_car', 'flight_takeoff', 'card_giftcard', 'sports_esports', 'restaurant', 'eco', 'light_mode', 'dark_mode', 'pets', 'medication', 'build', 'construction', 'palette', 'public', 'map', 'emoji_events', 'mood', 'child_care', 'pedal_bike', 'directions_bus', 'apartment', 'store', 'laptop', 'smartphone', 'wifi', 'mail', 'call', 'edit', 'content_cut', 'checkroom', 'landscape', 'camping', 'directions_boat', 'train', 'movie', 'headphones', 'mic', 'savings', 'receipt_long', 'health_and_safety', 'spa', 'science', 'psychology', 'bolt', 'diamond', 'anchor', 'bookmark', 'translate', 'event', 'star', 'account_balance']
 
 function descendants(projects: Row[], rootId: string) {
   const result = new Set<string>()
