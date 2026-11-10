@@ -88,3 +88,13 @@
   .layer.layer { padding: 24px; align-items: center; justify-content: center; place-items: center; background: var(--ds-popup-scrim); }
   .dialog.dialog { width: min(var(--ds-popup-w), 100%); height: min(var(--ds-popup-h), calc(100dvh - 48px)); max-height: none; margin: auto; border: 1px solid var(--ds-line); border-radius: var(--ds-popup-r); box-shadow: var(--ds-popup-shadow); }
 }
+
+/* Visão geral: estado de cada parte do app */
+.summary { margin: 0 0 6px; font-size: 13px; color: var(--ds-muted); }
+.summary[data-attention] { color: var(--ds-warning, var(--ds-text)); font-weight: 600; }
+.row > .health { display: flex; align-items: flex-start; gap: 12px; }
+.health > span { display: grid; gap: 2px; min-width: 0; }
+.health i { flex: none; width: 10px; height: 10px; margin-top: 5px; border-radius: 50%; background: var(--ds-line-strong); }
+.health i[data-tone="ok"] { background: var(--ds-success, #2F8F5A); }
+.health i[data-tone="warn"] { background: var(--ds-warning, #D9982B); }
+.health i[data-tone="bad"] { background: var(--ds-danger); }
