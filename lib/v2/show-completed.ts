@@ -1,6 +1,10 @@
 import type { MaiState } from './state'
 
-/** "Mostrar concluídos" por módulo (configs.showCompletedByModule). Desligado por padrão: concluídos ficam escondidos. */
+/** Módulos em que o concluído permanece no lugar por padrão (o usuário pode desligar no menu). */
+const KEEP_BY_DEFAULT = new Set(['today', 'upcoming'])
+
+/** "Mostrar concluídos" por módulo (configs.showCompletedByModule). Desligado por padrão, exceto Hoje e Em breve. */
 export function showCompleted(state: Pick<MaiState, 'configs'>, module: string) {
-  return Boolean((state.configs.showCompletedByModule as Record<string, boolean> | undefined)?.[module])
+  const value = (state.configs.showCompletedByModule as Record<string, boolean> | undefined)?.[module]
+  return value === undefined ? KEEP_BY_DEFAULT.has(module) : Boolean(value)
 }
