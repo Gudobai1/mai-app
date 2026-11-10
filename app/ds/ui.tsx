@@ -1,9 +1,9 @@
 'use client'
 
-import { forwardRef, useSyncExternalStore } from 'react'
+import React, { forwardRef, useSyncExternalStore } from 'react'
 import type { ButtonHTMLAttributes, CSSProperties, HTMLAttributes, ReactNode } from 'react'
 import { LUCIDE_ICONS } from './lucide'
-import { MATERIAL_FAMILY, getAppearance, materialWeight, subscribeAppearance, type Appearance } from './appearance'
+import { MATERIAL_FAMILY, externalIcon, getAppearance, materialWeight, phosphorWeight, subscribeAppearance, type Appearance } from './appearance'
 import styles from './ui.module.css'
 
 /**
@@ -53,7 +53,17 @@ export type IconProps = {
 export function Icon({ name, size = 22, filled = false, weight = 300, className, style, look }: IconProps) {
   const global = useSyncExternalStore(subscribeAppearance, getAppearance, getAppearance)
   const appearance = { ...global, ...look }
-  const material = appearance.iconPack !== 'lucide'
+  const pack = appearance.iconPack
+  const material = pack === 'outlined' || pack === 'sharp' || pack === 'rounded'
+  const ext = externalIcon(pack, name)
+  if (ext) {
+    const Ext = ext.component as React.ComponentType<Record<string, unknown>>
+    return (
+      <span aria-hidden="true" className={cx(styles.icon, className)} style={{ width: size, height: size, display: 'inline-grid', placeItems: 'center', ...style }}>
+        {ext.kind === 'tabler' ? <Ext size={size} stroke={appearance.weight} color="currentColor" /> : <Ext size={size} weight={phosphorWeight(pack)} color="currentColor" />}
+      </span>
+    )
+  }
   const Lucide = material ? undefined : LUCIDE_ICONS[name]
   if (Lucide) {
     const solid = filled && (name === 'star' || name === 'flag' || name === 'outlined_flag')
@@ -72,7 +82,7 @@ export function Icon({ name, size = 22, filled = false, weight = 300, className,
         fontSize: size,
         width: size,
         height: size,
-        ...(material ? { fontFamily: `'${MATERIAL_FAMILY[appearance.iconPack as Exclude<Appearance['iconPack'], 'lucide'>]}'` } : null),
+        ...(material ? { fontFamily: `'${MATERIAL_FAMILY[pack as 'outlined' | 'sharp' | 'rounded']}'` } : null),
         fontVariationSettings: `'FILL' ${filled ? 1 : 0}, 'wght' ${material ? materialWeight(appearance.weight) : weight}, 'GRAD' 0, 'opsz' ${size <= 20 ? 20 : 24}`,
         ...style,
       }}
