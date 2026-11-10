@@ -21,7 +21,6 @@ function fromText(value: string): SectionAction | null {
   if (/meta/.test(text)) return { type: 'goals', label: 'Adicionar meta' }
   if (/lancamento|transacao|movimentacao|receita|despesa/.test(text)) return { type: 'finance', label: 'Adicionar lançamento' }
   if (/nota/.test(text)) return { type: 'notes', label: 'Adicionar nota' }
-  if (/arquivo/.test(text)) return { type: 'files', label: 'Adicionar arquivo' }
   if (/nada programado|nada planejado|nenhum item/.test(text)) return { type: 'context', label: 'Adicionar' }
   return null
 }
@@ -52,7 +51,6 @@ function fallback(view: AppView, scope?: HTMLElement | null): SectionAction | nu
   if (text === 'goals') return { type: 'goals', label: 'Adicionar meta' }
   if (text === 'notes') return { type: 'notes', label: 'Adicionar nota' }
   if (text === 'finance') return scope?.querySelector('.mai-v3-finance-rows') || scope?.classList.contains('mai-v3-finance-rows') ? { type: 'finance', label: 'Adicionar lançamento' } : null
-  if (text === 'files') return { type: 'files', label: 'Adicionar arquivo' }
   if (text === 'upcoming') return { type: 'context', label: 'Adicionar' }
   return null
 }

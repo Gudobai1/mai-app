@@ -44,7 +44,6 @@ const ORGANIZE: NavItem[] = [
   { id: 'habits', label: 'Hábitos', icon: 'autorenew' },
   { id: 'goals', label: 'Metas', icon: 'flag' },
   { id: 'notes', label: 'Notas', icon: 'sticky_note_2' },
-  { id: 'files', label: 'Arquivos', icon: 'folder' },
 ]
 
 const rows = (value: unknown): Row[] => (Array.isArray(value) ? (value as Row[]) : [])

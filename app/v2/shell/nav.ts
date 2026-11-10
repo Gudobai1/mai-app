@@ -36,7 +36,6 @@ export const NAV_GROUPS: NavGroup[] = [
     label: 'Guardar',
     items: [
       { id: 'notes', label: 'Notas', icon: 'sticky_note_2' },
-      { id: 'files', label: 'Arquivos', icon: 'folder' },
     ],
   },
 ]
