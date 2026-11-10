@@ -125,6 +125,7 @@ export function QuickAdd({ kinds, initial, state, today, defaultProjectId, defau
   const [finPaid, setFinPaid] = useState(movement?.initial?.done ?? false)
   const [picker, setPicker] = useState<Picker>('')
   const anchor = useRef<HTMLElement | null>(null)
+  const titleInput = useRef<HTMLInputElement | null>(null)
   const open = (which: Picker) => (event: ReactMouseEvent<HTMLElement>) => { anchor.current = event.currentTarget; setPicker(which) }
 
   const projects = rows(state.projects).filter(item => item.ativo !== false)
@@ -279,7 +280,18 @@ export function QuickAdd({ kinds, initial, state, today, defaultProjectId, defau
         return category ? withEventCategory(next, category) : next
       })
     }
-    onClose()
+    again()
+  }
+
+  /** Depois de adicionar, o formulário continua aberto e vazio para o próximo item (data, projeto e conta ficam). */
+  const again = () => {
+    setTitle('')
+    setDescription('')
+    setAmountS('')
+    setInstallS(null)
+    setMuted(new Set())
+    setCaret(0)
+    window.setTimeout(() => titleInput.current?.focus(), 0)
   }
 
   const done = (fn: () => void) => { fn(); setPicker('') }
@@ -315,6 +327,7 @@ export function QuickAdd({ kinds, initial, state, today, defaultProjectId, defau
               })()}
             </div>
             <input
+              ref={titleInput}
               autoFocus
               className={styles.title}
               value={title}

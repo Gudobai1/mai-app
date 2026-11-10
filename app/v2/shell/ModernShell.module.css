@@ -193,13 +193,16 @@
   width: 20px;
   height: 20px;
   flex-shrink: 0;
-  border-radius: 50%;
+  border-radius: 5px;
   object-fit: cover;
-  display: grid;
+}
+
+.projectIcon {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  display: inline-grid;
   place-items: center;
-  color: #fff;
-  font-size: 10px;
-  font-weight: var(--ds-fw-heavy);
 }
 
 .projectCount {

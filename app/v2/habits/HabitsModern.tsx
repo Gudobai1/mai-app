@@ -228,7 +228,7 @@ export function HabitsModern({ state, today, commit, createRequest, inspect }: P
         )}
 
         {adding ? (
-          <HabitComposer today={today} onCancel={() => setAdding(false)} onSave={habit => { commit(current => ({ ...current, habits: [...rows(current.habits), habit] })); setAdding(false) }} />
+          <HabitComposer today={today} onCancel={() => setAdding(false)} onSave={habit => { commit(current => ({ ...current, habits: [...rows(current.habits), habit] })) }} />
         ) : (
           <button type="button" className={styles.addRow} onClick={() => setAdding(true)}>
             <Icon name="add" size={20} filled={false} /><span>Adicionar hábito</span>
@@ -257,7 +257,9 @@ export function HabitsModern({ state, today, commit, createRequest, inspect }: P
 
 function HabitComposer({ today, onCancel, onSave }: { today: string; onCancel: () => void; onSave: (habit: Row) => void }) {
   const [draft, setDraft] = useState<Row>(() => blankHabit(today))
-  const submit = () => { if (String(draft.nome || '').trim()) onSave(cleanHabit(draft, today)) }
+  const nameInput = useRef<HTMLInputElement | null>(null)
+  // Depois de adicionar, o formulário volta em branco para o próximo hábito.
+  const submit = () => { if (!String(draft.nome || '').trim()) return; onSave(cleanHabit(draft, today)); setDraft(blankHabit(today)); window.setTimeout(() => nameInput.current?.focus(), 0) }
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => { if (event.key === 'Escape') onCancel() }
@@ -270,6 +272,7 @@ function HabitComposer({ today, onCancel, onSave }: { today: string; onCancel: (
       <div className={quick.inlinePanel}>
         <div className={quick.fields}>
           <input
+            ref={nameInput}
             autoFocus
             className={quick.title}
             value={String(draft.nome || '')}

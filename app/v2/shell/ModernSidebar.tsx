@@ -4,7 +4,7 @@ import { useState } from 'react'
 import type { MaiState } from '../../../lib/v2/state'
 import { Icon } from '../../ds'
 import type { AppView } from '../app-types'
-import { driveAssetUrl } from '../DriveAsset'
+import { ProjectMark } from './ProjectMark'
 import { SidebarIcon } from './SidebarIcons'
 import { MaiLogo, themeLogoColor } from '../logo'
 import { NAV_ALIAS, todayCounts, type NavItem } from './nav'
@@ -88,18 +88,7 @@ export function ModernSidebar({ state, today, view, navigate, onSearch, onSettin
     )
   }
 
-  const photo = (project: Row) => {
-    const image = driveAssetUrl(project.imagem_url)
-    if (image) {
-      // eslint-disable-next-line @next/next/no-img-element
-      return <img className={styles.projectPhoto} src={image} alt="" loading="lazy" />
-    }
-    return (
-      <span className={styles.projectPhoto} style={{ background: String(project.cor || 'var(--ds-line-strong)') }} aria-hidden="true">
-        {String(project.nome || '?').trim().slice(0, 1).toLocaleUpperCase('pt-BR')}
-      </span>
-    )
-  }
+  const photo = (project: Row) => <ProjectMark project={project} />
 
   const renderProject = (project: Row, depth = 0) => {
     const id = String(project.id)
