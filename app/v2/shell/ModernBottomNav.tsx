@@ -1,12 +1,16 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { Icon, IconButton } from '../../ds'
-import type { AppView } from '../app-types'
+import type { AppView, Row } from '../app-types'
+import type { MaiState } from '../../../lib/v2/state'
 import { NAV_ALIAS, NAV_GROUPS } from './nav'
 import styles from './ModernShell.module.css'
 
 type Props = {
+  state: MaiState
+  activeProjectId?: string
+  onNewProject?: (parentId?: string) => void
   view: AppView
   searchOpen: boolean
   navigate: (view: AppView) => void
@@ -18,8 +22,10 @@ type Props = {
 
 /** Áreas com botão próprio na barra; as demais ficam na folha de módulos. */
 const barViews = new Set(['today', 'upcoming'])
+/** Tarefas não aparece como item: o acesso é por Entrada e Projetos, como no desktop. */
+const hiddenFromSheet = new Set(['today', 'upcoming', 'tasks'])
 
-export function ModernBottomNav({ view, searchOpen, navigate, onSearch, onSettings, onToggleTheme, dark }: Props) {
+export function ModernBottomNav({ state, activeProjectId, onNewProject, view, searchOpen, navigate, onSearch, onSettings, onToggleTheme, dark }: Props) {
   const [sheetOpen, setSheetOpen] = useState(false)
 
   useEffect(() => {
@@ -34,6 +40,26 @@ export function ModernBottomNav({ view, searchOpen, navigate, onSearch, onSettin
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [sheetOpen])
+
+  /* Projetos como no menu do desktop: Entrada + árvore de projetos (sem item "Tarefas"). */
+  const projects = (Array.isArray(state.projects) ? state.projects : []).filter((project: Row) => project.ativo !== false)
+  const ids = new Set(projects.map((project: Row) => String(project.id)))
+  const roots = projects.filter((project: Row) => !project.parent_id || !ids.has(String(project.parent_id)))
+  const childrenOf = (id: string) => projects.filter((project: Row) => String(project.parent_id || '') === id)
+  const renderProject = (project: Row, depth = 0): ReactNode => {
+    const id = String(project.id)
+    const current = view === 'tasks' && activeProjectId === id
+    return (
+      <div key={id}>
+        <button type="button" className={styles.sheetItem} style={depth ? { paddingLeft: 4 + depth * 22 } : undefined} aria-current={current ? 'page' : undefined} onClick={() => go(`project:${id}` as AppView)}>
+          <span className={styles.projectPhoto} style={{ background: String(project.cor || 'var(--ds-line-strong)') }} aria-hidden="true">{String(project.nome || '?').trim().slice(0, 1).toLocaleUpperCase('pt-BR')}</span>
+          <span>{String(project.nome || 'Projeto')}</span>
+          <Icon name="chevron_right" size={20} filled={false} />
+        </button>
+        {childrenOf(id).map(child => renderProject(child, depth + 1))}
+      </div>
+    )
+  }
 
   const go = (next: AppView) => {
     setSheetOpen(false)
@@ -51,7 +77,7 @@ export function ModernBottomNav({ view, searchOpen, navigate, onSearch, onSettin
   }
 
   const modulesActive = sheetOpen || (!barViews.has(String(view)) && !searchOpen)
-  const sheetGroups = NAV_GROUPS.map(group => ({ ...group, items: group.items.filter(item => !barViews.has(String(item.id))) })).filter(group => group.items.length)
+  const sheetGroups = NAV_GROUPS.map(group => ({ ...group, items: group.items.filter(item => !hiddenFromSheet.has(String(item.id))) })).filter(group => group.items.length)
 
   return (
     <>
@@ -81,6 +107,27 @@ export function ModernBottomNav({ view, searchOpen, navigate, onSearch, onSettin
                 </div>
               </div>
             ))}
+
+            <div>
+              <h3 className={styles.sheetGroupLabel}>Projetos</h3>
+              <div className={styles.sheetGrid}>
+                {state.configs.hideInbox ? null : (
+                  <button type="button" className={styles.sheetItem} aria-current={view === 'tasks' && activeProjectId === 'entrada' ? 'page' : undefined} onClick={() => go('inbox' as AppView)}>
+                    <Icon name="inbox" size={22} filled={view === 'tasks' && activeProjectId === 'entrada'} />
+                    <span>Entrada</span>
+                    <Icon name="chevron_right" size={20} filled={false} />
+                  </button>
+                )}
+                {roots.map((project: Row) => renderProject(project))}
+                {onNewProject ? (
+                  <button type="button" className={styles.sheetItem} onClick={() => { setSheetOpen(false); onNewProject() }}>
+                    <Icon name="add" size={22} filled={false} />
+                    <span>Adicionar projeto</span>
+                    <span aria-hidden="true" />
+                  </button>
+                ) : null}
+              </div>
+            </div>
 
             <div className={styles.sheetRows}>
               <button type="button" className={styles.sheetRow} onClick={() => { setSheetOpen(false); onSettings() }}>
