@@ -98,7 +98,7 @@ const plusHour = (time: string) => {
 
 type Picker = '' | 'ftype' | 'account' | 'date' | 'time' | 'reminder' | 'priority' | 'project' | 'repeat' | 'start' | 'end' | 'category' | 'fcat' | 'finstall' | 'fstatus'
 
-export function QuickAdd({ kinds, initial, state, today, defaultProjectId, defaultDate, defaultAccount, defaultSection, commit, onFinance, onClose, inline, parentId, metaId, movement }: Props) {
+export function QuickAdd({ kinds, initial, state, today, defaultProjectId, defaultDate, defaultAccount, defaultSection, commit, onClose, inline, parentId, metaId, movement }: Props) {
   const [kind, setKind] = useState<QuickAddKind>(initial)
   const [title, setTitle] = useState(movement?.initial?.titulo ?? '')
   const [description, setDescription] = useState('')
@@ -233,7 +233,6 @@ export function QuickAdd({ kinds, initial, state, today, defaultProjectId, defau
   }, [onClose])
 
   const switchKind = (next: QuickAddKind) => {
-    if (next === 'finance' && !inline) { onClose(); onFinance(); return }
     if (next === kind) return
     setKind(next)
     setPicker('')

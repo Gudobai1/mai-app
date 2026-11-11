@@ -237,10 +237,11 @@ export function UnifiedAppUx() {
     if (type === 'context' || type === 'task' || type === 'event') {
       const wantsEvent = type === 'event' || (type === 'context' && (view === 'agenda' || view === 'upcoming'))
       if (view === 'tasks' && type !== 'event') { setQuickAdd({ kinds: ['task'], initial: 'task', projectId: activeProjectId, date: taskScope === 'today' ? runtime.today : '' }); return }
-      if (view === 'agenda' || view === 'upcoming') { setQuickAdd({ kinds: ['event', 'task'], initial: wantsEvent ? 'event' : 'task', date: runtime.today }); return }
+      if (view === 'agenda' || view === 'upcoming') { setQuickAdd({ kinds: ['event', 'task', 'finance'], initial: wantsEvent ? 'event' : 'task', date: runtime.today }); return }
       setQuickAdd({ kinds: ['task', 'event', 'finance'], initial: wantsEvent ? 'event' : 'task', date: runtime.today })
       return
     }
+    if (type === 'finance') { setQuickAdd({ kinds: ['task', 'event', 'finance'], initial: 'finance', date: runtime.today }); return }
     if (secondary.includes(type as SecondaryView)) {
       if (view !== type) navigate(type as SecondaryView)
       setAreaCreateRequest(`${type}:${Date.now()}`)

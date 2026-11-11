@@ -172,3 +172,6 @@ Todo módulo abre com o mesmo cabeçalho, montado só por `AppTopBar`: título 2
 ## Grupos da barra lateral (só espaço)
 - Os grupos da barra (Planejar, Acompanhar, Projetos) se separam **só por espaço** (16px): sem linha divisória, sem contador ao lado do título e sem marca. O título é cinza, pequeno, em caixa alta, peso médio.
 - Barra fechada (só ícones): sem títulos e sem linha; um respiro de 14px entre os grupos. Nas barras superior, inferior e dock os grupos seguem em linha, sem títulos.
+
+## Adicionar por Novo / atalho Q (padrão único)
+- O botão Novo e o atalho Q abrem sempre o mesmo `QuickAdd`, com as abas **Tarefa, Compromisso e Lançamento** (a ordem muda pela tela). Lançamento é criado ali mesmo, como os outros; não redireciona para outra tela. Na tela de um projeto só aparece Tarefa. Em Finanças o Novo abre o QuickAdd já em Lançamento. Hábitos, Metas e Notas seguem pelo próprio formulário.
