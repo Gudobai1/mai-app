@@ -1211,18 +1211,6 @@ function GoalDetail({ item, state, today, commit, register, close, onOpenItem }:
           </div>
         </div>
 
-        <div className={styles.habitCard}>
-          <div className={styles.habitStatus}>
-            {amount ? <span>{amount}</span> : null}
-          </div>
-          {type === 'percentual' || type === 'valor' || type === 'quantidade' ? (
-            <div className={styles.habitButtons}>
-              <button type="button" className={styles.stepper} onClick={() => step(-1)} aria-label="Diminuir"><Icon name="remove" size={18} filled={false} /></button>
-              <button type="button" className={styles.stepper} onClick={() => step(1)} aria-label="Aumentar"><Icon name="add" size={18} filled={false} /></button>
-            </div>
-          ) : null}
-        </div>
-
         {type === 'passos' ? (
           <section className={styles.section}>
             <div className={styles.subHead}>
