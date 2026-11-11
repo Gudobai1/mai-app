@@ -144,3 +144,8 @@ Fonte única da verdade: o quadro "Sistema de design Bukid" (quadros 0 a 12). Os
 - O botão (`SettingsButton`) mostra uma bolinha quando há filtro/ordem diferente do padrão; **Redefinir** volta o módulo ao padrão.
 - Hoje, Em breve, Hábitos, Metas, Notas e Finanças montam o painel em `AppTopBar`; Tarefas usa os mesmos componentes dentro do `Floating`. Opção nova = novo `PanelSection` no módulo certo, nunca tela avulsa.
 - Abas/filtros de situação (Todos/Hoje/Pendentes, Tudo/Atrasadas/…) não existem mais na tela dos módulos: ficam em "Mostrar".
+
+## Painel de notificações
+- Regra única em `lib/v2/alerts.ts` (`buildAlerts`): **Vencidos**, **Próximos** (com horário nas próximas 4 h, inclui compromissos e o que está rolando), **Lembretes** e **Para hoje**. "Próximos" segue a opção "Para hoje" de Configurações → Notificações.
+- `NotificationPanel`: abas por tipo com contagem, linhas com ações rápidas (concluir, adiar para amanhã, dispensar), "Dispensar tudo" e atalho para as configurações. Dispensar vale só no dia (`loadDismissed`/`saveDismissed`, neste navegador) e some também da contagem da bolinha.
+- Abre pelo menu do perfil (Notificações) ou clicando na bolinha do avatar.

@@ -750,3 +750,37 @@
   :global(html[data-mai-layout='compact'][data-mai-side='right']) :global(.mai-v3-shell) :global(.mai-v3-main) { margin-left: 0 !important; margin-right: 56px !important; }
 }
 .menuCount { min-width: 18px; padding: 0 5px; border-radius: 9px; background: var(--ds-danger); color: #fff; font-size: 11px; font-weight: 700; line-height: 18px; text-align: center; }
+
+/* Painel de notificações (versão completa) */
+.alertPanel { width: 400px; max-height: min(78vh, 640px); display: flex; flex-direction: column; padding: 0; overflow: hidden; border-radius: 12px; box-shadow: var(--ds-popup-shadow, 0 12px 40px rgba(0, 0, 0, 0.2)); }
+.alertTop { display: flex; align-items: center; gap: 6px; padding: 14px 10px 10px 16px; }
+.alertTitleBox { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.alertTitleBox strong { font-size: 16px; font-weight: 700; }
+.alertTitleBox small { color: var(--ds-muted); font-size: 12px; }
+.alertTitleBox small[data-urgent] { color: var(--ds-danger); font-weight: 600; }
+.alertLink { appearance: none; height: 28px; padding: 0 8px; border: 0; border-radius: 6px; background: transparent; color: var(--ds-accent); font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; }
+.alertLink:hover { background: var(--ds-accent-soft); }
+.alertIconBtn { appearance: none; display: grid; place-items: center; width: 30px; height: 30px; border: 0; border-radius: 6px; background: transparent; color: var(--ds-muted); cursor: pointer; }
+.alertIconBtn:hover { background: var(--ds-surface-hover); color: var(--ds-text); }
+.alertTabs { display: flex; gap: 4px; padding: 0 12px 8px; overflow-x: auto; scrollbar-width: none; border-bottom: 1px solid var(--ds-line); }
+.alertTabs button { appearance: none; display: inline-flex; align-items: center; gap: 6px; flex: none; height: 28px; padding: 0 10px; border: 0; border-radius: 6px; background: transparent; color: var(--ds-muted); font: inherit; font-size: 13px; cursor: pointer; }
+.alertTabs button small { font-size: 11px; opacity: 0.85; }
+.alertTabs button:hover { background: var(--ds-surface-hover); color: var(--ds-text); }
+.alertTabs button[data-active] { background: var(--ds-accent-soft); color: var(--ds-accent); font-weight: 700; }
+.alertScroll { overflow-y: auto; padding: 4px 8px 10px; }
+.alertItem { position: relative; display: flex; align-items: center; border-radius: 8px; }
+.alertItem:hover { background: var(--ds-surface-hover); }
+.alertItem .alertRow { flex: 1; min-width: 0; padding: 8px; }
+.alertItem .alertRow:hover { background: transparent; }
+.alertTile { display: grid; place-items: center; flex: none; width: 32px; height: 32px; border-radius: 8px; background: var(--ds-surface-2); }
+.alertSub { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.alertActions { display: none; align-items: center; gap: 2px; padding-right: 6px; }
+.alertItem:hover .alertActions, .alertItem:focus-within .alertActions { display: inline-flex; }
+.alertActions button { appearance: none; display: grid; place-items: center; width: 28px; height: 28px; border: 0; border-radius: 6px; background: var(--ds-bg); color: var(--ds-muted); cursor: pointer; box-shadow: 0 0 0 1px var(--ds-line); }
+.alertActions button:hover { color: var(--ds-text); background: var(--ds-surface-2); }
+.alertMoreBtn { appearance: none; margin: 2px 0 4px 48px; padding: 4px 8px; border: 0; border-radius: 6px; background: transparent; color: var(--ds-accent); font: inherit; font-size: 12px; font-weight: 600; cursor: pointer; }
+.alertEmpty { flex-direction: column; align-items: center; justify-content: center; gap: 4px; padding: 36px 24px; text-align: center; }
+.alertEmpty strong { color: var(--ds-text); font-size: 15px; }
+.alertEmptyIcon { display: grid; place-items: center; width: 52px; height: 52px; margin-bottom: 6px; border-radius: 50%; background: var(--ds-accent-soft); color: var(--ds-accent); }
+@media (hover: none) { .alertActions { display: inline-flex; } }
+@media (max-width: 900px) { .alertPanel { width: calc(100vw - 16px); } }
