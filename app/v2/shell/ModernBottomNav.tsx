@@ -148,8 +148,9 @@ export function ModernBottomNav({ state, activeProjectId, onNewProject, view, se
       <nav className={styles.mobileNav} aria-label="Navegação principal">
         {tab('today', 'Hoje', 'today')}
         {tab('upcoming', 'Em breve', 'event_upcoming')}
-        <button type="button" className={styles.newTab} onClick={() => { setSheetOpen(false); onNew() }} aria-label={newLabel(view)} title={newLabel(view)}>
-          <span className={styles.newTabIcon}><Icon name="add" size={24} filled={false} /></span>
+        <button type="button" className={`${styles.tab} ${styles.newTab}`} onClick={() => { setSheetOpen(false); onNew() }} aria-label={newLabel(view)} title={newLabel(view)}>
+          <Icon name="add" size={24} filled={false} />
+          <span>Novo</span>
         </button>
         <button type="button" className={styles.tab} aria-current={searchOpen && !sheetOpen ? 'page' : undefined} onClick={() => { setSheetOpen(false); onSearch() }}>
           <Icon name="search" size={24} filled={searchOpen} weight={searchOpen ? 600 : 400} />
