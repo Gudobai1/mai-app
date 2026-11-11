@@ -933,3 +933,10 @@ html[data-mai-peek] .sidebar { box-shadow: var(--ds-popup-shadow, 0 12px 40px rg
   :global(html[data-mai-layout='compact']) .newBtn.newBtn svg { width: 22px; height: 22px; flex: none; margin: 0; }
   :global(html[data-mai-layout='compact']) .userTop { margin-bottom: 6px; }
 }
+
+/* Opções do projeto: ⋯ ao passar o mouse (e botão direito na linha). */
+.projectMore.projectMore { appearance: none; flex: none; width: 26px; height: 26px; display: grid; place-items: center; padding: 0; border: 0; border-radius: 4px; background: transparent; color: var(--ds-muted); cursor: pointer; opacity: 0; }
+.projectRow:hover .projectMore, .projectMore.projectMore:focus-visible { opacity: 1; }
+.projectMore.projectMore:hover { background: var(--ds-surface-2); color: var(--ds-text); }
+@media (hover: none) { .projectMore.projectMore { display: none; } }
+:global(html[data-mai-layout='compact']) .projectMore.projectMore, :global(html[data-mai-layout='top']) .projectMore.projectMore, :global(html[data-mai-layout='bottom']) .projectMore.projectMore, :global(html[data-mai-layout='dock']) .projectMore.projectMore { display: none; }

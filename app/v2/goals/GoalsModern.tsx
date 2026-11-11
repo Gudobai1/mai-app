@@ -2,6 +2,7 @@
 
 import { Fragment, type DragEvent, useEffect, useRef, useState } from 'react'
 import { Icon, SectionAdder, useDragScroll } from '../../ds'
+import { useQuickMenu, type QuickMenuConfig } from '../shell/QuickMenu'
 import { GOAL_STATUS, goalAmountText, goalCategories, goalColor, goalDone, goalDue, goalDueInfo, goalPaused, goalPct, goalType, GOAL_TYPES, toggleGoalInState, withSteps, sortGoals, type GoalSort } from '../../../lib/v2/goals'
 import { addDays } from '../../../lib/v2/planner'
 import { showCompleted } from '../../../lib/v2/show-completed'
@@ -64,6 +65,21 @@ export function GoalsModern({ state, today, commit, createRequest, inspect }: Pr
     next.splice(at, 0, item)
     return next
   })
+  const quick = useQuickMenu()
+  const categoryMenu = (id: string, title: string): QuickMenuConfig => {
+    const at = categories.findIndex(item => item.id === id)
+    return {
+      title, subtitle: 'Categoria',
+      groups: [
+        { options: [
+          { label: 'Renomear', icon: 'edit', onSelect: () => setRenaming(id) },
+          ...(at > 0 ? [{ label: board ? 'Mover para a esquerda' : 'Mover para cima', icon: board ? 'chevron_left' : 'arrow_upward', onSelect: () => moveCategory(id, at - 1) }] : []),
+          ...(at >= 0 && at < categories.length - 1 ? [{ label: board ? 'Mover para a direita' : 'Mover para baixo', icon: board ? 'chevron_right' : 'arrow_downward', onSelect: () => moveCategory(id, at + 1) }] : []),
+        ] },
+        { options: [{ label: 'Excluir categoria', icon: 'delete', tone: 'danger' as const, onSelect: () => removeCategory(id) }] },
+      ],
+    }
+  }
   const [dragCat, setDragCat] = useState('')
   const [overCat, setOverCat] = useState('')
   const dropProps = (block: { category?: string }) => block.category && byCategory ? {
@@ -135,7 +151,7 @@ export function GoalsModern({ state, today, commit, createRequest, inspect }: Pr
     </button>
   )
   const blockHead = (block: Block) => (
-    <div className={styles.head}>
+    <div className={styles.head} {...(byCategory && block.category ? quick.bind(() => categoryMenu(block.category || '', block.title)) : {})}>
       {byCategory && block.category ? (
         renaming === block.id
           ? <input className={styles.headInput} defaultValue={block.title} autoFocus aria-label="Nome da categoria" onBlur={event => renameCategory(block.id, event.target.value)} onKeyDown={event => { if (event.key === 'Enter') renameCategory(block.id, (event.target as HTMLInputElement).value); if (event.key === 'Escape') setRenaming(null) }} />
@@ -145,11 +161,9 @@ export function GoalsModern({ state, today, commit, createRequest, inspect }: Pr
       {byCategory && block.category ? (
         <span className={styles.headTools}>
           <button type="button" className={styles.headTool} draggable onDragStart={event => { event.dataTransfer.effectAllowed = 'move'; event.dataTransfer.setData('text/plain', block.category || ''); setDragCat(block.category || '') }} onDragEnd={() => { setDragCat(''); setOverCat('') }} aria-label={`Arrastar categoria ${block.title}`} title="Arrastar para reordenar"><Icon name="drag_indicator" size={16} filled={false} /></button>
-          <button type="button" className={styles.headTool} disabled={categories.findIndex(item => item.id === block.category) <= 0} onClick={() => moveCategory(block.category || '', categories.findIndex(item => item.id === block.category) - 1)} aria-label={board ? 'Mover para a esquerda' : 'Mover para cima'} title={board ? 'Mover para a esquerda' : 'Mover para cima'}><Icon name={board ? 'chevron_left' : 'arrow_upward'} size={16} filled={false} /></button>
-          <button type="button" className={styles.headTool} disabled={categories.findIndex(item => item.id === block.category) >= categories.length - 1} onClick={() => moveCategory(block.category || '', categories.findIndex(item => item.id === block.category) + 1)} aria-label={board ? 'Mover para a direita' : 'Mover para baixo'} title={board ? 'Mover para a direita' : 'Mover para baixo'}><Icon name={board ? 'chevron_right' : 'arrow_downward'} size={16} filled={false} /></button>
         </span>
       ) : null}
-      {byCategory && block.category ? <button type="button" className={styles.headRemove} data-after-tools onClick={() => removeCategory(block.id)} aria-label={`Excluir categoria ${block.title}`} title="Excluir categoria (as metas ficam sem categoria)"><Icon name="close" size={16} filled={false} /></button> : null}
+      {byCategory && block.category ? <button type="button" className={styles.headRemove} onClick={event => quick.bind(() => categoryMenu(block.category || '', block.title)).onContextMenu(event)} aria-label={`Opções da categoria ${block.title}`} title="Opções da categoria"><Icon name="more_horiz" size={18} filled={false} /></button> : null}
     </div>
   )
   /* Nova categoria no ponto exato: antes do bloco i (categorias reais), "Sem categoria" fica por último. */
@@ -176,6 +190,7 @@ export function GoalsModern({ state, today, commit, createRequest, inspect }: Pr
           ))}
           {categoryAdder(categories.length, 'vertical')}
         </div>
+        {quick.element}
       </div>
     )
   }
@@ -194,6 +209,7 @@ export function GoalsModern({ state, today, commit, createRequest, inspect }: Pr
         </Fragment>
       ))}
       {categoryAdder(categories.length)}
+      {quick.element}
       {!shown.length ? <div className={styles.empty}>{emptyText}</div> : null}
     </div>
   )
