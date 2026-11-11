@@ -9,7 +9,7 @@ import { normalizeReminders } from '../../../lib/v2/reminders'
 import { normalizeSidebar, sidebarHidden, sidebarIconName } from './sidebar-config'
 import { NAV_ALIAS, todayCounts, type NavItem } from './nav'
 import { NotificationPanel } from './NotificationPanel'
-import { alertCount, buildAlerts, type AlertItem } from '../../../lib/v2/alerts'
+import { alertCount, buildAlerts, loadDismissed, saveDismissed, type AlertItem } from '../../../lib/v2/alerts'
 import type { InspectableItem } from '../ContextDrawer'
 import styles from './ModernShell.module.css'
 
@@ -25,6 +25,7 @@ type Props = {
   onAdd: () => void
   onSettings: () => void
   onToggleTheme: () => void
+  commit: (change: (current: MaiState) => MaiState) => void
   onNewProject?: (parentId?: string) => void
   /** Projeto aberto no momento (para destacar na lista). */
   activeProjectId?: string
@@ -63,7 +64,7 @@ const ORGANIZE: NavItem[] = [
 
 const rows = (value: unknown): Row[] => (Array.isArray(value) ? (value as Row[]) : [])
 
-export function ModernSidebar({ state, today, view, navigate, onSearch, onSettings, onToggleTheme, onNewProject, activeProjectId, dark, profile, autoHide, onToggleHidden, onAutoHide, rail, canRail, onToggleRail, onLogout, onLeave, onEnter, onInspect }: Props) {
+export function ModernSidebar({ state, today, view, navigate, onSearch, onSettings, onToggleTheme, commit, onNewProject, activeProjectId, dark, profile, autoHide, onToggleHidden, onAutoHide, rail, canRail, onToggleRail, onLogout, onLeave, onEnter, onInspect }: Props) {
   const profileName = String(profile?.name || state.configs.profileName || state.configs.userName || 'Meu perfil')
   const profileInitial = profileName.trim().slice(0, 1).toLocaleUpperCase('pt-BR') || 'M'
   const counts = todayCounts(state, today)
@@ -76,7 +77,10 @@ export function ModernSidebar({ state, today, view, navigate, onSearch, onSettin
   const [minute, setMinute] = useState(0)
   useEffect(() => { const timer = window.setInterval(() => setMinute(value => value + 1), 60_000); return () => window.clearInterval(timer) }, [])
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  const alerts = useMemo(() => buildAlerts(state, today, new Date()), [state, today, minute])
+  const [dismissed, setDismissed] = useState<Set<string>>(new Set())
+  useEffect(() => { setDismissed(loadDismissed(today)) }, [today])
+  const dismiss = (ids: string[]) => setDismissed(current => { const next = new Set(current); for (const id of ids) next.add(id); saveDismissed(today, next); return next })
+  const alerts = useMemo(() => buildAlerts(state, today, new Date()).filter(entry => !dismissed.has(entry.id)), [state, today, minute, dismissed])
   const remindersLook = normalizeReminders(state.configs.reminders).look
   const attention = alertCount(alerts)
   const openAlert = (entry: AlertItem) => {
@@ -189,7 +193,7 @@ export function ModernSidebar({ state, today, view, navigate, onSearch, onSettin
               {remindersLook.bell === 'count' ? (attention > 9 ? '9+' : attention) : null}
             </button>
           ) : null}
-          {bell ? <NotificationPanel look={remindersLook} alerts={alerts} anchor={menuRef.current} onOpen={openAlert} onClose={() => setBell(false)} /> : null}
+          {bell ? <NotificationPanel look={remindersLook} alerts={alerts} today={today} anchor={menuRef.current} onOpen={openAlert} onClose={() => setBell(false)} onDismiss={dismiss} commit={commit} onSettings={onSettings} /> : null}
           {menu ? (
             <div className={styles.userMenu} role="menu">
               <button type="button" role="menuitem" onClick={() => { setMenu(false); onSettings() }}><Icon name="settings" size={18} filled={false} /><span className={styles.userMenuLabel}>Configurações</span></button>

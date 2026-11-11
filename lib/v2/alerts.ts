@@ -6,7 +6,7 @@ import { addDays, plannerItems, type PlannerItem } from './planner'
  * Vencidos = o que passou da data e não foi feito (tarefas, lançamentos, metas). Lembretes = itens com lembrete que já disparou
  * ou dispara ainda hoje. Hoje = o que falta fazer hoje.
  */
-export type AlertGroupId = 'overdue' | 'reminder' | 'today'
+export type AlertGroupId = 'overdue' | 'reminder' | 'soon' | 'today'
 export type AlertItem = { id: string; group: AlertGroupId; item: PlannerItem; note: string }
 
 const OFFSETS: Record<string, number> = { m: 60_000, h: 3_600_000, d: 86_400_000 }
@@ -58,6 +58,16 @@ export function buildAlerts(state: MaiState, today: string, now: Date): AlertIte
     }
   }
 
+  // Próximos: o que tem horário e começa nas próximas 4 horas (inclui compromissos e o que está acontecendo agora).
+  for (const item of plannerItems(state, today, today)) {
+    if (item.completed || item.kind === 'habit' || !item.time) continue
+    const start = at(item.date, item.time)
+    const diff = start - nowMs
+    if (diff < -30 * 60_000 || diff > 4 * 3_600_000) continue
+    const minutes = Math.round(diff / 60_000)
+    push('soon', item, minutes <= 0 ? `Agora · ${item.time}` : minutes < 60 ? `Em ${minutes} min · ${item.time}` : `Em ${Math.floor(minutes / 60)} h${minutes % 60 ? ` ${minutes % 60} min` : ''} · ${item.time}`)
+  }
+
   // Hoje: o que falta fazer.
   for (const item of plannerItems(state, today, today)) {
     if (item.completed || item.kind === 'habit' || item.kind === 'event') continue
@@ -68,3 +78,16 @@ export function buildAlerts(state: MaiState, today: string, now: Date): AlertIte
 
 /** Quantos avisos pedem atenção agora (vencidos + lembretes já disparados). */
 export const alertCount = (alerts: AlertItem[]) => alerts.filter(entry => entry.group === 'overdue' || (entry.group === 'reminder' && !entry.note.startsWith('Lembra às'))).length
+
+
+/* Avisos dispensados (só valem no dia; ficam neste navegador). */
+const DISMISS_KEY = 'bukid-alerts-dismissed'
+export function loadDismissed(today: string): Set<string> {
+  try {
+    const data = JSON.parse(localStorage.getItem(DISMISS_KEY) || '{}') as { day?: string; ids?: string[] }
+    return new Set(data.day === today && Array.isArray(data.ids) ? data.ids : [])
+  } catch { return new Set() }
+}
+export function saveDismissed(today: string, ids: Set<string>) {
+  try { localStorage.setItem(DISMISS_KEY, JSON.stringify({ day: today, ids: [...ids] })) } catch { /* sem armazenamento */ }
+}
