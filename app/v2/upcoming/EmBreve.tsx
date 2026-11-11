@@ -542,7 +542,7 @@ export function EmBreve({ state, today, commit, inspect, syncRange }: Props) {
     <div className={styles.late}>
       <button type="button" className={styles.lateHead} aria-expanded={lateOpen} onClick={() => setLateOpen(value => !value)}>
         <Icon name="schedule" size={16} filled={false} />{overdue.length} {overdue.length === 1 ? 'tarefa atrasada' : 'tarefas atrasadas'}
-        <Icon name="expand_more" size={18} filled={false} className={styles.lateChevron} />
+        <Icon name={lateOpen ? 'expand_more' : 'chevron_right'} size={18} filled={false} className={styles.lateChevron} />
       </button>
       {lateOpen ? <div className={styles.lateBody}>{taskList(overdue, true)}</div> : null}
     </div>

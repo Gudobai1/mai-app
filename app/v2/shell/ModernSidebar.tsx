@@ -178,7 +178,7 @@ export function ModernSidebar({ state, today, view, navigate, onSearch, onSettin
               {profile?.picture ? <img src={profile.picture} alt="" referrerPolicy="no-referrer" /> : profileInitial}
             </span>
             <span className={styles.profileName}>{profileName}</span>
-            <Icon name={menu ? 'expand_less' : 'expand_more'} size={18} filled={false} />
+            <Icon name={menu ? 'expand_more' : 'chevron_right'} size={18} filled={false} />
           </button>
           {menu ? (
             <div className={styles.userMenu} role="menu">
