@@ -1,8 +1,9 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { fold, parseNatural, type NlKind } from '../../lib/v2/nlp'
 import type { MaiState } from '../../lib/v2/state'
+import { addDays, plannerItems } from '../../lib/v2/planner'
 import { Icon } from '../ds'
 import type { Row } from './app-types'
 import type { InspectableItem } from './ContextDrawer'
@@ -92,6 +93,11 @@ export function SearchOverlay({ state, today, query, setQuery, onClose, inspect,
   const [tab, setTab] = useState<Tab>('all')
   const [recent, setRecent] = useState<string[]>(() => { try { return JSON.parse(localStorage.getItem('bukid-recent-searches') || '[]') as string[] } catch { return [] } })
   const [active, setActive] = useState(0)
+  const [back, setBack] = useState(30)
+  const [ahead, setAhead] = useState(45)
+  const timelineRef = useRef<HTMLDivElement | null>(null)
+  const anchorRef = useRef<HTMLDivElement | null>(null)
+  const heightBefore = useRef(0)
   const [muted, setMuted] = useState<Set<NlKind>>(new Set())
   const listRef = useRef<HTMLDivElement | null>(null)
   const inputRef = useRef<HTMLInputElement | null>(null)
@@ -181,6 +187,32 @@ export function SearchOverlay({ state, today, query, setQuery, onClose, inspect,
     setRecent(next)
     try { localStorage.setItem('bukid-recent-searches', JSON.stringify(next)) } catch { /* sem armazenamento */ }
   }
+
+  const timeline = useMemo(() => {
+    const items = plannerItems(state, addDays(today, -back), addDays(today, ahead)).filter(item => item.kind !== 'habit')
+    items.sort((a, b) => (a.date + (a.time || '99:99')).localeCompare(b.date + (b.time || '99:99')))
+    const days: { date: string; items: typeof items }[] = []
+    for (const item of items) {
+      const last = days[days.length - 1]
+      if (last && last.date === item.date) last.items.push(item)
+      else days.push({ date: item.date, items: [item] })
+    }
+    return days
+  }, [state, today, back, ahead])
+  const showTimeline = !words.length && !hasFilter
+  // Abre já na posição de hoje; ao carregar dias anteriores mantém o que estava na tela.
+  useEffect(() => { if (showTimeline) anchorRef.current?.scrollIntoView({ block: 'start' }) }, [showTimeline])
+  useLayoutEffect(() => {
+    const box = timelineRef.current
+    if (box && heightBefore.current) { box.scrollTop += box.scrollHeight - heightBefore.current; heightBefore.current = 0 }
+  }, [back])
+  const onTimelineScroll = (event: React.UIEvent<HTMLDivElement>) => {
+    const box = event.currentTarget
+    if (box.scrollTop < 40 && back < 365) { heightBefore.current = box.scrollHeight; setBack(value => value + 30) }
+    else if (box.scrollHeight - box.scrollTop - box.clientHeight < 80 && ahead < 365) setAhead(value => value + 30)
+  }
+  const KIND_NAME: Record<string, string> = { task: 'Tarefa', event: 'Compromisso', finance: 'Finanças', goal: 'Meta', habit: 'Hábito' }
+  const KIND_ICON: Record<string, string> = { task: 'check_circle', event: 'event', finance: 'payments', goal: 'flag', habit: 'repeat' }
 
   const visible = useMemo(() => {
     if (tab !== 'all') return results.filter(result => result.kind === tab).slice(0, 50)
@@ -286,7 +318,7 @@ export function SearchOverlay({ state, today, query, setQuery, onClose, inspect,
           </div>
         ) : null}
 
-        <div ref={listRef} className={styles.list}>
+        <div ref={listRef} className={styles.list} data-home={showTimeline || undefined}>
           {!words.length && !hasFilter ? (
             <div className={styles.home}>
               {recent.length ? (
@@ -299,14 +331,42 @@ export function SearchOverlay({ state, today, query, setQuery, onClose, inspect,
               ) : null}
               <div className={styles.group}>Filtros rápidos</div>
               <div className={styles.chips}>
-                {['hoje', 'amanhã', 'esta semana', 'atrasadas', '!alta', '#'].map(item => <button key={item} type="button" onClick={() => { setQuery(item === '#' ? '#' : item); inputRef.current?.focus() }}>{item}</button>)}
+                {([['hoje', 'today'], ['amanhã', 'event_upcoming'], ['esta semana', 'date_range'], ['este mês', 'calendar_month'], ['atrasadas', 'warning'], ['semana passada', 'schedule'], ['mês passado', 'schedule'], ['!alta', 'flag'], ['!média', 'flag'], ['!baixa', 'flag']] as const).map(([item, icon]) => <button key={item} type="button" onClick={() => { setQuery(item); inputRef.current?.focus() }}><Icon name={icon} size={14} filled={false} />{item}</button>)}
+                {projects.slice(0, 6).map(project => <button key={String(project.id)} type="button" onClick={() => { setQuery(`#${String(project.nome)} `); inputRef.current?.focus() }}><i className={styles.chipDot} style={{ background: String(project.cor || 'var(--ds-muted)') }} />{String(project.nome)}</button>)}
               </div>
               <div className={styles.group}>Ir para</div>
-              <div className={styles.goto}>
+              <div className={styles.chips}>
                 {([['today', 'Hoje', 'today'], ['upcoming', 'Em breve', 'event_upcoming'], ['tasks', 'Tarefas', 'check_circle'], ['habits', 'Hábitos', 'repeat'], ['goals', 'Metas', 'flag'], ['notes', 'Notas', 'description'], ['finance', 'Finanças', 'payments']] as const).map(([view, label, icon]) => (
-                  <button key={view} type="button" onClick={() => { close(); navigate(view as import('./app-types').AppView) }}><Icon name={icon} size={18} filled={false} />{label}</button>
+                  <button key={view} type="button" onClick={() => { close(); navigate(view as import('./app-types').AppView) }}><Icon name={icon} size={14} filled={false} />{label}</button>
                 ))}
               </div>
+            </div>
+          ) : null}
+
+          {showTimeline ? (
+            <div ref={timelineRef} className={styles.timeline} onScroll={onTimelineScroll}>
+              <div className={styles.group}>Linha do tempo · todos os módulos</div>
+              {timeline.length ? timeline.map(day => {
+                const isToday = day.date === today
+                const isPast = day.date < today
+                const firstFuture = !isPast && !timeline.some(other => other.date < day.date && other.date >= today)
+                return (
+                  <section key={day.date} className={styles.day} data-today={isToday || undefined} data-past={isPast || undefined}>
+                    {firstFuture ? <div ref={anchorRef} className={styles.anchor} /> : null}
+                    <h4 className={styles.dayHead}>{isToday ? 'Hoje' : dayLabel(day.date, today)}<small>{new Date(`${day.date}T12:00:00`).toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'short' })}</small></h4>
+                    {day.items.map(item => (
+                      <button key={item.id} type="button" className={styles.row} data-done={item.completed || undefined} onClick={() => { close(); inspect({ kind: item.kind as InspectableItem['kind'], sourceId: item.sourceId, title: item.title, date: item.date, raw: item.raw }) }}>
+                        <span className={styles.rowIcon} style={{ color: item.color || 'var(--ds-muted)' }}><Icon name={KIND_ICON[item.kind] || 'check_circle'} size={18} filled={false} /></span>
+                        <span className={styles.rowText}>
+                          <span className={styles.rowTitle}>{item.title}</span>
+                          <span className={styles.rowMeta}>{[KIND_NAME[item.kind], item.subtitle].filter(Boolean).join(' · ')}</span>
+                        </span>
+                        {item.time ? <span className={styles.rowTime}>{item.time}</span> : null}
+                      </button>
+                    ))}
+                  </section>
+                )
+              }) : <p className={styles.empty}>Nada agendado neste período.</p>}
             </div>
           ) : null}
 
