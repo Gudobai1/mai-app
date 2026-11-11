@@ -201,7 +201,7 @@ export function AppTopBar({ state, today, view, taskScope, commit, onTaskScopeCh
     </> : null}
 
     {view === 'habits' ? <>
-      <PanelSection title="Filtros"><SelectLine label="Situação" value={String(filter.status || 'all')} onChange={value => patchFilter({ status:value })}><option value="all">Todos</option><option value="pending">Pendentes</option><option value="done">Realizados</option></SelectLine></PanelSection>
+      <PanelSection title="Filtros"><SelectLine label="Situação" value={String(filter.status || 'all')} onChange={value => patchFilter({ status:value })}><option value="all">Todos</option><option value="today">Hoje</option><option value="pending">Pendentes</option><option value="done">Realizados</option></SelectLine></PanelSection>
       <PanelSection title="Classificação"><Choices value={sortMode} onChange={value => patchControl({ sort:value })} items={[{value:'name',label:'Nome'},{value:'time',label:'Horário'},{value:'progress',label:'Progresso'}]}/></PanelSection>
       <PanelSection title="Visualização"><Choices value={areaTabs.habits || 'today'} onChange={value => setAreaTab('habits', value)} items={[{value:'today',label:'Hoje'},{value:'week',label:'Semana'},{value:'report',label:'Relatório'}]}/><Choices value={advanced.habits ? 'advanced' : 'simple'} onChange={value => setAdvanced('habits', value === 'advanced')} items={[{value:'simple',label:'Simples'},{value:'advanced',label:'Avançada'}]}/></PanelSection>
     </> : null}

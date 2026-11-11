@@ -606,40 +606,21 @@ export function TasksModern(props: Props) {
     ...projects.map(item => ({ value: String(item.id), label: `${'  '.repeat(Number(item._depth || 0))}${String(item.nome || 'Projeto')}`, color: String(item.cor || 'var(--ds-line-strong)') })),
   ]
 
-  /* ---------------------------------------------------------------- Tela */
-
-  return (
-    <div className={styles.page} data-selecting={selecting || undefined}>
-      <nav className={styles.nav} aria-label="Listas e projetos">
-        <div
-          className={styles.navScroll}
-          ref={tabsRef}
-          onWheel={onTabsWheel}
-          onPointerDown={onTabsPointerDown}
-          onPointerMove={onTabsPointerMove}
-          onPointerUp={endTabsDrag}
-          onPointerCancel={endTabsDrag}
-          onClickCapture={event => { if (tabsSuppress.current) { event.preventDefault(); event.stopPropagation() } }}
-          role="tablist"
-        >
-          {([
+  const ctxTabs = ([
             { id: 'all', label: 'Tudo', icon: 'select_all', color: 'var(--ds-muted)', count: ctxTasks.filter(task => !task.concluida).length },
             { id: 'late', label: 'Atrasadas', icon: 'warning', color: 'var(--ds-muted)', count: ctxTasks.filter(task => !task.concluida && dayOf(task) && dayOf(task) < today).length },
             { id: 'nodate', label: 'Sem data', icon: 'event_busy', color: 'var(--ds-muted)', count: ctxTasks.filter(task => !task.concluida && !dayOf(task)).length },
             { id: 'today', label: 'Hoje', icon: 'today', color: 'var(--ds-muted)', count: ctxTasks.filter(task => !task.concluida && dayOf(task) && dayOf(task) <= today).length },
             { id: 'upcoming', label: 'Em breve', icon: 'event_upcoming', color: 'var(--ds-muted)', count: ctxTasks.filter(task => !task.concluida && dayOf(task) > today).length },
-          ] as { id: CtxFilter; label: string; icon: string; color: string; count: number }[]).map(tab => (
-            <button key={tab.id} type="button" role="tab" className={styles.pill} data-active={ctxFilter === tab.id || undefined} aria-selected={ctxFilter === tab.id} onClick={() => {
-              if (!isProjectLike) props.onScopeChange('entrada')
-              setCtxFilter(tab.id)
-            }}>
-              <Icon name={tab.icon} size={17} filled={false} />
-              <span>{tab.label}</span>
-              {tab.count ? <small>{tab.count}</small> : null}
-            </button>
-          ))}
-        </div>
-        <SettingsButton ref={optionsRef} active={priorityFilter !== 'all'} aria-expanded={optionsOpen} onClick={() => setOptionsOpen(true)} />
+          ] as { id: CtxFilter; label: string; icon: string; color: string; count: number }[])
+
+  /* ---------------------------------------------------------------- Tela */
+
+  return (
+    <div className={styles.page} data-selecting={selecting || undefined}>
+      <nav className={styles.nav} aria-label="Listas e projetos">
+        <div className={styles.navScroll} />
+        <SettingsButton ref={optionsRef} active={priorityFilter !== 'all' || ctxFilter !== 'all'} aria-expanded={optionsOpen} onClick={() => setOptionsOpen(true)} />
         {optionsOpen ? (
           <Floating anchor={optionsRef} title="Opções" width={300} onClose={() => setOptionsOpen(false)}>
             <div className={styles.optionsPanel}>
@@ -652,6 +633,12 @@ export function TasksModern(props: Props) {
                   </div>
                 </>
               ) : null}
+              <span className={styles.optionsLabel}>Mostrar</span>
+              <div className={styles.chips}>
+                {ctxTabs.map(tab => (
+                  <button key={tab.id} type="button" data-active={ctxFilter === tab.id || undefined} onClick={() => { if (!isProjectLike) props.onScopeChange('entrada'); setCtxFilter(tab.id) }}><Icon name={tab.icon} size={15} />{tab.label}{tab.count ? ` ${tab.count}` : ''}</button>
+                ))}
+              </div>
               <span className={styles.optionsLabel}>Concluídos</span>
               <div className={styles.chips}>
                 <button type="button" data-active={showDone || undefined} onClick={() => setScoped({ showDone: !showDone })}><Icon name="task_alt" size={15} />Mostrar concluídos</button>
