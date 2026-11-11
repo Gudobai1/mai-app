@@ -1,4 +1,4 @@
-.panel { position: absolute; right: 0; top: calc(100% + 6px); z-index: 790; display: flex; flex-direction: column; width: min(360px, calc(100vw - 24px)); max-height: min(76vh, 640px); border: 1px solid var(--ds-line); border-radius: 10px; background: var(--ds-bg); color: var(--ds-text); box-shadow: var(--ds-popup-shadow, 0 12px 40px rgba(0, 0, 0, 0.18)); overflow: hidden; font-family: var(--ds-font); }
+.panel { position: absolute; right: 0; top: calc(100% + 6px); z-index: 790; display: flex; flex-direction: column; width: min(360px, calc(100vw - 24px)); max-height: min(76vh, 640px); border: 1px solid var(--ds-line); border-radius: 10px; background-color: #FFFFFF; background-color: var(--ds-bg, #FFFFFF); isolation: isolate; color: var(--ds-text); box-shadow: var(--ds-popup-shadow, 0 12px 40px rgba(0, 0, 0, 0.18)); overflow: hidden; font-family: var(--ds-font); }
 .head { display: flex; align-items: center; gap: 8px; padding: 12px 12px 10px 16px; border-bottom: 1px solid var(--ds-line); }
 .headTitle { flex: 1; min-width: 0; display: flex; align-items: baseline; gap: 8px; }
 .headTitle strong { font-size: 15px; font-weight: 700; }
@@ -7,8 +7,9 @@
 .reset:hover { background: var(--ds-accent-soft); }
 .close { appearance: none; display: grid; place-items: center; width: 28px; height: 28px; border: 0; border-radius: 6px; background: transparent; color: var(--ds-muted); cursor: pointer; }
 .close:hover { background: var(--ds-surface-hover); color: var(--ds-text); }
-.body { display: flex; flex-direction: column; overflow-y: auto; padding: 4px 0 8px; }
-.group { padding: 10px 16px 6px; }
+.head { flex: none; }
+.body { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; overflow-y: auto; padding: 4px 0 8px; background-color: var(--ds-bg, #FFFFFF); }
+.group { flex: none; position: relative; padding: 10px 16px 6px; background-color: var(--ds-bg, #FFFFFF); }
 .group + .group { border-top: 1px solid var(--ds-line); }
 .group h4 { margin: 0 0 8px; font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ds-muted); }
 .rows { display: flex; flex-direction: column; gap: 4px; }

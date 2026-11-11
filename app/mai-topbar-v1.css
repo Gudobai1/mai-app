@@ -2,7 +2,7 @@
   position:sticky;
   top:0;
   z-index:760;
-  min-height:50px;
+  min-height:64px;
   display:grid;
   grid-template-columns:minmax(0,1fr) auto;
   align-items:center;
@@ -13,9 +13,9 @@
   backdrop-filter:blur(14px);
   border-bottom:1px solid color-mix(in srgb,var(--v3-line,#e7ebe5) 74%,transparent);
 }
-.mai-app-topbar-context{min-width:0;display:flex;align-items:baseline;gap:9px;white-space:nowrap}
-.mai-app-topbar-context strong{font-size:13.5px;font-weight:690;color:var(--v3-text,#303630);letter-spacing:-.01em}
-.mai-app-topbar-context span{font-size:10.5px;color:var(--v3-muted,#8d958b);overflow:hidden;text-overflow:ellipsis}
+.mai-app-topbar-context{min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:4px}
+.mai-app-topbar-context h1{margin:0;font-size:28px;line-height:1.15;font-weight:700;color:var(--ds-text,#202020);letter-spacing:-.01em}
+.mai-app-topbar-context p{margin:0;max-width:100%;font-size:13px;font-weight:500;color:var(--ds-muted,#808080);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .mai-app-topbar-single-action{display:flex;justify-content:flex-end}
 .mai-app-topbar-menu-button{height:32px;display:inline-flex;align-items:center;gap:6px;padding:0 10px;border:0;border-radius:4px;background:transparent;color:var(--v3-muted,#7f887d);font:inherit;font-size:10.5px;font-weight:620;cursor:pointer}
 .mai-app-topbar-menu-button:hover,.mai-app-topbar-menu-button[data-active="true"]{background:var(--v3-hover,#f1f4ef);color:var(--v3-text,#303630)}
@@ -50,9 +50,9 @@
 
 @media(max-width:900px){
   .mai-app-topbar{min-height:47px;gap:8px;margin-bottom:12px;padding:7px 0}
-  .mai-app-topbar-context{max-width:58vw}
-  .mai-app-topbar-context strong{font-size:12.5px}
-  .mai-app-topbar-context span{font-size:10px}
+  .mai-app-topbar-context{max-width:72vw}
+  .mai-app-topbar-context h1{font-size:22px}
+  .mai-app-topbar-context p{font-size:12px}
   .mai-app-topbar-menu-button{width:32px;padding:0;justify-content:center}
   .mai-app-topbar-menu-button>span:last-child{display:none}
   .mai-app-topbar-panel{top:46px;right:0;width:min(330px,calc(100vw - 22px));max-height:66vh}
