@@ -827,9 +827,10 @@
   :global(html[data-mai-layout='bottom']) .newKey, :global(html[data-mai-layout='dock']) .newKey, :global(html[data-mai-layout='dock']) .newLabel { display: none; }
 }
 
-/* Espaçamento único na barra: perfil, Novo, Buscar e itens a 2px; um respiro maior só antes da lista. */
-.userTop { padding-bottom: 6px; }
-.nav { margin-top: 10px; }
+/* Espaçamento único na barra: perfil, Novo, Buscar e todos os itens a 2px. O único respiro extra é o do separador dos projetos (igual em cima e embaixo da linha). */
+.userTop { padding: 0; }
+.nav { margin-top: 0; }
+.group:last-child:not(:first-child) { margin-top: 6px; padding-top: 6px; }
 @media (min-width: 901px) {
   :global(html[data-mai-layout='compact']) .sidebar { gap: 2px; }
   :global(html[data-mai-layout='compact']) .newBtn { width: 36px; }
