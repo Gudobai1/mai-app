@@ -193,3 +193,7 @@ Todo módulo abre com o mesmo cabeçalho, montado só por `AppTopBar`: título 2
 - Nenhum módulo repete o título dentro do conteúdo: Notas, Finanças e Em breve também usam `ModuleHeader` (Em breve com as ações e a navegação de data à direita; Finanças com o mês e os ajustes à direita).
 - Cartão de detalhe da meta: sem barra de progresso; a conclusão aparece só em número (porcentagem ou valor atual de alvo).
 - Cartão de detalhe da meta: sem o bloco de status (valor e botões −/+). O progresso se edita pelos campos "Conclusão"/"Atual" e "Alvo" da lista de propriedades.
+
+## Categorias e relatório das metas
+- **Categorias:** criadas pela pessoa em Metas › Ajustes › Agrupar por › Categoria (ficam em `configs.goalCategories`, cada meta guarda o id em `categoria`). Funcionam como as seções das tarefas: cada categoria é um bloco com título, contagem e "Adicionar meta" próprio; clicar no título renomeia, o × (ao passar o mouse) exclui e as metas voltam para "Sem categoria"; "Adicionar categoria" no fim da lista. No popup da meta há a propriedade "Categoria".
+- **Relatório:** Metas › Ajustes › Visualização › Relatório (`GoalsReport`, `goalReport` em `lib/v2/goals.ts`): metas, em andamento, concluídas, atrasadas, progresso médio; por categoria; prazos por mês; metas em risco (prazo em até 14 dias e menos de 80%).

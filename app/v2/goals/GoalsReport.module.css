@@ -1,0 +1,26 @@
+/* Relatório das metas — só tokens --ds-*; mesmas medidas das linhas de Metas. */
+.page { width: 100%; box-sizing: border-box; padding: 0 var(--ds-s-5, 20px) 80px; font-family: var(--ds-font); color: var(--ds-text); }
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 24px; padding: 14px 0 6px; }
+.stat { display: grid; gap: 4px; }
+.statValue { font-size: 26px; font-weight: 600; line-height: 1.15; font-variant-numeric: tabular-nums; }
+.stat[data-tone='good'] .statValue { color: var(--ds-success); }
+.stat[data-tone='bad'] .statValue { color: var(--ds-danger); }
+.statLabel { font-size: 13px; font-weight: var(--ds-fw-medium); color: var(--ds-muted); }
+.block { padding-top: 22px; }
+.head { display: flex; align-items: baseline; gap: 8px; padding: 0 0 8px; border-bottom: 1px solid var(--ds-line); }
+.headTitle { font-size: 16px; font-weight: 700; }
+.headCount { font-size: 13px; color: var(--ds-muted); }
+.row, .riskRow { appearance: none; display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 16px; width: 100%; box-sizing: border-box; padding: var(--ds-row-py) var(--ds-row-px); border: 0; border-bottom: 1px solid var(--ds-line); background: transparent; color: inherit; font: inherit; text-align: left; }
+.riskRow { grid-template-columns: 10px minmax(0, 1fr) auto auto; cursor: pointer; }
+.riskRow:hover { background: var(--ds-surface-hover); }
+.riskRow:focus-visible { outline: 2px solid var(--ds-accent); outline-offset: -2px; }
+.dot { width: 10px; height: 10px; border-radius: 50%; }
+.rowTitle { font-size: var(--ds-row-title); font-weight: var(--ds-row-weight); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rowSub { font-size: var(--ds-row-sub); color: var(--ds-muted); white-space: nowrap; }
+.rowSub[data-tone='late'] { color: var(--ds-danger); }
+.rowSub[data-tone='today'] { color: var(--ds-warning, #D99A00); }
+.rowValue { display: inline-flex; align-items: center; gap: 10px; min-width: 44px; justify-content: flex-end; font-size: var(--ds-row-title); font-weight: var(--ds-row-weight); font-variant-numeric: tabular-nums; }
+.monthBar { display: inline-block; width: 80px; height: 4px; border-radius: 2px; background: var(--ds-surface-2); overflow: hidden; }
+.monthBar i { display: block; height: 100%; border-radius: 2px; background: var(--ds-muted); }
+.empty { padding: 20px 0; color: var(--ds-muted); font-size: 14px; border-bottom: 1px solid var(--ds-line); }
+@media (max-width: 900px) { .page { padding-left: var(--ds-s-4, 16px); padding-right: var(--ds-s-4, 16px); } .row { grid-template-columns: minmax(0, 1fr) auto; } .row .rowSub { display: none; } .monthBar { display: none; } }
