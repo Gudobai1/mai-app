@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Icon } from '../../ds'
 import type { AlertGroupId, AlertItem } from '../../../lib/v2/alerts'
 import type { ReminderConfig } from '../../../lib/v2/reminders'
@@ -36,13 +36,10 @@ const tomorrow = (day: string) => { const date = new Date(`${day}T12:00:00`); da
  */
 export function NotificationPanel({ look, alerts, today, anchor, onOpen, onClose, onDismiss, commit, onSettings }: Props) {
   const ref = useRef<HTMLDivElement | null>(null)
-  const [pos, setPos] = useState<CSSProperties>({})
   const [tab, setTab] = useState<AlertGroupId | 'all'>('all')
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
 
   useEffect(() => {
-    const rect = anchor?.getBoundingClientRect()
-    if (rect) setPos({ top: Math.max(8, Math.min(rect.bottom + 6, window.innerHeight - 200)), left: Math.max(8, Math.min(rect.left, window.innerWidth - 408)) })
     const close = (event: Event) => { if (!ref.current?.contains(event.target as Node) && !anchor?.contains(event.target as Node)) onClose() }
     const key = (event: KeyboardEvent) => { if (event.key === 'Escape') onClose() }
     document.addEventListener('pointerdown', close)
@@ -68,7 +65,8 @@ export function NotificationPanel({ look, alerts, today, anchor, onOpen, onClose
   const subtitle = attention ? `${attention} ${attention === 1 ? 'pede' : 'pedem'} atenção` : alerts.length ? 'Nada urgente agora' : 'Tudo em dia'
 
   return (
-    <div ref={ref} className={styles.alertPanel} data-density={look.panel} style={pos} role="dialog" aria-label="Notificações">
+    <div className={styles.alertLayer}>
+    <div ref={ref} className={styles.alertPanel} data-density={look.panel} role="dialog" aria-label="Notificações">
       <header className={styles.alertTop}>
         <span className={styles.alertTitleBox}><strong>Notificações</strong><small data-urgent={attention ? true : undefined}>{subtitle}</small></span>
         {alerts.length ? <button type="button" className={styles.alertLink} onClick={() => onDismiss(alerts.map(entry => entry.id))}>Dispensar tudo</button> : null}
@@ -118,6 +116,7 @@ export function NotificationPanel({ look, alerts, today, anchor, onOpen, onClose
           </div>
         )}
       </div>
+    </div>
     </div>
   )
 }

@@ -50,3 +50,17 @@
 .foot { display: flex; gap: 16px; padding: 8px 16px; border-top: 1px solid var(--ds-line); color: var(--ds-muted); font-size: 12px; }
 .foot kbd { display: inline-block; min-width: 18px; margin-right: 3px; padding: 1px 5px; border: 1px solid var(--ds-line); border-radius: 4px; background: var(--ds-surface-2); font: inherit; font-size: 11px; text-align: center; }
 @media (max-width: 900px) { .foot { display: none; } .panel { height: 100%; } }
+
+/* Linha do tempo (próximos embaixo, anteriores ao rolar para cima) */
+.list[data-home] { display: flex; flex-direction: column; overflow: hidden; padding-bottom: 0; }
+.chipDot { width: 8px; height: 8px; border-radius: var(--ds-shape-projects, 50%); flex: none; }
+.timeline { flex: 1; min-height: 0; overflow-y: auto; margin: 0 -8px; padding: 0 8px 12px; border-top: 1px solid var(--ds-line); overscroll-behavior: contain; }
+.timeline > .group { position: sticky; top: 0; z-index: 2; background: var(--ds-bg); padding-top: 12px; }
+.day { padding-bottom: 4px; }
+.day[data-past] .rowTitle, .day[data-past] .rowMeta { opacity: 0.7; }
+.dayHead { position: sticky; top: 34px; z-index: 1; display: flex; align-items: baseline; gap: 8px; margin: 0; padding: 8px 10px 4px; background: var(--ds-bg); font-size: 13px; font-weight: 700; text-transform: capitalize; }
+.dayHead small { color: var(--ds-muted); font-size: 12px; font-weight: 400; text-transform: capitalize; }
+.day[data-today] .dayHead { color: var(--ds-accent); }
+.anchor { height: 0; scroll-margin-top: 34px; }
+.rowTime { flex: none; color: var(--ds-muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+.day .row:hover { background: var(--ds-surface-2); }

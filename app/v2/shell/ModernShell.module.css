@@ -784,3 +784,7 @@
 .alertEmptyIcon { display: grid; place-items: center; width: 52px; height: 52px; margin-bottom: 6px; border-radius: 50%; background: var(--ds-accent-soft); color: var(--ds-accent); }
 @media (hover: none) { .alertActions { display: inline-flex; } }
 @media (max-width: 900px) { .alertPanel { width: calc(100vw - 16px); } }
+
+/* Notificações centralizadas na tela, com fundo escurecido */
+.alertLayer { position: fixed; inset: 0; z-index: 1500; display: flex; align-items: center; justify-content: center; padding: 16px; background: rgba(0, 0, 0, 0.32); }
+.alertLayer .alertPanel { position: static; width: min(460px, 100%); max-height: min(80vh, 680px); }
