@@ -210,7 +210,7 @@ export function ModernSidebar({ state, today, view, navigate, onSearch, onSettin
         </div>
       </div>
       <button type="button" className={styles.newBtn} onClick={onNew} title={`${newLabel(view)} (${shortcutLabel(normalizeShortcuts(state.configs.shortcuts).newTask) || 'botão'})`} aria-label={newLabel(view)}>
-        <Icon name="add" size={20} filled={false} />
+        <Icon name="add" size={22} filled={false} />
         <span className={styles.newLabel}>{newLabel(view)}</span>
         {normalizeShortcuts(state.configs.shortcuts).newTask ? <span className={styles.newKey}>{shortcutLabel(normalizeShortcuts(state.configs.shortcuts).newTask)}</span> : null}
       </button>

@@ -9,7 +9,7 @@
   width: 280px;
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 2px;
   padding: 16px 14px 20px;
   box-sizing: border-box;
   overflow-y: auto;
@@ -26,10 +26,10 @@
 .search.search {
   appearance: none;
   width: 100%;
-  height: 38px;
+  height: 36px;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   padding: 0 12px;
   border: 0;
   border-radius: 4px;
@@ -556,7 +556,7 @@
 
 /* Barra inferior e menu Mais: responsivos (4 abas, área segura, textos que não estouram) */
 @media (max-width: 900px) {
-  .mobileNav.mobileNav { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 2px; height: calc(56px + env(safe-area-inset-bottom)); padding: 0 max(6px, env(safe-area-inset-left)) env(safe-area-inset-bottom) max(6px, env(safe-area-inset-right)); }
+  .mobileNav.mobileNav { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 2px; height: calc(56px + env(safe-area-inset-bottom)); padding: 0 max(6px, env(safe-area-inset-left)) env(safe-area-inset-bottom) max(6px, env(safe-area-inset-right)); }
   .tab.tab { min-height: 48px; height: auto; padding: 4px 2px; }
   .tab.tab > span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: 1.1; }
   .sheet.sheet { padding: 0 max(var(--ds-s-4), env(safe-area-inset-right)) calc(var(--ds-s-5) + env(safe-area-inset-bottom)) max(var(--ds-s-4), env(safe-area-inset-left)); }
@@ -803,7 +803,7 @@
 .alertLayer .alertPanel { position: static; width: min(460px, 100%); max-height: min(80vh, 680px); }
 
 /* ===== Botão "Novo" fixo: sempre junto do perfil (desktop) e no centro da barra de baixo (celular) ===== */
-.newBtn { appearance: none; display: flex; align-items: center; gap: 8px; width: 100%; height: 38px; flex: none; padding: 0 12px; border: 0; border-radius: 6px; background: var(--ds-accent); color: var(--ds-on-accent, #fff); font: inherit; font-size: 14px; font-weight: 700; text-align: left; cursor: pointer; }
+.newBtn { appearance: none; display: flex; align-items: center; gap: 12px; width: 100%; height: 36px; flex: none; padding: 0 12px; border: 0; border-radius: 4px; background: var(--ds-accent); color: var(--ds-on-accent, #fff); font: inherit; font-size: 14px; font-weight: var(--ds-fw-bold); text-align: left; cursor: pointer; }
 .newBtn:hover { background: var(--ds-accent-strong, var(--ds-accent)); }
 .newBtn:focus-visible { outline: 2px solid var(--ds-accent-strong, var(--ds-accent)); outline-offset: 2px; }
 .newLabel { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -825,4 +825,14 @@
   :global(html[data-mai-layout='bottom']) .profilePill .profileName { display: none; }
   :global(html[data-mai-layout='dock']) .newBtn { position: fixed; z-index: 101; top: 10px; right: 52px; width: 36px; height: 36px; padding: 0; justify-content: center; }
   :global(html[data-mai-layout='bottom']) .newKey, :global(html[data-mai-layout='dock']) .newKey, :global(html[data-mai-layout='dock']) .newLabel { display: none; }
+}
+
+/* Espaçamento único na barra: perfil, Novo, Buscar e itens a 2px; um respiro maior só antes da lista. */
+.userTop { padding-bottom: 6px; }
+.nav { margin-top: 10px; }
+@media (min-width: 901px) {
+  :global(html[data-mai-layout='compact']) .sidebar { gap: 2px; }
+  :global(html[data-mai-layout='compact']) .newBtn { width: 36px; }
+  :global(html[data-mai-layout='top']) .nav, :global(html[data-mai-layout='bottom']) .nav, :global(html[data-mai-layout='dock']) .nav { margin-top: 0; }
+  :global(html[data-mai-layout='top']) .userTop, :global(html[data-mai-layout='bottom']) .userTop, :global(html[data-mai-layout='dock']) .userTop { padding-bottom: 0; }
 }
