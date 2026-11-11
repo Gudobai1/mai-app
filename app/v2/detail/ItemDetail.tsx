@@ -22,7 +22,7 @@ import { uploadAttachment } from './upload'
 import { CommentsSection, type Comment } from './Comments'
 import { UnitField } from '../habits/UnitField'
 import { cleanHabit } from '../habits/HabitsModern'
-import { GOAL_STATUS, GOAL_TYPES, goalAmountText, goalDone, goalDue, goalPaused, goalPct, goalStep, goalStepTasks, goalType, normalizeGoal, toggleGoalInState, withSteps } from '../../../lib/v2/goals'
+import { GOAL_STATUS, GOAL_TYPES, goalAmountText, goalCategories, goalDone, goalDue, goalPaused, goalPct, goalStep, goalStepTasks, goalType, normalizeGoal, toggleGoalInState, withSteps } from '../../../lib/v2/goals'
 import { getPalette, colorName } from '../../../lib/v2/palette'
 import { DatePicker, Floating, OptionList, ProjectPicker, ReminderPicker, RepeatPicker, TimePicker, repeatLabel, reminderLabel, type PickerOption } from './Pickers'
 import { CategoryChooser } from './CategoryChooser'
@@ -1115,6 +1115,7 @@ function GoalDetail({ item, state, today, commit, register, close, onOpenItem }:
     prioridade: Number(goal.prioridade || 4),
     cor_hex: String(goal.cor_hex || goal.cor || ''),
     unidade: String(goal.unidade || ''),
+    categoria: String(goal.categoria || ''),
     progresso_atual: Math.max(0, Number(goal.progresso_atual || 0)),
     progresso_total: Math.max(1, Number(goal.progresso_total || 100)),
     comentarios: rows(goal.comentarios),
@@ -1193,6 +1194,7 @@ function GoalDetail({ item, state, today, commit, register, close, onOpenItem }:
       <ItemLayout side={<>
           <SelectProp icon={GOAL_TYPES.find(option => option.value === type)?.icon || 'flag'} color="var(--ds-lilac-fg)" label="Tipo" value={type} options={GOAL_TYPES} onChange={changeType} />
           <SelectProp icon={status.icon} color={status.color} label="Status" value={status.value} options={GOAL_STATUSES} display={status.label} onChange={changeStatus} />
+          {goalCategories(state.configs).length ? <SelectProp icon="folder" color="var(--ds-lilac-fg)" label="Categoria" value={String(draft.categoria || '')} options={[{ value: '', label: 'Sem categoria' }, ...goalCategories(state.configs).map(category => ({ value: category.id, label: category.nome }))]} onChange={categoria => update({ categoria }, true)} muted={!draft.categoria} /> : null}
           <Prop icon="percent" color="var(--ds-lilac-fg)" label="Conclusão" display={type === 'percentual' ? <span className={styles.pctField}>{number(Number(draft.progresso_atual), setProgress, 0)}<i>%</i></span> : `${pct}%`} />
           <PickerProp today={today} type="date" icon="calendar_today" color={draft.prazo ? 'var(--ds-accent)' : 'var(--ds-muted)'} label="Prazo" value={draft.prazo} muted={!draft.prazo} display={draft.prazo ? friendlyDate(draft.prazo, today) : 'Sem prazo'} onChange={prazo => update({ prazo }, true)} />
           <SelectProp icon="flag" color={priority.color} label="Prioridade" value={String(draft.prioridade)} onChange={value => update({ prioridade: Number(value) }, true)} options={PRIORITIES} display={priority.label} muted={Number(draft.prioridade) === 4} />

@@ -145,3 +145,59 @@ export function toggleGoalInState<T extends { goals: unknown[]; tasks: unknown[]
   }
   return { ...state, tasks, goals: goals.map(row => (String(row.id) === goalId ? setGoalDone(row, done) : row)) } as T
 }
+
+/* ------------------------------------------------------------------ Categorias e relatório */
+
+export type GoalCategory = { id: string; nome: string }
+
+/** Categorias criadas pela pessoa (ficam em `configs.goalCategories`); cada meta guarda o id em `categoria`. */
+export function goalCategories(configs: unknown): GoalCategory[] {
+  const raw = (configs as { goalCategories?: unknown } | null | undefined)?.goalCategories
+  return Array.isArray(raw)
+    ? (raw as Row[]).filter(item => item && item.id && String(item.nome || '').trim()).map(item => ({ id: String(item.id), nome: String(item.nome) }))
+    : []
+}
+
+export type GoalReport = {
+  total: number
+  done: number
+  active: number
+  paused: number
+  late: number
+  avgPct: number
+  byCategory: { id: string; nome: string; total: number; done: number; avgPct: number }[]
+  byMonth: { key: string; label: string; total: number; done: number }[]
+  atRisk: Row[]
+}
+
+/** Números do relatório: situação geral, por categoria, por mês de prazo e metas em risco. */
+export function goalReport(goals: Row[], categories: GoalCategory[], today: string): GoalReport {
+  const open = goals.filter(goal => !goalDone(goal))
+  const avg = (list: Row[]) => (list.length ? Math.round(list.reduce((sum, goal) => sum + goalPct(goal), 0) / list.length) : 0)
+  const groups: { id: string; nome: string; list: Row[] }[] = [
+    ...categories.map(category => ({ id: category.id, nome: category.nome, list: goals.filter(goal => String(goal.categoria || '') === category.id) })),
+    { id: '', nome: 'Sem categoria', list: goals.filter(goal => !categories.some(category => category.id === String(goal.categoria || ''))) },
+  ]
+  const months = new Map<string, { total: number; done: number }>()
+  for (const goal of goals) {
+    const due = goalDue(goal)
+    if (!due) continue
+    const key = due.slice(0, 7)
+    const entry = months.get(key) || { total: 0, done: 0 }
+    entry.total += 1
+    if (goalDone(goal)) entry.done += 1
+    months.set(key, entry)
+  }
+  const soon = (() => { const d = new Date(`${today}T12:00:00`); d.setDate(d.getDate() + 14); return d.toISOString().slice(0, 10) })()
+  return {
+    total: goals.length,
+    done: goals.length - open.length,
+    active: open.filter(goal => !goalPaused(goal)).length,
+    paused: open.filter(goalPaused).length,
+    late: open.filter(goal => { const due = goalDue(goal); return due && due < today }).length,
+    avgPct: avg(goals),
+    byCategory: groups.filter(group => group.list.length || group.id).map(group => ({ id: group.id, nome: group.nome, total: group.list.length, done: group.list.filter(goalDone).length, avgPct: avg(group.list) })),
+    byMonth: [...months.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([key, value]) => ({ key, label: new Date(`${key}-15T12:00:00`).toLocaleDateString('pt-BR', { month: 'short', year: key.slice(0, 4) !== today.slice(0, 4) ? '2-digit' : undefined }).replace('.', ''), ...value })),
+    atRisk: open.filter(goal => { const due = goalDue(goal); return due && due <= soon && goalPct(goal) < 80 }).sort((a, b) => goalDue(a).localeCompare(goalDue(b))).slice(0, 8),
+  }
+}

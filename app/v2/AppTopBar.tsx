@@ -205,8 +205,8 @@ export function AppTopBar({ state, today, view, taskScope, commit, onTaskScopeCh
     </> : null}
 
     {view === 'goals' ? <>
-      <PanelSection title="Visualização"><Choices value={configs.goalsView === 'board' ? 'board' : 'list'} onChange={value => patchConfig('goalsView', value)} items={[{value:'list',label:'Lista'},{value:'board',label:'Quadro'}]}/></PanelSection>
-      {configs.goalsView !== 'board' ? <PanelSection title="Agrupar por"><Choices value={String(control.group || 'status')} onChange={value => patchControl({ group:value })} items={[{value:'status',label:'Situação'},{value:'type',label:'Tipo'},{value:'due',label:'Prazo'}]}/></PanelSection> : null}
+      <PanelSection title="Visualização"><Choices value={configs.goalsView === 'board' ? 'board' : configs.goalsView === 'report' ? 'report' : 'list'} onChange={value => patchConfig('goalsView', value)} items={[{value:'list',label:'Lista'},{value:'board',label:'Quadro'},{value:'report',label:'Relatório'}]}/></PanelSection>
+      {configs.goalsView !== 'board' && configs.goalsView !== 'report' ? <PanelSection title="Agrupar por"><Choices value={String(control.group || 'status')} onChange={value => patchControl({ group:value })} items={[{value:'status',label:'Situação'},{value:'category',label:'Categoria'},{value:'type',label:'Tipo'},{value:'due',label:'Prazo'}]}/></PanelSection> : null}
       <PanelSection title="Concluídos"><Choices value={showCompleted(state, 'goals') ? 'show' : 'hide'} onChange={value => patchConfig('showCompletedByModule', { ...((configs.showCompletedByModule as Record<string, boolean> | undefined) || {}), goals: value === 'show' })} items={[{value:'hide',label:'Ocultar'},{value:'show',label:'Mostrar concluídos'}]}/></PanelSection>
       <PanelSection title="Filtros">
         <SelectLine label="Situação" value={String(filter.status || 'all')} onChange={value => patchFilter({ status:value })}><option value="all">Todas</option><option value="active">Em andamento</option><option value="paused">Pausadas</option></SelectLine>
