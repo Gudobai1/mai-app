@@ -1,6 +1,6 @@
 'use client'
 
-import { Fragment, useEffect, useRef, useState } from 'react'
+import { Fragment, type DragEvent, useEffect, useRef, useState } from 'react'
 import { Icon, SectionAdder, useDragScroll } from '../../ds'
 import { GOAL_STATUS, goalAmountText, goalCategories, goalColor, goalDone, goalDue, goalDueInfo, goalPaused, goalPct, goalType, GOAL_TYPES, toggleGoalInState, withSteps, sortGoals, type GoalSort } from '../../../lib/v2/goals'
 import { addDays } from '../../../lib/v2/planner'
@@ -55,6 +55,23 @@ export function GoalsModern({ state, today, commit, createRequest, inspect }: Pr
   }))
   const addCategory = (nome: string, index = Infinity) => setCategories(list => { const at = Math.max(0, Math.min(index, list.length)); return [...list.slice(0, at), { id: `cat-${crypto.randomUUID()}`, nome }, ...list.slice(at)] })
   const renameCategory = (id: string, nome: string) => { const clean = nome.trim(); if (clean) setCategories(list => list.map(item => item.id === id ? { ...item, nome: clean } : item)); setRenaming(null) }
+  const moveCategory = (id: string, to: number) => setCategories(list => {
+    const from = list.findIndex(item => item.id === id)
+    const at = Math.max(0, Math.min(to, list.length - 1))
+    if (from < 0 || from === at) return list
+    const next = [...list]
+    const [item] = next.splice(from, 1)
+    next.splice(at, 0, item)
+    return next
+  })
+  const [dragCat, setDragCat] = useState('')
+  const [overCat, setOverCat] = useState('')
+  const dropProps = (block: { category?: string }) => block.category && byCategory ? {
+    onDragOver: (event: DragEvent) => { if (dragCat && dragCat !== block.category) { event.preventDefault(); setOverCat(block.category || '') } },
+    onDragLeave: () => setOverCat(''),
+    onDrop: (event: DragEvent) => { event.preventDefault(); if (dragCat && block.category) moveCategory(dragCat, categories.findIndex(item => item.id === block.category)); setDragCat(''); setOverCat('') },
+    'data-drop-over': overCat === block.category || undefined,
+  } : {}
   const removeCategory = (id: string) => setCategories(list => list.filter(item => item.id !== id), id)
 
   const visible = goals.filter(goal =>
@@ -125,7 +142,14 @@ export function GoalsModern({ state, today, commit, createRequest, inspect }: Pr
           : <button type="button" className={styles.headTitleButton} onClick={() => setRenaming(block.id)} title="Renomear categoria">{block.title}</button>
       ) : <span className={styles.headTitle}>{block.title}</span>}
       <span className={styles.headCount}>{block.list.length}</span>
-      {byCategory && block.category ? <button type="button" className={styles.headRemove} onClick={() => removeCategory(block.id)} aria-label={`Excluir categoria ${block.title}`} title="Excluir categoria (as metas ficam sem categoria)"><Icon name="close" size={16} filled={false} /></button> : null}
+      {byCategory && block.category ? (
+        <span className={styles.headTools}>
+          <button type="button" className={styles.headTool} draggable onDragStart={event => { event.dataTransfer.effectAllowed = 'move'; event.dataTransfer.setData('text/plain', block.category || ''); setDragCat(block.category || '') }} onDragEnd={() => { setDragCat(''); setOverCat('') }} aria-label={`Arrastar categoria ${block.title}`} title="Arrastar para reordenar"><Icon name="drag_indicator" size={16} filled={false} /></button>
+          <button type="button" className={styles.headTool} disabled={categories.findIndex(item => item.id === block.category) <= 0} onClick={() => moveCategory(block.category || '', categories.findIndex(item => item.id === block.category) - 1)} aria-label={board ? 'Mover para a esquerda' : 'Mover para cima'} title={board ? 'Mover para a esquerda' : 'Mover para cima'}><Icon name={board ? 'chevron_left' : 'arrow_upward'} size={16} filled={false} /></button>
+          <button type="button" className={styles.headTool} disabled={categories.findIndex(item => item.id === block.category) >= categories.length - 1} onClick={() => moveCategory(block.category || '', categories.findIndex(item => item.id === block.category) + 1)} aria-label={board ? 'Mover para a direita' : 'Mover para baixo'} title={board ? 'Mover para a direita' : 'Mover para baixo'}><Icon name={board ? 'chevron_right' : 'arrow_downward'} size={16} filled={false} /></button>
+        </span>
+      ) : null}
+      {byCategory && block.category ? <button type="button" className={styles.headRemove} data-after-tools onClick={() => removeCategory(block.id)} aria-label={`Excluir categoria ${block.title}`} title="Excluir categoria (as metas ficam sem categoria)"><Icon name="close" size={16} filled={false} /></button> : null}
     </div>
   )
   /* Nova categoria no ponto exato: antes do bloco i (categorias reais), "Sem categoria" fica por último. */
@@ -143,7 +167,7 @@ export function GoalsModern({ state, today, commit, createRequest, inspect }: Pr
           {shown.map((block, index) => (
             <Fragment key={block.id}>
               {index > 0 ? categoryAdder(index, 'vertical') : null}
-              <section className={styles.column} aria-label={block.title}>
+              <section className={styles.column} aria-label={block.title} {...dropProps(block)}>
                 {blockHead(block)}
                 {block.list.length ? <div role="list">{block.list.map(card)}</div> : <div className={styles.empty}>{emptyText}</div>}
                 {block === adder ? adderRow(block) : null}
@@ -162,7 +186,7 @@ export function GoalsModern({ state, today, commit, createRequest, inspect }: Pr
       {shown.map((block, index) => (
         <Fragment key={block.id}>
           {index > 0 ? categoryAdder(index) : null}
-          <section className={styles.block} aria-label={block.title}>
+          <section className={styles.block} aria-label={block.title} {...dropProps(block)}>
             {blockHead(block)}
             {block.list.length ? <div role="list">{block.list.map(card)}</div> : <div className={styles.empty}>{emptyText}</div>}
             {block === adder || byCategory ? adderRow(block) : null}

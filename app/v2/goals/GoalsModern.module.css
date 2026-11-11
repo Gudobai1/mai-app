@@ -40,3 +40,14 @@
 /* Quadro de altura inteira, igual a Tarefas (docs/PADROES.md). */
 .board.board { --board-min: calc(100dvh - 190px); min-height: var(--board-min); align-items: stretch; }
 .board.board > .column { align-self: stretch; }
+
+/* Organizar categorias: arrastar, subir/descer (lista) ou esquerda/direita (quadro). */
+.headTools { margin-left: auto; display: inline-flex; align-items: center; gap: 2px; opacity: 0; }
+.head:hover .headTools, .headTools:focus-within { opacity: 1; }
+.headTool { appearance: none; display: grid; place-items: center; width: 28px; height: 28px; padding: 0; border: 0; border-radius: 6px; background: transparent; color: var(--ds-muted); cursor: pointer; }
+.headTool[draggable='true'] { cursor: grab; }
+.headTool:hover:not(:disabled) { background: var(--ds-surface-hover); color: var(--ds-text); }
+.headTool:disabled { opacity: 0.35; cursor: default; }
+.headTools + .headRemove { margin-left: 0; }
+.block[data-drop-over], .column[data-drop-over] { box-shadow: inset 0 2px 0 var(--ds-accent); }
+@media (hover: none) { .headTools { opacity: 1; } }
