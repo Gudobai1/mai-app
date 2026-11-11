@@ -182,6 +182,63 @@ export function TasksModern(props: Props) {
       return { ...item, secoes: [...list.slice(0, at), name, ...list.slice(at)] }
     }) }))
   }
+  const [renamingSection, setRenamingSection] = useState('')
+  const renameSection = (old: string, value: string) => {
+    const name = value.trim()
+    setRenamingSection('')
+    if (!projectId || !name || name === old) return
+    commit(current => ({
+      ...current,
+      projects: rows(current.projects).map(item => {
+        if (String(item.id) !== projectId) return item
+        const list = rows(item.secoes).map(String)
+        if (list.some(other => other !== old && other.toLocaleLowerCase('pt-BR') === name.toLocaleLowerCase('pt-BR'))) return item
+        return { ...item, secoes: list.map(other => other === old ? name : other) }
+      }),
+      tasks: current.tasks.map(task => String(task.projeto_id || '') === projectId && String(task.secao || '') === old ? { ...task, secao: name } : task),
+    }))
+  }
+  const removeSection = (old: string) => {
+    if (!projectId) return
+    commit(current => ({
+      ...current,
+      projects: rows(current.projects).map(item => String(item.id) === projectId ? { ...item, secoes: rows(item.secoes).map(String).filter(other => other !== old) } : item),
+      tasks: current.tasks.map(task => String(task.projeto_id || '') === projectId && String(task.secao || '') === old ? { ...task, secao: '' } : task),
+    }))
+  }
+  const moveSection = (name: string, delta: number) => {
+    if (!projectId) return
+    commit(current => ({
+      ...current,
+      projects: rows(current.projects).map(item => {
+        if (String(item.id) !== projectId) return item
+        const list = rows(item.secoes).map(String)
+        const from = list.indexOf(name)
+        const to = from + delta
+        if (from < 0 || to < 0 || to >= list.length) return item
+        const next = [...list]
+        next.splice(to, 0, next.splice(from, 1)[0])
+        return { ...item, secoes: next }
+      }),
+    }))
+  }
+  function sectionMenu(name: string): QuickMenuConfig {
+    const at = sections.indexOf(name)
+    const back = kanban ? 'esquerda' : 'cima'
+    const forward = kanban ? 'direita' : 'baixo'
+    return {
+      title: name,
+      subtitle: 'Seção',
+      groups: [
+        { options: [
+          { label: 'Renomear', icon: 'edit', onSelect: () => setRenamingSection(name) },
+          ...(at > 0 ? [{ label: `Mover para ${back}`, icon: kanban ? 'chevron_left' : 'arrow_upward', onSelect: () => moveSection(name, -1) }] : []),
+          ...(at >= 0 && at < sections.length - 1 ? [{ label: `Mover para ${forward}`, icon: kanban ? 'chevron_right' : 'arrow_downward', onSelect: () => moveSection(name, 1) }] : []),
+        ] },
+        { options: [{ label: 'Excluir seção', icon: 'delete', tone: 'danger' as const, onSelect: () => removeSection(name) }] },
+      ],
+    }
+  }
   const sectionOf = (task: Row) => (sections.includes(String(task.secao || '')) ? String(task.secao || '') : '')
 
   const tabMatch = (task: LegacyTask) => {
@@ -659,16 +716,6 @@ export function TasksModern(props: Props) {
                     <button type="button" onClick={() => { setOptionsOpen(false); props.onScopeChange('all') }}><Icon name="select_all" size={18} /><span>Todas as tarefas</span><small>{counts.all}</small></button>
                     <button type="button" onClick={() => { setOptionsOpen(false); setSelectMode(true) }}><Icon name="check_box" size={18} /><span>Selecionar várias</span></button>
                   </div>
-                  <div className={styles.menuList}>
-                    {projectId ? (
-                      <>
-                        <button type="button" onClick={() => { setOptionsOpen(false); props.onEditProject(projectId) }}><Icon name="edit" size={18} /><span>Editar projeto</span></button>
-                        <button type="button" onClick={() => { setOptionsOpen(false); props.onManageSections(projectId) }}><Icon name="view_agenda" size={18} /><span>Seções</span></button>
-                        <button type="button" onClick={() => { setOptionsOpen(false); props.onNewProject(String(root?.id || projectId)) }}><Icon name="subdirectory_arrow_right" size={18} /><span>Novo subprojeto</span></button>
-                      </>
-                    ) : null}
-                    <button type="button" onClick={() => { setOptionsOpen(false); props.onNewProject() }}><Icon name="create_new_folder" size={18} /><span>Novo projeto</span></button>
-                  </div>
                 </div>
               </Floating>
             ) : null}
@@ -705,9 +752,9 @@ export function TasksModern(props: Props) {
             <Fragment key={group.id}>
             {projectId && index > 0 ? <SectionAdder orientation="vertical" onAdd={name => addSection(name, index)} /> : null}
             <section className={styles.column} {...groupDropProps(group)} data-drop-zone={dragId ? 'true' : undefined}>
-              <div className={styles.groupHead}>
-                <strong>{group.label}</strong>
-                <small>{group.tasks.length}</small>
+              <div className={styles.groupHead} {...(projectId && group.section ? quick.bind(() => sectionMenu(group.section || '')) : {})}>
+                {renamingSection && renamingSection === group.section ? <input className={styles.renameInput} defaultValue={group.label} autoFocus aria-label="Nome da seção" onBlur={event => renameSection(group.section || '', event.target.value)} onKeyDown={event => { if (event.key === 'Enter') renameSection(group.section || '', (event.target as HTMLInputElement).value); if (event.key === 'Escape') setRenamingSection('') }} /> : <><strong>{group.label}</strong><small>{group.tasks.length}</small></>}
+                {projectId && group.section ? <button type="button" className={styles.groupMore} onClick={event => quick.bind(() => sectionMenu(group.section || '')).onContextMenu(event)} aria-label={`Opções da seção ${group.label}`} title="Opções da seção"><Icon name="more_horiz" size={18} filled={false} /></button> : null}
               </div>
               <div className={styles.cards} role="list">{group.tasks.map(task => renderTask(task, group))}</div>
               {renderComposer(group, true)}
@@ -727,12 +774,13 @@ export function TasksModern(props: Props) {
               <section className={styles.group} {...groupDropProps(group)}>
                 {showHead ? (
                   <div className={styles.groupHead} data-tone={group.tone}>
-                    <button type="button" className={styles.collapse} onClick={() => toggleCollapsed(group.id)} aria-expanded={!isCollapsed}>
+                    {renamingSection && renamingSection === group.section ? <input className={styles.renameInput} defaultValue={group.label} autoFocus aria-label="Nome da seção" onBlur={event => renameSection(group.section || '', event.target.value)} onKeyDown={event => { if (event.key === 'Enter') renameSection(group.section || '', (event.target as HTMLInputElement).value); if (event.key === 'Escape') setRenamingSection('') }} /> : <button type="button" className={styles.collapse} onClick={() => toggleCollapsed(group.id)} aria-expanded={!isCollapsed} {...(projectId && group.section ? quick.bind(() => sectionMenu(group.section || '')) : {})}>
                       {group.projectId ? (group.projectId === 'entrada' ? <span className={styles.tabVisual} style={{ background: 'var(--ds-accent)' }}><Icon name="inbox" size={12} /></span> : projectVisual(projectMap.get(group.projectId), 'tab')) : null}
                       <strong>{group.label}</strong>
                       <small>{group.tasks.length}</small>
                       <Disclosure open={!isCollapsed} size={20} className={styles.groupChevron} />
-                    </button>
+                    </button>}
+                    {projectId && group.section ? <button type="button" className={styles.groupMore} onClick={event => quick.bind(() => sectionMenu(group.section || '')).onContextMenu(event)} aria-label={`Opções da seção ${group.label}`} title="Opções da seção"><Icon name="more_horiz" size={18} filled={false} /></button> : null}
                   </div>
                 ) : null}
                 {!isCollapsed ? (

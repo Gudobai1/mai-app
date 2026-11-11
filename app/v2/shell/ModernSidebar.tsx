@@ -6,6 +6,7 @@ import type { MaiState } from '../../../lib/v2/state'
 import { normalizeShortcuts, shortcutLabel } from '../../../lib/v2/shortcuts'
 import { newLabel } from './new-label'
 import { Icon, Disclosure } from '../../ds'
+import { useQuickMenu, type QuickMenuConfig } from './QuickMenu'
 import type { AppView } from '../app-types'
 import { ProjectMark } from './ProjectMark'
 import { normalizeReminders } from '../../../lib/v2/reminders'
@@ -31,6 +32,7 @@ type Props = {
   onNew: () => void
   commit: (change: (current: MaiState) => MaiState) => void
   onNewProject?: (parentId?: string) => void
+  onEditProject?: (id: string) => void
   /** Projeto aberto no momento (para destacar na lista). */
   activeProjectId?: string
   dark: boolean
@@ -68,7 +70,7 @@ const ORGANIZE: NavItem[] = [
 
 const rows = (value: unknown): Row[] => (Array.isArray(value) ? (value as Row[]) : [])
 
-export function ModernSidebar({ state, today, view, navigate, onSearch, onSettings, onToggleTheme, onNew, commit, onNewProject, activeProjectId, dark, profile, autoHide, onToggleHidden, onAutoHide, rail, canRail, onToggleRail, onLogout, onLeave, onEnter, onInspect }: Props) {
+export function ModernSidebar({ state, today, view, navigate, onSearch, onSettings, onToggleTheme, onNew, commit, onNewProject, onEditProject, activeProjectId, dark, profile, autoHide, onToggleHidden, onAutoHide, rail, canRail, onToggleRail, onLogout, onLeave, onEnter, onInspect }: Props) {
   const profileName = String(profile?.name || state.configs.profileName || state.configs.userName || 'Meu perfil')
   const profileInitial = profileName.trim().slice(0, 1).toLocaleUpperCase('pt-BR') || 'M'
   const counts = todayCounts(state, today)
@@ -80,6 +82,7 @@ export function ModernSidebar({ state, today, view, navigate, onSearch, onSettin
   const bellRef = useRef<HTMLButtonElement | null>(null)
   const [minute, setMinute] = useState(0)
   useEffect(() => { const timer = window.setInterval(() => setMinute(value => value + 1), 60_000); return () => window.clearInterval(timer) }, [])
+  const projectQuick = useQuickMenu()
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const [dismissed, setDismissed] = useState<Set<string>>(new Set())
   useEffect(() => { setDismissed(loadDismissed(today)) }, [today])
@@ -141,6 +144,14 @@ export function ModernSidebar({ state, today, view, navigate, onSearch, onSettin
 
   const photo = (project: Row) => <ProjectMark project={project} />
 
+  const projectMenu = (project: Row): QuickMenuConfig => ({
+    title: String(project.nome || 'Projeto'),
+    subtitle: 'Projeto',
+    groups: [{ options: [
+      ...(onEditProject ? [{ label: 'Editar projeto', icon: 'edit', onSelect: () => onEditProject(String(project.id)) }] : []),
+      ...(onNewProject ? [{ label: 'Adicionar subprojeto', icon: 'subdirectory_arrow_right', onSelect: () => onNewProject(String(project.id)) }] : []),
+    ] }],
+  })
   const renderProject = (project: Row, depth = 0) => {
     const id = String(project.id)
     const kids = childrenOf(id)
@@ -149,12 +160,13 @@ export function ModernSidebar({ state, today, view, navigate, onSearch, onSettin
     const count = openCount(id)
     return (
       <div key={id} className={styles.projectBlock}>
-        <div className={styles.projectRow} style={depth ? { paddingLeft: 12 + depth * 18 } : undefined} data-active={current || undefined}>
+        <div className={styles.projectRow} style={depth ? { paddingLeft: 12 + depth * 18 } : undefined} data-active={current || undefined} {...projectQuick.bind(() => projectMenu(project))}>
           <button type="button" className={styles.projectButton} title={String(project.nome || 'Projeto')} aria-current={current ? 'page' : undefined} onClick={() => navigate(`project:${id}`)}>
             {photo(project)}
             <span className={styles.itemLabel}>{String(project.nome || 'Projeto')}</span>
             {count ? <span className={styles.projectCount}>{count}</span> : null}
           </button>
+          {onEditProject || onNewProject ? <button type="button" className={styles.projectMore} onClick={event => projectQuick.bind(() => projectMenu(project)).onContextMenu(event)} aria-label={`Opções de ${String(project.nome || 'projeto')}`} title="Opções do projeto"><Icon name="more_horiz" size={18} filled={false} /></button> : null}
           <button
             type="button"
             className={styles.chevron}
@@ -257,6 +269,7 @@ export function ModernSidebar({ state, today, view, navigate, onSearch, onSettin
         </div>
       </nav>
 
+      {projectQuick.element}
     </aside>
   )
 }
