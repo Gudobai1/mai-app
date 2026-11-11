@@ -898,6 +898,7 @@ export function EmBreve({ state, today, commit, inspect, syncRange }: Props) {
 
       {mode === 'myday' ? <DayNav day={selected} today={today} onStep={step} onToday={goToday} /> : (
         <ModuleHeader
+          className={styles.moduleHead}
           title={mode === 'list' ? 'Em breve' : subtitle}
           subtitle={mode === 'list' ? subtitle : 'Em breve'}
           actions={(

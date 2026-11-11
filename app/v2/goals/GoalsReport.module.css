@@ -1,6 +1,6 @@
 /* Relatório das metas — só tokens --ds-*; mesmas medidas das linhas de Metas. */
 .page { width: 100%; box-sizing: border-box; padding: 0 var(--ds-s-5, 20px) 80px; font-family: var(--ds-font); color: var(--ds-text); }
-.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 24px; padding: 14px 0 6px; }
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 24px; padding: 22px 0 6px; }
 .stat { display: grid; gap: 4px; }
 .statValue { font-size: 26px; font-weight: 600; line-height: 1.15; font-variant-numeric: tabular-nums; }
 .stat[data-tone='good'] .statValue { color: var(--ds-success); }

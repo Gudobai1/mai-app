@@ -16,7 +16,7 @@
 .weekLabel { height: 32px; padding: 0 8px; border: 0; background: transparent; color: var(--ds-text); font: inherit; font-size: 13px; font-weight: var(--ds-fw-medium, 500); cursor: pointer; border-radius: 6px; }
 .weekLabel:hover { background: var(--ds-surface-hover); }
 
-.block { padding-top: 14px; }
+.block { padding-top: 22px; }
 .head, .row { display: grid; grid-template-columns: minmax(0, 1fr) auto 52px 32px; align-items: center; column-gap: 12px; }
 .head { padding: 0 0 8px; border-bottom: 1px solid var(--ds-line); }
 .headTitle { grid-column: 1; font-size: 16px; font-weight: 700; }

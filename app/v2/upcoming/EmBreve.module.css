@@ -1,4 +1,4 @@
-.page { width: 100%; max-width: none; margin: 0; padding: 8px 0 96px; display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.page { width: 100%; max-width: none; margin: 0; padding: 0 0 96px; display: flex; flex-direction: column; gap: 16px; min-width: 0; }
 .page[data-mode='week'], .page[data-mode='month'] { max-width: none; }
 
 /* Cabeçalho */
@@ -292,3 +292,6 @@
 /* Peso normal nas linhas (tokens --ds-row-*) */
 .eventTitle, .eventWhen, .eventSource, .eventSource b { font-weight: var(--ds-row-weight); }
 .cellEvent, .cellTask, .cellFin, .cellFin em { font-weight: var(--ds-row-weight); }
+
+/* O .page já tem 16px de gap: 14px + 16px = 8px do cabeçalho + 22px de Hoje. */
+.moduleHead { margin-bottom: 14px; }

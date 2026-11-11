@@ -1,7 +1,7 @@
 /* Metas — padrão visual do app: blocos só com linhas, tokens --ds-*. */
 .page { width: 100%; box-sizing: border-box; padding: 0 var(--ds-s-5, 20px) 80px; font-family: var(--ds-font); color: var(--ds-text); }
 
-.block { padding-top: 14px; }
+.block { padding-top: 22px; }
 .head { display: flex; align-items: baseline; gap: 8px; padding: 0 0 8px; border-bottom: 1px solid var(--ds-line); }
 .headTitle { font-size: 16px; font-weight: 700; }
 .headCount { font-size: 13px; color: var(--ds-muted); }
@@ -24,7 +24,7 @@
 
 /* Quadro: colunas por situação, com a mãozinha de arrastar no desktop (useDragScroll). */
 .board { display: flex; align-items: flex-start; gap: 16px; overflow-x: auto; padding-bottom: 12px; scrollbar-width: thin; scroll-snap-type: x proximity; }
-.column { flex: 0 0 320px; width: 320px; min-width: 0; scroll-snap-align: start; padding-top: 14px; }
+.column { flex: 0 0 320px; width: 320px; min-width: 0; scroll-snap-align: start; padding-top: 22px; }
 @media (max-width: 900px) { .column { flex-basis: 85%; width: 85%; } }
 
 /* Categorias: o título vira botão para renomear; × exclui (as metas ficam sem categoria). */
