@@ -2472,9 +2472,3 @@
 .dotMark { display: inline-block; flex-shrink: 0; width: 12px; height: 12px; border-radius: var(--ds-shape-projects, 50%); }
 .dotMark[data-size="head"] { width: 14px; height: 14px; }
 
-/* Cabeçalho do módulo (igual a Hoje): título grande, subtítulo cinza, ajustes à direita. */
-.headText { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; align-items: flex-start; }
-.headName { margin: 0; max-width: 100%; font-size: 28px; line-height: 1.15; font-weight: var(--ds-fw-bold); color: var(--ds-text); letter-spacing: -0.01em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.headSub { margin: 0; font-size: 13px; font-weight: var(--ds-fw-medium); color: var(--ds-muted); }
-.nav.nav { margin-bottom: 20px; }
-@media (max-width: 900px) { .headName { font-size: 22px; } }

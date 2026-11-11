@@ -6,7 +6,7 @@ import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState, type C
 import { financeSummary } from '../../../lib/v2/finance-summary'
 import { addDays, eventColor, plannerItems, type PlannerItem } from '../../../lib/v2/planner'
 import type { MaiState } from '../../../lib/v2/state'
-import { Button, Check, Icon, Disclosure } from '../../ds'
+import { Button, Check, Icon, Disclosure, ModuleHeader } from '../../ds'
 import type { AppView, Row } from '../app-types'
 import type { InspectableItem } from '../ContextDrawer'
 import { financeCardPaymentState } from '../FinanceTransactionCard'
@@ -986,28 +986,30 @@ export function TodayModern({ state, today, commit, navigate, inspect, options, 
 
   return (
     <div className={styles.page}>
-      <header className={styles.header} data-timeline={timeline || undefined}>
-        <div className={styles.headerText}>
-          <h1 className={styles.greeting}>{title}</h1>
-          <p className={styles.subline}>
-            <span className={styles.dateLong}>{dayLabel}</span>
-            <span className={styles.dateShort}>{shortDayLabel}</span>
-            <span className={styles.dot} aria-hidden="true">·</span>
-            <span>{taskCountLabel}</span>
-          </p>
-        </div>
-        <div className={styles.headerActions}>
-          {timeline ? <OrganizeButton /> : null}
-          {timeline ? (
-            <div className={styles.dayStepper} role="group" aria-label="Navegar entre dias">
-              <button type="button" aria-label="Dia anterior" onClick={() => stepDay(-1)}><Icon name="chevron_left" size={20} filled={false} /></button>
-              <button type="button" aria-label="Próximo dia" onClick={() => stepDay(1)}><Icon name="chevron_right" size={20} filled={false} /></button>
-            </div>
-          ) : null}
-          {!isToday ? <Button variant="secondary" size="sm" pill icon="undo" onClick={goToToday}>Hoje</Button> : null}
-          {options ? <div className={styles.options}>{options}</div> : null}
-        </div>
-      </header>
+      <ModuleHeader
+        data-timeline={timeline || undefined}
+        className={styles.header}
+        title={title}
+        subtitle={<>
+          <span className={styles.dateLong}>{dayLabel}</span>
+          <span className={styles.dateShort}>{shortDayLabel}</span>
+          <span className={styles.dot} aria-hidden="true">·</span>
+          <span>{taskCountLabel}</span>
+        </>}
+        actions={(
+          <div className={styles.headerActions}>
+            {timeline ? <OrganizeButton /> : null}
+            {timeline ? (
+              <div className={styles.dayStepper} role="group" aria-label="Navegar entre dias">
+                <button type="button" aria-label="Dia anterior" onClick={() => stepDay(-1)}><Icon name="chevron_left" size={20} filled={false} /></button>
+                <button type="button" aria-label="Próximo dia" onClick={() => stepDay(1)}><Icon name="chevron_right" size={20} filled={false} /></button>
+              </div>
+            ) : null}
+            {!isToday ? <Button variant="secondary" size="sm" pill icon="undo" onClick={goToToday}>Hoje</Button> : null}
+            {options ? <div className={styles.options}>{options}</div> : null}
+          </div>
+        )}
+      />
 
       {timeline ? (
         <DayTimeline state={state} day={day} today={today} commit={commit} inspect={inspect} />

@@ -137,3 +137,13 @@ html body .mai-v3-shell:is([data-view="habits"], [data-view="goals"], [data-view
   border-color: transparent !important;
   box-shadow: none !important;
 }
+
+/* Cabeçalho único dos módulos: sem fundo, linha nem sticky (o ModuleHeader dá o espaçamento). */
+html body .mai-v3-shell .mai-app-topbar, html[data-mai-theme="dark"] body .mai-v3-shell .mai-app-topbar {
+  position: relative !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  min-height: 0 !important;
+}
