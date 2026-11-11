@@ -839,9 +839,9 @@
 
 /* "Novo": item como os outros, só com o + (e o nome) em vermelho, sem fundo nem contorno; perfil um pouco mais afastado. */
 .newBtn, .newBtn:hover { box-shadow: none; }
-.newBtn { background: var(--ds-accent); color: var(--ds-on-accent, #fff); }
-.newBtn:hover { background: var(--ds-accent-strong, var(--ds-accent)); }
-.newBtn .newKey { color: inherit; opacity: 0.85; }
+.newBtn { background: transparent; color: var(--ds-accent); }
+.newBtn:hover { background: var(--ds-surface-hover); color: var(--ds-accent); }
+.newBtn .newKey { color: var(--ds-muted); opacity: 1; }
 .userTop { padding-bottom: 8px; }
 .newBtn { margin-bottom: 4px; }
 @media (min-width: 901px) {
