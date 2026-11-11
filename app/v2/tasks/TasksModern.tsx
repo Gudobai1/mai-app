@@ -407,9 +407,7 @@ export function TasksModern(props: Props) {
   }
 
   const projectVisual = (item: Row | undefined, size: 'tab' | 'head') => {
-    const className = size === 'tab' ? styles.tabVisual : styles.headVisual
-    if (item?.imagem_url) return <img className={className} src={driveAssetUrl(item.imagem_url)} alt="" />
-    return <span className={className} style={{ background: String(item?.cor || 'var(--ds-line-strong)') }}><Icon name={String(item?.icone || 'folder')} size={size === 'tab' ? 12 : 22} /></span>
+    return <i className={styles.dotMark} data-size={size} style={{ background: String(item?.cor || 'var(--ds-line-strong)') }} />
   }
 
   const scopeTabs: { scope: TaskModuleScope; label: string; icon: string; color: string; count: number }[] = [
@@ -531,7 +529,7 @@ export function TasksModern(props: Props) {
               {showDate ? <span data-late={late || undefined} data-today={due === today || undefined} data-future={due > today || undefined}><Icon name="calendar_today" size={12} />{naturalDate(due, today)}{time ? ` · ${time}` : ''}</span> : time ? <span><Icon name="schedule" size={12} />{time}</span> : null}
               {showProject ? (
                 <span className={styles.metaProject} style={{ color: String(projectMap.get(String(task.projeto_id || ''))?.cor || 'var(--ds-accent)') }}>
-                  {projectMap.get(String(task.projeto_id || ''))?.imagem_url ? <img src={driveAssetUrl(projectMap.get(String(task.projeto_id))?.imagem_url)} alt="" /> : <i style={{ background: String(projectMap.get(String(task.projeto_id || ''))?.cor || 'var(--ds-accent)') }} />}
+                  {<i style={{ background: String(projectMap.get(String(task.projeto_id || ''))?.cor || 'var(--ds-accent)') }} />}
                   {projectName(task.projeto_id)}{task.secao ? <em> · {String(task.secao)}</em> : null}
                 </span>
               ) : null}
@@ -605,7 +603,7 @@ export function TasksModern(props: Props) {
 
   const moveOptions: PickerOption[] = [
     { value: 'entrada', label: 'Entrada', icon: 'inbox' },
-    ...projects.map(item => ({ value: String(item.id), label: `${'  '.repeat(Number(item._depth || 0))}${String(item.nome || 'Projeto')}`, image: item.imagem_url ? driveAssetUrl(item.imagem_url) : undefined, color: String(item.cor || 'var(--ds-line-strong)') })),
+    ...projects.map(item => ({ value: String(item.id), label: `${'  '.repeat(Number(item._depth || 0))}${String(item.nome || 'Projeto')}`, color: String(item.cor || 'var(--ds-line-strong)') })),
   ]
 
   /* ---------------------------------------------------------------- Tela */
@@ -703,7 +701,7 @@ export function TasksModern(props: Props) {
             const id = String(item.id)
             return (
               <button key={id} type="button" className={styles.folder} data-active={projectId === id || undefined} onClick={() => props.onScopeChange(`project:${id}`)} onDoubleClick={() => props.onEditProject(id)}>
-                {item.imagem_url ? <img className={styles.folderImg} src={driveAssetUrl(item.imagem_url)} alt="" /> : <span className={styles.folderIcon} style={{ background: String(item.cor || 'var(--ds-line-strong)') }}><Icon name={String(item.icone || (projectId === id ? 'folder_open' : 'folder'))} size={14} /></span>}
+                <i className={styles.dotMark} style={{ background: String(item.cor || 'var(--ds-line-strong)') }} />
                 <span>{String(item.nome || 'Subprojeto')}</span>
                 {projectCount(id) ? <small>{projectCount(id)}</small> : null}
               </button>

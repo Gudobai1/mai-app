@@ -184,7 +184,7 @@ export function EmBreve({ state, today, commit, inspect, syncRange }: Props) {
     if (key === 'entrada') return { name: 'Entrada', color: 'var(--ds-accent)', image: '' }
     const project = projects.get(key)
     if (!project) return null
-    return { name: String(project.nome || 'Projeto'), color: String(project.cor || 'var(--ds-accent)'), image: project.imagem_url ? driveAssetUrl(project.imagem_url) : '' }
+    return { name: String(project.nome || 'Projeto'), color: String(project.cor || 'var(--ds-accent)'), image: '' }
   }
 
   const toEntry = (item: PlannerItem): Entry => {
