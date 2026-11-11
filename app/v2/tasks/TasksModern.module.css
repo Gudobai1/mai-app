@@ -2476,3 +2476,6 @@
 /* Espaço do cabeçalho à primeira seção = o de Hoje (8px do cabeçalho + 22px). */
 .page > header:first-child + .list.list { padding-top: 22px; }
 .page > header:first-child + .board { padding-top: 22px; }
+
+/* Espaço do quadro (20px) para o "Adicionar seção" entre colunas. */
+.board > :global([data-section-adder]) { margin-left: -20px; margin-right: -20px; }
