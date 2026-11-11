@@ -97,7 +97,7 @@ export function AppearancePanel({ value, onChange, mode, onMode }: Props) {
       <div className={styles.group}>
         <span className={styles.label}>Tamanho dos ícones</span>
         <div className={styles.segment} role="radiogroup" aria-label="Tamanho dos ícones">
-          {([[0.875, 'Pequeno'], [1, 'Normal'], [1.15, 'Grande'], [1.3, 'Extra']] as const).map(([id, label]) => (
+          {([[0.75, 'Mínimo'], [0.875, 'Pequeno'], [1, 'Normal'], [1.15, 'Grande'], [1.3, 'Extra']] as const).map(([id, label]) => (
             <button key={id} type="button" role="radio" aria-checked={current.iconScale === id} data-active={current.iconScale === id || undefined} onClick={() => set({ iconScale: id })}>{label}</button>
           ))}
         </div>

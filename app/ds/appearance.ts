@@ -99,7 +99,7 @@ export function normalizeAppearance(raw: unknown): Appearance {
   return {
     iconPack: pack,
     weight,
-    iconScale: Math.min(1.4, Math.max(0.8, Number(value.iconScale) || 1)),
+    iconScale: Math.min(1.4, Math.max(0.7, Number(value.iconScale) || 1)),
     corners: value.corners === 'round' ? 'round' : 'square',
     font: FONTS.some(item => item.id === value.font) ? String(value.font) : 'system',
     accent: /^#[0-9a-f]{6}$/i.test(String(value.accent || '')) ? String(value.accent) : '',
