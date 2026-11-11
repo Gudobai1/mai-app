@@ -252,7 +252,7 @@ export function AppTopBar({ state, today, view, taskScope, commit, onTaskScopeCh
   const wrapRef = useRef<HTMLDivElement | null>(null)
   useEffect(() => {
     if (!open) return
-    const outside = (event: Event) => { if (!wrapRef.current?.contains(event.target as Node)) setOpen(false) }
+    const outside = (event: Event) => { const target = event.target as Element | null; if (!wrapRef.current?.contains(target as Node) && !target?.closest?.('[data-options-panel]')) setOpen(false) }
     const key = (event: KeyboardEvent) => { if (event.key === 'Escape') setOpen(false) }
     document.addEventListener('pointerdown', outside)
     document.addEventListener('keydown', key)
@@ -262,6 +262,6 @@ export function AppTopBar({ state, today, view, taskScope, commit, onTaskScopeCh
   return <div ref={wrapRef} className="mai-app-topbar" data-view={String(view)} data-sort-mode={sortMode}>
     <div className="mai-app-topbar-context"><h1>{title}</h1><p>{info}</p></div>
     <div className="mai-app-topbar-single-action"><SettingsButton active={open} badge={customized} aria-expanded={open} onClick={() => setOpen(value => !value)} /></div>
-    {open ? <OptionsPanel title={title} onReset={customized ? reset : undefined} onClose={() => setOpen(false)}>{panelBody}</OptionsPanel> : null}
+    {open ? <OptionsPanel anchor={wrapRef.current?.querySelector<HTMLElement>('button') ?? wrapRef.current} title={title} onReset={customized ? reset : undefined} onClose={() => setOpen(false)}>{panelBody}</OptionsPanel> : null}
   </div>
 }

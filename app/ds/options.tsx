@@ -1,6 +1,7 @@
 'use client'
 
-import { ReactNode } from 'react'
+import { ReactNode, useLayoutEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { Disclosure, Icon } from './ui'
 import styles from './options.module.css'
 
@@ -8,9 +9,20 @@ import styles from './options.module.css'
  * Painel de ajustes dos módulos (único): cabeçalho com "Redefinir", grupos com título e linhas
  * (seleção segmentada, lista de escolha, interruptor). Ver docs/PADROES.md ("Ajustes dos módulos").
  */
-export function OptionsPanel({ title, hint, onReset, onClose, children, className }: { title: string; hint?: string; onReset?: () => void; onClose?: () => void; children: ReactNode; className?: string }) {
-  return (
-    <div className={`${styles.panel} ${className || ''}`} role="dialog" aria-label={`Ajustes de ${title}`}>
+export function OptionsPanel({ title, hint, onReset, onClose, children, className, anchor }: { title: string; hint?: string; onReset?: () => void; onClose?: () => void; children: ReactNode; className?: string; anchor?: HTMLElement | null }) {
+  const [pos, setPos] = useState<{ top: number; right: number } | null>(null)
+  useLayoutEffect(() => {
+    const place = () => {
+      const rect = anchor?.getBoundingClientRect()
+      setPos(rect ? { top: Math.round(rect.bottom + 6), right: Math.max(12, Math.round(window.innerWidth - rect.right)) } : { top: 64, right: 16 })
+    }
+    place()
+    window.addEventListener('resize', place)
+    window.addEventListener('scroll', place, true)
+    return () => { window.removeEventListener('resize', place); window.removeEventListener('scroll', place, true) }
+  }, [anchor])
+  const node = (
+    <div className={`${styles.panel} ${className || ''}`} style={pos ? { top: pos.top, right: pos.right } : undefined} data-options-panel="" role="dialog" aria-label={`Ajustes de ${title}`}>
       <header className={styles.head}>
         <span className={styles.headTitle}><strong>{title}</strong>{hint ? <small>{hint}</small> : null}</span>
         {onReset ? <button type="button" className={styles.reset} onClick={onReset}>Redefinir</button> : null}
@@ -19,6 +31,8 @@ export function OptionsPanel({ title, hint, onReset, onClose, children, classNam
       <div className={styles.body}>{children}</div>
     </div>
   )
+  // Direto no body: nenhuma regra antiga de tela, sticky ou filtro do cabeçalho consegue deixar o painel transparente.
+  return typeof document === 'undefined' ? null : createPortal(node, document.body)
 }
 
 /** `order` coloca o grupo na ordem Ver → Mostrar → Filtrar → Ordenar → Avançado. */

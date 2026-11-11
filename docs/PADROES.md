@@ -176,3 +176,5 @@ Todo módulo abre com o mesmo cabeçalho, montado só por `AppTopBar`: título 2
 ## Adicionar por Novo / atalho Q (padrão único)
 - O botão Novo e o atalho Q abrem sempre o mesmo `QuickAdd`, com as abas **Tarefa, Compromisso e Lançamento** (a ordem muda pela tela). Lançamento é criado ali mesmo, como os outros; não redireciona para outra tela. Na tela de um projeto só aparece Tarefa. Em Finanças o Novo abre o QuickAdd já em Lançamento. Hábitos, Metas e Notas seguem pelo próprio formulário.
 - Barra lateral: perfil, Novo e Buscar ficam a 2px um do outro (como os itens); entre Buscar e o menu há um respiro maior (16px; 14px na barra fechada), igual ao espaço entre os grupos.
+
+- **Painel de ajustes (portal):** `OptionsPanel` é desenhado direto no `body` (portal) com `position: fixed`, ancorado ao botão de ajustes, fundo sólido `--ds-bg` e z-index 900. Assim nenhuma regra antiga de tela, `sticky` ou filtro do cabeçalho consegue deixá-lo transparente ou sobreposto.
