@@ -36,3 +36,7 @@
 .head:hover .headRemove, .headRemove:focus-visible { opacity: 1; }
 .headRemove:hover { background: var(--ds-surface-hover); color: var(--ds-danger); }
 @media (hover: none) { .headRemove { opacity: 1; } }
+
+/* Quadro de altura inteira, igual a Tarefas (docs/PADROES.md). */
+.board.board { --board-min: calc(100dvh - 190px); min-height: var(--board-min); align-items: stretch; }
+.board.board > .column { align-self: stretch; }
