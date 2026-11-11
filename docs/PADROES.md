@@ -184,3 +184,4 @@ Todo módulo abre com o mesmo cabeçalho, montado só por `AppTopBar`: título 2
 
 ## Descrição nos lançamentos
 - A descrição do lançamento (`observacao`) é salva em todos os caminhos (Novo/Q, cartão do lançamento, edição em Finanças) e aparece **fora do cartão**, em uma linha cinza sob o título, como nas tarefas (`taskDesc`). Não aparece quando está vazia, quando é igual ao título ou quando é a marca interna "Open Finance".
+- Cabeçalho de Hábitos, Metas e Notas: sem a linha embaixo do título (`border-bottom` removida em `shell-overrides.css`).

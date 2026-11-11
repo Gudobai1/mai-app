@@ -130,3 +130,10 @@ html:not(#_) body .mai-v3-main {
   background: var(--ds-bg) !important;
   color: var(--ds-text) !important;
 }
+
+/* Cabeçalho de Hábitos, Metas e Notas: sem a linha embaixo do título. */
+html body .mai-v3-shell:is([data-view="habits"], [data-view="goals"], [data-view="notes"]) .mai-app-topbar {
+  border-bottom: 0 !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
