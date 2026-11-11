@@ -921,3 +921,8 @@
   :global(html[data-mai-layout='compact']) .nav { margin-top: 14px; }
   :global(html[data-mai-layout='top']) .nav, :global(html[data-mai-layout='bottom']) .nav, :global(html[data-mai-layout='dock']) .nav { margin-top: 0; }
 }
+
+/* Ocultar automaticamente (laterais): ao passar o mouse a barra abre por cima do conteúdo, que continua na largura do trilho. */
+html[data-mai-peek] :global(.mai-v3-shell) :global(.mai-v3-main) { margin-left: 56px !important; margin-right: 0 !important; }
+html[data-mai-peek][data-mai-side='right'] :global(.mai-v3-shell) :global(.mai-v3-main) { margin-left: 0 !important; margin-right: 56px !important; }
+html[data-mai-peek] .sidebar { box-shadow: var(--ds-popup-shadow, 0 12px 40px rgba(0, 0, 0, 0.25)); }
