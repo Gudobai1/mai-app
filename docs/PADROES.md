@@ -158,3 +158,4 @@ Fonte única da verdade: o quadro "Sistema de design Bukid" (quadros 0 a 12). Os
 ## Botão "Novo" fixo
 - O header dos módulos tem só título, subtítulo e o botão de ajustes; **não há botão "Adicionar" no header**. A criação é um botão permanente da navegação (`newBtn` em `ModernSidebar`, `newTab` em `ModernBottomNav`) que chama `contextualAdd` e muda de nome pelo módulo (`app/v2/shell/new-label.ts`: Nova tarefa, Novo hábito, Nova meta, Nova nota, Novo lançamento).
 - Desktop: sempre junto do perfil, em qualquer layout (abaixo na lateral; só "+" na compacta; ao lado na superior, na inferior e no dock). Celular: item "+" no centro da barra de baixo, **dentro** da barra (não flutua). Atalho configurável (padrão Q) aparece no botão.
+- Layouts superior, inferior e dock: **tudo fica dentro da barra**, na ordem do menu lateral: perfil, Novo (+), Buscar (ícone), depois os itens (separador antes dos projetos). Nada flutua fora da barra.

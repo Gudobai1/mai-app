@@ -853,3 +853,33 @@
   .newTabIcon { background: transparent; color: var(--ds-accent); }
   .newTabIcon svg { width: 30px; height: 30px; }
 }
+
+/* ===== Superior, inferior e dock: tudo dentro da barra, na ordem do menu: perfil, Novo, Buscar, itens ===== */
+@media (min-width: 901px) {
+  /* Superior */
+  :global(html[data-mai-layout='top']) .profileWrap { order: 0; padding-right: 0; margin-right: 0; border-right: 0; }
+  :global(html[data-mai-layout='top']) .newBtn { order: 1; width: 36px; height: 36px; padding: 0; justify-content: center; margin: 0; }
+  :global(html[data-mai-layout='top']) .search.search { order: 2; }
+  :global(html[data-mai-layout='top']) .nav { order: 3; margin-left: 6px; padding-left: 6px; border-left: 1px solid var(--ds-line); }
+  :global(html[data-mai-layout='top']) .item.item { height: 36px; }
+
+  /* Inferior */
+  :global(html[data-mai-layout='bottom']) .userTop { position: static; display: contents; height: auto; padding: 0; border: 0; background: transparent; }
+  :global(html[data-mai-layout='bottom']) .profileWrap { order: 0; flex: none; }
+  :global(html[data-mai-layout='bottom']) .newBtn { position: static; order: 1; width: 36px; height: 36px; padding: 0; justify-content: center; margin: 0; }
+  :global(html[data-mai-layout='bottom']) .search.search { position: static; order: 2; height: 36px; }
+  :global(html[data-mai-layout='bottom']) .nav { order: 3; margin-left: 6px; padding-left: 6px; border-left: 1px solid var(--ds-line); }
+  :global(html[data-mai-layout='bottom']) :global(.mai-v3-shell) :global(.mai-v3-main) { padding-top: 0; }
+  :global(html[data-mai-layout='bottom']) .userMenu { top: auto; bottom: calc(100% + 8px); }
+
+  /* Dock */
+  :global(html[data-mai-layout='dock']) .profileWrap { position: static; order: 0; flex: none; }
+  :global(html[data-mai-layout='dock']) .newBtn { position: static; order: 1; width: 36px; height: 36px; margin: 0; }
+  :global(html[data-mai-layout='dock']) .search.search { order: 2; }
+  :global(html[data-mai-layout='dock']) .nav { order: 3; margin-left: 6px; padding-left: 6px; border-left: 1px solid var(--ds-line); }
+  :global(html[data-mai-layout='dock']) .userMenu { top: auto; bottom: calc(100% + 12px); left: 0; right: auto; }
+
+  /* Em todas: nome do perfil só na lateral */
+  :global(html[data-mai-layout='bottom']) .profilePill .profileName, :global(html[data-mai-layout='dock']) .profilePill .profileName { display: none; }
+  :global(html[data-mai-layout='top']) .newLabel, :global(html[data-mai-layout='top']) .newKey, :global(html[data-mai-layout='bottom']) .newLabel, :global(html[data-mai-layout='bottom']) .newKey, :global(html[data-mai-layout='dock']) .newLabel, :global(html[data-mai-layout='dock']) .newKey { display: none; }
+}
