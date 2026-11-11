@@ -906,3 +906,9 @@
   :global(html[data-mai-layout='compact']) .group:last-child:not(:first-child) { margin-top: 14px; padding-top: 0; border-top: 0; width: auto; }
   :global(html[data-mai-layout='compact']) .group:not(:last-child) .groupLabel { display: none; }
 }
+
+/* "Novo": vermelho garantido (texto e ícone), sem fundo, mesmo contra regras globais antigas de botão. */
+.sidebar .newBtn.newBtn, .sidebar .newBtn.newBtn:hover, .sidebar .newBtn.newBtn:focus-visible { background: transparent !important; color: var(--ds-accent) !important; }
+.sidebar .newBtn.newBtn:hover { background: var(--ds-surface-hover) !important; }
+.sidebar .newBtn.newBtn .newLabel, .sidebar .newBtn.newBtn svg { color: var(--ds-accent) !important; }
+.sidebar .newBtn.newBtn .newKey { color: var(--ds-muted) !important; }
