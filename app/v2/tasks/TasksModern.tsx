@@ -619,7 +619,10 @@ export function TasksModern(props: Props) {
   return (
     <div className={styles.page} data-selecting={selecting || undefined}>
       <nav className={styles.nav} aria-label="Listas e projetos">
-        <div className={styles.navScroll} />
+        <div className={styles.headText}>
+          <h1 className={styles.headName}>{title}</h1>
+          <p className={styles.headSub}>{visibleIds.length} tarefa{visibleIds.length === 1 ? '' : 's'}</p>
+        </div>
         <SettingsButton ref={optionsRef} active={priorityFilter !== 'all' || ctxFilter !== 'all'} aria-expanded={optionsOpen} onClick={() => setOptionsOpen(true)} />
         {optionsOpen ? (
           <Floating anchor={optionsRef} title="Opções" width={300} onClose={() => setOptionsOpen(false)}>
