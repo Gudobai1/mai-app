@@ -659,8 +659,7 @@
   :global(html[data-mai-layout='compact']) .badge,
   :global(html[data-mai-layout='compact']) .projectCount,
   :global(html[data-mai-layout='compact']) .chevron,
-  :global(html[data-mai-layout='compact']) .subProjects,
-  :global(html[data-mai-layout='compact']) .addProject { display: none !important; }
+  :global(html[data-mai-layout='compact']) .subProjects { display: none !important; }
   :global(html[data-mai-layout='compact']) .item.item { width: 36px; padding: 0; justify-content: center; }
   :global(html[data-mai-layout='compact']) .projectRow { padding: 0; }
   :global(html[data-mai-layout='compact']) .projectButton.projectButton { width: 36px; flex: none; padding: 0; justify-content: center; }
@@ -682,8 +681,7 @@
   :global(html[data-mai-layout='top']) .projectCount, :global(html[data-mai-layout='bottom']) .projectCount, :global(html[data-mai-layout='dock']) .projectCount,
   :global(html[data-mai-layout='top']) .chevron, :global(html[data-mai-layout='bottom']) .chevron, :global(html[data-mai-layout='dock']) .chevron,
   :global(html[data-mai-layout='top']) .subProjects, :global(html[data-mai-layout='bottom']) .subProjects, :global(html[data-mai-layout='dock']) .subProjects,
-  :global(html[data-mai-layout='top']) .addProject, :global(html[data-mai-layout='bottom']) .addProject, :global(html[data-mai-layout='dock']) .addProject,
-  :global(html[data-mai-layout='top']) .projectButton .itemLabel, :global(html[data-mai-layout='bottom']) .projectButton .itemLabel, :global(html[data-mai-layout='dock']) .projectButton .itemLabel,
+    :global(html[data-mai-layout='top']) .projectButton .itemLabel, :global(html[data-mai-layout='bottom']) .projectButton .itemLabel, :global(html[data-mai-layout='dock']) .projectButton .itemLabel,
   :global(html[data-mai-layout='top']) .topIcon:last-child, :global(html[data-mai-layout='bottom']) .topIcon:last-child, :global(html[data-mai-layout='dock']) .topIcon:last-child { display: none !important; }
   :global(html[data-mai-layout='top']) .projectRow, :global(html[data-mai-layout='bottom']) .projectRow, :global(html[data-mai-layout='dock']) .projectRow { padding: 0; }
   :global(html[data-mai-layout='top']) .projectButton.projectButton, :global(html[data-mai-layout='bottom']) .projectButton.projectButton, :global(html[data-mai-layout='dock']) .projectButton.projectButton { width: 32px; flex: none; padding: 0; justify-content: center; }
@@ -731,4 +729,14 @@
 
 /* Avisos: sem sino; só uma bolinha no canto superior direito do avatar (clique abre a lista). */
 .profileDot { appearance: none; position: absolute; z-index: 2; top: 3px; left: 26px; min-width: 12px; height: 12px; padding: 0; border: 2px solid var(--mai-side-bg, var(--ds-surface-2)); box-sizing: content-box; border-radius: 50%; background: var(--ds-peach-fg, #E0852B); color: #fff; font-size: 9px; font-weight: 700; line-height: 12px; cursor: pointer; }
-.profileDot[data-count] { padding: 0 3px; border-radius: 9px; background: var(--ds-danger); }
+.profileDot[data-count] { padding: 0 3px; border-radius: 9px; background: var(--ds-danger); 
+  /* "+" para adicionar projeto: só o ícone nos layouts sem texto */
+  :global(html[data-mai-layout='compact']) .addProject.addProject,
+  :global(html[data-mai-layout='top']) .addProject.addProject,
+  :global(html[data-mai-layout='bottom']) .addProject.addProject,
+  :global(html[data-mai-layout='dock']) .addProject.addProject { width: 32px; height: 32px; flex: none; padding: 0; justify-content: center; }
+  :global(html[data-mai-layout='compact']) .addProject.addProject > span,
+  :global(html[data-mai-layout='top']) .addProject.addProject > span,
+  :global(html[data-mai-layout='bottom']) .addProject.addProject > span,
+  :global(html[data-mai-layout='dock']) .addProject.addProject > span { display: none; }
+}

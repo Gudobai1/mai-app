@@ -230,7 +230,7 @@ export function ModernSidebar({ state, today, view, navigate, onSearch, onSettin
           <div className={styles.groupLabel}>Projetos</div>
           {roots.map(project => renderProject(project))}
           {onNewProject ? (
-            <button type="button" className={styles.addProject} onClick={() => onNewProject()}>
+            <button type="button" className={styles.addProject} title="Adicionar projeto" aria-label="Adicionar projeto" onClick={() => onNewProject()}>
               <Icon name="add" size={20} filled={false} />
               <span>Adicionar projeto</span>
             </button>
