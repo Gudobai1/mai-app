@@ -737,10 +737,10 @@
   :global(html[data-mai-layout='top']) .addProject.addProject,
   :global(html[data-mai-layout='bottom']) .addProject.addProject,
   :global(html[data-mai-layout='dock']) .addProject.addProject { width: 32px; height: 32px; flex: none; padding: 0; justify-content: center; overflow: hidden; }
-  :global(html[data-mai-layout='compact']) .addProject.addProject > span,
-  :global(html[data-mai-layout='top']) .addProject.addProject > span,
-  :global(html[data-mai-layout='bottom']) .addProject.addProject > span,
-  :global(html[data-mai-layout='dock']) .addProject.addProject > span { display: none !important; }
+  :global(html[data-mai-layout='compact']) .addProject.addProject .addLabel,
+  :global(html[data-mai-layout='top']) .addProject.addProject .addLabel,
+  :global(html[data-mai-layout='bottom']) .addProject.addProject .addLabel,
+  :global(html[data-mai-layout='dock']) .addProject.addProject .addLabel { display: none !important; }
 }
 
 /* Barra fechada com o menu na direita: trilho compacto encostado à direita */
