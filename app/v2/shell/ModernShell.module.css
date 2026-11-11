@@ -729,8 +729,10 @@
 
 /* Avisos: sem sino; só uma bolinha no canto superior direito do avatar (clique abre a lista). */
 .profileDot { appearance: none; position: absolute; z-index: 2; top: 3px; left: 26px; min-width: 12px; height: 12px; padding: 0; border: 2px solid var(--mai-side-bg, var(--ds-surface-2)); box-sizing: content-box; border-radius: 50%; background: var(--ds-peach-fg, #E0852B); color: #fff; font-size: 9px; font-weight: 700; line-height: 12px; cursor: pointer; }
-.profileDot[data-count] { padding: 0 3px; border-radius: 9px; background: var(--ds-danger); 
-  /* "+" para adicionar projeto: só o ícone nos layouts sem texto */
+.profileDot[data-count] { padding: 0 3px; border-radius: 9px; background: var(--ds-danger); }
+
+/* "+" para adicionar projeto: só o ícone nos layouts sem texto */
+@media (min-width: 901px) {
   :global(html[data-mai-layout='compact']) .addProject.addProject,
   :global(html[data-mai-layout='top']) .addProject.addProject,
   :global(html[data-mai-layout='bottom']) .addProject.addProject,
