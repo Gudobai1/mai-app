@@ -181,3 +181,6 @@ Todo módulo abre com o mesmo cabeçalho, montado só por `AppTopBar`: título 2
 
 ## Ocultar a barra automaticamente
 - Nas laterais, "ocultar automaticamente" não some com a barra: ela fica só com os **ícones** (trilho de 56px) e, ao passar o mouse, abre inteira por cima do conteúdo (que não se mexe). Ao tirar o mouse volta para os ícones. Nas barras superior, inferior e dock segue o comportamento antigo.
+
+## Descrição nos lançamentos
+- A descrição do lançamento (`observacao`) é salva em todos os caminhos (Novo/Q, cartão do lançamento, edição em Finanças) e aparece **fora do cartão**, em uma linha cinza sob o título, como nas tarefas (`taskDesc`). Não aparece quando está vazia, quando é igual ao título ou quando é a marca interna "Open Finance".
