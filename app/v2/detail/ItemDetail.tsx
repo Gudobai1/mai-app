@@ -347,7 +347,7 @@ function Prop({ icon, color, label, display, muted, onOpen, buttonRef, open }: {
     <span className={styles.propIcon}>{iconNode}</span>
     <span className={styles.propLabel}>{label}</span>
     <span className={styles.propValue}>{display}</span>
-    {onOpen ? <Disclosure open={open} size={18} className={styles.propChevron} /> : null}
+    {onOpen ? <Disclosure open={Boolean(open)} size={18} className={styles.propChevron} /> : null}
   </>
   if (!onOpen) return <div className={styles.prop} data-muted={muted || undefined} style={style}>{content}</div>
   return (
