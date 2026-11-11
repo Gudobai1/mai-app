@@ -70,7 +70,18 @@
 }
 
 .group + .group {
-  margin-top: 22px;
+  margin-top: 0;
+}
+
+/* Separador só entre os projetos e o resto; os grupos de cima são uma lista contínua, sem título. */
+.group:last-child:not(:first-child) {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--ds-line);
+}
+
+.group:not(:last-child) .groupLabel {
+  display: none;
 }
 
 .groupLabel {
@@ -653,7 +664,8 @@
   :global(html[data-mai-layout='compact']) .search.search > span { display: none; }
   :global(html[data-mai-layout='compact']) .nav { align-items: center; }
   :global(html[data-mai-layout='compact']) .group { align-items: center; }
-  :global(html[data-mai-layout='compact']) .group + .group { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--ds-line); width: 28px; }
+  :global(html[data-mai-layout='compact']) .group + .group { margin-top: 0; }
+  :global(html[data-mai-layout='compact']) .group:last-child:not(:first-child) { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--ds-line); width: 28px; }
   :global(html[data-mai-layout='compact']) .groupLabel,
   :global(html[data-mai-layout='compact']) .itemLabel,
   :global(html[data-mai-layout='compact']) .badge,
@@ -676,7 +688,8 @@
   :global(html[data-mai-layout='dock']) :global(.mai-v3-shell) :global(.mai-v3-main) { margin-left: 0 !important; }
   :global(html[data-mai-layout='top']) .nav, :global(html[data-mai-layout='bottom']) .nav, :global(html[data-mai-layout='dock']) .nav { flex-direction: row; align-items: center; gap: 2px; }
   :global(html[data-mai-layout='top']) .group, :global(html[data-mai-layout='bottom']) .group, :global(html[data-mai-layout='dock']) .group { flex-direction: row; align-items: center; gap: 2px; }
-  :global(html[data-mai-layout='top']) .group + .group, :global(html[data-mai-layout='bottom']) .group + .group, :global(html[data-mai-layout='dock']) .group + .group { margin: 0 0 0 6px; padding-left: 6px; border-left: 1px solid var(--ds-line); }
+  :global(html[data-mai-layout='top']) .group + .group, :global(html[data-mai-layout='bottom']) .group + .group, :global(html[data-mai-layout='dock']) .group + .group { margin: 0; padding: 0; border: 0; }
+  :global(html[data-mai-layout='top']) .group:last-child:not(:first-child), :global(html[data-mai-layout='bottom']) .group:last-child:not(:first-child), :global(html[data-mai-layout='dock']) .group:last-child:not(:first-child) { margin: 0 0 0 6px; padding: 0 0 0 6px; border-top: 0; border-left: 1px solid var(--ds-line); }
   :global(html[data-mai-layout='top']) .groupLabel, :global(html[data-mai-layout='bottom']) .groupLabel, :global(html[data-mai-layout='dock']) .groupLabel,
   :global(html[data-mai-layout='top']) .projectCount, :global(html[data-mai-layout='bottom']) .projectCount, :global(html[data-mai-layout='dock']) .projectCount,
   :global(html[data-mai-layout='top']) .chevron, :global(html[data-mai-layout='bottom']) .chevron, :global(html[data-mai-layout='dock']) .chevron,

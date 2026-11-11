@@ -1,0 +1,20 @@
+.wrap { display: flex; flex-direction: column; gap: 2px; }
+.row { display: flex; align-items: center; gap: 8px; min-height: 56px; padding: 6px 0; border-bottom: 1px solid var(--ds-line); }
+.text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.text strong { font-size: 14px; font-weight: 600; }
+.text small { color: var(--ds-muted); font-size: 12px; }
+.key { appearance: none; min-width: 112px; height: 34px; padding: 0 12px; border: 1px solid var(--ds-line); border-radius: 6px; background: transparent; color: var(--ds-muted); font: inherit; font-size: 13px; cursor: pointer; }
+.key:hover { background: var(--ds-surface-hover); }
+.key[data-recording] { border-color: var(--ds-accent); box-shadow: inset 0 0 0 1px var(--ds-accent); color: var(--ds-accent); }
+.key:focus-visible, .clear:focus-visible, .reset:focus-visible { outline: 2px solid var(--ds-accent); outline-offset: 2px; }
+.key kbd, .fixedRow kbd { display: inline-block; min-width: 24px; padding: 2px 8px; border: 1px solid var(--ds-line-strong); border-radius: 4px; background: var(--ds-surface-2); color: var(--ds-text); font: inherit; font-size: 13px; font-weight: 700; text-align: center; }
+.clear { appearance: none; display: grid; place-items: center; width: 28px; height: 28px; border: 0; border-radius: 6px; background: transparent; color: var(--ds-muted); cursor: pointer; }
+.clear:hover { background: var(--ds-surface-hover); color: var(--ds-text); }
+.clearSpace { width: 28px; }
+.message { margin: 8px 0 0; color: var(--ds-danger); font-size: 13px; }
+.reset { appearance: none; align-self: flex-start; margin-top: 10px; height: 30px; padding: 0 10px; border: 0; border-radius: 6px; background: transparent; color: var(--ds-accent); font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; }
+.reset:hover { background: var(--ds-accent-soft); }
+.fixed { margin-top: 18px; }
+.fixed h4 { margin: 0 0 6px; font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ds-muted); }
+.fixedRow { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 36px; font-size: 14px; }
+.fixedRow kbd { font-weight: 500; font-size: 12px; }

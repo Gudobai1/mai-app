@@ -7,6 +7,7 @@ import { restyleColors } from '../../lib/v2/palette'
 import styles from './Settings.module.css'
 import { AppearancePanel } from './AppearancePanel'
 import { SidebarSettings } from './SidebarSettings'
+import { ShortcutsSettings } from './ShortcutsSettings'
 import { RemindersSettings } from './RemindersSettings'
 import { normalizeMode } from './theme'
 
@@ -64,6 +65,7 @@ export function AppSettingsDrawer(props: Props) {
     { id: 'tema', label: 'Aparência', icon: 'palette' },
     { id: 'barra', label: 'Barra lateral', icon: 'menu' },
     { id: 'notificacoes', label: 'Notificações', icon: 'notifications' },
+    { id: 'atalhos', label: 'Atalhos', icon: 'keyboard' },
     { id: 'google', label: 'Google', icon: 'calendar_month' },
     { id: 'dados', label: 'Dados e backup', icon: 'cloud_upload' },
   ]
@@ -149,6 +151,11 @@ export function AppSettingsDrawer(props: Props) {
                 <button type="button" role="switch" aria-checked={Boolean(props.state.configs.sidebarAutoHide)} aria-label="Ocultar a barra lateral automaticamente" className={styles.switch} data-on={Boolean(props.state.configs.sidebarAutoHide) || undefined} onClick={() => props.commit(current => ({ ...current, configs: { ...current.configs, sidebarAutoHide: !current.configs.sidebarAutoHide, sidebarHidden: false } }))}><i /></button>
               </div>
               <SidebarSettings value={props.state.configs.sidebar} legacyHideInbox={hideInbox} onChange={sidebar => props.commit(current => ({ ...current, configs: { ...current.configs, sidebar, hideInbox: false } }))} />
+            </section>
+
+            <section className={styles.section} data-section="atalhos" hidden={active !== 'atalhos'}>
+              <h3>Atalhos de teclado</h3>
+              <ShortcutsSettings value={props.state.configs.shortcuts} onChange={shortcuts => props.commit(current => ({ ...current, configs: { ...current.configs, shortcuts } }))} />
             </section>
 
             <section className={styles.section} data-section="notificacoes" hidden={active !== 'notificacoes'}>
