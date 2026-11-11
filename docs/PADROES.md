@@ -200,3 +200,4 @@ Todo módulo abre com o mesmo cabeçalho, montado só por `AppTopBar`: título 2
 
 ## Espaço entre cabeçalho e conteúdo (padrão = Hoje)
 - Do título do módulo ao primeiro conteúdo são **30px**: 8px do `ModuleHeader` + 22px de respiro no topo do primeiro bloco (o título da seção em Hoje, Tarefas, Hábitos, Metas e Relatório; a barra de abas em Notas; o saldo em Finanças; 14px + o gap de 16px em Em breve). A página não tem padding no topo. Ao criar um módulo, o primeiro bloco usa 22px; não inventar outro valor.
+- Tarefas e projetos: o primeiro grupo (lista ou quadro) também começa com 22px de respiro depois do cabeçalho, como em Hoje.
