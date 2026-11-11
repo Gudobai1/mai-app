@@ -837,3 +837,15 @@
   :global(html[data-mai-layout='top']) .nav, :global(html[data-mai-layout='bottom']) .nav, :global(html[data-mai-layout='dock']) .nav { margin-top: 0; }
   :global(html[data-mai-layout='top']) .userTop, :global(html[data-mai-layout='bottom']) .userTop, :global(html[data-mai-layout='dock']) .userTop { padding-bottom: 0; }
 }
+
+/* "Novo": item como os outros, só com o + (e o nome) em vermelho, sem fundo nem contorno; perfil um pouco mais afastado. */
+.newBtn, .newBtn:hover { background: transparent; color: var(--ds-accent); box-shadow: none; }
+.newBtn:hover { background: var(--ds-surface-hover); }
+.newBtn .newKey { color: var(--ds-muted); }
+.userTop { padding-bottom: 8px; }
+.newBtn { margin-bottom: 4px; }
+@media (min-width: 901px) {
+  :global(html[data-mai-layout='top']) .userTop, :global(html[data-mai-layout='bottom']) .userTop, :global(html[data-mai-layout='dock']) .userTop { padding-bottom: 0; }
+  :global(html[data-mai-layout='top']) .newBtn, :global(html[data-mai-layout='bottom']) .newBtn, :global(html[data-mai-layout='dock']) .newBtn { margin-bottom: 0; }
+  :global(html[data-mai-layout='top']) .newBtn, :global(html[data-mai-layout='bottom']) .newBtn { padding: 0 10px; }
+}
