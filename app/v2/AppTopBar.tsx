@@ -84,8 +84,12 @@ export function AppTopBar({ state, today, view, taskScope, commit, onTaskScopeCh
   const overdueTasks = activeTasks.filter(task => dateKey(task.data_vencimento) && dateKey(task.data_vencimento) < today).length
   const futureTasks = activeTasks.filter(task => dateKey(task.data_vencimento) >= today).length
 
+  const dayDate = new Date(`${today}T12:00:00`)
+  const fullDay = `${dayDate.toLocaleDateString('pt-BR', { weekday:'long' }).split('-')[0].replace(/^./, letter => letter.toLocaleUpperCase('pt-BR'))}, ${dayDate.toLocaleDateString('pt-BR', { day:'numeric', month:'long' })}`
+  const todayCount = activeTasks.filter(task => dateKey(task.data_vencimento) === today).length
+
   let info = dayLabel
-  if (view === 'today') info = overdue ? `${overdue} atrasado${overdue === 1 ? '' : 's'}` : dayLabel
+  if (view === 'today') info = `${fullDay} · ${todayCount} tarefa${todayCount === 1 ? '' : 's'}${overdue ? ` · ${overdue} atrasado${overdue === 1 ? '' : 's'}` : ''}`
   if (view === 'upcoming') info = overdueTasks ? `${overdueTasks} atrasada${overdueTasks === 1 ? '' : 's'} · ${futureTasks} futuras` : `${futureTasks} futuras`
   if (view === 'tasks') info = taskScope === 'entrada' ? 'Entrada' : taskScope === 'today' ? 'Hoje' : taskScope === 'upcoming' ? 'Em breve' : String(activeProject?.nome || 'Projeto')
   if (view === 'habits') info = `${habits.length} hábito${habits.length === 1 ? '' : 's'}`
@@ -256,8 +260,8 @@ export function AppTopBar({ state, today, view, taskScope, commit, onTaskScopeCh
   }, [open])
 
   return <div ref={wrapRef} className="mai-app-topbar" data-view={String(view)} data-sort-mode={sortMode}>
-    <div className="mai-app-topbar-context"><strong>{title}</strong><span>{info}</span></div>
+    <div className="mai-app-topbar-context"><h1>{title}</h1><p>{info}</p></div>
     <div className="mai-app-topbar-single-action"><SettingsButton active={open} badge={customized} aria-expanded={open} onClick={() => setOpen(value => !value)} /></div>
-    {open ? <OptionsPanel title={title} hint={info} onReset={customized ? reset : undefined} onClose={() => setOpen(false)}>{panelBody}</OptionsPanel> : null}
+    {open ? <OptionsPanel title={title} onReset={customized ? reset : undefined} onClose={() => setOpen(false)}>{panelBody}</OptionsPanel> : null}
   </div>
 }
