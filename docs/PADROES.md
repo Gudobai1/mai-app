@@ -197,3 +197,6 @@ Todo módulo abre com o mesmo cabeçalho, montado só por `AppTopBar`: título 2
 ## Categorias e relatório das metas
 - **Categorias:** criadas pela pessoa em Metas › Ajustes › Agrupar por › Categoria (ficam em `configs.goalCategories`, cada meta guarda o id em `categoria`). Funcionam como as seções das tarefas: cada categoria é um bloco com título, contagem e "Adicionar meta" próprio; clicar no título renomeia, o × (ao passar o mouse) exclui e as metas voltam para "Sem categoria"; "Adicionar categoria" no fim da lista. No popup da meta há a propriedade "Categoria".
 - **Relatório:** Metas › Ajustes › Visualização › Relatório (`GoalsReport`, `goalReport` em `lib/v2/goals.ts`): metas, em andamento, concluídas, atrasadas, progresso médio; por categoria; prazos por mês; metas em risco (prazo em até 14 dias e menos de 80%).
+
+## Espaço entre cabeçalho e conteúdo (padrão = Hoje)
+- Do título do módulo ao primeiro conteúdo são **30px**: 8px do `ModuleHeader` + 22px de respiro no topo do primeiro bloco (o título da seção em Hoje, Tarefas, Hábitos, Metas e Relatório; a barra de abas em Notas; o saldo em Finanças; 14px + o gap de 16px em Em breve). A página não tem padding no topo. Ao criar um módulo, o primeiro bloco usa 22px; não inventar outro valor.

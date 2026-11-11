@@ -1,5 +1,5 @@
 /* MAI — Notas: visual nativo do sistema, funções completas */
-.mai-notes-v4{min-width:0;padding:4px 0 34px;color:var(--v3-text,#303630)}
+.mai-notes-v4{min-width:0;padding:22px 0 34px;color:var(--v3-text,#303630)}
 .mai-notes-v4 button,.mai-notes-v4 input,.mai-notes-v4 select{font:inherit}
 
 .mai-notes-v4-head{min-height:64px;display:flex;align-items:center;justify-content:space-between;gap:18px;margin-bottom:4px;padding:0 2px}
