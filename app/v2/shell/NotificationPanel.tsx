@@ -40,7 +40,7 @@ export function NotificationPanel({ look, alerts, today, anchor, onOpen, onClose
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
 
   useEffect(() => {
-    const close = (event: Event) => { if (!ref.current?.contains(event.target as Node) && !anchor?.contains(event.target as Node)) onClose() }
+    const close = (event: Event) => { if (!ref.current?.contains(event.target as Node)) onClose() }
     const key = (event: KeyboardEvent) => { if (event.key === 'Escape') onClose() }
     document.addEventListener('pointerdown', close)
     document.addEventListener('keydown', key)
@@ -65,7 +65,7 @@ export function NotificationPanel({ look, alerts, today, anchor, onOpen, onClose
   const subtitle = attention ? `${attention} ${attention === 1 ? 'pede' : 'pedem'} atenção` : alerts.length ? 'Nada urgente agora' : 'Tudo em dia'
 
   return (
-    <div className={styles.alertLayer}>
+    <div className={styles.alertLayer} onMouseDown={event => { if (event.target === event.currentTarget) onClose() }}>
     <div ref={ref} className={styles.alertPanel} data-density={look.panel} role="dialog" aria-label="Notificações">
       <header className={styles.alertTop}>
         <span className={styles.alertTitleBox}><strong>Notificações</strong><small data-urgent={attention ? true : undefined}>{subtitle}</small></span>
