@@ -883,3 +883,10 @@
   :global(html[data-mai-layout='bottom']) .profilePill .profileName, :global(html[data-mai-layout='dock']) .profilePill .profileName { display: none; }
   :global(html[data-mai-layout='top']) .newLabel, :global(html[data-mai-layout='top']) .newKey, :global(html[data-mai-layout='bottom']) .newLabel, :global(html[data-mai-layout='bottom']) .newKey, :global(html[data-mai-layout='dock']) .newLabel, :global(html[data-mai-layout='dock']) .newKey { display: none; }
 }
+
+/* "Novo": contorno fino e discreto em volta, + e nome em vermelho. */
+.newBtn { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ds-accent) 45%, transparent); }
+.newBtn:hover { box-shadow: inset 0 0 0 1px var(--ds-accent); background: var(--ds-accent-soft); }
+@media (max-width: 900px) {
+  .newTabIcon { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ds-accent) 45%, transparent); }
+}
