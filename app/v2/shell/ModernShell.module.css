@@ -891,7 +891,8 @@
   :global(html[data-mai-layout='compact'][data-mai-side='right']) .searchTop { left: auto; right: 62px; }
   :global(html[data-mai-layout='top']) .searchTop, :global(html[data-mai-layout='bottom']) .searchTop, :global(html[data-mai-layout='dock']) .searchTop { display: none; }
   /* Nas laterais o Buscar é o ícone ao lado do perfil, não uma linha do menu. */
-  :global(html[data-mai-layout='left']) .search.search, :global(html[data-mai-layout='right']) .search.search, :global(html[data-mai-layout='compact']) .search.search { display: none; }
+  .search.search { display: none; }
+  :global(html[data-mai-layout='top']) .search.search, :global(html[data-mai-layout='bottom']) .search.search, :global(html[data-mai-layout='dock']) .search.search { display: flex; }
 }
 @media (max-width: 900px) { .searchTop { display: none; } }
 
