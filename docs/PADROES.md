@@ -154,3 +154,7 @@ Fonte única da verdade: o quadro "Sistema de design Bukid" (quadros 0 a 12). Os
 - Regra única em `lib/v2/shortcuts.ts` (padrões, normalização, `matchShortcut`); config em `configs.shortcuts` editada em Configurações → Atalhos (`ShortcutsSettings`). Padrões: **Q** = novo item do módulo aberto, **F** = pesquisar, configurações sem tecla. Fixos: Ctrl+Espaço, Ctrl+Z, Esc. Uma tecla simples por ação; tecla repetida é recusada. Atalho novo = nova ação em `SHORTCUT_ACTIONS` e tratamento no `onKey` de `UnifiedAppUx`.
 - A dica na linha "Buscar" da barra lateral mostra a tecla configurada.
 - A busca não tem mais o bloco "Ir para" (navegação é pela barra).
+
+## Botão "Novo" fixo
+- O header dos módulos tem só título, subtítulo e o botão de ajustes; **não há botão "Adicionar" no header**. A criação é um botão permanente da navegação (`newBtn` em `ModernSidebar`, `newTab` em `ModernBottomNav`) que chama `contextualAdd` e muda de nome pelo módulo (`app/v2/shell/new-label.ts`: Nova tarefa, Novo hábito, Nova meta, Nova nota, Novo lançamento).
+- Desktop: sempre junto do perfil, em qualquer layout (abaixo na lateral; só "+" na compacta; ao lado na superior, na inferior e no dock). Celular: item "+" no centro da barra de baixo, **dentro** da barra (não flutua). Atalho configurável (padrão Q) aparece no botão.

@@ -5,6 +5,7 @@ import { Icon, IconButton } from '../../ds'
 import type { AppView, Row } from '../app-types'
 import type { MaiState } from '../../../lib/v2/state'
 import { ProjectMark } from './ProjectMark'
+import { newLabel } from './new-label'
 import { NAV_ALIAS, NAV_GROUPS } from './nav'
 import { normalizeSidebar, sidebarHidden, sidebarIconName } from './sidebar-config'
 import styles from './ModernShell.module.css'
@@ -19,6 +20,7 @@ type Props = {
   onSearch: () => void
   onSettings: () => void
   onToggleTheme: () => void
+  onNew: () => void
   dark: boolean
 }
 
@@ -27,7 +29,7 @@ const barViews = new Set(['today', 'upcoming'])
 /** Tarefas não aparece como item: o acesso é por Entrada e Projetos, como no desktop. */
 const hiddenFromSheet = new Set(['today', 'upcoming', 'tasks'])
 
-export function ModernBottomNav({ state, activeProjectId, onNewProject, view, searchOpen, navigate, onSearch, onSettings, onToggleTheme, dark }: Props) {
+export function ModernBottomNav({ state, activeProjectId, onNewProject, view, searchOpen, navigate, onSearch, onSettings, onToggleTheme, onNew, dark }: Props) {
   const [sheetOpen, setSheetOpen] = useState(false)
 
   useEffect(() => {
@@ -146,6 +148,9 @@ export function ModernBottomNav({ state, activeProjectId, onNewProject, view, se
       <nav className={styles.mobileNav} aria-label="Navegação principal">
         {tab('today', 'Hoje', 'today')}
         {tab('upcoming', 'Em breve', 'event_upcoming')}
+        <button type="button" className={styles.newTab} onClick={() => { setSheetOpen(false); onNew() }} aria-label={newLabel(view)} title={newLabel(view)}>
+          <span className={styles.newTabIcon}><Icon name="add" size={24} filled={false} /></span>
+        </button>
         <button type="button" className={styles.tab} aria-current={searchOpen && !sheetOpen ? 'page' : undefined} onClick={() => { setSheetOpen(false); onSearch() }}>
           <Icon name="search" size={24} filled={searchOpen} weight={searchOpen ? 600 : 400} />
           <span>Pesquisa</span>
