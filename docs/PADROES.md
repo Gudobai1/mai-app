@@ -122,3 +122,10 @@ Fonte única da verdade: o quadro "Sistema de design Bukid" (quadros 0 a 12). Os
 3. Trocar módulo a módulo: Hoje → Tarefas → Em breve → Concluídos → Busca → Hábitos → Finanças → Metas → Notas.
 4. Remover os componentes antigos e CSS morto.
 5. Só depois voltar às funções novas.
+
+## Layout do desktop (Aparência → Layout)
+
+- Escolha única em `Appearance.layout` (`left` padrão, `right`, `compact`, `top`, `bottom`, `dock`; lista em `LAYOUTS`, `app/ds/appearance.ts`). `applyAppearance` grava `html[data-mai-layout]` (ausente = esquerda).
+- É a **mesma** barra (`ModernSidebar`) que muda de lugar por CSS (bloco "Layout do desktop" no fim de `ModernShell.module.css`, só ≥ 901px). **Não** crie outra barra nem copie marcação; item novo de menu aparece em todos os layouts sozinho.
+- Nos layouts compacta/superior/inferior/dock os projetos aparecem só como bolinha (nome no `title`); no celular nada muda (barra de baixo própria).
+- Mudou algo na barra? Teste os 6 layouts.

@@ -115,6 +115,7 @@ export function ModernSidebar({ state, today, view, navigate, onSearch, onSettin
         key={String(item.id)}
         type="button"
         className={styles.item}
+        title={item.label}
         aria-current={active ? 'page' : undefined}
         onClick={() => navigate(item.id)}
       >
@@ -138,7 +139,7 @@ export function ModernSidebar({ state, today, view, navigate, onSearch, onSettin
     return (
       <div key={id} className={styles.projectBlock}>
         <div className={styles.projectRow} style={depth ? { paddingLeft: 12 + depth * 18 } : undefined} data-active={current || undefined}>
-          <button type="button" className={styles.projectButton} aria-current={current ? 'page' : undefined} onClick={() => navigate(`project:${id}`)}>
+          <button type="button" className={styles.projectButton} title={String(project.nome || 'Projeto')} aria-current={current ? 'page' : undefined} onClick={() => navigate(`project:${id}`)}>
             {photo(project)}
             <span className={styles.itemLabel}>{String(project.nome || 'Projeto')}</span>
             {count ? <span className={styles.projectCount}>{count}</span> : null}
@@ -203,7 +204,7 @@ export function ModernSidebar({ state, today, view, navigate, onSearch, onSettin
           <Icon name="left_panel_close" size={20} filled={false} />
         </button>
       </div>
-      {sidebarHidden(side, 'search') ? null : <button type="button" className={styles.search} onClick={onSearch}>
+      {sidebarHidden(side, 'search') ? null : <button type="button" className={styles.search} title="Buscar" onClick={onSearch}>
         {sideIcon('search', 'search', 20)}
         <span>Buscar</span>
         <span className={styles.kbd}>Ctrl Espaço</span>
@@ -213,7 +214,7 @@ export function ModernSidebar({ state, today, view, navigate, onSearch, onSettin
         <div className={styles.group}>
           <div className={styles.groupLabel}>Planejar</div>
           {sidebarHidden(side, 'inbox') ? null : (
-            <button type="button" className={styles.item} aria-current={view === 'tasks' && activeProjectId === 'entrada' ? 'page' : undefined} onClick={() => navigate('inbox' as AppView)}>
+            <button type="button" className={styles.item} title="Entrada" aria-current={view === 'tasks' && activeProjectId === 'entrada' ? 'page' : undefined} onClick={() => navigate('inbox' as AppView)}>
               {sideIcon('inbox', 'inbox')}
               <span className={styles.itemLabel}>Entrada</span>
               {inboxCount ? <span className={styles.badge}>{inboxCount}</span> : null}

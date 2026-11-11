@@ -16,9 +16,20 @@ export const SHAPE_AREAS: { id: 'tasks' | 'habits' | 'projects'; label: string; 
   { id: 'projects', label: 'Projetos', hint: 'Foto e ícone do projeto' },
 ]
 export type Shapes = Record<'tasks' | 'habits' | 'projects', Shape>
-export type Appearance = { iconPack: IconPack; weight: number; iconScale: number; corners: 'round' | 'square'; font: string; accent: string; palette: string; colorStyle: ColorStyle; shapes: Shapes }
+export type Appearance = { iconPack: IconPack; weight: number; iconScale: number; corners: 'round' | 'square'; font: string; accent: string; palette: string; colorStyle: ColorStyle; shapes: Shapes; layout: LayoutId }
 
-export const DEFAULT_APPEARANCE: Appearance = { iconPack: 'lucide', weight: 1.5, iconScale: 1, corners: 'square', font: 'system', accent: '', palette: 'padrao', colorStyle: 'padrao', shapes: { tasks: 'round', habits: 'round', projects: 'round' } }
+/** Posição do menu no desktop (no celular a barra de baixo manda). */
+export const LAYOUTS = [
+  { id: 'left', label: 'Lateral esquerda', hint: 'Padrão' },
+  { id: 'right', label: 'Lateral direita', hint: 'Menu à direita' },
+  { id: 'compact', label: 'Lateral compacta', hint: 'Só ícones' },
+  { id: 'top', label: 'Menu superior', hint: 'Abas no topo' },
+  { id: 'bottom', label: 'Menu inferior', hint: 'Barra de abas embaixo' },
+  { id: 'dock', label: 'Dock flutuante', hint: 'Pílula embaixo' },
+] as const
+export type LayoutId = (typeof LAYOUTS)[number]['id']
+
+export const DEFAULT_APPEARANCE: Appearance = { iconPack: 'lucide', weight: 1.5, iconScale: 1, corners: 'square', font: 'system', accent: '', palette: 'padrao', colorStyle: 'padrao', shapes: { tasks: 'round', habits: 'round', projects: 'round' }, layout: 'left' }
 
 export const ICON_PACKS: { id: IconPack; label: string; hint: string; family: string }[] = [
   { id: 'lucide', label: 'Linhas', hint: 'Lucide: traço contínuo, leve', family: 'Linhas' },
@@ -95,6 +106,7 @@ export function normalizeAppearance(raw: unknown): Appearance {
     palette: PALETTES.some(item => item.id === value.palette) ? String(value.palette) : 'padrao',
     colorStyle: COLOR_STYLES.some(item => item.id === value.colorStyle) ? (value.colorStyle as ColorStyle) : 'padrao',
     shapes: Object.fromEntries(SHAPE_AREAS.map(area => [area.id, value.shapes?.[area.id] === 'square' ? 'square' : 'round'])) as Shapes,
+    layout: LAYOUTS.some(item => item.id === value.layout) ? (value.layout as LayoutId) : 'left',
   }
 }
 
@@ -275,6 +287,8 @@ export function applyAppearance(raw: unknown) {
     if (next.shapes[area.id] === 'square') root.style.setProperty(`--ds-shape-${area.id}`, '4px')
     else root.style.removeProperty(`--ds-shape-${area.id}`)
   }
+  if (next.layout === 'left') delete root.dataset.maiLayout
+  else root.dataset.maiLayout = next.layout
   if (next.palette === 'padrao') delete root.dataset.maiPalette
   else root.dataset.maiPalette = next.palette
   const font = FONTS.find(item => item.id === next.font)

@@ -622,3 +622,110 @@
 /* Marca do projeto: só a bolinha da cor */
 .projectDotBox { display: grid; place-items: center; width: 22px; height: 22px; flex-shrink: 0; }
 .projectDot { display: block; width: 10px; height: 10px; border-radius: var(--ds-shape-projects, 50%); }
+
+/* ===== Layout do desktop (Aparência → Layout) =====
+   A MESMA barra (este componente) muda de lugar por CSS; nada de marcação duplicada.
+   html[data-mai-layout] = right | compact | top | bottom | dock (ausente = esquerda). Só ≥ 901px. */
+@media (min-width: 901px) {
+  /* Lateral direita */
+  :global(html[data-mai-layout='right']) .sidebar { inset: 0 0 0 auto; }
+  :global(html[data-mai-layout='right']) .userMenu { left: auto; right: 0; }
+  :global(html[data-mai-layout='right']) :global(.mai-v3-shell) :global(.mai-v3-main) { margin-left: 0 !important; margin-right: 280px !important; }
+  :global(html[data-mai-layout='right']) :global(.mai-v3-shell[data-sidebar='hidden']) :global(.mai-v3-main),
+  :global(html[data-mai-layout='right']) :global(.mai-v3-shell[data-sidebar='peek']) :global(.mai-v3-main) { margin-right: 0 !important; }
+  :global(html[data-mai-layout='right']) :global(.mai-v3-shell[data-sidebar='hidden']) .sidebar { transform: translateX(100%); }
+  :global(html[data-mai-layout='right']) :global(.mai-edge) { inset: 0 0 0 auto; }
+  :global(html[data-mai-layout='right']) :global(.mai-reveal) { left: auto; right: 10px; }
+
+  /* Lateral compacta: trilho de 56px, só ícones e bolinhas */
+  :global(html[data-mai-layout='compact']) .sidebar { width: 56px; padding: 12px 0; gap: 8px; align-items: center; overflow: visible; }
+  :global(html[data-mai-layout='compact']) :global(.mai-v3-shell) :global(.mai-v3-main) { margin-left: 56px !important; }
+  :global(html[data-mai-layout='compact']) :global(.mai-v3-shell[data-sidebar='hidden']) :global(.mai-v3-main),
+  :global(html[data-mai-layout='compact']) :global(.mai-v3-shell[data-sidebar='peek']) :global(.mai-v3-main) { margin-left: 0 !important; }
+  :global(html[data-mai-layout='compact']) .userTop { flex-direction: column; padding: 0; }
+  :global(html[data-mai-layout='compact']) .profileWrap { flex: none; }
+  :global(html[data-mai-layout='compact']) .profilePill { padding: 0 4px; }
+  :global(html[data-mai-layout='compact']) .profilePill .profileName,
+  :global(html[data-mai-layout='compact']) .profilePill > :last-child:not(.avatar) { display: none; }
+  :global(html[data-mai-layout='compact']) .userMenu { left: 100%; top: 0; margin-left: 8px; }
+  :global(html[data-mai-layout='compact']) .topIcon:last-child { display: none; }
+  :global(html[data-mai-layout='compact']) .search.search { width: 36px; padding: 0; justify-content: center; }
+  :global(html[data-mai-layout='compact']) .search.search > span { display: none; }
+  :global(html[data-mai-layout='compact']) .nav { align-items: center; }
+  :global(html[data-mai-layout='compact']) .group { align-items: center; }
+  :global(html[data-mai-layout='compact']) .group + .group { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--ds-line); width: 28px; }
+  :global(html[data-mai-layout='compact']) .groupLabel,
+  :global(html[data-mai-layout='compact']) .itemLabel,
+  :global(html[data-mai-layout='compact']) .badge,
+  :global(html[data-mai-layout='compact']) .projectCount,
+  :global(html[data-mai-layout='compact']) .chevron,
+  :global(html[data-mai-layout='compact']) .subProjects,
+  :global(html[data-mai-layout='compact']) .addProject { display: none !important; }
+  :global(html[data-mai-layout='compact']) .item.item { width: 36px; padding: 0; justify-content: center; }
+  :global(html[data-mai-layout='compact']) .projectRow { padding: 0; }
+  :global(html[data-mai-layout='compact']) .projectButton.projectButton { width: 36px; flex: none; padding: 0; justify-content: center; }
+
+  /* Superior, inferior e dock: a barra vira uma faixa horizontal (perfil, sino e busca saem do fluxo) */
+  :global(html[data-mai-layout='top']) .sidebar,
+  :global(html[data-mai-layout='bottom']) .sidebar,
+  :global(html[data-mai-layout='dock']) .sidebar { flex-direction: row; align-items: center; width: auto; overflow: visible; gap: 4px; transform: none !important; visibility: visible !important; box-shadow: none; }
+  :global(html[data-mai-layout='top']) :global(.mai-edge), :global(html[data-mai-layout='top']) :global(.mai-reveal),
+  :global(html[data-mai-layout='bottom']) :global(.mai-edge), :global(html[data-mai-layout='bottom']) :global(.mai-reveal),
+  :global(html[data-mai-layout='dock']) :global(.mai-edge), :global(html[data-mai-layout='dock']) :global(.mai-reveal) { display: none !important; }
+  :global(html[data-mai-layout='top']) :global(.mai-v3-shell) :global(.mai-v3-main),
+  :global(html[data-mai-layout='bottom']) :global(.mai-v3-shell) :global(.mai-v3-main),
+  :global(html[data-mai-layout='dock']) :global(.mai-v3-shell) :global(.mai-v3-main) { margin-left: 0 !important; }
+  :global(html[data-mai-layout='top']) .nav, :global(html[data-mai-layout='bottom']) .nav, :global(html[data-mai-layout='dock']) .nav { flex-direction: row; align-items: center; gap: 2px; }
+  :global(html[data-mai-layout='top']) .group, :global(html[data-mai-layout='bottom']) .group, :global(html[data-mai-layout='dock']) .group { flex-direction: row; align-items: center; gap: 2px; }
+  :global(html[data-mai-layout='top']) .group + .group, :global(html[data-mai-layout='bottom']) .group + .group, :global(html[data-mai-layout='dock']) .group + .group { margin: 0 0 0 6px; padding-left: 6px; border-left: 1px solid var(--ds-line); }
+  :global(html[data-mai-layout='top']) .groupLabel, :global(html[data-mai-layout='bottom']) .groupLabel, :global(html[data-mai-layout='dock']) .groupLabel,
+  :global(html[data-mai-layout='top']) .projectCount, :global(html[data-mai-layout='bottom']) .projectCount, :global(html[data-mai-layout='dock']) .projectCount,
+  :global(html[data-mai-layout='top']) .chevron, :global(html[data-mai-layout='bottom']) .chevron, :global(html[data-mai-layout='dock']) .chevron,
+  :global(html[data-mai-layout='top']) .subProjects, :global(html[data-mai-layout='bottom']) .subProjects, :global(html[data-mai-layout='dock']) .subProjects,
+  :global(html[data-mai-layout='top']) .addProject, :global(html[data-mai-layout='bottom']) .addProject, :global(html[data-mai-layout='dock']) .addProject,
+  :global(html[data-mai-layout='top']) .projectButton .itemLabel, :global(html[data-mai-layout='bottom']) .projectButton .itemLabel, :global(html[data-mai-layout='dock']) .projectButton .itemLabel,
+  :global(html[data-mai-layout='top']) .topIcon:last-child, :global(html[data-mai-layout='bottom']) .topIcon:last-child, :global(html[data-mai-layout='dock']) .topIcon:last-child { display: none !important; }
+  :global(html[data-mai-layout='top']) .projectRow, :global(html[data-mai-layout='bottom']) .projectRow, :global(html[data-mai-layout='dock']) .projectRow { padding: 0; }
+  :global(html[data-mai-layout='top']) .projectButton.projectButton, :global(html[data-mai-layout='bottom']) .projectButton.projectButton, :global(html[data-mai-layout='dock']) .projectButton.projectButton { width: 32px; flex: none; padding: 0; justify-content: center; }
+  :global(html[data-mai-layout='top']) .search.search, :global(html[data-mai-layout='bottom']) .search.search, :global(html[data-mai-layout='dock']) .search.search { width: 36px; padding: 0; justify-content: center; }
+  :global(html[data-mai-layout='top']) .search.search > span, :global(html[data-mai-layout='bottom']) .search.search > span, :global(html[data-mai-layout='dock']) .search.search > span { display: none; }
+  :global(html[data-mai-layout='top']) .userTop, :global(html[data-mai-layout='dock']) .userTop { display: contents; }
+
+  /* Superior: faixa de 48px; perfil à esquerda, abas, busca e sino à direita */
+  :global(html[data-mai-layout='top']) .sidebar { inset: 0 0 auto 0; height: 48px; padding: 0 14px; border-bottom: 1px solid var(--ds-line); }
+  :global(html[data-mai-layout='top']) .profileWrap { order: 0; flex: none; padding-right: 8px; margin-right: 4px; border-right: 1px solid var(--ds-line); }
+  :global(html[data-mai-layout='top']) .profilePill .profileName { display: none; }
+  :global(html[data-mai-layout='top']) .nav { order: 1; flex: 1; min-width: 0; }
+  :global(html[data-mai-layout='top']) .search.search { order: 2; }
+  :global(html[data-mai-layout='top']) .topIcon { order: 3; }
+  :global(html[data-mai-layout='top']) .item.item { width: auto; height: 32px; gap: 7px; padding: 0 10px; }
+  :global(html[data-mai-layout='top']) .item.item > .itemLabel { flex: none; }
+  :global(html[data-mai-layout='top']) .userMenu { top: calc(100% + 8px); }
+  :global(html[data-mai-layout='top']) :global(.mai-v3-shell) :global(.mai-v3-main) { padding-top: 48px; }
+
+  /* Inferior: abas embaixo (ícone em cima do nome) + faixa fina no topo com perfil, busca e sino */
+  :global(html[data-mai-layout='bottom']) .sidebar { inset: auto 0 0 0; height: 58px; padding: 0 8px; justify-content: center; border-top: 1px solid var(--ds-line); }
+  :global(html[data-mai-layout='bottom']) .nav { flex: 1; min-width: 0; justify-content: center; }
+  :global(html[data-mai-layout='bottom']) .group:not(:last-child) { flex: 1; }
+  :global(html[data-mai-layout='bottom']) .item.item { flex: 1; min-width: 0; width: auto; height: 56px; flex-direction: column; justify-content: center; gap: 3px; padding: 0 6px; border-radius: 0; font-size: 11px; }
+  :global(html[data-mai-layout='bottom']) .item.item > .itemLabel { flex: none; max-width: 100%; }
+  :global(html[data-mai-layout='bottom']) .item.item[aria-current='page'] { background: transparent; box-shadow: inset 0 2px 0 var(--ds-accent); }
+  :global(html[data-mai-layout='bottom']) .userTop { position: fixed; z-index: 100; inset: 0 0 auto 0; height: 44px; padding: 0 20px; background: var(--mai-side-bg, var(--ds-surface-2)); border-bottom: 1px solid var(--ds-line); align-items: center; }
+  :global(html[data-mai-layout='bottom']) .search.search { position: fixed; z-index: 101; top: 4px; right: 64px; height: 36px; }
+  :global(html[data-mai-layout='bottom']) .badge { display: none; }
+  :global(html[data-mai-layout='bottom']) :global(.mai-v3-shell) :global(.mai-v3-main) { padding-top: 44px; padding-bottom: 58px; }
+
+  /* Dock: pílula flutuante embaixo; só o item ativo mostra o nome; perfil e sino no canto */
+  :global(html[data-mai-layout='dock']) .sidebar { inset: auto 0 18px 0; width: fit-content; max-width: calc(100vw - 32px); margin: 0 auto; padding: 6px; border: 1px solid var(--ds-line); border-radius: 14px; background: var(--ds-bg); box-shadow: 0 6px 20px rgba(20, 22, 20, 0.14); }
+  :global(html[data-mai-layout='dock']) .nav { order: 0; }
+  :global(html[data-mai-layout='dock']) .search.search { order: 1; }
+  :global(html[data-mai-layout='dock']) .item.item { width: auto; height: 40px; padding: 0 11px; border-radius: 9px; gap: 8px; }
+  :global(html[data-mai-layout='dock']) .item.item:not([aria-current='page']) > .itemLabel, :global(html[data-mai-layout='dock']) .badge { display: none; }
+  :global(html[data-mai-layout='dock']) .item.item[aria-current='page'] { padding: 0 14px; }
+  :global(html[data-mai-layout='dock']) .item.item > .itemLabel { flex: none; }
+  :global(html[data-mai-layout='dock']) .profileWrap { position: fixed; z-index: 101; top: 12px; right: 56px; flex: none; }
+  :global(html[data-mai-layout='dock']) .profilePill .profileName, :global(html[data-mai-layout='dock']) .profilePill > :last-child:not(.avatar) { display: none; }
+  :global(html[data-mai-layout='dock']) .topIcon { position: fixed; z-index: 101; top: 12px; right: 16px; }
+  :global(html[data-mai-layout='dock']) .userMenu { left: auto; right: 0; }
+  :global(html[data-mai-layout='dock']) :global(.mai-v3-shell) :global(.mai-v3-main) { padding-bottom: 86px; }
+}
