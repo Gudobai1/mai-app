@@ -918,7 +918,7 @@
 .newBtn.newBtn { margin-bottom: 0; }
 .nav { margin-top: 16px; }
 @media (min-width: 901px) {
-  :global(html[data-mai-layout='compact']) .nav { margin-top: 14px; }
+  :global(html[data-mai-layout='compact']) .nav { margin-top: 0; }
   :global(html[data-mai-layout='top']) .nav, :global(html[data-mai-layout='bottom']) .nav, :global(html[data-mai-layout='dock']) .nav { margin-top: 0; }
 }
 
@@ -926,3 +926,10 @@
 html[data-mai-peek] :global(.mai-v3-shell) :global(.mai-v3-main) { margin-left: 56px !important; margin-right: 0 !important; }
 html[data-mai-peek][data-mai-side='right'] :global(.mai-v3-shell) :global(.mai-v3-main) { margin-left: 0 !important; margin-right: 56px !important; }
 html[data-mai-peek] .sidebar { box-shadow: var(--ds-popup-shadow, 0 12px 40px rgba(0, 0, 0, 0.25)); }
+
+/* Barra fechada: o + fica no mesmo eixo do avatar e dos ícones e com o mesmo respiro em cima e embaixo. */
+@media (min-width: 901px) {
+  :global(html[data-mai-layout='compact']) .newBtn.newBtn { width: 36px; height: 36px; padding: 0; margin: 0 auto 6px; justify-content: center; gap: 0; }
+  :global(html[data-mai-layout='compact']) .newBtn.newBtn svg { width: 22px; height: 22px; flex: none; margin: 0; }
+  :global(html[data-mai-layout='compact']) .userTop { margin-bottom: 6px; }
+}
