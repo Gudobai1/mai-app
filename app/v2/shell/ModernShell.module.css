@@ -912,3 +912,11 @@
 .sidebar .newBtn.newBtn:hover { background: var(--ds-surface-hover) !important; }
 .sidebar .newBtn.newBtn .newLabel, .sidebar .newBtn.newBtn svg { color: var(--ds-accent) !important; }
 .sidebar .newBtn.newBtn .newKey { color: var(--ds-muted) !important; }
+
+/* Novo e Buscar com o mesmo espaçamento dos outros itens (2px) e um respiro maior antes do menu. */
+.newBtn.newBtn { margin-bottom: 0; }
+.nav { margin-top: 16px; }
+@media (min-width: 901px) {
+  :global(html[data-mai-layout='compact']) .nav { margin-top: 14px; }
+  :global(html[data-mai-layout='top']) .nav, :global(html[data-mai-layout='bottom']) .nav, :global(html[data-mai-layout='dock']) .nav { margin-top: 0; }
+}
