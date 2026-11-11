@@ -269,7 +269,7 @@ export function ProjectEditor({ state, commit, projectId, parentId, initialTab =
                 <button ref={parentRef} type="button" className={styles.select} onClick={() => setParentOpen(true)}>
                   {parent ? (parent.imagem_url ? <img src={driveAssetUrl(parent.imagem_url)} alt="" /> : <i style={{ background: String(parent.cor || COLORS[0]) }} />) : <Icon name="folder_off" size={18} />}
                   <span>{parent ? String(parent.nome) : 'Nenhum (projeto principal)'}</span>
-                  <Icon name="expand_more" size={18} filled={false} />
+                  <Icon name={parentOpen ? 'expand_more' : 'chevron_right'} size={18} filled={false} />
                 </button>
                 {parentOpen ? (
                   <Floating anchor={parentRef} title="Dentro de" width={300} onClose={() => setParentOpen(false)}>

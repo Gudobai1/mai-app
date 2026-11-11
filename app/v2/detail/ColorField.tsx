@@ -21,7 +21,7 @@ export function ColorField({ value, onChange, className, label = 'Cor', compact 
       <button ref={anchor} type="button" className={`${styles.trigger} ${className || ''}`} aria-haspopup="listbox" aria-expanded={open} aria-label={compact ? `${label}: ${current ? colorName(current) : "nenhuma"}` : undefined} title={compact ? label : undefined} onClick={() => setOpen(true)}>
         <span className={styles.dot} style={{ background: current || 'var(--ds-muted)' }} />
         {compact ? null : <span className={styles.name}>{current ? colorName(current) : label}</span>}
-        {compact ? null : <Icon name="expand_more" size={18} filled={false} />}
+        {compact ? null : <Icon name={open ? 'expand_more' : 'chevron_right'} size={18} filled={false} />}
       </button>
       {open ? (
         <Floating anchor={anchor} title={label} width={240} onClose={() => setOpen(false)}>
