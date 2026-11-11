@@ -3,7 +3,7 @@
 import { createContext, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from 'react'
 import { createPortal } from 'react-dom'
 import { addDays } from '../../../lib/v2/planner'
-import { Icon } from '../../ds'
+import { Icon, Disclosure } from '../../ds'
 import styles from './Pickers.module.css'
 
 /*
@@ -491,7 +491,7 @@ export function ProjectPicker({ projects, projectId: currentProject, section: cu
       <div key={id} className={styles.treeGroup}>
         <div className={styles.treeRow} style={{ paddingLeft: 4 + depth * 16 }}>
           {expandable
-            ? <button type="button" className={styles.treeChevron} data-open={expanded || undefined} aria-label={expanded ? 'Recolher' : 'Expandir'} aria-expanded={expanded} onClick={() => toggle(id)}><Icon name="chevron_right" size={18} filled={false} /></button>
+            ? <button type="button" className={styles.treeChevron} data-open={expanded || undefined} aria-label={expanded ? 'Recolher' : 'Expandir'} aria-expanded={expanded} onClick={() => toggle(id)}><Disclosure open={expanded} size={18} /></button>
             : <span className={styles.treeChevron} aria-hidden="true" />}
           <button type="button" className={styles.option} data-selected={selected || undefined} onClick={() => onSelect(id, '')}>
             {image ? <img className={styles.optionImage} src={image} alt="" /> : <span className={styles.optionDot} style={{ background: String(project.cor || 'var(--ds-line-strong)') }} />}

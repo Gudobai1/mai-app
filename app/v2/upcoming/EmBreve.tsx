@@ -4,7 +4,7 @@ import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState, type C
 import { addDays, eventColor, habitStreak, plannerItems, type PlannerItem } from '../../../lib/v2/planner'
 import { hiddenOccurrenceIds } from '../../../lib/v2/series'
 import { dateKey, type MaiState } from '../../../lib/v2/state'
-import { Check, Icon } from '../../ds'
+import { Check, Icon, Disclosure } from '../../ds'
 import type { Row } from '../app-types'
 import type { InspectableItem } from '../ContextDrawer'
 import { driveAssetUrl } from '../DriveAsset'
@@ -485,7 +485,7 @@ export function EmBreve({ state, today, commit, inspect, syncRange }: Props) {
           <h4>{label}</h4>
           {total ? <span className={styles.groupCount}>{total}</span> : null}
           <span className={styles.groupCount}>{count}</span>
-          <Icon name={closed ? 'chevron_right' : 'expand_more'} size={18} filled={false} />
+          <Disclosure open={!closed} size={18} />
         </button>
         {closed ? null : <div className={styles.groupBody}>{children}</div>}
       </div>
@@ -542,7 +542,7 @@ export function EmBreve({ state, today, commit, inspect, syncRange }: Props) {
     <div className={styles.late}>
       <button type="button" className={styles.lateHead} aria-expanded={lateOpen} onClick={() => setLateOpen(value => !value)}>
         <Icon name="schedule" size={16} filled={false} />{overdue.length} {overdue.length === 1 ? 'tarefa atrasada' : 'tarefas atrasadas'}
-        <Icon name={lateOpen ? 'expand_more' : 'chevron_right'} size={18} filled={false} className={styles.lateChevron} />
+        <Disclosure open={lateOpen} size={18} className={styles.lateChevron} />
       </button>
       {lateOpen ? <div className={styles.lateBody}>{taskList(overdue, true)}</div> : null}
     </div>

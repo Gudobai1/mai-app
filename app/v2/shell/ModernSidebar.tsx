@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { MaiState } from '../../../lib/v2/state'
-import { Icon } from '../../ds'
+import { Icon, Disclosure } from '../../ds'
 import type { AppView } from '../app-types'
 import { ProjectMark } from './ProjectMark'
 import { normalizeReminders } from '../../../lib/v2/reminders'
@@ -150,7 +150,7 @@ export function ModernSidebar({ state, today, view, navigate, onSearch, onSettin
             aria-label={`${expanded ? 'Recolher' : 'Expandir'} ${String(project.nome || 'projeto')}`}
             onClick={() => toggle(id)}
           >
-            <Icon name={expanded ? 'expand_more' : 'chevron_right'} size={20} filled={false} />
+            <Disclosure open={expanded} size={20} />
           </button>
         </div>
         {expanded ? (
@@ -178,7 +178,7 @@ export function ModernSidebar({ state, today, view, navigate, onSearch, onSettin
               {profile?.picture ? <img src={profile.picture} alt="" referrerPolicy="no-referrer" /> : profileInitial}
             </span>
             <span className={styles.profileName}>{profileName}</span>
-            <Icon name={menu ? 'expand_more' : 'chevron_right'} size={18} filled={false} />
+            <Disclosure open={menu} size={18} />
           </button>
           {menu ? (
             <div className={styles.userMenu} role="menu">

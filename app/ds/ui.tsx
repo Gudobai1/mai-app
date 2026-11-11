@@ -347,3 +347,16 @@ export function DsRoot({ children, className, theme, ...rest }: HTMLAttributes<H
     </div>
   )
 }
+
+
+/**
+ * Seta de abrir/fechar do app inteiro: fechado = para a direita, aberto = para baixo.
+ * Desenho próprio (não muda com o pacote de ícones nem gira por CSS), para o estado ser sempre legível.
+ */
+export function Disclosure({ open, size = 18, className, style }: { open: boolean; size?: number; className?: string; style?: CSSProperties }) {
+  return (
+    <svg className={className} style={{ flexShrink: 0, ...style }} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" data-open={open || undefined}>
+      <path d={open ? 'M6 9l6 6 6-6' : 'M9 6l6 6-6 6'} />
+    </svg>
+  )
+}
