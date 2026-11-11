@@ -181,6 +181,12 @@ export function ModernSidebar({ state, today, view, navigate, onSearch, onSettin
             <span className={styles.profileName}>{profileName}</span>
             <Disclosure open={menu} size={18} />
           </button>
+          {attention ? (
+            <button ref={bellRef} type="button" className={styles.profileDot} data-count={remindersLook.bell === 'count' || undefined} onClick={() => setBell(value => !value)} aria-haspopup="dialog" aria-expanded={bell} aria-label={`${attention} avisos`} title={`${attention} avisos`}>
+              {remindersLook.bell === 'count' ? (attention > 9 ? '9+' : attention) : null}
+            </button>
+          ) : null}
+          {bell && attention ? <NotificationPanel look={remindersLook} alerts={alerts} anchor={bellRef.current} onOpen={openAlert} onClose={() => setBell(false)} /> : null}
           {menu ? (
             <div className={styles.userMenu} role="menu">
               <button type="button" role="menuitem" onClick={() => { setMenu(false); onSettings() }}><Icon name="settings" size={18} filled={false} /><span className={styles.userMenuLabel}>Configurações</span></button>
@@ -194,12 +200,6 @@ export function ModernSidebar({ state, today, view, navigate, onSearch, onSettin
             </div>
           ) : null}
         </div>
-        <button ref={bellRef} type="button" className={styles.topIcon} onClick={() => setBell(value => !value)} aria-haspopup="dialog" aria-expanded={bell} aria-label={attention ? `${attention} avisos` : 'Notificações'} title={attention ? `${attention} avisos` : 'Notificações'}>
-          <Icon name="notifications" size={20} filled={false} />
-          {attention && remindersLook.bell === 'dot' ? <i className={styles.dot} aria-hidden="true" /> : null}
-          {attention && remindersLook.bell === 'count' ? <b className={styles.bellCount} aria-hidden="true">{attention > 9 ? '9+' : attention}</b> : null}
-        </button>
-        {bell ? <NotificationPanel look={remindersLook} alerts={alerts} anchor={bellRef.current} onOpen={openAlert} onClose={() => setBell(false)} /> : null}
         <button type="button" className={styles.topIcon} onClick={autoHide ? () => onAutoHide(false) : onToggleHidden} aria-label={autoHide ? 'Fixar a barra lateral' : 'Ocultar a barra lateral'} title={autoHide ? 'Fixar a barra lateral' : 'Ocultar a barra lateral'}>
           <Icon name="left_panel_close" size={20} filled={false} />
         </button>
