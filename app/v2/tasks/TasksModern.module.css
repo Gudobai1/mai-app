@@ -2478,7 +2478,7 @@
 .page > header:first-child + .board { padding-top: 22px; }
 
 /* Espaço do quadro (20px) para o "Adicionar seção" entre colunas. */
-.board > :global([data-section-adder]) { margin-left: -20px; margin-right: -20px; }
+.board > :global([data-section-adder]) { margin-left: -10px; margin-right: -10px; }
 
 /* Quadro de altura inteira: a coluna vai até o fim da tela (como renderizada inteira); o espaço vazio também puxa para o lado (mãozinha). */
 .board.board { --board-min: calc(100dvh - 190px); min-height: var(--board-min); align-items: stretch; }
@@ -2490,3 +2490,8 @@
 .list .cardTitle.cardTitle, .board .cardTitle.cardTitle { font-size: var(--ds-row-title); font-weight: var(--ds-row-weight); line-height: 1.3; }
 .list .cardDesc.cardDesc, .board .cardDesc.cardDesc { font-size: var(--ds-row-sub); line-height: 1.35; }
 .list .cardMeta.cardMeta, .board .cardMeta.cardMeta { margin-top: 3px; min-height: 20px; font-size: var(--ds-row-sub); font-weight: var(--ds-row-weight); }
+
+/* Quadro: cabeçalho da coluna igual ao da lista (título normal, sem linha de cabeçalho). */
+.board .groupHead.groupHead { border-bottom: 0; padding: 0 4px 8px; }
+.board .groupHead.groupHead strong { font-size: 14px; font-weight: 600; letter-spacing: 0; text-transform: none; color: var(--ds-text); }
+.board .groupHead.groupHead small { font-size: 12.5px; font-weight: var(--ds-fw-medium); color: var(--ds-muted); }

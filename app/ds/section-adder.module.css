@@ -1,7 +1,7 @@
 /* Adicionar seção/categoria ao passar o mouse (padrão Todoist). Não ocupa espaço no layout. */
 .slot { position: relative; flex: none; z-index: 2; }
 .slot[data-orientation='horizontal'] { height: 0; width: 100%; }
-.slot[data-orientation='vertical'] { width: 0; margin: 0 calc(var(--ds-s-4, 16px) * -1); align-self: stretch; }
+.slot[data-orientation='vertical'] { width: 0; margin: 0 calc(var(--ds-s-4, 16px) * -0.5); align-self: stretch; }
 .hit { position: absolute; display: flex; align-items: center; justify-content: center; border: 0; padding: 0; background: transparent; color: var(--ds-accent); font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; opacity: 0; transition: opacity var(--ds-dur, 0.12s); }
 .slot[data-orientation='horizontal'] .hit { left: 0; right: 0; top: -14px; height: 28px; }
 .slot[data-orientation='vertical'] .hit { top: 0; bottom: 0; left: -14px; width: 28px; flex-direction: column; justify-content: flex-start; }
