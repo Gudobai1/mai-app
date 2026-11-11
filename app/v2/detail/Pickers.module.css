@@ -512,8 +512,6 @@
   cursor: pointer;
 }
 button.treeChevron:hover { color: var(--ds-text); background: var(--ds-surface-hover); }
-.treeChevron > span { transition: transform var(--ds-dur-fast, 120ms) var(--ds-ease, ease); }
-.treeChevron[data-open] > span { transform: rotate(90deg); }
 .layer[data-sheet] .treeChevron { height: 44px; flex-basis: 36px; width: 36px; }
 
 /* Rodapé dos seletores: Cancelar e Definir. */

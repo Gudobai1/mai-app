@@ -3,7 +3,7 @@
 import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState, type DragEvent, type MouseEvent as ReactMouseEvent, type ReactNode } from 'react'
 import { addDays } from '../../../lib/v2/planner'
 import type { LegacyTask, MaiState } from '../../../lib/v2/state'
-import { Icon, SettingsButton, useDragScroll } from '../../ds'
+import { Icon, SettingsButton, useDragScroll, Disclosure } from '../../ds'
 import { showCompleted } from '../../../lib/v2/show-completed'
 import type { AppView, Row, TaskModuleScope } from '../app-types'
 import type { InspectableItem } from '../ContextDrawer'
@@ -540,7 +540,7 @@ export function TasksModern(props: Props) {
               {children.length ? (
                 <button type="button" className={styles.expand} data-open={expanded || undefined} onClick={event => { event.stopPropagation(); toggleSubs(id) }} aria-expanded={expanded} aria-label={`${expanded ? 'Esconder' : 'Mostrar'} subtarefas de ${String(task.titulo || 'tarefa')}`}>
                   <span>{children.filter(child => child.concluida).length}/{children.length}</span>
-                  <Icon name={expanded ? 'expand_more' : 'chevron_right'} size={20} filled={false} />
+                  <Disclosure open={expanded} size={20} />
                 </button>
               ) : null}
             </span>
@@ -740,7 +740,7 @@ export function TasksModern(props: Props) {
                       {group.projectId ? (group.projectId === 'entrada' ? <span className={styles.tabVisual} style={{ background: 'var(--ds-accent)' }}><Icon name="inbox" size={12} /></span> : projectVisual(projectMap.get(group.projectId), 'tab')) : null}
                       <strong>{group.label}</strong>
                       <small>{group.tasks.length}</small>
-                      <Icon name={isCollapsed ? 'chevron_right' : 'expand_more'} size={20} filled={false} className={styles.groupChevron} />
+                      <Disclosure open={!isCollapsed} size={20} className={styles.groupChevron} />
                     </button>
                   </div>
                 ) : null}

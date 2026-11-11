@@ -5,7 +5,7 @@ import { MoneyInput } from '../MoneyInput'
 import { createPortal } from 'react-dom'
 import { addDays, habitOccursOn, habitStreak } from '../../../lib/v2/planner'
 import type { MaiState } from '../../../lib/v2/state'
-import { Icon } from '../../ds'
+import { Icon, Disclosure } from '../../ds'
 import type { InspectableItem } from '../ContextDrawer'
 import { driveAssetUrl, googleDriveRpc } from '../DriveAsset'
 import { FilePreviewOverlay } from '../FilePreviewOverlay'
@@ -347,7 +347,7 @@ function Prop({ icon, color, label, display, muted, onOpen, buttonRef, open }: {
     <span className={styles.propIcon}>{iconNode}</span>
     <span className={styles.propLabel}>{label}</span>
     <span className={styles.propValue}>{display}</span>
-    {onOpen ? <Icon name={open ? 'expand_more' : 'chevron_right'} size={18} filled={false} className={styles.propChevron} /> : null}
+    {onOpen ? <Disclosure open={open} size={18} className={styles.propChevron} /> : null}
   </>
   if (!onOpen) return <div className={styles.prop} data-muted={muted || undefined} style={style}>{content}</div>
   return (

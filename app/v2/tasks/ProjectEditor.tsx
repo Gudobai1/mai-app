@@ -5,7 +5,7 @@ import { ColorField } from '../detail/ColorField'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import type { MaiState } from '../../../lib/v2/state'
-import { Icon } from '../../ds'
+import { Icon, Disclosure } from '../../ds'
 import type { Row } from '../app-types'
 import { Floating, OptionList, type PickerOption } from '../detail/Pickers'
 import { driveAssetUrl, drivePreviewUrl, trashDriveAsset, uploadDataUrlToDrive } from '../DriveAsset'
@@ -269,7 +269,7 @@ export function ProjectEditor({ state, commit, projectId, parentId, initialTab =
                 <button ref={parentRef} type="button" className={styles.select} onClick={() => setParentOpen(true)}>
                   {parent ? (parent.imagem_url ? <img src={driveAssetUrl(parent.imagem_url)} alt="" /> : <i style={{ background: String(parent.cor || COLORS[0]) }} />) : <Icon name="folder_off" size={18} />}
                   <span>{parent ? String(parent.nome) : 'Nenhum (projeto principal)'}</span>
-                  <Icon name={parentOpen ? 'expand_more' : 'chevron_right'} size={18} filled={false} />
+                  <Disclosure open={parentOpen} size={18} />
                 </button>
                 {parentOpen ? (
                   <Floating anchor={parentRef} title="Dentro de" width={300} onClose={() => setParentOpen(false)}>

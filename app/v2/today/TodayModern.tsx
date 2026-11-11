@@ -6,7 +6,7 @@ import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState, type C
 import { financeSummary } from '../../../lib/v2/finance-summary'
 import { addDays, eventColor, plannerItems, type PlannerItem } from '../../../lib/v2/planner'
 import type { MaiState } from '../../../lib/v2/state'
-import { Button, Check, Icon } from '../../ds'
+import { Button, Check, Icon, Disclosure } from '../../ds'
 import type { AppView, Row } from '../app-types'
 import type { InspectableItem } from '../ContextDrawer'
 import { financeCardPaymentState } from '../FinanceTransactionCard'
@@ -626,7 +626,7 @@ export function TodayModern({ state, today, commit, navigate, inspect, options, 
 
   const chevronFor = (id: string, label: string) => (
     <button type="button" className={styles.chevron} aria-expanded={!collapsed.has(id)} aria-label={`${collapsed.has(id) ? 'Expandir' : 'Recolher'} ${label}`} onClick={() => toggleCollapsed(id)}>
-      <Icon name={collapsed.has(id) ? 'chevron_right' : 'expand_more'} size={20} filled={false} />
+      <Disclosure open={!collapsed.has(id)} size={20} />
     </button>
   )
 
@@ -691,7 +691,7 @@ export function TodayModern({ state, today, commit, navigate, inspect, options, 
             {children.length ? (
               <button type="button" className={styles.subChip} data-open={expanded || undefined} onClick={event => { event.stopPropagation(); toggleSubs(taskId) }} aria-expanded={expanded} title={`${children.filter(child => child.concluida).length}/${children.length} subtarefas`} aria-label={`${expanded ? 'Esconder' : 'Mostrar'} subtarefas de ${title} (${children.filter(child => child.concluida).length} de ${children.length} concluídas)`}>
                 <span>{children.filter(child => child.concluida).length}/{children.length}</span>
-                <Icon name={expanded ? 'expand_more' : 'chevron_right'} size={20} filled={false} />
+                <Disclosure open={expanded} size={20} />
               </button>
             ) : null}
             {sub ? null : <span className={styles.projLabel} style={{ color: projectColor(task.projeto_id) }}>{projectLabel}<b>#</b></span>}
