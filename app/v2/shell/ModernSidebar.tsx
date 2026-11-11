@@ -241,7 +241,7 @@ export function ModernSidebar({ state, today, view, navigate, onSearch, onSettin
           {PLAN.map(renderItem)}
         </div>
         <div className={styles.group}>
-          <div className={styles.groupLabel}>Organizar</div>
+          <div className={styles.groupLabel}>Acompanhar</div>
           {ORGANIZE.map(renderItem)}
         </div>
         <div className={styles.group}>

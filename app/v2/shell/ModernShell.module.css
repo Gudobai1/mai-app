@@ -894,3 +894,15 @@
   :global(html[data-mai-layout='top']) .railToggle, :global(html[data-mai-layout='bottom']) .railToggle, :global(html[data-mai-layout='dock']) .railToggle { display: none; }
 }
 @media (max-width: 900px) { .railToggle { display: none; } }
+
+/* Grupos só por espaço: título cinza discreto (Planejar, Acompanhar, Projetos), sem linhas nem contador. */
+.group + .group { margin-top: 16px; }
+.group:last-child:not(:first-child) { margin-top: 16px; padding-top: 0; border-top: 0; }
+.group:not(:last-child) .groupLabel { display: block; }
+.groupLabel { padding: 0 12px 4px; font-weight: var(--ds-fw-medium); }
+@media (min-width: 901px) {
+  /* Barra fechada (só ícones): sem títulos e sem linha; só um respiro maior entre os grupos. */
+  :global(html[data-mai-layout='compact']) .group + .group { margin-top: 14px; }
+  :global(html[data-mai-layout='compact']) .group:last-child:not(:first-child) { margin-top: 14px; padding-top: 0; border-top: 0; width: auto; }
+  :global(html[data-mai-layout='compact']) .group:not(:last-child) .groupLabel { display: none; }
+}

@@ -168,3 +168,7 @@ Todo módulo abre com o mesmo cabeçalho, montado só por `AppTopBar`: título 2
 - Botão abrir/fechar a barra: sem contorno; com a barra aberta o perfil (e o botão) ficam fixos no topo ao rolar a lista; fechada, o botão fica fixo na borda do trilho.
 - Celular: o "Novo" da barra de baixo é uma aba comum (`tab`: ícone + rótulo "Novo"), só que na cor de destaque; sem pílula nem tamanho próprio.
 - Com a barra fechada, o botão de abrir/fechar é renderizado direto no body (portal) com position: absolute no topo da página, ao lado do trilho: fica no cabeçalho e rola junto com a página, **não acompanha** a rolagem.
+
+## Grupos da barra lateral (só espaço)
+- Os grupos da barra (Planejar, Acompanhar, Projetos) se separam **só por espaço** (16px): sem linha divisória, sem contador ao lado do título e sem marca. O título é cinza, pequeno, em caixa alta, peso médio.
+- Barra fechada (só ícones): sem títulos e sem linha; um respiro de 14px entre os grupos. Nas barras superior, inferior e dock os grupos seguem em linha, sem títulos.
