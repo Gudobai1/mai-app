@@ -839,9 +839,10 @@
 }
 
 /* "Novo": item como os outros, só com o + (e o nome) em vermelho, sem fundo nem contorno; perfil um pouco mais afastado. */
-.newBtn, .newBtn:hover { background: transparent; color: var(--ds-accent); box-shadow: none; }
-.newBtn:hover { background: var(--ds-surface-hover); }
-.newBtn .newKey { color: var(--ds-muted); }
+.newBtn, .newBtn:hover { box-shadow: none; }
+.newBtn { background: var(--ds-accent); color: var(--ds-on-accent, #fff); }
+.newBtn:hover { background: var(--ds-accent-strong, var(--ds-accent)); }
+.newBtn .newKey { color: inherit; opacity: 0.85; }
 .userTop { padding-bottom: 8px; }
 .newBtn { margin-bottom: 4px; }
 @media (min-width: 901px) {
@@ -850,7 +851,7 @@
   :global(html[data-mai-layout='top']) .newBtn, :global(html[data-mai-layout='bottom']) .newBtn { padding: 0 10px; }
 }
 @media (max-width: 900px) {
-  .newTabIcon { background: transparent; color: var(--ds-accent); }
+  .newTabIcon { background: var(--ds-accent); color: var(--ds-on-accent, #fff); }
   .newTabIcon svg { width: 30px; height: 30px; }
 }
 
@@ -882,11 +883,4 @@
   /* Em todas: nome do perfil só na lateral */
   :global(html[data-mai-layout='bottom']) .profilePill .profileName, :global(html[data-mai-layout='dock']) .profilePill .profileName { display: none; }
   :global(html[data-mai-layout='top']) .newLabel, :global(html[data-mai-layout='top']) .newKey, :global(html[data-mai-layout='bottom']) .newLabel, :global(html[data-mai-layout='bottom']) .newKey, :global(html[data-mai-layout='dock']) .newLabel, :global(html[data-mai-layout='dock']) .newKey { display: none; }
-}
-
-/* "Novo": contorno fino e discreto em volta, + e nome em vermelho. */
-.newBtn { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ds-accent) 45%, transparent); }
-.newBtn:hover { box-shadow: inset 0 0 0 1px var(--ds-accent); background: var(--ds-accent-soft); }
-@media (max-width: 900px) {
-  .newTabIcon { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ds-accent) 45%, transparent); }
 }
