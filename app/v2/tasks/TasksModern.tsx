@@ -606,13 +606,13 @@ export function TasksModern(props: Props) {
     ...projects.map(item => ({ value: String(item.id), label: `${'  '.repeat(Number(item._depth || 0))}${String(item.nome || 'Projeto')}`, color: String(item.cor || 'var(--ds-line-strong)') })),
   ]
 
-  const ctxTabs = 
+  const ctxTabs = ([
             { id: 'all', label: 'Tudo', icon: 'select_all', color: 'var(--ds-muted)', count: ctxTasks.filter(task => !task.concluida).length },
             { id: 'late', label: 'Atrasadas', icon: 'warning', color: 'var(--ds-muted)', count: ctxTasks.filter(task => !task.concluida && dayOf(task) && dayOf(task) < today).length },
             { id: 'nodate', label: 'Sem data', icon: 'event_busy', color: 'var(--ds-muted)', count: ctxTasks.filter(task => !task.concluida && !dayOf(task)).length },
             { id: 'today', label: 'Hoje', icon: 'today', color: 'var(--ds-muted)', count: ctxTasks.filter(task => !task.concluida && dayOf(task) && dayOf(task) <= today).length },
             { id: 'upcoming', label: 'Em breve', icon: 'event_upcoming', color: 'var(--ds-muted)', count: ctxTasks.filter(task => !task.concluida && dayOf(task) > today).length },
-          ] as { id: CtxFilter; label: string; icon: string; color: string; count: number }[]
+          ] as { id: CtxFilter; label: string; icon: string; color: string; count: number }[])
 
   /* ---------------------------------------------------------------- Tela */
 
