@@ -251,7 +251,7 @@ export function QuickAdd({ kinds, initial, state, today, defaultProjectId, defau
     if (kind === 'finance') {
       const value = Math.abs(Number(String(amount).replace(',', '.')) || 0)
       const entry: Row = {
-        id: uid('fin'), titulo: name, observacao: '', valor: value, valor_pago: 0, tipo: finTypeNow, data: date || today, status: 'pendente',
+        id: uid('fin'), titulo: name, observacao: description.trim(), valor: value, valor_pago: 0, tipo: finTypeNow, data: date || today, status: 'pendente',
         categoria: finCategoryNow, conta_id: originNow, cartao_id: originNow.startsWith('card|') ? originNow.slice(5) : '', anexos: [], pagamentos: [], ignorar_calculo: false, recorrencia: 'unico',
       }
       const known = finCategoryNow && finCtx.categories.some(item => String(item.nome) === finCategoryNow)

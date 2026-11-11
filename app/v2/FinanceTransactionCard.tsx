@@ -63,6 +63,8 @@ export function FinanceTransactionCard({
   const payment = financeCardPaymentState(item)
   const visibleValue = payment.status === 'parcial' ? payment.remaining : payment.total
   const title = String(item.titulo || item.descricao || item.nome || item.categoria || 'Lançamento')
+  const note = String(item.observacao || '').trim()
+  const description = note && note !== 'Open Finance' && note !== title ? note : ''
 
   if (compact) {
     const due = dateKey(item.data)
@@ -76,6 +78,7 @@ export function FinanceTransactionCard({
       <button type="button" className={cs.main} onClick={onOpen}>
         <span className={cs.copy}>
           <span className={cs.title}>{title}</span>
+          {description ? <span className={cs.desc}>{description}</span> : null}
           <span className={cs.meta}>
             <span data-tone={tone}><MaiIcon name="calendar_today" size={12} />{naturalDate(due, today)}</span>
             {repeatLabel ? <span><MaiIcon name="repeat" size={12} />{repeatLabel}</span> : null}
@@ -99,6 +102,7 @@ export function FinanceTransactionCard({
     <button type="button" className="mai-finance-v4-row-main" onClick={onOpen}>
       <span className="mai-item-copy-v2">
         <span className="mai-item-titleline-v2"><strong>{title}</strong></span>
+        {description ? <span className={cs.desc}>{description}</span> : null}
         <span className="mai-item-subline-v2">
           <span>{naturalDate(dateKey(item.data), today)}</span>
           {compact ? null : <><span>·</span>
