@@ -2472,3 +2472,7 @@
 .dotMark { display: inline-block; flex-shrink: 0; width: 12px; height: 12px; border-radius: var(--ds-shape-projects, 50%); }
 .dotMark[data-size="head"] { width: 14px; height: 14px; }
 
+
+/* Espaço do cabeçalho à primeira seção = o de Hoje (8px do cabeçalho + 22px). */
+.page > header:first-child + .list.list { padding-top: 22px; }
+.page > header:first-child + .board { padding-top: 22px; }
