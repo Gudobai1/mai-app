@@ -163,11 +163,11 @@ Fonte única da verdade: o quadro "Sistema de design Bukid" (quadros 0 a 12). Os
 ## Cabeçalho dos módulos (modelo único)
 Todo módulo abre com o mesmo cabeçalho, montado só por `AppTopBar`: título 28/700 (22 no celular), abaixo subtítulo 13 cinza (Hoje: "Quarta, 11 de novembro · 3 tarefas"; demais módulos: contagem), e à direita só o botão de ajustes com a bolinha quando há personalização. Nenhum módulo cria cabeçalho próprio. O painel de ajustes (`OptionsPanel`) tem fundo sólido (`--ds-bg`) e grupos que não encolhem (`flex: none`), para nunca ficar transparente nem sobrepor linhas.
 - Aparência do "Novo": **sem fundo**, ícone + e nome em vermelho (`--ds-accent`), sem contorno, altura 36px; ao passar o mouse só o cinza de hover. No celular é uma aba comum da barra, também em vermelho.
-- **Abrir/fechar a barra:** botão `railToggle` ao lado do perfil (também no menu do perfil). Com a barra fechada (só ícones) ele fica do lado de fora do trilho, junto da borda, para reabrir.
+- **Buscar e abrir/fechar a barra (laterais):** o Buscar é um ícone (`searchTop`) ao lado do perfil, fixo no topo da lateral ao rolar; não é mais uma linha do menu. O Novo fica sozinho logo abaixo do perfil. Abrir/fechar a barra fica só no menu do perfil. Com a barra fechada, o ícone de Buscar fica fora do trilho, no canto do topo da página, e rola junto com ela. Nas barras superior, inferior e dock o Buscar segue como item da barra.
 - Bolinha de cor do projeto no cabeçalho de Hoje (`projectHeadDot`) é sempre círculo (50%); a opção de forma "quadrado" vale só para ícones/imagens.
 - Botão abrir/fechar a barra: sem contorno; com a barra aberta o perfil (e o botão) ficam fixos no topo ao rolar a lista; fechada, o botão fica fixo na borda do trilho.
 - Celular: o "Novo" da barra de baixo é uma aba comum (`tab`: ícone + rótulo "Novo"), só que na cor de destaque; sem pílula nem tamanho próprio.
-- Com a barra fechada, o botão de abrir/fechar é renderizado direto no body (portal) com position: absolute no topo da página, ao lado do trilho: fica no cabeçalho e rola junto com a página, **não acompanha** a rolagem.
+- Com a barra fechada, o ícone de Buscar é renderizado direto no body (portal) com position: absolute no topo da página, ao lado do trilho.
 
 ## Grupos da barra lateral (só espaço)
 - Os grupos da barra (Planejar, Acompanhar, Projetos) se separam **só por espaço** (16px): sem linha divisória, sem contador ao lado do título e sem marca. O título é cinza, pequeno, em caixa alta, peso médio.
