@@ -409,7 +409,7 @@ export function QuickAdd({ kinds, initial, state, today, defaultProjectId, defau
                   <Icon name="notifications" size={16} filled={false} />{reminder ? reminderLabel(reminder) : 'Lembrete'}{fromNl('reminder') ? <span className={styles.chipX} role="button" aria-label="Desfazer" title="Desfazer" onClick={undoNl('reminder')}>×</span> : null}
                 </button>
                 <button type="button" className={styles.chip} data-set={projectId !== 'entrada' || undefined} style={{ '--chip-color': String(project?.cor || 'var(--ds-text-2)') } as CSSProperties} onClick={open('project')}>
-                  {project?.imagem_url ? <img className={styles.chipImg} src={driveAssetUrl(project.imagem_url)} alt="" /> : <Icon name={projectId === 'entrada' ? 'inbox' : String(project?.icone || 'folder')} size={16} filled={false} />}
+                  {projectId === 'entrada' || !project ? <Icon name="inbox" size={16} filled={false} /> : <i style={{ display: 'inline-block', width: 10, height: 10, flexShrink: 0, borderRadius: 'var(--ds-shape-projects, 50%)', background: String(project.cor || 'var(--ds-muted)') }} />}
                   <span>{projectId === 'entrada' ? 'Entrada' : String(project?.nome || 'Projeto')}{section ? ` › ${section}` : ''}</span>{fromNl('project') ? <span className={styles.chipX} role="button" aria-label="Desfazer" title="Desfazer" onClick={undoNl('project')}>×</span> : null}
                 </button>
               </>

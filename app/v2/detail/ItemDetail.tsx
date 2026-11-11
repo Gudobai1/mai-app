@@ -612,16 +612,14 @@ function TaskBody({ task, state, today, commit, register, close, openTask }: { t
     void close()
   }
 
-  const projectIcon = project?.imagem_url
-    ? <img className={styles.projectImg} src={driveAssetUrl(project.imagem_url)} alt="" />
-    : <span className={styles.projectDot} style={{ background: String(project?.cor || 'var(--ds-line-strong)') }} />
+  const projectIcon = <span className={styles.projectDot} style={{ background: String(project?.cor || 'var(--ds-line-strong)') }} />
 
   const reminder = draft.lembretes[0] || ''
   const projectDisplay = `${String(project?.nome || 'Entrada')}${draft.secao ? ` › ${draft.secao}` : ''}`
   const pickProject = (projectId: string, secao: string) => update({ projeto_id: projectId, secao }, true)
   const propsList = (
     <>
-      <ProjectProp icon={projectIcon} display={projectDisplay} projects={projects} projectId={draft.projeto_id} section={draft.secao} imageOf={row => row.imagem_url ? driveAssetUrl(row.imagem_url) : undefined} onPick={pickProject} />
+      <ProjectProp icon={projectIcon} display={projectDisplay} projects={projects} projectId={draft.projeto_id} section={draft.secao} imageOf={() => undefined} onPick={pickProject} />
       <PickerProp today={today} type="date" icon="calendar_today" color={draft._data ? (late ? 'var(--ds-danger)' : 'var(--ds-warn)') : 'var(--ds-muted)'} label="Data" value={draft._data} muted={!draft._data} display={friendlyDate(draft._data, today)} onChange={_data => update({ _data, _hora: _data ? draft._hora : '' }, true)} />
       <SelectProp icon="flag" color={priority.color} label="Prioridade" value={String(draft.prioridade)} onChange={value => update({ prioridade: Number(value) }, true)} options={PRIORITIES} display={priority.label} muted={Number(draft.prioridade) === 4} />
       <PickerProp type="time" icon="schedule" color="var(--ds-lilac-fg)" label="Horário" value={draft._hora} display={draft._hora || 'Sem horário'} muted={!draft._hora} onChange={_hora => update(_hora && !draft._data ? { _hora, _data: today } : { _hora }, true)} />
@@ -634,9 +632,9 @@ function TaskBody({ task, state, today, commit, register, close, openTask }: { t
     <>
       <Header kind="task" hideKind onClose={() => void close()} crumbs={<>
         <span className={styles.crumb}>
-          {project?.imagem_url
-            ? <img className={styles.crumbImg} src={driveAssetUrl(project.imagem_url)} alt="" />
-            : <Icon name={project ? String(project.icone || 'folder') : 'inbox'} size={15} filled={false} className={styles.crumbIcon} style={project?.cor ? { color: String(project.cor) } : undefined} />}
+          {project
+            ? <span className={styles.projectDot} style={{ background: String(project.cor || 'var(--ds-line-strong)') }} />
+            : <Icon name="inbox" size={15} filled={false} className={styles.crumbIcon} />}
           {String(project?.nome || 'Entrada')}{draft.secao ? <><i>›</i>{draft.secao}</> : null}
         </span>
         {crumbs.map(crumb => <span key={String(crumb.id)} className={styles.crumb}><i>›</i><button type="button" onClick={() => openTask(String(crumb.id))}>{String(crumb.titulo || 'Tarefa')}</button></span>)}

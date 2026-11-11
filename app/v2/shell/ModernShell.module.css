@@ -618,3 +618,7 @@
 .alertPanel[data-density="compact"] .alertRow { padding: 4px 8px; gap: 8px; }
 .alertPanel[data-density="compact"] .alertText strong { font-size: 13px; }
 .alertPanel[data-density="compact"] .alertText small { display: none; }
+
+/* Marca do projeto: só a bolinha da cor */
+.projectDotBox { display: grid; place-items: center; width: 22px; height: 22px; flex-shrink: 0; }
+.projectDot { display: block; width: 10px; height: 10px; border-radius: var(--ds-shape-projects, 50%); }

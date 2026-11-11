@@ -485,7 +485,6 @@ export function ProjectPicker({ projects, projectId: currentProject, section: cu
     const children = childrenOf(id)
     const expandable = sections.length > 0 || children.length > 0
     const expanded = open.has(id)
-    const image = imageOf?.(project)
     const selected = projectId === id && !section
     return (
       <div key={id} className={styles.treeGroup}>
@@ -494,7 +493,7 @@ export function ProjectPicker({ projects, projectId: currentProject, section: cu
             ? <button type="button" className={styles.treeChevron} data-open={expanded || undefined} aria-label={expanded ? 'Recolher' : 'Expandir'} aria-expanded={expanded} onClick={() => toggle(id)}><Disclosure open={expanded} size={18} /></button>
             : <span className={styles.treeChevron} aria-hidden="true" />}
           <button type="button" className={styles.option} data-selected={selected || undefined} onClick={() => onSelect(id, '')}>
-            {image ? <img className={styles.optionImage} src={image} alt="" /> : <span className={styles.optionDot} style={{ background: String(project.cor || 'var(--ds-line-strong)') }} />}
+            {<span className={styles.optionDot} style={{ background: String(project.cor || 'var(--ds-line-strong)') }} />}
             <span className={styles.optionText}>{String(project.nome || 'Projeto')}</span>
             {selected ? <Icon name="check" size={18} className={styles.optionCheck} /> : null}
           </button>

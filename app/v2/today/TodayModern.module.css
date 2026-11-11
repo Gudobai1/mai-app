@@ -2107,3 +2107,9 @@ html body .itemButton.itemButton:hover .taskTitle { text-decoration: underline; 
 .page .items [class*='itemMeta'],
 .page .items .taskSub,
 .page .items .taskSub * { font-weight: var(--ds-row-weight); }
+
+/* Marca do projeto no cabeçalho: só a bolinha da cor */
+.projectHeadDot.projectHeadDot { width: 12px; height: 12px; border-radius: var(--ds-shape-projects, 50
+/* Marca do projeto no cabeçalho: só a bolinha da cor */
+.projectHeadDot.projectHeadDot { width: 12px; height: 12px; border-radius: var(--ds-shape-projects, 50%); display: block; }
+.projectHeadInbox { color: var(--ds-accent); flex-shrink: 0; }
