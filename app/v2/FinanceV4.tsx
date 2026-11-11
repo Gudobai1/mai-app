@@ -29,6 +29,7 @@ import { invoiceValue } from '../../lib/v2/financeInvoice'
 import { shiftInstallment } from '../../lib/v2/financeInstallments'
 import { financeTagSuggestions, parseFinanceTags } from '../../lib/v2/financeTags'
 import fm from './FinanceModern.module.css'
+import { ModuleHeader } from '../ds'
 import { ConnectionDialog } from './ConnectionDialog'
 import { OpenFinancePanel, linkTransactions, unlinkTransaction, bindOpenFinance, suggestedName, useOpenFinance } from './OpenFinance'
 
@@ -1026,13 +1027,12 @@ export function FinanceV4({ state, today, commit, createRequest, inspect: _inspe
   }
 
   return <div className={`mai-v3-area-page mai-v4-finance ${fm.page}`} style={popupOnly ? { display: 'none' } : undefined} onContextMenu={event => { const target = event.target as HTMLElement; if (!target.closest('input, textarea')) event.preventDefault() }}>
-    <div className={fm.top}>
-      <h1 className={fm.title}>Financeiro</h1>
+    <ModuleHeader title="Financeiro" actions={(
       <div className={fm.topRight}>
       {rangeMode ? <div className={fm.month}><span className={fm.label}>{periodRange}</span></div> : <div className={fm.month}><button type="button" onClick={() => moveMonth(-1)} aria-label="Mês anterior">‹</button><button type="button" className={fm.label} aria-label="Voltar ao mês atual" title="Voltar ao mês atual" onClick={() => setMonth(today.slice(0, 7))}>{monthLabel(month)}</button><button type="button" onClick={() => moveMonth(1)} aria-label="Próximo mês">›</button></div>}
         {options ? <div className={fm.options}>{options}</div> : null}
       </div>
-    </div>
+    )} />
 
     <div className={fm.balance}>
       <div><small>Saldo inicial</small><b>{money.format(monthStartBalance)}</b></div><i />

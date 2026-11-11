@@ -4,7 +4,7 @@ import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState, type C
 import { addDays, eventColor, habitStreak, plannerItems, type PlannerItem } from '../../../lib/v2/planner'
 import { hiddenOccurrenceIds } from '../../../lib/v2/series'
 import { dateKey, type MaiState } from '../../../lib/v2/state'
-import { Check, Icon, Disclosure } from '../../ds'
+import { Check, Icon, Disclosure, ModuleHeader } from '../../ds'
 import type { Row } from '../app-types'
 import type { InspectableItem } from '../ContextDrawer'
 import { driveAssetUrl } from '../DriveAsset'
@@ -869,38 +869,48 @@ export function EmBreve({ state, today, commit, inspect, syncRange }: Props) {
     }
   }, [mode, mobile])
 
+  const barControls = (
+    <>
+      {mode === 'myday' ? <OrganizeButton /> : null}
+      <UpcomingControls
+        filters={filters}
+        onChange={setFilters}
+        display={display}
+        onDisplay={setDisplay}
+        projects={projectOptions}
+        sources={sourceOptions}
+        onManageCategories={() => setManageCategories(true)}
+        view={mode}
+        onView={next => setMode(next as Mode)}
+      />
+    </>
+  )
+
   /* ------------------------------------------------------------ Tela */
   return (
     <div ref={pageRef} className={styles.page} data-mode={mode}>
-      <header className={styles.bar}>
-        <div className={styles.barRight}>
-          {mode === 'myday' ? <OrganizeButton /> : null}
-          <UpcomingControls
-            filters={filters}
-            onChange={setFilters}
-            display={display}
-            onDisplay={setDisplay}
-            projects={projectOptions}
-            sources={sourceOptions}
-            onManageCategories={() => setManageCategories(true)}
-            view={mode}
-            onView={next => setMode(next as Mode)}
-          />
-        </div>
-      </header>
+
+      {mode === 'myday' ? (
+        <header className={styles.bar}>
+          <div className={styles.barRight}>{barControls}</div>
+        </header>
+      ) : null}
 
       {mode === 'myday' ? <DayNav day={selected} today={today} onStep={step} onToday={goToday} /> : (
-      <div className={styles.titleRow}>
-        <div className={styles.headText}>
-          <h1>{mode === 'list' ? 'Em breve' : subtitle}</h1>
-          <span>{mode === 'list' ? subtitle : 'Em breve'}</span>
-        </div>
-        <div className={styles.nav}>
-          {mode !== 'list' ? <button type="button" className={styles.navStep} data-hide-mobile={mode === 'month' || undefined} aria-label="Anterior" onClick={() => step(-1)}><Icon name="chevron_left" size={20} filled={false} /></button> : null}
-          <button type="button" className={styles.todayButton} onClick={goToday}>Hoje</button>
-          {mode !== 'list' ? <button type="button" className={styles.navStep} data-hide-mobile={mode === 'month' || undefined} aria-label="Próximo" onClick={() => step(1)}><Icon name="chevron_right" size={20} filled={false} /></button> : null}
-        </div>
-      </div>
+        <ModuleHeader
+          title={mode === 'list' ? 'Em breve' : subtitle}
+          subtitle={mode === 'list' ? subtitle : 'Em breve'}
+          actions={(
+            <>
+              <div className={styles.barRight}>{barControls}</div>
+              <div className={styles.nav}>
+                {mode !== 'list' ? <button type="button" className={styles.navStep} data-hide-mobile={mode === 'month' || undefined} aria-label="Anterior" onClick={() => step(-1)}><Icon name="chevron_left" size={20} filled={false} /></button> : null}
+                <button type="button" className={styles.todayButton} onClick={goToday}>Hoje</button>
+                {mode !== 'list' ? <button type="button" className={styles.navStep} data-hide-mobile={mode === 'month' || undefined} aria-label="Próximo" onClick={() => step(1)}><Icon name="chevron_right" size={20} filled={false} /></button> : null}
+              </div>
+            </>
+          )}
+        />
       )}
 
       {mode === 'list' && mobile ? strip : null}
