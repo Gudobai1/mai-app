@@ -342,18 +342,6 @@ export function SearchOverlay({ state, today, query, setQuery, onClose, inspect,
               </div>
             </div>
           ) : null}
-              <div className={styles.group}>Filtros rápidos</div>
-              <div className={styles.chips}>
-                {['hoje', 'amanhã', 'esta semana', 'atrasadas', '!alta', '#'].map(item => <button key={item} type="button" onClick={() => { setQuery(item === '#' ? '#' : item); inputRef.current?.focus() }}>{item}</button>)}
-              </div>
-              <div className={styles.group}>Ir para</div>
-              <div className={styles.goto}>
-                {([['today', 'Hoje', 'today'], ['upcoming', 'Em breve', 'event_upcoming'], ['tasks', 'Tarefas', 'check_circle'], ['habits', 'Hábitos', 'repeat'], ['goals', 'Metas', 'flag'], ['notes', 'Notas', 'description'], ['finance', 'Finanças', 'payments']] as const).map(([view, label, icon]) => (
-                  <button key={view} type="button" onClick={() => { close(); navigate(view as import('./app-types').AppView) }}><Icon name={icon} size={18} filled={false} />{label}</button>
-                ))}
-              </div>
-            </div>
-          ) : null}
 
           {showTimeline ? (
             <div ref={timelineRef} className={styles.timeline} onScroll={onTimelineScroll}>
