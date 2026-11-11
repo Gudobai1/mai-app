@@ -178,3 +178,6 @@ Todo módulo abre com o mesmo cabeçalho, montado só por `AppTopBar`: título 2
 - Barra lateral: perfil, Novo e Buscar ficam a 2px um do outro (como os itens); entre Buscar e o menu há um respiro maior (16px; 14px na barra fechada), igual ao espaço entre os grupos.
 
 - **Painel de ajustes (portal):** `OptionsPanel` é desenhado direto no `body` (portal) com `position: fixed`, ancorado ao botão de ajustes, fundo sólido `--ds-bg` e z-index 900. Assim nenhuma regra antiga de tela, `sticky` ou filtro do cabeçalho consegue deixá-lo transparente ou sobreposto.
+
+## Ocultar a barra automaticamente
+- Nas laterais, "ocultar automaticamente" não some com a barra: ela fica só com os **ícones** (trilho de 56px) e, ao passar o mouse, abre inteira por cima do conteúdo (que não se mexe). Ao tirar o mouse volta para os ícones. Nas barras superior, inferior e dock segue o comportamento antigo.

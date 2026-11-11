@@ -2,7 +2,7 @@
 
 import { isDarkMode } from './theme'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Icon, normalizeAppearance } from '../ds'
+import { Icon, applyAppearance, normalizeAppearance } from '../ds'
 import type { MaiState } from '../../lib/v2/state'
 import { AgendaView } from './AgendaView'
 import { AppSettingsDrawer } from './AppSettingsDrawer'
@@ -258,13 +258,21 @@ export function UnifiedAppUx() {
   const sidebarAutoHide = Boolean(runtime.state.configs.sidebarAutoHide)
   const appearanceNow = normalizeAppearance(runtime.state.configs.appearance)
   const sidebarCollapsed = sidebarAutoHide || Boolean(runtime.state.configs.sidebarHidden)
-  const sidebarMode = !sidebarCollapsed ? 'open' : sidebarPeek ? 'peek' : 'hidden'
+  // Ocultar automaticamente nas laterais: a barra vira só ícones (trilho) e abre por cima ao passar o mouse.
+  const autoRail = sidebarAutoHide && (appearanceNow.layout === 'left' || appearanceNow.layout === 'right')
+  const sidebarMode = autoRail ? 'open' : !sidebarCollapsed ? 'open' : sidebarPeek ? 'peek' : 'hidden'
+  useEffect(() => {
+    applyAppearance({ ...appearanceNow, rail: autoRail ? !sidebarPeek : appearanceNow.rail })
+    document.documentElement.toggleAttribute('data-mai-peek', autoRail && sidebarPeek)
+    return () => document.documentElement.removeAttribute('data-mai-peek')
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [runtime.state.configs.appearance, autoRail, sidebarPeek])
   const setConfig = (patch: Record<string, unknown>) => runtime.commit(current => ({ ...current, configs: { ...current.configs, ...patch } }))
   const startPeek = () => { if (!sidebarAutoHide) return; if (peekTimer.current) window.clearTimeout(peekTimer.current); setSidebarPeek(true) }
   const endPeek = () => { if (!sidebarCollapsed) return; if (peekTimer.current) window.clearTimeout(peekTimer.current); peekTimer.current = window.setTimeout(() => setSidebarPeek(false), 350) }
 
   return <div className={`${styles.appShell} mai-v3-shell`} data-view={String(view)} data-sidebar={sidebarMode}>
-    {sidebarCollapsed && !sidebarPeek ? <div className="mai-edge" onMouseEnter={sidebarAutoHide ? startPeek : undefined} aria-hidden="true" /> : null}
+    {sidebarCollapsed && !sidebarPeek && !autoRail ? <div className="mai-edge" onMouseEnter={sidebarAutoHide ? startPeek : undefined} aria-hidden="true" /> : null}
     {sidebarCollapsed && !sidebarAutoHide ? <button type="button" className="mai-reveal" onClick={() => setConfig({ sidebarHidden: false })} aria-label="Mostrar a barra lateral" title="Mostrar a barra lateral"><Icon name="left_panel_close" size={20} filled={false} /></button> : null}
     <ModernSidebar onNew={() => contextualAdd()} commit={runtime.commit} rail={appearanceNow.rail} canRail={appearanceNow.layout === 'left' || appearanceNow.layout === 'right'} onToggleRail={() => setConfig({ appearance: { ...appearanceNow, rail: !appearanceNow.rail } })} onInspect={setSelected} autoHide={sidebarAutoHide} onToggleHidden={() => setConfig({ sidebarHidden: true })} onAutoHide={value => { setConfig({ sidebarAutoHide: value, sidebarHidden: false }); setSidebarPeek(false) }} onLogout={runtime.logout} onEnter={startPeek} onLeave={endPeek} state={runtime.state} today={runtime.today} view={view} navigate={navigate} onSearch={() => setSearchOpen(true)} onAdd={() => contextualAdd()} onSettings={() => setSettingsOpen(true)} onToggleTheme={toggleTheme} onNewProject={parentId => setProjectDialog(parentId ? { parentId } : {})} activeProjectId={activeProjectId} dark={isDark} profile={googleProfile} />
 
