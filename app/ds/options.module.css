@@ -1,0 +1,44 @@
+.panel { position: absolute; right: 0; top: calc(100% + 6px); z-index: 790; display: flex; flex-direction: column; width: min(360px, calc(100vw - 24px)); max-height: min(76vh, 640px); border: 1px solid var(--ds-line); border-radius: 10px; background: var(--ds-bg); color: var(--ds-text); box-shadow: var(--ds-popup-shadow, 0 12px 40px rgba(0, 0, 0, 0.18)); overflow: hidden; font-family: var(--ds-font); }
+.head { display: flex; align-items: center; gap: 8px; padding: 12px 12px 10px 16px; border-bottom: 1px solid var(--ds-line); }
+.headTitle { flex: 1; min-width: 0; display: flex; align-items: baseline; gap: 8px; }
+.headTitle strong { font-size: 15px; font-weight: 700; }
+.headTitle small { color: var(--ds-muted); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.reset { appearance: none; height: 28px; padding: 0 8px; border: 0; border-radius: 6px; background: transparent; color: var(--ds-accent); font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; }
+.reset:hover { background: var(--ds-accent-soft); }
+.close { appearance: none; display: grid; place-items: center; width: 28px; height: 28px; border: 0; border-radius: 6px; background: transparent; color: var(--ds-muted); cursor: pointer; }
+.close:hover { background: var(--ds-surface-hover); color: var(--ds-text); }
+.body { display: flex; flex-direction: column; overflow-y: auto; padding: 4px 0 8px; }
+.group { padding: 10px 16px 6px; }
+.group + .group { border-top: 1px solid var(--ds-line); }
+.group h4 { margin: 0 0 8px; font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ds-muted); }
+.rows { display: flex; flex-direction: column; gap: 4px; }
+.rowLabel { font-size: 14px; color: var(--ds-text); }
+.segmentRow { display: flex; flex-direction: column; gap: 6px; }
+.segment { display: flex; gap: 2px; padding: 2px; border-radius: 8px; background: var(--ds-surface-2); }
+.segment button { appearance: none; flex: 1; min-width: 0; display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 32px; padding: 4px 10px; border: 0; border-radius: 6px; background: transparent; color: var(--ds-muted); font: inherit; font-size: 13px; font-weight: 500; cursor: pointer; }
+.segment button:hover { color: var(--ds-text); }
+.segment button[data-active] { background: var(--ds-bg); color: var(--ds-text); font-weight: 700; box-shadow: 0 0 0 1px var(--ds-line); }
+.segment[data-many] { flex-wrap: wrap; background: transparent; padding: 0; gap: 6px; }
+.segment[data-many] button { flex: 0 1 auto; min-height: 30px; padding: 0 10px; border: 1px solid var(--ds-line); background: transparent; }
+.segment[data-many] button[data-active] { border-color: var(--ds-accent); background: var(--ds-accent-soft); color: var(--ds-accent); box-shadow: none; }
+.selectRow { position: relative; display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 38px; padding: 0 2px; border-radius: 6px; cursor: pointer; }
+.selectRow:hover { background: var(--ds-surface-hover); }
+.selectRow select { appearance: none; position: absolute; inset: 0; width: 100%; height: 100%; padding: 0 24px 0 50%; border: 0; background: transparent; color: var(--ds-muted); font: inherit; font-size: 14px; text-align: right; text-align-last: right; cursor: pointer; opacity: 1; }
+.selectRow[data-changed] select { color: var(--ds-accent); font-weight: 600; }
+.selectRow > svg { position: absolute; right: 2px; pointer-events: none; color: var(--ds-muted); }
+.selectRow .rowLabel { position: relative; z-index: 1; pointer-events: none; }
+.selectRow select:focus-visible { outline: 2px solid var(--ds-accent); outline-offset: -2px; border-radius: 6px; }
+.switchRow { appearance: none; display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; min-height: 40px; padding: 0 2px; border: 0; border-radius: 6px; background: transparent; color: var(--ds-text); font: inherit; text-align: left; cursor: pointer; }
+.switchRow:hover { background: var(--ds-surface-hover); }
+.switchRow:focus-visible { outline: 2px solid var(--ds-accent); outline-offset: -2px; }
+.switchText { display: flex; flex-direction: column; gap: 1px; font-size: 14px; }
+.switchText small { color: var(--ds-muted); font-size: 12px; }
+.track { position: relative; flex: none; width: 34px; height: 20px; border-radius: 10px; background: var(--ds-line-strong); transition: background-color 0.15s; }
+.track b { position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: #fff; transition: transform 0.15s; }
+.track[data-on] { background: var(--ds-accent); }
+.track[data-on] b { transform: translateX(14px); }
+.moveRow { display: flex; align-items: center; gap: 2px; }
+.moveSwitch { flex: 1; min-width: 0; }
+.moveBtn { appearance: none; display: grid; place-items: center; width: 30px; height: 30px; border: 0; border-radius: 6px; background: transparent; color: var(--ds-muted); cursor: pointer; }
+.moveBtn:hover:not(:disabled) { background: var(--ds-surface-hover); color: var(--ds-text); }
+.moveBtn:disabled { opacity: 0.3; cursor: default; }

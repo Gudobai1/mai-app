@@ -138,3 +138,9 @@ Fonte única da verdade: o quadro "Sistema de design Bukid" (quadros 0 a 12). Os
 ## Barra lateral: abrir e fechar
 - No menu do perfil: **Notificações** (abre o painel de avisos, com contagem) e **Abrir/Fechar a barra**. Aberta = ícone + nome; fechada = só ícones (trilho compacto de 56px). Estado em `appearance.rail`; vale nas laterais esquerda e direita (nos outros layouts o item não aparece).
 - Não há botão de ocultar no topo da barra. "Ocultar a barra automaticamente" fica só em Configurações.
+
+## Ajustes dos módulos (botão do canto superior direito)
+- Painel único do design system (`app/ds/options.tsx`): `OptionsPanel` (título, **Redefinir**, fechar; fecha clicando fora ou Esc), `OptionsGroup` (Visualização → Mostrar → Filtrar → Ordenar → Avançado, pela prop `order`), `OptionsSegment` (escolha única: segmentado até 3 opções curtas, senão fichas), `OptionsSelect` (linha com valor à direita), `OptionsSwitch` (liga/desliga) e `OptionsSwitchMove` (liga/desliga + mudar ordem). Nada de caixas de seleção soltas nem botões de filtro fora dele.
+- O botão (`SettingsButton`) mostra uma bolinha quando há filtro/ordem diferente do padrão; **Redefinir** volta o módulo ao padrão.
+- Hoje, Em breve, Hábitos, Metas, Notas e Finanças montam o painel em `AppTopBar`; Tarefas usa os mesmos componentes dentro do `Floating`. Opção nova = novo `PanelSection` no módulo certo, nunca tela avulsa.
+- Abas/filtros de situação (Todos/Hoje/Pendentes, Tudo/Atrasadas/…) não existem mais na tela dos módulos: ficam em "Mostrar".

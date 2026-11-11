@@ -3,7 +3,7 @@
 import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState, type DragEvent, type MouseEvent as ReactMouseEvent, type ReactNode } from 'react'
 import { addDays } from '../../../lib/v2/planner'
 import type { LegacyTask, MaiState } from '../../../lib/v2/state'
-import { Icon, SettingsButton, useDragScroll, Disclosure } from '../../ds'
+import { Icon, SettingsButton, useDragScroll, Disclosure, OptionsGroup, OptionsSegment, OptionsSwitch } from '../../ds'
 import { showCompleted } from '../../../lib/v2/show-completed'
 import type { AppView, Row, TaskModuleScope } from '../app-types'
 import type { InspectableItem } from '../ContextDrawer'
@@ -625,36 +625,20 @@ export function TasksModern(props: Props) {
           <Floating anchor={optionsRef} title="Opções" width={300} onClose={() => setOptionsOpen(false)}>
             <div className={styles.optionsPanel}>
               {projectId ? (
-                <>
-                  <span className={styles.optionsLabel}>Ver este projeto como</span>
-                  <div className={styles.chips}>
-                    <button type="button" data-active={!kanban || undefined} onClick={() => setLayout('lista')}><Icon name="view_agenda" size={15} />Lista</button>
-                    <button type="button" data-active={kanban || undefined} onClick={() => setLayout('quadro')}><Icon name="view_kanban" size={15} />Quadro</button>
-                  </div>
-                </>
+                <OptionsGroup title="Visualização" order={1}>
+                  <OptionsSegment value={kanban ? 'quadro' : 'lista'} onChange={value => setLayout(value as 'lista' | 'quadro')} items={[{ value: 'lista', label: 'Lista', icon: 'view_agenda' }, { value: 'quadro', label: 'Quadro', icon: 'view_kanban' }]} />
+                </OptionsGroup>
               ) : null}
-              <span className={styles.optionsLabel}>Mostrar</span>
-              <div className={styles.chips}>
-                {ctxTabs.map(tab => (
-                  <button key={tab.id} type="button" data-active={ctxFilter === tab.id || undefined} onClick={() => { if (!isProjectLike) props.onScopeChange('entrada'); setCtxFilter(tab.id) }}><Icon name={tab.icon} size={15} />{tab.label}{tab.count ? ` ${tab.count}` : ''}</button>
-                ))}
-              </div>
-              <span className={styles.optionsLabel}>Concluídos</span>
-              <div className={styles.chips}>
-                <button type="button" data-active={showDone || undefined} onClick={() => setScoped({ showDone: !showDone })}><Icon name="task_alt" size={15} />Mostrar concluídos</button>
-              </div>
-              <span className={styles.optionsLabel}>Ordenar por</span>
-              <div className={styles.chips}>
-                {([['manual', 'Manual', 'drag_indicator'], ['date', 'Data', 'calendar_today'], ['priority', 'Prioridade', 'flag'], ['name', 'Nome', 'sort_by_alpha']] as const).map(([value, label, icon]) => (
-                  <button key={value} type="button" data-active={sortMode === value || undefined} onClick={() => setControl({ sort: value })}><Icon name={icon} size={15} />{label}</button>
-                ))}
-              </div>
-              <span className={styles.optionsLabel}>Prioridade</span>
-              <div className={styles.chips}>
-                {([['all', 'Todas', 'select_all', ''], ['1', 'Alta', 'flag', 'var(--ds-rose-fg)'], ['2', 'Média', 'flag', 'var(--ds-peach-fg)'], ['3', 'Baixa', 'flag', 'var(--ds-sky-fg)'], ['4', 'Sem', 'outlined_flag', '']] as const).map(([value, label, icon, color]) => (
-                  <button key={value} type="button" data-active={priorityFilter === value || undefined} onClick={() => setFilter({ priority: value })}><Icon name={icon} size={15} style={color ? { color } : undefined} />{label}</button>
-                ))}
-              </div>
+              <OptionsGroup title="Mostrar" order={2}>
+                <OptionsSegment value={ctxFilter} onChange={value => { if (!isProjectLike) props.onScopeChange('entrada'); setCtxFilter(value as CtxFilter) }} items={ctxTabs.map(tab => ({ value: tab.id, label: `${tab.label}${tab.count ? ` ${tab.count}` : ''}` }))} />
+                <OptionsSwitch label="Mostrar concluídas" checked={showDone} onChange={on => setScoped({ showDone: on })} />
+              </OptionsGroup>
+              <OptionsGroup title="Filtrar" order={3}>
+                <OptionsSegment label="Prioridade" value={priorityFilter} onChange={value => setFilter({ priority: value })} items={[{ value: 'all', label: 'Todas' }, { value: '1', label: 'Alta' }, { value: '2', label: 'Média' }, { value: '3', label: 'Baixa' }, { value: '4', label: 'Sem' }]} />
+              </OptionsGroup>
+              <OptionsGroup title="Ordenar" order={4}>
+                <OptionsSegment value={sortMode} onChange={value => setControl({ sort: value })} items={[{ value: 'manual', label: 'Manual' }, { value: 'date', label: 'Data' }, { value: 'priority', label: 'Prioridade' }, { value: 'name', label: 'Nome' }]} />
+              </OptionsGroup>
               <div className={styles.menuList}>
                 <button type="button" onClick={() => { setOptionsOpen(false); props.onScopeChange('today') }}><Icon name="today" size={18} style={{ color: 'var(--ds-mint-fg)' }} /><span>Hoje</span>{counts.today ? <small>{counts.today}</small> : null}</button>
                 <button type="button" onClick={() => { setOptionsOpen(false); props.onScopeChange('upcoming') }}><Icon name="event_upcoming" size={18} style={{ color: 'var(--ds-lilac-fg)' }} /><span>Em breve</span>{counts.upcoming ? <small>{counts.upcoming}</small> : null}</button>
