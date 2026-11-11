@@ -163,3 +163,4 @@ Fonte única da verdade: o quadro "Sistema de design Bukid" (quadros 0 a 12). Os
 ## Cabeçalho dos módulos (modelo único)
 Todo módulo abre com o mesmo cabeçalho, montado só por `AppTopBar`: título 28/700 (22 no celular), abaixo subtítulo 13 cinza (Hoje: "Quarta, 11 de novembro · 3 tarefas"; demais módulos: contagem), e à direita só o botão de ajustes com a bolinha quando há personalização. Nenhum módulo cria cabeçalho próprio. O painel de ajustes (`OptionsPanel`) tem fundo sólido (`--ds-bg`) e grupos que não encolhem (`flex: none`), para nunca ficar transparente nem sobrepor linhas.
 - Aparência do "Novo": fundo vermelho (`--ds-accent`) com texto/ícone `--ds-on-accent`, sem contorno, altura 36px (fino); mesma cor no celular.
+- **Abrir/fechar a barra:** botão `railToggle` ao lado do perfil (também no menu do perfil). Com a barra fechada (só ícones) ele fica do lado de fora do trilho, junto da borda, para reabrir.
