@@ -810,8 +810,7 @@
 .newKey { font-size: 11px; font-weight: 600; opacity: 0.85; }
 .newTab { display: none; }
 @media (max-width: 900px) {
-  .newTab { appearance: none; display: flex; align-items: center; justify-content: center; height: 48px; min-width: 0; padding: 0; border: 0; background: transparent; cursor: pointer; -webkit-tap-highlight-color: transparent; }
-  .newTabIcon { display: grid; place-items: center; width: 48px; height: 34px; border-radius: 10px; background: var(--ds-accent); color: var(--ds-on-accent, #fff); }
+  .newTab.newTab { display: flex; color: var(--ds-accent); }
 }
 @media (min-width: 901px) {
   /* Compacta / barra fechada: só o "+" */
@@ -851,8 +850,6 @@
   :global(html[data-mai-layout='top']) .newBtn, :global(html[data-mai-layout='bottom']) .newBtn { padding: 0 10px; }
 }
 @media (max-width: 900px) {
-  .newTabIcon { background: var(--ds-accent); color: var(--ds-on-accent, #fff); }
-  .newTabIcon svg { width: 30px; height: 30px; }
 }
 
 /* ===== Superior, inferior e dock: tudo dentro da barra, na ordem do menu: perfil, Novo, Buscar, itens ===== */

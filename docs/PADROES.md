@@ -166,3 +166,4 @@ Todo módulo abre com o mesmo cabeçalho, montado só por `AppTopBar`: título 2
 - **Abrir/fechar a barra:** botão `railToggle` ao lado do perfil (também no menu do perfil). Com a barra fechada (só ícones) ele fica do lado de fora do trilho, junto da borda, para reabrir.
 - Bolinha de cor do projeto no cabeçalho de Hoje (`projectHeadDot`) é sempre círculo (50%); a opção de forma "quadrado" vale só para ícones/imagens.
 - Botão abrir/fechar a barra: sem contorno; com a barra aberta o perfil (e o botão) ficam fixos no topo ao rolar a lista; fechada, o botão fica fixo na borda do trilho.
+- Celular: o "Novo" da barra de baixo é uma aba comum (`tab`: ícone + rótulo "Novo"), só que na cor de destaque; sem pílula nem tamanho próprio.
