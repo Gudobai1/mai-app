@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { MaiState } from '../../../lib/v2/state'
 import { normalizeShortcuts, shortcutLabel } from '../../../lib/v2/shortcuts'
+import { newLabel } from './new-label'
 import { Icon, Disclosure } from '../../ds'
 import type { AppView } from '../app-types'
 import { ProjectMark } from './ProjectMark'
@@ -26,6 +27,7 @@ type Props = {
   onAdd: () => void
   onSettings: () => void
   onToggleTheme: () => void
+  onNew: () => void
   commit: (change: (current: MaiState) => MaiState) => void
   onNewProject?: (parentId?: string) => void
   /** Projeto aberto no momento (para destacar na lista). */
@@ -65,7 +67,7 @@ const ORGANIZE: NavItem[] = [
 
 const rows = (value: unknown): Row[] => (Array.isArray(value) ? (value as Row[]) : [])
 
-export function ModernSidebar({ state, today, view, navigate, onSearch, onSettings, onToggleTheme, commit, onNewProject, activeProjectId, dark, profile, autoHide, onToggleHidden, onAutoHide, rail, canRail, onToggleRail, onLogout, onLeave, onEnter, onInspect }: Props) {
+export function ModernSidebar({ state, today, view, navigate, onSearch, onSettings, onToggleTheme, onNew, commit, onNewProject, activeProjectId, dark, profile, autoHide, onToggleHidden, onAutoHide, rail, canRail, onToggleRail, onLogout, onLeave, onEnter, onInspect }: Props) {
   const profileName = String(profile?.name || state.configs.profileName || state.configs.userName || 'Meu perfil')
   const profileInitial = profileName.trim().slice(0, 1).toLocaleUpperCase('pt-BR') || 'M'
   const counts = todayCounts(state, today)
@@ -207,6 +209,11 @@ export function ModernSidebar({ state, today, view, navigate, onSearch, onSettin
           ) : null}
         </div>
       </div>
+      <button type="button" className={styles.newBtn} onClick={onNew} title={`${newLabel(view)} (${shortcutLabel(normalizeShortcuts(state.configs.shortcuts).newTask) || 'botão'})`} aria-label={newLabel(view)}>
+        <Icon name="add" size={20} filled={false} />
+        <span className={styles.newLabel}>{newLabel(view)}</span>
+        {normalizeShortcuts(state.configs.shortcuts).newTask ? <span className={styles.newKey}>{shortcutLabel(normalizeShortcuts(state.configs.shortcuts).newTask)}</span> : null}
+      </button>
       {sidebarHidden(side, 'search') ? null : <button type="button" className={styles.search} title="Buscar" onClick={onSearch}>
         {sideIcon('search', 'search', 20)}
         <span>Buscar</span>
