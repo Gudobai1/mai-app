@@ -740,3 +740,11 @@
   :global(html[data-mai-layout='bottom']) .addProject.addProject > span,
   :global(html[data-mai-layout='dock']) .addProject.addProject > span { display: none !important; }
 }
+
+/* Barra fechada com o menu na direita: trilho compacto encostado à direita */
+@media (min-width: 901px) {
+  :global(html[data-mai-layout='compact'][data-mai-side='right']) .sidebar { inset: 0 0 0 auto; }
+  :global(html[data-mai-layout='compact'][data-mai-side='right']) .userMenu { left: auto; right: 100%; margin: 0 8px 0 0; }
+  :global(html[data-mai-layout='compact'][data-mai-side='right']) :global(.mai-v3-shell) :global(.mai-v3-main) { margin-left: 0 !important; margin-right: 56px !important; }
+}
+.menuCount { min-width: 18px; padding: 0 5px; border-radius: 9px; background: var(--ds-danger); color: #fff; font-size: 11px; font-weight: 700; line-height: 18px; text-align: center; }

@@ -134,3 +134,7 @@ Fonte única da verdade: o quadro "Sistema de design Bukid" (quadros 0 a 12). Os
 
 - Não há ícone de sino. Havendo avisos, aparece só uma bolinha no canto superior direito do avatar do perfil (`profileDot`); clicar abre a lista. Sem avisos, nada aparece. Aparência da bolinha (ponto ou contagem) segue Configurações → Lembretes.
 - Layouts sem texto (compacta, superior, inferior, dock) mantêm o "+" de adicionar projeto, só com o ícone.
+
+## Barra lateral: abrir e fechar
+- No menu do perfil: **Notificações** (abre o painel de avisos, com contagem) e **Abrir/Fechar a barra**. Aberta = ícone + nome; fechada = só ícones (trilho compacto de 56px). Estado em `appearance.rail`; vale nas laterais esquerda e direita (nos outros layouts o item não aparece).
+- Não há botão de ocultar no topo da barra. "Ocultar a barra automaticamente" fica só em Configurações.

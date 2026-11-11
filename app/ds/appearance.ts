@@ -16,7 +16,7 @@ export const SHAPE_AREAS: { id: 'tasks' | 'habits' | 'projects'; label: string; 
   { id: 'projects', label: 'Projetos', hint: 'Foto e ícone do projeto' },
 ]
 export type Shapes = Record<'tasks' | 'habits' | 'projects', Shape>
-export type Appearance = { iconPack: IconPack; weight: number; iconScale: number; corners: 'round' | 'square'; font: string; accent: string; palette: string; colorStyle: ColorStyle; shapes: Shapes; layout: LayoutId }
+export type Appearance = { iconPack: IconPack; weight: number; iconScale: number; corners: 'round' | 'square'; font: string; accent: string; palette: string; colorStyle: ColorStyle; shapes: Shapes; layout: LayoutId; rail: boolean }
 
 /** Posição do menu no desktop (no celular a barra de baixo manda). */
 export const LAYOUTS = [
@@ -29,7 +29,7 @@ export const LAYOUTS = [
 ] as const
 export type LayoutId = (typeof LAYOUTS)[number]['id']
 
-export const DEFAULT_APPEARANCE: Appearance = { iconPack: 'lucide', weight: 1.5, iconScale: 1, corners: 'square', font: 'system', accent: '', palette: 'padrao', colorStyle: 'padrao', shapes: { tasks: 'round', habits: 'round', projects: 'round' }, layout: 'left' }
+export const DEFAULT_APPEARANCE: Appearance = { iconPack: 'lucide', weight: 1.5, iconScale: 1, corners: 'square', font: 'system', accent: '', palette: 'padrao', colorStyle: 'padrao', shapes: { tasks: 'round', habits: 'round', projects: 'round' }, layout: 'left', rail: false }
 
 export const ICON_PACKS: { id: IconPack; label: string; hint: string; family: string }[] = [
   { id: 'lucide', label: 'Linhas', hint: 'Lucide: traço contínuo, leve', family: 'Linhas' },
@@ -107,6 +107,7 @@ export function normalizeAppearance(raw: unknown): Appearance {
     colorStyle: COLOR_STYLES.some(item => item.id === value.colorStyle) ? (value.colorStyle as ColorStyle) : 'padrao',
     shapes: Object.fromEntries(SHAPE_AREAS.map(area => [area.id, value.shapes?.[area.id] === 'square' ? 'square' : 'round'])) as Shapes,
     layout: LAYOUTS.some(item => item.id === value.layout) ? (value.layout as LayoutId) : 'left',
+    rail: value.rail === true,
   }
 }
 
@@ -287,8 +288,12 @@ export function applyAppearance(raw: unknown) {
     if (next.shapes[area.id] === 'square') root.style.setProperty(`--ds-shape-${area.id}`, '4px')
     else root.style.removeProperty(`--ds-shape-${area.id}`)
   }
-  if (next.layout === 'left') delete root.dataset.maiLayout
-  else root.dataset.maiLayout = next.layout
+  // Barra fechada (só ícones) vale para as laterais esquerda/direita; vira o trilho compacto.
+  const effective = next.rail && (next.layout === 'left' || next.layout === 'right') ? 'compact' : next.layout
+  if (effective === 'left') delete root.dataset.maiLayout
+  else root.dataset.maiLayout = effective
+  if (next.layout === 'right' && effective === 'compact') root.dataset.maiSide = 'right'
+  else delete root.dataset.maiSide
   if (next.palette === 'padrao') delete root.dataset.maiPalette
   else root.dataset.maiPalette = next.palette
   const font = FONTS.find(item => item.id === next.font)

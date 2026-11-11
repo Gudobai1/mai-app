@@ -2,7 +2,7 @@
 
 import { isDarkMode } from './theme'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Icon } from '../ds'
+import { Icon, normalizeAppearance } from '../ds'
 import type { MaiState } from '../../lib/v2/state'
 import { AgendaView } from './AgendaView'
 import { AppSettingsDrawer } from './AppSettingsDrawer'
@@ -250,6 +250,7 @@ export function UnifiedAppUx() {
   }
 
   const sidebarAutoHide = Boolean(runtime.state.configs.sidebarAutoHide)
+  const appearanceNow = normalizeAppearance(runtime.state.configs.appearance)
   const sidebarCollapsed = sidebarAutoHide || Boolean(runtime.state.configs.sidebarHidden)
   const sidebarMode = !sidebarCollapsed ? 'open' : sidebarPeek ? 'peek' : 'hidden'
   const setConfig = (patch: Record<string, unknown>) => runtime.commit(current => ({ ...current, configs: { ...current.configs, ...patch } }))
@@ -259,7 +260,7 @@ export function UnifiedAppUx() {
   return <div className={`${styles.appShell} mai-v3-shell`} data-view={String(view)} data-sidebar={sidebarMode}>
     {sidebarCollapsed && !sidebarPeek ? <div className="mai-edge" onMouseEnter={sidebarAutoHide ? startPeek : undefined} aria-hidden="true" /> : null}
     {sidebarCollapsed && !sidebarAutoHide ? <button type="button" className="mai-reveal" onClick={() => setConfig({ sidebarHidden: false })} aria-label="Mostrar a barra lateral" title="Mostrar a barra lateral"><Icon name="left_panel_close" size={20} filled={false} /></button> : null}
-    <ModernSidebar onInspect={setSelected} autoHide={sidebarAutoHide} onToggleHidden={() => setConfig({ sidebarHidden: true })} onAutoHide={value => { setConfig({ sidebarAutoHide: value, sidebarHidden: false }); setSidebarPeek(false) }} onLogout={runtime.logout} onEnter={startPeek} onLeave={endPeek} state={runtime.state} today={runtime.today} view={view} navigate={navigate} onSearch={() => setSearchOpen(true)} onAdd={() => contextualAdd()} onSettings={() => setSettingsOpen(true)} onToggleTheme={toggleTheme} onNewProject={parentId => setProjectDialog(parentId ? { parentId } : {})} activeProjectId={activeProjectId} dark={isDark} profile={googleProfile} />
+    <ModernSidebar rail={appearanceNow.rail} canRail={appearanceNow.layout === 'left' || appearanceNow.layout === 'right'} onToggleRail={() => setConfig({ appearance: { ...appearanceNow, rail: !appearanceNow.rail } })} onInspect={setSelected} autoHide={sidebarAutoHide} onToggleHidden={() => setConfig({ sidebarHidden: true })} onAutoHide={value => { setConfig({ sidebarAutoHide: value, sidebarHidden: false }); setSidebarPeek(false) }} onLogout={runtime.logout} onEnter={startPeek} onLeave={endPeek} state={runtime.state} today={runtime.today} view={view} navigate={navigate} onSearch={() => setSearchOpen(true)} onAdd={() => contextualAdd()} onSettings={() => setSettingsOpen(true)} onToggleTheme={toggleTheme} onNewProject={parentId => setProjectDialog(parentId ? { parentId } : {})} activeProjectId={activeProjectId} dark={isDark} profile={googleProfile} />
 
     <main className={`${styles.main} mai-v3-main`}>
       <div key={view} className={`${styles.workspace} mai-v3-workspace mai-view-enter`}>

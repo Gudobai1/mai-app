@@ -34,6 +34,9 @@ type Props = {
   autoHide: boolean
   onToggleHidden: () => void
   onAutoHide: (value: boolean) => void
+  rail?: boolean
+  canRail?: boolean
+  onToggleRail?: () => void
   onLogout: () => void
   /** Chamado ao tirar o mouse da barra (para recolher no modo automático). */
   onLeave: () => void
@@ -60,7 +63,7 @@ const ORGANIZE: NavItem[] = [
 
 const rows = (value: unknown): Row[] => (Array.isArray(value) ? (value as Row[]) : [])
 
-export function ModernSidebar({ state, today, view, navigate, onSearch, onSettings, onToggleTheme, onNewProject, activeProjectId, dark, profile, autoHide, onToggleHidden, onAutoHide, onLogout, onLeave, onEnter, onInspect }: Props) {
+export function ModernSidebar({ state, today, view, navigate, onSearch, onSettings, onToggleTheme, onNewProject, activeProjectId, dark, profile, autoHide, onToggleHidden, onAutoHide, rail, canRail, onToggleRail, onLogout, onLeave, onEnter, onInspect }: Props) {
   const profileName = String(profile?.name || state.configs.profileName || state.configs.userName || 'Meu perfil')
   const profileInitial = profileName.trim().slice(0, 1).toLocaleUpperCase('pt-BR') || 'M'
   const counts = todayCounts(state, today)
@@ -186,23 +189,18 @@ export function ModernSidebar({ state, today, view, navigate, onSearch, onSettin
               {remindersLook.bell === 'count' ? (attention > 9 ? '9+' : attention) : null}
             </button>
           ) : null}
-          {bell && attention ? <NotificationPanel look={remindersLook} alerts={alerts} anchor={bellRef.current} onOpen={openAlert} onClose={() => setBell(false)} /> : null}
+          {bell ? <NotificationPanel look={remindersLook} alerts={alerts} anchor={menuRef.current} onOpen={openAlert} onClose={() => setBell(false)} /> : null}
           {menu ? (
             <div className={styles.userMenu} role="menu">
               <button type="button" role="menuitem" onClick={() => { setMenu(false); onSettings() }}><Icon name="settings" size={18} filled={false} /><span className={styles.userMenuLabel}>Configurações</span></button>
               <button type="button" role="menuitem" onClick={() => { setMenu(false); onToggleTheme() }}><Icon name={dark ? 'light_mode' : 'dark_mode'} size={18} filled={false} /><span className={styles.userMenuLabel}>{dark ? 'Tema claro' : 'Tema escuro'}</span></button>
-              <button type="button" role="menuitemcheckbox" aria-checked={autoHide} onClick={() => onAutoHide(!autoHide)}>
-                <Icon name="left_panel_close" size={18} filled={false} /><span className={styles.userMenuLabel}>Ocultar a barra automaticamente</span>
-                {autoHide ? <Icon name="check" size={18} filled={false} /> : null}
-              </button>
+              <button type="button" role="menuitem" onClick={() => { setMenu(false); setBell(true) }}><Icon name="notifications" size={18} filled={false} /><span className={styles.userMenuLabel}>Notificações</span>{attention ? <b className={styles.menuCount}>{attention}</b> : null}</button>
+              {canRail && onToggleRail ? <button type="button" role="menuitem" onClick={() => { setMenu(false); onToggleRail() }}><Icon name={rail ? 'left_panel_open' : 'left_panel_close'} size={18} filled={false} /><span className={styles.userMenuLabel}>{rail ? 'Abrir a barra' : 'Fechar a barra'}</span></button> : null}
               <div className={styles.userMenuLine} />
               <button type="button" role="menuitem" data-tone="danger" onClick={() => { setMenu(false); onLogout() }}><Icon name="logout" size={18} filled={false} /><span className={styles.userMenuLabel}>Sair</span></button>
             </div>
           ) : null}
         </div>
-        <button type="button" className={styles.topIcon} onClick={autoHide ? () => onAutoHide(false) : onToggleHidden} aria-label={autoHide ? 'Fixar a barra lateral' : 'Ocultar a barra lateral'} title={autoHide ? 'Fixar a barra lateral' : 'Ocultar a barra lateral'}>
-          <Icon name="left_panel_close" size={20} filled={false} />
-        </button>
       </div>
       {sidebarHidden(side, 'search') ? null : <button type="button" className={styles.search} title="Buscar" onClick={onSearch}>
         {sideIcon('search', 'search', 20)}

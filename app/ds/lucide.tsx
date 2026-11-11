@@ -165,6 +165,7 @@ import {
   Bookmark,
   Languages,
   PanelLeft,
+  PanelLeftOpen,
   LogOut,
 } from 'lucide-react'
 import type { ComponentType, SVGProps } from 'react'
@@ -181,6 +182,7 @@ export const LUCIDE_ICONS: Record<string, LucideComponent> = {
   code: Code,
   brush: Brush,
   left_panel_close: PanelLeft,
+  left_panel_open: PanelLeftOpen,
   logout: LogOut,
   coffee: Coffee,
   music_note: Music,
