@@ -88,8 +88,9 @@ type Props = {
   commit: (change: (current: MaiState) => MaiState) => void
 }
 
-export function SearchOverlay({ state, today, query, setQuery, onClose, inspect, openProject, commit }: Props) {
-  const tab = 'all' as Tab
+export function SearchOverlay({ state, today, query, setQuery, onClose, inspect, openProject, commit, navigate }: Props) {
+  const [tab, setTab] = useState<Tab>('all')
+  const [recent, setRecent] = useState<string[]>(() => { try { return JSON.parse(localStorage.getItem('bukid-recent-searches') || '[]') as string[] } catch { return [] } })
   const [active, setActive] = useState(0)
   const [muted, setMuted] = useState<Set<NlKind>>(new Set())
   const listRef = useRef<HTMLDivElement | null>(null)
@@ -170,6 +171,17 @@ export function SearchOverlay({ state, today, query, setQuery, onClose, inspect,
     return out.sort((a, b) => b.score - a.score)
   }, [words, hasFilter, nl, state, projects, today]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  const kindCounts = useMemo(() => { const out: Partial<Record<Kind, number>> = {}; for (const result of results) out[result.kind] = (out[result.kind] || 0) + 1; return out }, [results])
+  const tabs = (Object.keys(KINDS) as Kind[]).filter(kind => kindCounts[kind])
+  useEffect(() => { if (tab !== 'all' && !kindCounts[tab]) setTab('all') }, [tab, kindCounts])
+  const remember = () => {
+    const text = query.trim()
+    if (!text) return
+    const next = [text, ...recent.filter(item => item !== text)].slice(0, 6)
+    setRecent(next)
+    try { localStorage.setItem('bukid-recent-searches', JSON.stringify(next)) } catch { /* sem armazenamento */ }
+  }
+
   const visible = useMemo(() => {
     if (tab !== 'all') return results.filter(result => result.kind === tab).slice(0, 50)
     // Em "Tudo", cada tipo mostra os melhores; escolher o tipo mostra o resto.
@@ -202,6 +214,7 @@ export function SearchOverlay({ state, today, query, setQuery, onClose, inspect,
   }, [])
 
   function open(result: Result) {
+    remember()
     close()
     if (result.kind === 'project') { openProject(result.id); return }
     inspect({ kind: result.kind as InspectableItem['kind'], sourceId: result.id, title: result.title, date: String(result.raw.data_vencimento || result.raw.data_inicio || result.raw.data || result.raw.prazo || '').slice(0, 10), raw: result.raw })
@@ -250,8 +263,8 @@ export function SearchOverlay({ state, today, query, setQuery, onClose, inspect,
             autoFocus
             className={styles.input}
             value={query}
-            onChange={event => { setQuery(event.target.value); setMuted(new Set()) }}
-            placeholder="Buscar ou criar…"
+            onChange={event => { setQuery(event.target.value); setMuted(new Set()); setTab('all') }}
+            placeholder="Buscar tarefas, notas, finanças… ou criar"
             aria-label="Buscar"
           />
           {nl.tokens.map(token => (
@@ -263,9 +276,38 @@ export function SearchOverlay({ state, today, query, setQuery, onClose, inspect,
           <button type="button" className={styles.close} aria-label="Fechar busca" onClick={close}><Icon name="close" size={22} filled={false} /></button>
         </header>
 
+        {tabs.length > 1 ? (
+          <div className={styles.tabs} role="tablist" aria-label="Tipo de resultado">
+            {(['all', ...tabs] as Tab[]).map(item => (
+              <button key={item} type="button" role="tab" aria-selected={tab === item} data-active={tab === item || undefined} onClick={() => setTab(item)}>
+                {item === 'all' ? 'Tudo' : KINDS[item].plural}<small>{item === 'all' ? results.length : kindCounts[item]}</small>
+              </button>
+            ))}
+          </div>
+        ) : null}
+
         <div ref={listRef} className={styles.list}>
           {!words.length && !hasFilter ? (
-            <p className={styles.tips}>Digite para buscar. Use hoje, !alta, #Projeto para filtrar.</p>
+            <div className={styles.home}>
+              {recent.length ? (
+                <>
+                  <div className={styles.group}>Recentes</div>
+                  <div className={styles.chips}>
+                    {recent.map(item => <button key={item} type="button" onClick={() => { setQuery(item); inputRef.current?.focus() }}><Icon name="schedule" size={14} filled={false} />{item}</button>)}
+                  </div>
+                </>
+              ) : null}
+              <div className={styles.group}>Filtros rápidos</div>
+              <div className={styles.chips}>
+                {['hoje', 'amanhã', 'esta semana', 'atrasadas', '!alta', '#'].map(item => <button key={item} type="button" onClick={() => { setQuery(item === '#' ? '#' : item); inputRef.current?.focus() }}>{item}</button>)}
+              </div>
+              <div className={styles.group}>Ir para</div>
+              <div className={styles.goto}>
+                {([['today', 'Hoje', 'today'], ['upcoming', 'Em breve', 'event_upcoming'], ['tasks', 'Tarefas', 'check_circle'], ['habits', 'Hábitos', 'repeat'], ['goals', 'Metas', 'flag'], ['notes', 'Notas', 'description'], ['finance', 'Finanças', 'payments']] as const).map(([view, label, icon]) => (
+                  <button key={view} type="button" onClick={() => { close(); navigate(view as import('./app-types').AppView) }}><Icon name={icon} size={18} filled={false} />{label}</button>
+                ))}
+              </div>
+            </div>
           ) : null}
 
           {(words.length || hasFilter) && !visible.length && !canCreate ? <p className={styles.empty}>Nada encontrado.</p> : null}
@@ -294,6 +336,11 @@ export function SearchOverlay({ state, today, query, setQuery, onClose, inspect,
           ) : null}
         </div>
 
+        <footer className={styles.foot} aria-hidden="true">
+          <span><kbd>↑</kbd><kbd>↓</kbd> navegar</span>
+          <span><kbd>Enter</kbd> abrir</span>
+          <span><kbd>Esc</kbd> fechar</span>
+        </footer>
       </section>
     </div>
   )
