@@ -1,7 +1,7 @@
 'use client'
 
-import { ReactNode, useEffect, useMemo, useState } from 'react'
-import { SettingsButton } from '../ds'
+import { ReactNode, useEffect, useMemo, useRef, useState } from 'react'
+import { OptionsGroup, OptionsPanel, OptionsSegment, OptionsSelect, OptionsSwitch, OptionsSwitchMove, SettingsButton } from '../ds'
 import { showCompleted } from '../../lib/v2/show-completed'
 import { GOAL_TYPES } from '../../lib/v2/goals'
 import type { MaiState } from '../../lib/v2/state'
@@ -28,16 +28,18 @@ const TODAY_SECTIONS = ['appointments', 'tasks', 'habits', 'goals', 'finance', '
 type TodaySectionId = typeof TODAY_SECTIONS[number]
 const TODAY_SECTION_LABELS: Record<TodaySectionId, string> = { appointments: 'Agenda', tasks: 'Tarefas', habits: 'Hábitos', goals: 'Metas', finance: 'Finanças', notes: 'Notas' }
 
+const GROUP_ORDER: Record<string, number> = { Layout: 1, 'Visualização': 1, 'Agrupar por': 2, 'Concluídos': 3, 'Eventos repetidos': 3, Filtros: 4, 'Recorrências': 4, 'Classificação': 5 }
+
 function PanelSection({ title, children }: { title:string; children:ReactNode }) {
-  return <section className="mai-app-topbar-panel-section"><strong>{title}</strong><div>{children}</div></section>
+  return <OptionsGroup title={title} order={GROUP_ORDER[title] ?? 6}>{children}</OptionsGroup>
 }
 
 function SelectLine({ label, value, onChange, children }: { label:string; value:string; onChange:(value:string)=>void; children:ReactNode }) {
-  return <label className="mai-app-topbar-select-line"><span>{label}</span><select value={value} onChange={event => onChange(event.target.value)}>{children}</select></label>
+  return <OptionsSelect label={label} value={value} onChange={onChange} active={value !== 'all' && value !== ''}>{children}</OptionsSelect>
 }
 
 function Choices({ value, onChange, items }: { value:string; onChange:(value:string)=>void; items:{value:string;label:string}[] }) {
-  return <div className="mai-app-topbar-choices">{items.map(item => <button type="button" key={item.value} data-active={value === item.value} onClick={() => onChange(item.value)}>{item.label}</button>)}</div>
+  return <OptionsSegment value={value} onChange={onChange} items={items} />
 }
 
 export function AppTopBar({ state, today, view, taskScope, commit, onTaskScopeChange }: Props) {
@@ -134,7 +136,7 @@ export function AppTopBar({ state, today, view, taskScope, commit, onTaskScopeCh
   const priorityOptions = <><option value="all">Todas</option><option value="1">Alta</option><option value="2">Média</option><option value="3">Baixa</option><option value="4">Sem prioridade</option></>
   const recurrenceOptions = <><option value="all">Todas as ocorrências</option><option value="next">Somente a próxima</option></>
 
-  const panel = <div className="mai-app-topbar-panel" data-view={String(view)}>
+  const panelBody = <>
     {view === 'tasks' ? <PanelSection title="Layout"><Choices value={layoutMode} onChange={value => patchControl({ layout:value })} items={[{value:'normal',label:'Normal'},{value:'kanban',label:'Kanban'}]}/></PanelSection> : null}
 
     {view === 'today' ? <>
@@ -147,26 +149,18 @@ export function AppTopBar({ state, today, view, taskScope, commit, onTaskScopeCh
       </PanelSection>
       <PanelSection title="Classificação"><Choices value={sortMode} onChange={value => patchControl({ sort:value })} items={[{value:'overdue',label:'Atrasados'},{value:'date',label:'Data'},{value:'priority',label:'Prioridade'},{value:'project',label:'Projeto'},{value:'title',label:'Título'}]}/></PanelSection>
       <PanelSection title="Seções">
-        <div className="mai-app-topbar-sections">
-          {todayOrder.map((id, index) => <div key={id} className="mai-app-topbar-section-row">
-            <button type="button" className="mai-app-topbar-section-toggle" data-active={!todayHidden.has(id)} aria-pressed={!todayHidden.has(id)} onClick={() => toggleTodaySection(id)}><span className="material-symbols-rounded">{todayHidden.has(id) ? 'check_box_outline_blank' : 'check_box'}</span>{TODAY_SECTION_LABELS[id]}</button>
-            <button type="button" className="mai-app-topbar-section-move" disabled={index === 0} onClick={() => moveTodaySection(id, -1)} aria-label={`Mover ${TODAY_SECTION_LABELS[id]} para cima`}><span className="material-symbols-rounded">arrow_upward</span></button>
-            <button type="button" className="mai-app-topbar-section-move" disabled={index === todayOrder.length - 1} onClick={() => moveTodaySection(id, 1)} aria-label={`Mover ${TODAY_SECTION_LABELS[id]} para baixo`}><span className="material-symbols-rounded">arrow_downward</span></button>
-          </div>)}
-        </div>
+        {todayOrder.map((id, index) => <OptionsSwitchMove key={id} label={TODAY_SECTION_LABELS[id]} checked={!todayHidden.has(id)} onChange={() => toggleTodaySection(id)} onUp={index === 0 ? undefined : () => moveTodaySection(id, -1)} onDown={index === todayOrder.length - 1 ? undefined : () => moveTodaySection(id, 1)} />)}
       </PanelSection>
       <PanelSection title="Finanças"><Choices value={['summary','bills'].includes(String(configs.todayFinanceMode)) ? String(configs.todayFinanceMode) : 'both'} onChange={value => patchConfig('todayFinanceMode', value)} items={[{value:'both',label:'Resumo e contas'},{value:'summary',label:'Só o resumo'},{value:'bills',label:'Só as contas'}]}/></PanelSection>
     </> : null}
 
     {view === 'upcoming' ? <>
       <PanelSection title="Filtros">
-        <div className="mai-app-topbar-switches">
-          <button type="button" data-active={upcomingFilters.tasks !== false} onClick={() => patchUpcoming({ tasks:upcomingFilters.tasks === false })}>Tarefas</button>
-          <button type="button" data-active={upcomingFilters.events !== false} onClick={() => patchUpcoming({ events:upcomingFilters.events === false })}>Compromissos</button>
-          <button type="button" data-active={upcomingFilters.habits !== false} onClick={() => patchUpcoming({ habits:upcomingFilters.habits === false })}>Hábitos</button>
-          <button type="button" data-active={upcomingFilters.finance !== false} onClick={() => patchUpcoming({ finance:upcomingFilters.finance === false })}>Finanças</button>
-          <button type="button" data-active={upcomingFilters.goals !== false} onClick={() => patchUpcoming({ goals:upcomingFilters.goals === false })}>Metas</button>
-        </div>
+        <OptionsSwitch label="Tarefas" checked={upcomingFilters.tasks !== false} onChange={on => patchUpcoming({ tasks:on })} />
+        <OptionsSwitch label="Compromissos" checked={upcomingFilters.events !== false} onChange={on => patchUpcoming({ events:on })} />
+        <OptionsSwitch label="Hábitos" checked={upcomingFilters.habits !== false} onChange={on => patchUpcoming({ habits:on })} />
+        <OptionsSwitch label="Finanças" checked={upcomingFilters.finance !== false} onChange={on => patchUpcoming({ finance:on })} />
+        <OptionsSwitch label="Metas" checked={upcomingFilters.goals !== false} onChange={on => patchUpcoming({ goals:on })} />
         <SelectLine label="Projeto" value={String(upcomingFilters.project || 'all')} onChange={value => patchUpcoming({ project:value })}>{projectOptions}</SelectLine>
         <SelectLine label="Prioridade" value={String(upcomingFilters.priority || 'all')} onChange={value => patchUpcoming({ priority:value })}>{priorityOptions}</SelectLine>
         <SelectLine label="Dias passados" value={String(upcomingFilters.pastDays || '90')} onChange={value => patchUpcoming({ pastDays:value })}><option value="30">30 dias</option><option value="90">90 dias</option><option value="180">180 dias</option><option value="365">1 ano</option></SelectLine>
@@ -236,11 +230,34 @@ export function AppTopBar({ state, today, view, taskScope, commit, onTaskScopeCh
     </> : null}
 
 
-  </div>
+  </>
 
-  return <div className="mai-app-topbar" data-view={String(view)} data-sort-mode={sortMode}>
+  const nonDefault = (value: Row) => Object.values(value).some(item => item && item !== 'all')
+  const customized = nonDefault(filter)
+    || Boolean(control.sort && control.sort !== defaultSort[view])
+    || (view === 'today' && nonDefault(todayFilters))
+    || (view === 'upcoming' && (['project', 'priority'].some(key => upcomingFilters[key] && upcomingFilters[key] !== 'all') || ['tasks', 'events', 'habits', 'finance', 'goals'].some(key => upcomingFilters[key] === false)))
+  const reset = () => commit(current => {
+    const cfg = current.configs as Record<string, any>
+    const drop = (key: string) => { const copy = { ...(cfg[key] || {}) }; delete copy[String(view)]; return copy }
+    const next: Record<string, unknown> = { ...cfg, moduleFilters: drop('moduleFilters'), moduleControls: drop('moduleControls') }
+    if (view === 'today') next.todayFilters = {}
+    if (view === 'upcoming') next.upcomingFilters = {}
+    return { ...current, configs: next as typeof current.configs }
+  })
+  const wrapRef = useRef<HTMLDivElement | null>(null)
+  useEffect(() => {
+    if (!open) return
+    const outside = (event: Event) => { if (!wrapRef.current?.contains(event.target as Node)) setOpen(false) }
+    const key = (event: KeyboardEvent) => { if (event.key === 'Escape') setOpen(false) }
+    document.addEventListener('pointerdown', outside)
+    document.addEventListener('keydown', key)
+    return () => { document.removeEventListener('pointerdown', outside); document.removeEventListener('keydown', key) }
+  }, [open])
+
+  return <div ref={wrapRef} className="mai-app-topbar" data-view={String(view)} data-sort-mode={sortMode}>
     <div className="mai-app-topbar-context"><strong>{title}</strong><span>{info}</span></div>
-    <div className="mai-app-topbar-single-action"><SettingsButton active={open} aria-expanded={open} onClick={() => setOpen(value => !value)} /></div>
-    {open ? panel : null}
+    <div className="mai-app-topbar-single-action"><SettingsButton active={open} badge={customized} aria-expanded={open} onClick={() => setOpen(value => !value)} /></div>
+    {open ? <OptionsPanel title={title} hint={info} onReset={customized ? reset : undefined} onClose={() => setOpen(false)}>{panelBody}</OptionsPanel> : null}
   </div>
 }
