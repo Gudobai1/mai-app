@@ -3,7 +3,7 @@
 import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState, type DragEvent, type MouseEvent as ReactMouseEvent, type ReactNode } from 'react'
 import { addDays } from '../../../lib/v2/planner'
 import type { LegacyTask, MaiState } from '../../../lib/v2/state'
-import { Icon, ModuleHeader, SettingsButton, useDragScroll, Disclosure, OptionsGroup, OptionsSegment, OptionsSwitch } from '../../ds'
+import { Icon, ModuleHeader, SectionAdder, SettingsButton, useDragScroll, Disclosure, OptionsGroup, OptionsSegment, OptionsSwitch } from '../../ds'
 import { showCompleted } from '../../../lib/v2/show-completed'
 import type { AppView, Row, TaskModuleScope } from '../app-types'
 import type { InspectableItem } from '../ContextDrawer'
@@ -171,6 +171,17 @@ export function TasksModern(props: Props) {
   /* --------------------------------------------------------------- Grupos */
 
   const sections = projectId ? rows(project?.secoes).map(String) : []
+  /* Nova seção no ponto exato (entre duas seções, no começo ou no fim). */
+  const addSection = (name: string, index: number) => {
+    if (!projectId) return
+    commit(current => ({ ...current, projects: rows(current.projects).map(item => {
+      if (String(item.id) !== projectId) return item
+      const list = rows(item.secoes).map(String)
+      if (list.includes(name)) return item
+      const at = Math.max(0, Math.min(index, list.length))
+      return { ...item, secoes: [...list.slice(0, at), name, ...list.slice(at)] }
+    }) }))
+  }
   const sectionOf = (task: Row) => (sections.includes(String(task.secao || '')) ? String(task.secao || '') : '')
 
   const tabMatch = (task: LegacyTask) => {
@@ -689,8 +700,11 @@ export function TasksModern(props: Props) {
 
       {kanban ? (
         <div className={styles.board} data-grab {...boardGrab}>
-          {groups.map(group => (
-            <section key={group.id} className={styles.column} {...groupDropProps(group)} data-drop-zone={dragId ? 'true' : undefined}>
+          {projectId ? <SectionAdder orientation="vertical" onAdd={name => addSection(name, 0)} /> : null}
+          {groups.map((group, index) => (
+            <Fragment key={group.id}>
+            {projectId && index > 0 ? <SectionAdder orientation="vertical" onAdd={name => addSection(name, index)} /> : null}
+            <section className={styles.column} {...groupDropProps(group)} data-drop-zone={dragId ? 'true' : undefined}>
               <div className={styles.groupHead}>
                 <strong>{group.label}</strong>
                 <small>{group.tasks.length}</small>
@@ -698,16 +712,19 @@ export function TasksModern(props: Props) {
               <div className={styles.cards} role="list">{group.tasks.map(task => renderTask(task, group))}</div>
               {renderComposer(group, true)}
             </section>
+            </Fragment>
           ))}
-          <button type="button" className={styles.newColumn} onClick={() => props.onManageSections(projectId)}><Icon name="add" size={17} filled={false} />Seção</button>
+          {projectId ? <SectionAdder orientation="vertical" onAdd={name => addSection(name, sections.length)} /> : null}
         </div>
       ) : (
         <div className={styles.list}>
-          {groups.map(group => {
+          {groups.map((group, index) => {
             const isCollapsed = collapsed.has(group.id)
             const showHead = true
             return (
-              <section key={group.id} className={styles.group} {...groupDropProps(group)}>
+              <Fragment key={group.id}>
+              {projectId && (index > 0 || sections.length > 0) ? <SectionAdder onAdd={name => addSection(name, index)} /> : null}
+              <section className={styles.group} {...groupDropProps(group)}>
                 {showHead ? (
                   <div className={styles.groupHead} data-tone={group.tone}>
                     <button type="button" className={styles.collapse} onClick={() => toggleCollapsed(group.id)} aria-expanded={!isCollapsed}>
@@ -726,8 +743,10 @@ export function TasksModern(props: Props) {
                   </>
                 ) : null}
               </section>
+              </Fragment>
             )
           })}
+          {projectId && groups.length && (groups[groups.length - 1].section || !sections.length) ? <SectionAdder onAdd={name => addSection(name, sections.length)} /> : null}
           {!groups.length ? (
             <div className={styles.emptyState}>
               <Icon name={scope === 'upcoming' ? 'event_available' : 'task_alt'} size={30} />

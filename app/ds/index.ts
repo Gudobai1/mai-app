@@ -1,5 +1,6 @@
 export { Button, Card, Check, DsRoot, Disclosure, Icon, IconButton, IconTile, List, SettingsButton, ListItem, ProgressBar, SectionHeader, Tag } from './ui'
 export type { ButtonProps, CardProps, CheckProps, IconButtonProps, IconProps, IconTileProps, ListItemProps, Tone } from './ui'
+export { SectionAdder } from './section-adder'
 export { useDragScroll } from './useDragScroll'
 export { ModuleHeader, OptionsGroup, OptionsPanel, OptionsSegment, OptionsSelect, OptionsSwitch, OptionsSwitchMove } from './options'
 export { DEFAULT_APPEARANCE, FONTS, ICON_PACKS, applyAppearance, hasStrokeWeight, loadIconPack, normalizeAppearance } from './appearance'

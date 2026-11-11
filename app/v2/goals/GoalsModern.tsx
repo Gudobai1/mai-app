@@ -1,7 +1,7 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
-import { Icon, useDragScroll } from '../../ds'
+import { Fragment, useEffect, useRef, useState } from 'react'
+import { Icon, SectionAdder, useDragScroll } from '../../ds'
 import { GOAL_STATUS, goalAmountText, goalCategories, goalColor, goalDone, goalDue, goalDueInfo, goalPaused, goalPct, goalType, GOAL_TYPES, toggleGoalInState, withSteps, sortGoals, type GoalSort } from '../../../lib/v2/goals'
 import { addDays } from '../../../lib/v2/planner'
 import { showCompleted } from '../../../lib/v2/show-completed'
@@ -26,8 +26,7 @@ type Props = { state: MaiState; today: string; commit: Commit; createRequest?: s
 export function GoalsModern({ state, today, commit, createRequest, inspect }: Props) {
   const goals = rows(state.goals).map(goal => withSteps(goal, state.tasks))
   const [adding, setAdding] = useState<string | null>(null)
-  const [addingCategory, setAddingCategory] = useState(false)
-  const [renaming, setRenaming] = useState<string | null>(null)
+    const [renaming, setRenaming] = useState<string | null>(null)
   const categories = goalCategories(state.configs)
   const grab = useDragScroll()
   const showDone = showCompleted(state, 'goals')
@@ -54,7 +53,7 @@ export function GoalsModern({ state, today, commit, createRequest, inspect }: Pr
     configs: { ...current.configs, goalCategories: change(goalCategories(current.configs)) },
     goals: clearId ? rows(current.goals).map(goal => String(goal.categoria || '') === clearId ? { ...goal, categoria: '' } : goal) : current.goals,
   }))
-  const addCategory = (nome: string) => setCategories(list => [...list, { id: `cat-${crypto.randomUUID()}`, nome }])
+  const addCategory = (nome: string, index = Infinity) => setCategories(list => { const at = Math.max(0, Math.min(index, list.length)); return [...list.slice(0, at), { id: `cat-${crypto.randomUUID()}`, nome }, ...list.slice(at)] })
   const renameCategory = (id: string, nome: string) => { const clean = nome.trim(); if (clean) setCategories(list => list.map(item => item.id === id ? { ...item, nome: clean } : item)); setRenaming(null) }
   const removeCategory = (id: string) => setCategories(list => list.filter(item => item.id !== id), id)
 
@@ -129,11 +128,9 @@ export function GoalsModern({ state, today, commit, createRequest, inspect }: Pr
       {byCategory && block.category ? <button type="button" className={styles.headRemove} onClick={() => removeCategory(block.id)} aria-label={`Excluir categoria ${block.title}`} title="Excluir categoria (as metas ficam sem categoria)"><Icon name="close" size={16} filled={false} /></button> : null}
     </div>
   )
-  const categoryAdder = byCategory ? (
-    addingCategory
-      ? <Composer placeholder="Nome da categoria" label="Criar" onAdd={nome => { addCategory(nome); setAddingCategory(false) }} onClose={() => setAddingCategory(false)} />
-      : <button type="button" className={styles.addRow} onClick={() => setAddingCategory(true)}><Icon name="add" size={20} filled={false} /><span>Adicionar categoria</span></button>
-  ) : null
+  /* Nova categoria no ponto exato: antes do bloco i (categorias reais), "Sem categoria" fica por último. */
+  const catIndex = (index: number) => Math.min(index, categories.length)
+  const categoryAdder = (index: number, orientation: 'horizontal' | 'vertical' = 'horizontal') => byCategory ? <SectionAdder orientation={orientation} label="Adicionar categoria" placeholder="Nomear esta categoria" onAdd={nome => addCategory(nome, catIndex(index))} /> : null
   const emptyText = goals.length ? 'Nenhuma meta neste filtro.' : 'Nenhuma meta criada ainda.'
 
   if (view === 'report') return <GoalsReport goals={goals} categories={categories} today={today} onOpen={open} />
@@ -142,13 +139,18 @@ export function GoalsModern({ state, today, commit, createRequest, inspect }: Pr
     return (
       <div className={styles.page}>
         <div className={styles.board} data-grab {...grab}>
-          {shown.map(block => (
-            <section key={block.id} className={styles.column} aria-label={block.title}>
-              {blockHead(block)}
-              {block.list.length ? <div role="list">{block.list.map(card)}</div> : <div className={styles.empty}>{emptyText}</div>}
-              {block === adder ? adderRow(block) : null}
-            </section>
+          {categoryAdder(0, 'vertical')}
+          {shown.map((block, index) => (
+            <Fragment key={block.id}>
+              {index > 0 ? categoryAdder(index, 'vertical') : null}
+              <section className={styles.column} aria-label={block.title}>
+                {blockHead(block)}
+                {block.list.length ? <div role="list">{block.list.map(card)}</div> : <div className={styles.empty}>{emptyText}</div>}
+                {block === adder ? adderRow(block) : null}
+              </section>
+            </Fragment>
           ))}
+          {categoryAdder(categories.length, 'vertical')}
         </div>
       </div>
     )
@@ -156,14 +158,18 @@ export function GoalsModern({ state, today, commit, createRequest, inspect }: Pr
 
   return (
     <div className={styles.page}>
-      {shown.map(block => (
-        <section key={block.id} className={styles.block} aria-label={block.title}>
-          {blockHead(block)}
-          {block.list.length ? <div role="list">{block.list.map(card)}</div> : <div className={styles.empty}>{emptyText}</div>}
-          {block === adder || byCategory ? adderRow(block) : null}
-        </section>
+      {categoryAdder(0)}
+      {shown.map((block, index) => (
+        <Fragment key={block.id}>
+          {index > 0 ? categoryAdder(index) : null}
+          <section className={styles.block} aria-label={block.title}>
+            {blockHead(block)}
+            {block.list.length ? <div role="list">{block.list.map(card)}</div> : <div className={styles.empty}>{emptyText}</div>}
+            {block === adder || byCategory ? adderRow(block) : null}
+          </section>
+        </Fragment>
       ))}
-      {categoryAdder}
+      {categoryAdder(categories.length)}
       {!shown.length ? <div className={styles.empty}>{emptyText}</div> : null}
     </div>
   )
