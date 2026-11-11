@@ -167,4 +167,4 @@ Todo módulo abre com o mesmo cabeçalho, montado só por `AppTopBar`: título 2
 - Bolinha de cor do projeto no cabeçalho de Hoje (`projectHeadDot`) é sempre círculo (50%); a opção de forma "quadrado" vale só para ícones/imagens.
 - Botão abrir/fechar a barra: sem contorno; com a barra aberta o perfil (e o botão) ficam fixos no topo ao rolar a lista; fechada, o botão fica fixo na borda do trilho.
 - Celular: o "Novo" da barra de baixo é uma aba comum (`tab`: ícone + rótulo "Novo"), só que na cor de destaque; sem pílula nem tamanho próprio.
-- Com a barra fechada, o botão de abrir/fechar é renderizado direto no body (portal) com position: fixed no topo, ao lado do trilho, para nunca acompanhar a rolagem nem ficar preso a outro elemento.
+- Com a barra fechada, o botão de abrir/fechar é renderizado direto no body (portal) com position: absolute no topo da página, ao lado do trilho: fica no cabeçalho e rola junto com a página, **não acompanha** a rolagem.
