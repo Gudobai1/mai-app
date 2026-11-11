@@ -723,9 +723,12 @@
   :global(html[data-mai-layout='dock']) .item.item:not([aria-current='page']) > .itemLabel, :global(html[data-mai-layout='dock']) .badge { display: none; }
   :global(html[data-mai-layout='dock']) .item.item[aria-current='page'] { padding: 0 14px; }
   :global(html[data-mai-layout='dock']) .item.item > .itemLabel { flex: none; }
-  :global(html[data-mai-layout='dock']) .profileWrap { position: fixed; z-index: 101; top: 12px; right: 56px; flex: none; }
+  :global(html[data-mai-layout='dock']) .profileWrap { position: fixed; z-index: 101; top: 12px; right: 16px; flex: none; }
   :global(html[data-mai-layout='dock']) .profilePill .profileName, :global(html[data-mai-layout='dock']) .profilePill > :last-child:not(.avatar) { display: none; }
-  :global(html[data-mai-layout='dock']) .topIcon { position: fixed; z-index: 101; top: 12px; right: 16px; }
   :global(html[data-mai-layout='dock']) .userMenu { left: auto; right: 0; }
   :global(html[data-mai-layout='dock']) :global(.mai-v3-shell) :global(.mai-v3-main) { padding-bottom: 86px; }
 }
+
+/* Avisos: sem sino; só uma bolinha no canto superior direito do avatar (clique abre a lista). */
+.profileDot { appearance: none; position: absolute; z-index: 2; top: 3px; left: 26px; min-width: 12px; height: 12px; padding: 0; border: 2px solid var(--mai-side-bg, var(--ds-surface-2)); box-sizing: content-box; border-radius: 50%; background: var(--ds-peach-fg, #E0852B); color: #fff; font-size: 9px; font-weight: 700; line-height: 12px; cursor: pointer; }
+.profileDot[data-count] { padding: 0 3px; border-radius: 9px; background: var(--ds-danger); }

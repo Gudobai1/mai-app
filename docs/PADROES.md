@@ -129,3 +129,7 @@ Fonte única da verdade: o quadro "Sistema de design Bukid" (quadros 0 a 12). Os
 - É a **mesma** barra (`ModernSidebar`) que muda de lugar por CSS (bloco "Layout do desktop" no fim de `ModernShell.module.css`, só ≥ 901px). **Não** crie outra barra nem copie marcação; item novo de menu aparece em todos os layouts sozinho.
 - Nos layouts compacta/superior/inferior/dock os projetos aparecem só como bolinha (nome no `title`); no celular nada muda (barra de baixo própria).
 - Mudou algo na barra? Teste os 6 layouts.
+
+## Avisos (sino)
+
+- Não há ícone de sino. Havendo avisos, aparece só uma bolinha no canto superior direito do avatar do perfil (`profileDot`); clicar abre a lista. Sem avisos, nada aparece. Aparência da bolinha (ponto ou contagem) segue Configurações → Lembretes.
