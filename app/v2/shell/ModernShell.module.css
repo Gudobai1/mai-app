@@ -849,3 +849,7 @@
   :global(html[data-mai-layout='top']) .newBtn, :global(html[data-mai-layout='bottom']) .newBtn, :global(html[data-mai-layout='dock']) .newBtn { margin-bottom: 0; }
   :global(html[data-mai-layout='top']) .newBtn, :global(html[data-mai-layout='bottom']) .newBtn { padding: 0 10px; }
 }
+@media (max-width: 900px) {
+  .newTabIcon { background: transparent; color: var(--ds-accent); }
+  .newTabIcon svg { width: 30px; height: 30px; }
+}
