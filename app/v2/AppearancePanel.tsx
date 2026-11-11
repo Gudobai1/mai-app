@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react'
 import { DEFAULT_APPEARANCE, FONTS, ICON_PACKS, Icon, hasStrokeWeight, loadIconPack, normalizeAppearance, type Appearance } from '../ds'
-import { PALETTES, SHAPE_AREAS } from '../ds/appearance'
+import { LAYOUTS, PALETTES, SHAPE_AREAS } from '../ds/appearance'
 import { COLOR_STYLES, styleColor, PALETTE } from '../../lib/v2/palette'
 import styles from './AppearancePanel.module.css'
 import type { ThemeMode } from './theme'
@@ -124,6 +124,20 @@ export function AppearancePanel({ value, onChange, mode, onMode }: Props) {
         <select id="ap-font" className={styles.select} value={current.font} onChange={event => set({ font: event.target.value })}>
           {FONTS.map(font => <option key={font.id} value={font.id}>{font.label}</option>)}
         </select>
+      </div>
+
+      <h4 className={styles.sub}>Layout</h4>
+      <div className={styles.group}>
+        <span className={styles.label}>Menu no computador</span>
+        <div className={styles.layouts} role="radiogroup" aria-label="Layout do desktop">
+          {LAYOUTS.map(layout => (
+            <button key={layout.id} type="button" role="radio" aria-checked={current.layout === layout.id} data-active={current.layout === layout.id || undefined} onClick={() => set({ layout: layout.id })}>
+              <span className={styles.layoutThumb} data-layout={layout.id} aria-hidden="true"><i /><b /></span>
+              <strong>{layout.label}</strong>
+              <small>{layout.hint}</small>
+            </button>
+          ))}
+        </div>
       </div>
 
       <h4 className={styles.sub}>Formas</h4>
