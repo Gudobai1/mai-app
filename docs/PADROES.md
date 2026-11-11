@@ -187,3 +187,6 @@ Todo módulo abre com o mesmo cabeçalho, montado só por `AppTopBar`: título 2
 - Cabeçalho de Hábitos, Metas e Notas: sem a linha embaixo do título (`border-bottom` removida em `shell-overrides.css`).
 
 - **Cabeçalho das Tarefas e dos projetos:** título grande com o nome da lista (Entrada, Hoje, Em breve ou o nome do projeto), subtítulo cinza com a contagem e os ajustes à direita, igual aos outros módulos.
+
+## Cabeçalho dos módulos (componente único `ModuleHeader`)
+- Todo módulo usa `ModuleHeader` (`app/ds/options.tsx`, estilo em `app/ds/header.module.css`): título 26/600 (22 no celular), subtítulo cinza 13 a 8px abaixo, ações à direita, 8px de espaço embaixo. As medidas são as de Hoje. Hoje, Tarefas/projetos e a barra superior (`AppTopBar`, usada por Hábitos, Metas, Notas, Finanças etc.) montam o cabeçalho só por ele; não é permitido criar título próprio por tela nem `sticky`/linha/fundo no cabeçalho.

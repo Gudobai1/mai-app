@@ -4,6 +4,7 @@ import { ReactNode, useLayoutEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { Disclosure, Icon } from './ui'
 import styles from './options.module.css'
+import headerStyles from './header.module.css'
 
 /**
  * Painel de ajustes dos módulos (único): cabeçalho com "Redefinir", grupos com título e linhas
@@ -83,5 +84,21 @@ export function OptionsSwitchMove({ label, checked, onChange, onUp, onDown }: { 
       <button type="button" className={styles.moveBtn} disabled={!onUp} onClick={onUp} aria-label={`Mover ${label} para cima`}><Icon name="arrow_upward" size={16} filled={false} /></button>
       <button type="button" className={styles.moveBtn} disabled={!onDown} onClick={onDown} aria-label={`Mover ${label} para baixo`}><Icon name="arrow_downward" size={16} filled={false} /></button>
     </div>
+  )
+}
+
+/**
+ * Cabeçalho único dos módulos (Hoje, Tarefas, Hábitos, Metas, Notas, Finanças…): título 26/600,
+ * subtítulo cinza 13 e ações à direita. Ver docs/PADROES.md ("Cabeçalho dos módulos").
+ */
+export function ModuleHeader({ title, subtitle, actions, className, textClassName, ...rest }: { title: string; subtitle?: ReactNode; actions?: ReactNode; className?: string; textClassName?: string; [key: `data-${string}`]: unknown }) {
+  return (
+    <header className={`${headerStyles.header} ${className || ''}`} {...rest}>
+      <div className={`${headerStyles.text} ${textClassName || ''}`}>
+        <h1 className={headerStyles.title}>{title}</h1>
+        {subtitle ? <p className={headerStyles.sub}>{subtitle}</p> : null}
+      </div>
+      {actions ? <div className={headerStyles.actions}>{actions}</div> : null}
+    </header>
   )
 }

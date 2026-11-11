@@ -3,7 +3,7 @@
 import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState, type DragEvent, type MouseEvent as ReactMouseEvent, type ReactNode } from 'react'
 import { addDays } from '../../../lib/v2/planner'
 import type { LegacyTask, MaiState } from '../../../lib/v2/state'
-import { Icon, SettingsButton, useDragScroll, Disclosure, OptionsGroup, OptionsSegment, OptionsSwitch } from '../../ds'
+import { Icon, ModuleHeader, SettingsButton, useDragScroll, Disclosure, OptionsGroup, OptionsSegment, OptionsSwitch } from '../../ds'
 import { showCompleted } from '../../../lib/v2/show-completed'
 import type { AppView, Row, TaskModuleScope } from '../app-types'
 import type { InspectableItem } from '../ContextDrawer'
@@ -618,50 +618,52 @@ export function TasksModern(props: Props) {
 
   return (
     <div className={styles.page} data-selecting={selecting || undefined}>
-      <nav className={styles.nav} aria-label="Listas e projetos">
-        <div className={styles.headText}>
-          <h1 className={styles.headName}>{title}</h1>
-          <p className={styles.headSub}>{visibleIds.length} tarefa{visibleIds.length === 1 ? '' : 's'}</p>
-        </div>
-        <SettingsButton ref={optionsRef} active={priorityFilter !== 'all' || ctxFilter !== 'all'} aria-expanded={optionsOpen} onClick={() => setOptionsOpen(true)} />
-        {optionsOpen ? (
-          <Floating anchor={optionsRef} title="Opções" width={300} onClose={() => setOptionsOpen(false)}>
-            <div className={styles.optionsPanel}>
-              {projectId ? (
-                <OptionsGroup title="Visualização" order={1}>
-                  <OptionsSegment value={kanban ? 'quadro' : 'lista'} onChange={value => setLayout(value as 'lista' | 'quadro')} items={[{ value: 'lista', label: 'Lista', icon: 'view_agenda' }, { value: 'quadro', label: 'Quadro', icon: 'view_kanban' }]} />
-                </OptionsGroup>
-              ) : null}
-              <OptionsGroup title="Mostrar" order={2}>
-                <OptionsSegment value={ctxFilter} onChange={value => { if (!isProjectLike) props.onScopeChange('entrada'); setCtxFilter(value as CtxFilter) }} items={ctxTabs.map(tab => ({ value: tab.id, label: `${tab.label}${tab.count ? ` ${tab.count}` : ''}` }))} />
-                <OptionsSwitch label="Mostrar concluídas" checked={showDone} onChange={on => setScoped({ showDone: on })} />
-              </OptionsGroup>
-              <OptionsGroup title="Filtrar" order={3}>
-                <OptionsSegment label="Prioridade" value={priorityFilter} onChange={value => setFilter({ priority: value })} items={[{ value: 'all', label: 'Todas' }, { value: '1', label: 'Alta' }, { value: '2', label: 'Média' }, { value: '3', label: 'Baixa' }, { value: '4', label: 'Sem' }]} />
-              </OptionsGroup>
-              <OptionsGroup title="Ordenar" order={4}>
-                <OptionsSegment value={sortMode} onChange={value => setControl({ sort: value })} items={[{ value: 'manual', label: 'Manual' }, { value: 'date', label: 'Data' }, { value: 'priority', label: 'Prioridade' }, { value: 'name', label: 'Nome' }]} />
-              </OptionsGroup>
-              <div className={styles.menuList}>
-                <button type="button" onClick={() => { setOptionsOpen(false); props.onScopeChange('today') }}><Icon name="today" size={18} style={{ color: 'var(--ds-mint-fg)' }} /><span>Hoje</span>{counts.today ? <small>{counts.today}</small> : null}</button>
-                <button type="button" onClick={() => { setOptionsOpen(false); props.onScopeChange('upcoming') }}><Icon name="event_upcoming" size={18} style={{ color: 'var(--ds-lilac-fg)' }} /><span>Em breve</span>{counts.upcoming ? <small>{counts.upcoming}</small> : null}</button>
-                <button type="button" onClick={() => { setOptionsOpen(false); props.onScopeChange('all') }}><Icon name="select_all" size={18} /><span>Todas as tarefas</span><small>{counts.all}</small></button>
-                <button type="button" onClick={() => { setOptionsOpen(false); setSelectMode(true) }}><Icon name="check_box" size={18} /><span>Selecionar várias</span></button>
-              </div>
-              <div className={styles.menuList}>
-                {projectId ? (
-                  <>
-                    <button type="button" onClick={() => { setOptionsOpen(false); props.onEditProject(projectId) }}><Icon name="edit" size={18} /><span>Editar projeto</span></button>
-                    <button type="button" onClick={() => { setOptionsOpen(false); props.onManageSections(projectId) }}><Icon name="view_agenda" size={18} /><span>Seções</span></button>
-                    <button type="button" onClick={() => { setOptionsOpen(false); props.onNewProject(String(root?.id || projectId)) }}><Icon name="subdirectory_arrow_right" size={18} /><span>Novo subprojeto</span></button>
-                  </>
-                ) : null}
-                <button type="button" onClick={() => { setOptionsOpen(false); props.onNewProject() }}><Icon name="create_new_folder" size={18} /><span>Novo projeto</span></button>
-              </div>
-            </div>
-          </Floating>
-        ) : null}
-      </nav>
+      <ModuleHeader
+        title={title}
+        subtitle={`${visibleIds.length} tarefa${visibleIds.length === 1 ? '' : 's'}`}
+        actions={(
+          <>
+            <SettingsButton ref={optionsRef} active={priorityFilter !== 'all' || ctxFilter !== 'all'} aria-expanded={optionsOpen} onClick={() => setOptionsOpen(true)} />
+            {optionsOpen ? (
+              <Floating anchor={optionsRef} title="Opções" width={300} onClose={() => setOptionsOpen(false)}>
+                <div className={styles.optionsPanel}>
+                  {projectId ? (
+                    <OptionsGroup title="Visualização" order={1}>
+                      <OptionsSegment value={kanban ? 'quadro' : 'lista'} onChange={value => setLayout(value as 'lista' | 'quadro')} items={[{ value: 'lista', label: 'Lista', icon: 'view_agenda' }, { value: 'quadro', label: 'Quadro', icon: 'view_kanban' }]} />
+                    </OptionsGroup>
+                  ) : null}
+                  <OptionsGroup title="Mostrar" order={2}>
+                    <OptionsSegment value={ctxFilter} onChange={value => { if (!isProjectLike) props.onScopeChange('entrada'); setCtxFilter(value as CtxFilter) }} items={ctxTabs.map(tab => ({ value: tab.id, label: `${tab.label}${tab.count ? ` ${tab.count}` : ''}` }))} />
+                    <OptionsSwitch label="Mostrar concluídas" checked={showDone} onChange={on => setScoped({ showDone: on })} />
+                  </OptionsGroup>
+                  <OptionsGroup title="Filtrar" order={3}>
+                    <OptionsSegment label="Prioridade" value={priorityFilter} onChange={value => setFilter({ priority: value })} items={[{ value: 'all', label: 'Todas' }, { value: '1', label: 'Alta' }, { value: '2', label: 'Média' }, { value: '3', label: 'Baixa' }, { value: '4', label: 'Sem' }]} />
+                  </OptionsGroup>
+                  <OptionsGroup title="Ordenar" order={4}>
+                    <OptionsSegment value={sortMode} onChange={value => setControl({ sort: value })} items={[{ value: 'manual', label: 'Manual' }, { value: 'date', label: 'Data' }, { value: 'priority', label: 'Prioridade' }, { value: 'name', label: 'Nome' }]} />
+                  </OptionsGroup>
+                  <div className={styles.menuList}>
+                    <button type="button" onClick={() => { setOptionsOpen(false); props.onScopeChange('today') }}><Icon name="today" size={18} style={{ color: 'var(--ds-mint-fg)' }} /><span>Hoje</span>{counts.today ? <small>{counts.today}</small> : null}</button>
+                    <button type="button" onClick={() => { setOptionsOpen(false); props.onScopeChange('upcoming') }}><Icon name="event_upcoming" size={18} style={{ color: 'var(--ds-lilac-fg)' }} /><span>Em breve</span>{counts.upcoming ? <small>{counts.upcoming}</small> : null}</button>
+                    <button type="button" onClick={() => { setOptionsOpen(false); props.onScopeChange('all') }}><Icon name="select_all" size={18} /><span>Todas as tarefas</span><small>{counts.all}</small></button>
+                    <button type="button" onClick={() => { setOptionsOpen(false); setSelectMode(true) }}><Icon name="check_box" size={18} /><span>Selecionar várias</span></button>
+                  </div>
+                  <div className={styles.menuList}>
+                    {projectId ? (
+                      <>
+                        <button type="button" onClick={() => { setOptionsOpen(false); props.onEditProject(projectId) }}><Icon name="edit" size={18} /><span>Editar projeto</span></button>
+                        <button type="button" onClick={() => { setOptionsOpen(false); props.onManageSections(projectId) }}><Icon name="view_agenda" size={18} /><span>Seções</span></button>
+                        <button type="button" onClick={() => { setOptionsOpen(false); props.onNewProject(String(root?.id || projectId)) }}><Icon name="subdirectory_arrow_right" size={18} /><span>Novo subprojeto</span></button>
+                      </>
+                    ) : null}
+                    <button type="button" onClick={() => { setOptionsOpen(false); props.onNewProject() }}><Icon name="create_new_folder" size={18} /><span>Novo projeto</span></button>
+                  </div>
+                </div>
+              </Floating>
+            ) : null}
+          </>
+        )}
+      />
 
       {projectId && family.length > 1 ? (
         <div className={styles.folders} aria-label="Subprojetos">

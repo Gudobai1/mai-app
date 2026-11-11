@@ -1,7 +1,7 @@
 'use client'
 
 import { ReactNode, useEffect, useMemo, useRef, useState } from 'react'
-import { OptionsGroup, OptionsPanel, OptionsSegment, OptionsSelect, OptionsSwitch, OptionsSwitchMove, SettingsButton } from '../ds'
+import { ModuleHeader, OptionsGroup, OptionsPanel, OptionsSegment, OptionsSelect, OptionsSwitch, OptionsSwitchMove, SettingsButton } from '../ds'
 import { showCompleted } from '../../lib/v2/show-completed'
 import { GOAL_TYPES } from '../../lib/v2/goals'
 import type { MaiState } from '../../lib/v2/state'
@@ -260,8 +260,7 @@ export function AppTopBar({ state, today, view, taskScope, commit, onTaskScopeCh
   }, [open])
 
   return <div ref={wrapRef} className="mai-app-topbar" data-view={String(view)} data-sort-mode={sortMode}>
-    <div className="mai-app-topbar-context"><h1>{title}</h1><p>{info}</p></div>
-    <div className="mai-app-topbar-single-action"><SettingsButton active={open} badge={customized} aria-expanded={open} onClick={() => setOpen(value => !value)} /></div>
+    <ModuleHeader textClassName="mai-app-topbar-context" title={title} subtitle={info} actions={<SettingsButton active={open} badge={customized} aria-expanded={open} onClick={() => setOpen(value => !value)} />} />
     {open ? <OptionsPanel anchor={wrapRef.current?.querySelector<HTMLElement>('button') ?? wrapRef.current} title={title} onReset={customized ? reset : undefined} onClose={() => setOpen(false)}>{panelBody}</OptionsPanel> : null}
   </div>
 }
