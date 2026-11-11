@@ -149,3 +149,8 @@ Fonte única da verdade: o quadro "Sistema de design Bukid" (quadros 0 a 12). Os
 - Regra única em `lib/v2/alerts.ts` (`buildAlerts`): **Vencidos**, **Próximos** (com horário nas próximas 4 h, inclui compromissos e o que está rolando), **Lembretes** e **Para hoje**. "Próximos" segue a opção "Para hoje" de Configurações → Notificações.
 - `NotificationPanel`: abas por tipo com contagem, linhas com ações rápidas (concluir, adiar para amanhã, dispensar), "Dispensar tudo" e atalho para as configurações. Dispensar vale só no dia (`loadDismissed`/`saveDismissed`, neste navegador) e some também da contagem da bolinha.
 - Abre pelo menu do perfil (Notificações) ou clicando na bolinha do avatar.
+
+## Atalhos de teclado
+- Regra única em `lib/v2/shortcuts.ts` (padrões, normalização, `matchShortcut`); config em `configs.shortcuts` editada em Configurações → Atalhos (`ShortcutsSettings`). Padrões: **Q** = novo item do módulo aberto, **F** = pesquisar, configurações sem tecla. Fixos: Ctrl+Espaço, Ctrl+Z, Esc. Uma tecla simples por ação; tecla repetida é recusada. Atalho novo = nova ação em `SHORTCUT_ACTIONS` e tratamento no `onKey` de `UnifiedAppUx`.
+- A dica na linha "Buscar" da barra lateral mostra a tecla configurada.
+- A busca não tem mais o bloco "Ir para" (navegação é pela barra).

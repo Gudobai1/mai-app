@@ -334,12 +334,6 @@ export function SearchOverlay({ state, today, query, setQuery, onClose, inspect,
                 {([['hoje', 'today'], ['amanhã', 'event_upcoming'], ['esta semana', 'date_range'], ['este mês', 'calendar_month'], ['atrasadas', 'warning'], ['semana passada', 'schedule'], ['mês passado', 'schedule'], ['!alta', 'flag'], ['!média', 'flag'], ['!baixa', 'flag']] as const).map(([item, icon]) => <button key={item} type="button" onClick={() => { setQuery(item); inputRef.current?.focus() }}><Icon name={icon} size={14} filled={false} />{item}</button>)}
                 {projects.slice(0, 6).map(project => <button key={String(project.id)} type="button" onClick={() => { setQuery(`#${String(project.nome)} `); inputRef.current?.focus() }}><i className={styles.chipDot} style={{ background: String(project.cor || 'var(--ds-muted)') }} />{String(project.nome)}</button>)}
               </div>
-              <div className={styles.group}>Ir para</div>
-              <div className={styles.chips}>
-                {([['today', 'Hoje', 'today'], ['upcoming', 'Em breve', 'event_upcoming'], ['tasks', 'Tarefas', 'check_circle'], ['habits', 'Hábitos', 'repeat'], ['goals', 'Metas', 'flag'], ['notes', 'Notas', 'description'], ['finance', 'Finanças', 'payments']] as const).map(([view, label, icon]) => (
-                  <button key={view} type="button" onClick={() => { close(); navigate(view as import('./app-types').AppView) }}><Icon name={icon} size={14} filled={false} />{label}</button>
-                ))}
-              </div>
             </div>
           ) : null}
 

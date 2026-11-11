@@ -21,6 +21,7 @@ import { NotesV4 } from './NotesV4'
 import { ProjectEditor } from './tasks/ProjectEditor'
 import { QuickCreateDrawer } from './QuickCreateDrawer'
 import { SearchOverlay } from './SearchOverlay'
+import { matchShortcut, normalizeShortcuts } from '../../lib/v2/shortcuts'
 import { SectionInlineAdd } from './SectionInlineAdd'
 import { ModernBottomNav } from './shell/ModernBottomNav'
 import { ModernSidebar } from './shell/ModernSidebar'
@@ -192,18 +193,22 @@ export function UnifiedAppUx() {
     setView(saved)
   }, [runtime.ready, runtime.state.configs.lastView])
 
+  const shortcuts = normalizeShortcuts(runtime.state.configs.shortcuts)
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       const target = event.target as HTMLElement | null
       const editing = target?.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target?.tagName || '')
       if ((event.ctrlKey || event.metaKey) && (event.code === 'Space')) { event.preventDefault(); setSearchOpen(true) }
       if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'z' && !editing) { event.preventDefault(); runtime.undo() }
-      if (!event.ctrlKey && !event.metaKey && !event.altKey && event.key.toLowerCase() === 'q' && !editing && view !== 'completed') { event.preventDefault(); contextualAdd() }
+      const action = !editing ? matchShortcut(event, shortcuts) : null
+      if (action === 'newTask' && view !== 'completed') { event.preventDefault(); contextualAdd() }
+      if (action === 'search') { event.preventDefault(); setSearchOpen(true) }
+      if (action === 'settings') { event.preventDefault(); setSettingsOpen(true) }
       if (event.key === 'Escape') { setSearchOpen(false); setSettingsOpen(false); setProjectDialog(null); setSelected(null); setCreating(null); setQuickAdd(null) }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [view, taskScope])
+  }, [view, taskScope, shortcuts])
 
   const isDark = isDarkMode(runtime.state.configs.theme)
   function toggleTheme() {

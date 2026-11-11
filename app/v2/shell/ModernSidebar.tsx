@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { MaiState } from '../../../lib/v2/state'
+import { normalizeShortcuts, shortcutLabel } from '../../../lib/v2/shortcuts'
 import { Icon, Disclosure } from '../../ds'
 import type { AppView } from '../app-types'
 import { ProjectMark } from './ProjectMark'
@@ -209,7 +210,7 @@ export function ModernSidebar({ state, today, view, navigate, onSearch, onSettin
       {sidebarHidden(side, 'search') ? null : <button type="button" className={styles.search} title="Buscar" onClick={onSearch}>
         {sideIcon('search', 'search', 20)}
         <span>Buscar</span>
-        <span className={styles.kbd}>Ctrl Espaço</span>
+        <span className={styles.kbd}>{shortcutLabel(normalizeShortcuts(state.configs.shortcuts).search) || 'Ctrl Espaço'}</span>
       </button>}
 
       <nav className={styles.nav} aria-label="Áreas">
