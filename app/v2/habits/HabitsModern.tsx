@@ -23,7 +23,7 @@ import styles from './HabitsModern.module.css'
  */
 
 type Commit = (change: (current: MaiState) => MaiState) => void
-type Filter = 'all' | 'today' | 'pending'
+type Filter = 'all' | 'today' | 'pending' | 'done'
 
 const rows = (value: unknown): Row[] => (Array.isArray(value) ? (value as Row[]) : [])
 const nums = (value: unknown): number[] => (Array.isArray(value) ? value.map(Number).filter(item => Number.isInteger(item) && item >= 0 && item <= 6) : [])
@@ -103,7 +103,9 @@ export function HabitsModern({ state, today, commit, createRequest, inspect }: P
   const habits = rows(state.habits).filter(item => item.ativo !== false)
   const entries = rows(state.habitEntries)
   const [anchor, setAnchor] = useState(today)
-  const [filter, setFilter] = useState<Filter>('all')
+  // Situação vem do botão de ajustes único (AppTopBar → configs.moduleFilters.habits.status).
+  const savedStatus = String(((state.configs.moduleFilters as Record<string, Record<string, unknown>> | undefined)?.habits || {}).status || 'all')
+  const filter: Filter = savedStatus === 'today' || savedStatus === 'pending' || savedStatus === 'done' ? savedStatus : 'all'
   const [adding, setAdding] = useState(false)
   const [valueFor, setValueFor] = useState<{ habit: Row; day: string } | null>(null)
 
@@ -160,6 +162,7 @@ export function HabitsModern({ state, today, commit, createRequest, inspect }: P
     const level = levelOf(habit, today)
     if (filter === 'today') return due
     if (filter === 'pending') return due && level !== 'full'
+    if (filter === 'done') return level === 'full'
     return true
   })
 
@@ -172,22 +175,6 @@ export function HabitsModern({ state, today, commit, createRequest, inspect }: P
 
   return (
     <div className={styles.page}>
-      <div className={styles.bar}>
-        <div className={styles.tabs} role="tablist">
-          {([
-            { id: 'all', label: 'Todos', icon: 'select_all' },
-            { id: 'today', label: 'Hoje', icon: 'today' },
-            { id: 'pending', label: 'Pendentes', icon: 'pending_actions' },
-          ] as { id: Filter; label: string; icon: string }[]).map(tab => (
-            <button key={tab.id} type="button" role="tab" className={styles.tab} data-active={filter === tab.id || undefined} aria-selected={filter === tab.id} onClick={() => setFilter(tab.id)}>
-              <Icon name={tab.icon} size={17} filled={false} />
-              <span>{tab.label}</span>
-              {counts[tab.id] ? <small>{counts[tab.id]}</small> : null}
-            </button>
-          ))}
-        </div>
-      </div>
-
       <section className={styles.block} aria-label="Hábitos">
         <div className={styles.head}>
           <span className={styles.headTitle}>Hábitos</span>
