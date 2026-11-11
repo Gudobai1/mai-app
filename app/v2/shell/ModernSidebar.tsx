@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import type { MaiState } from '../../../lib/v2/state'
 import { normalizeShortcuts, shortcutLabel } from '../../../lib/v2/shortcuts'
 import { newLabel } from './new-label'
@@ -179,6 +180,12 @@ export function ModernSidebar({ state, today, view, navigate, onSearch, onSettin
     )
   }
 
+  const railButton = onToggleRail ? (
+    <button type="button" className={styles.railToggle} onClick={onToggleRail} aria-label={rail ? 'Abrir a barra' : 'Fechar a barra'} title={rail ? 'Abrir a barra' : 'Fechar a barra'}>
+      <Icon name={rail ? 'left_panel_open' : 'left_panel_close'} size={20} filled={false} />
+    </button>
+  ) : null
+
   return (
     <aside className={styles.sidebar} aria-label="Menu principal" onMouseEnter={onEnter} onMouseLeave={onLeave}>
       <div className={styles.userTop}>
@@ -208,11 +215,7 @@ export function ModernSidebar({ state, today, view, navigate, onSearch, onSettin
             </div>
           ) : null}
         </div>
-        {canRail && onToggleRail ? (
-          <button type="button" className={styles.railToggle} onClick={onToggleRail} aria-label={rail ? 'Abrir a barra' : 'Fechar a barra'} title={rail ? 'Abrir a barra' : 'Fechar a barra'}>
-            <Icon name={rail ? 'left_panel_open' : 'left_panel_close'} size={20} filled={false} />
-          </button>
-        ) : null}
+        {canRail && onToggleRail ? (rail && typeof document !== 'undefined' ? createPortal(railButton, document.body) : railButton) : null}
       </div>
       <button type="button" className={styles.newBtn} onClick={onNew} title={`${newLabel(view)} (${shortcutLabel(normalizeShortcuts(state.configs.shortcuts).newTask) || 'botão'})`} aria-label={newLabel(view)}>
         <Icon name="add" size={22} filled={false} />
