@@ -191,3 +191,4 @@ Todo módulo abre com o mesmo cabeçalho, montado só por `AppTopBar`: título 2
 ## Cabeçalho dos módulos (componente único `ModuleHeader`)
 - Todo módulo usa `ModuleHeader` (`app/ds/options.tsx`, estilo em `app/ds/header.module.css`): título 26/600 (22 no celular), subtítulo cinza 13 a 8px abaixo, ações à direita, 8px de espaço embaixo. As medidas são as de Hoje. Hoje, Tarefas/projetos e a barra superior (`AppTopBar`, usada por Hábitos, Metas, Notas, Finanças etc.) montam o cabeçalho só por ele; não é permitido criar título próprio por tela nem `sticky`/linha/fundo no cabeçalho.
 - Nenhum módulo repete o título dentro do conteúdo: Notas, Finanças e Em breve também usam `ModuleHeader` (Em breve com as ações e a navegação de data à direita; Finanças com o mês e os ajustes à direita).
+- Cartão de detalhe da meta: sem barra de progresso; a conclusão aparece só em número (porcentagem ou valor atual de alvo).

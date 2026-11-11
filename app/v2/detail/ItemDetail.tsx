@@ -1214,7 +1214,6 @@ function GoalDetail({ item, state, today, commit, register, close, onOpenItem }:
         <div className={styles.habitCard}>
           <div className={styles.habitStatus}>
             {amount ? <span>{amount}</span> : null}
-            <div className={styles.bar} data-tone="lilac"><span style={{ width: `${pct}%` }} /></div>
           </div>
           {type === 'percentual' || type === 'valor' || type === 'quantidade' ? (
             <div className={styles.habitButtons}>
