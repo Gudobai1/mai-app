@@ -4,14 +4,14 @@
 .slot[data-orientation='vertical'] { width: 0; margin: 0 calc(var(--ds-s-4, 16px) * -1); align-self: stretch; }
 .hit { position: absolute; display: flex; align-items: center; justify-content: center; border: 0; padding: 0; background: transparent; color: var(--ds-accent); font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; opacity: 0; transition: opacity var(--ds-dur, 0.12s); }
 .slot[data-orientation='horizontal'] .hit { left: 0; right: 0; top: -14px; height: 28px; }
-.slot[data-orientation='vertical'] .hit { top: 0; bottom: 0; left: -14px; width: 28px; flex-direction: column; justify-content: flex-end; }
+.slot[data-orientation='vertical'] .hit { top: 0; bottom: 0; left: -14px; width: 28px; flex-direction: column; justify-content: flex-start; }
 .hit:hover, .hit:focus-visible { opacity: 1; }
 .hit:focus-visible { outline: none; }
 .line { position: absolute; background: color-mix(in srgb, var(--ds-accent) 55%, transparent); }
 .slot[data-orientation='horizontal'] .line { left: 0; right: 0; top: 50%; height: 1px; }
 .slot[data-orientation='vertical'] .line { top: 0; bottom: 0; left: 50%; width: 1px; }
 .label { position: relative; padding: 0 10px; background: var(--ds-bg); white-space: nowrap; }
-.slot[data-orientation='vertical'] .label { padding: 6px 0; margin-bottom: 24px; transform: translateX(0); }
+.slot[data-orientation='vertical'] .label { padding: 6px 0; margin-top: max(120px, calc(var(--board-min, 70vh) - 80px)); }
 @media (hover: none) { .hit { opacity: 0.55; } .line { display: none; } .slot[data-orientation='horizontal'] .hit { top: -10px; height: 20px; } .slot[data-orientation='vertical'] { display: none; } }
 .form { display: flex; flex-direction: column; gap: 8px; box-sizing: border-box; padding: 10px 0; }
 .form[data-orientation='vertical'] { flex: 0 0 280px; width: 280px; padding: 22px 0 0; }

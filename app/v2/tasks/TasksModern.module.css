@@ -2479,3 +2479,7 @@
 
 /* Espaço do quadro (20px) para o "Adicionar seção" entre colunas. */
 .board > :global([data-section-adder]) { margin-left: -20px; margin-right: -20px; }
+
+/* Quadro de altura inteira: a coluna vai até o fim da tela (como renderizada inteira); o espaço vazio também puxa para o lado (mãozinha). */
+.board.board { --board-min: calc(100dvh - 190px); min-height: var(--board-min); align-items: stretch; }
+.board.board > .column { align-self: stretch; }
