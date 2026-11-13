@@ -26,6 +26,8 @@ type Props = {
   calendarBusy: boolean
   saveCalendars: () => Promise<void>
   disconnectGoogle: () => Promise<void>
+  /** Permissão real do aparelho (no app Android vem do plugin nativo, não do navegador). */
+  notificationPermission: string
   requestNotifications: () => Promise<void>
   testReminder: () => Promise<void>
   installPrompt: unknown
@@ -81,7 +83,7 @@ export function AppSettingsDrawer(props: Props) {
   }, [props])
 
   const notifications = Boolean(props.state.configs.notificationsEnabled)
-  const permission = typeof Notification !== 'undefined' ? Notification.permission : 'unsupported'
+  const permission = props.notificationPermission
   const standalone = typeof window !== 'undefined' && typeof window.matchMedia === 'function' && window.matchMedia('(display-mode: standalone)').matches
   const phase = props.syncStatus.phase
   const updatedAt = String(props.state.meta?.updatedAt || '')
