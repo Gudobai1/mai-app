@@ -11,6 +11,7 @@ import { addDays } from '../../lib/v2/planner'
 import { buildReminders, normalizeReminders, reminderTitle } from '../../lib/v2/reminders'
 import { createTask, dateKey, emptyState, flushRemoteSync, hydrateRemoteState, loadState, type MaiState, normalizeState, persistState, subscribeSyncStatus, type SyncStatus } from '../../lib/v2/state'
 import { drivePreviewUrl, uploadDataUrlToDrive } from './DriveAsset'
+import { notificationBlocker, showWebNotification } from '../../lib/v2/web-notify'
 import { isNativeApp, nativePlugin, syncSystemBars } from '../../lib/native/native'
 
 type Row = Record<string, any>
@@ -191,7 +192,7 @@ export function useMaiRuntime() {
       buildReminders(state, today, today, addDays(today, 8), config).forEach(reminder => {
         const key = `bukid-reminder-${reminder.id}-${new Date(reminder.at).toISOString()}`
         if (reminder.at > now || now - reminder.at > 120_000 || localStorage.getItem(key)) return
-        new Notification(reminder.title, { body: reminder.body, icon: '/mai-icon.svg', tag: reminder.id, silent: config.look.silent })
+        void showWebNotification(reminder.title, { body: reminder.body, icon: '/mai-icon.svg', tag: reminder.id, silent: config.look.silent })
         localStorage.setItem(key, new Date().toISOString())
       })
     }
@@ -342,9 +343,10 @@ export function useMaiRuntime() {
       await plugin.schedule({ notifications: [{ id: 2_000_000_001, title, body, schedule: { at: new Date(Date.now() + 3000), allowWhileIdle: true } }] })
       return
     }
-    if (!('Notification' in window)) return alert('Este navegador não oferece notificações.')
+    const blocker = notificationBlocker()
+    if (blocker) return alert(blocker)
     if (Notification.permission !== 'granted') return alert('Ative as notificações primeiro.')
-    new Notification(title, { body, icon: '/mai-icon.svg', tag: 'bukid-teste', silent: config.look.silent })
+    if (!(await showWebNotification(title, { body, icon: '/mai-icon.svg', tag: 'bukid-teste', silent: config.look.silent }))) alert('Não consegui mostrar o aviso. Confira se as notificações do navegador estão liberadas nas configurações do aparelho.')
   }
 
   async function requestNotifications() {
@@ -361,14 +363,23 @@ export function useMaiRuntime() {
       if (granted) commit(current => ({ ...current, configs: { ...current.configs, notificationsEnabled: true } }))
       return
     }
-    if (!('Notification' in window)) return alert('Este navegador não oferece notificações.')
+    const blocker = notificationBlocker()
+    if (blocker) return alert(blocker)
     if (state.configs.notificationsEnabled === true && notificationPermission === 'granted') {
       commit(current => ({ ...current, configs: { ...current.configs, notificationsEnabled: false } }))
       return
     }
-    const permission = await Notification.requestPermission()
+    let permission: NotificationPermission = Notification.permission
+    try {
+      // Safari antigo usa callback; os demais devolvem uma promessa.
+      permission = await new Promise<NotificationPermission>(resolve => {
+        const result = Notification.requestPermission(resolve)
+        if (result && typeof (result as Promise<NotificationPermission>).then === 'function') (result as Promise<NotificationPermission>).then(resolve, () => resolve(Notification.permission))
+      })
+    } catch { permission = Notification.permission }
     setNotificationPermission(permission)
     if (permission === 'granted') commit(current => ({ ...current, configs: { ...current.configs, notificationsEnabled: true } }))
+    else if (permission === 'default') alert('O aparelho não liberou. Quando aparecer o pedido de permissão, toque em Permitir. Se ele não aparecer, libere Notificações nas configurações do site.')
   }
 
   async function install() {
