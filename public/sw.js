@@ -93,3 +93,14 @@ self.addEventListener('fetch', event => {
     return response
   }).catch(() => caches.match(event.request, { ignoreSearch: true }).then(cached => cached || caches.match('/'))))
 })
+
+/* Toque numa notificação: abre (ou volta para) o Bukid. */
+self.addEventListener('notificationclick', event => {
+  event.notification.close()
+  event.waitUntil((async () => {
+    const all = await self.clients.matchAll({ type: 'window', includeUncontrolled: true })
+    const open = all.find(client => 'focus' in client)
+    if (open) return open.focus()
+    return self.clients.openWindow('/v2')
+  })())
+})
