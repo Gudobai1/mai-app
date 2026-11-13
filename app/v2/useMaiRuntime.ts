@@ -96,7 +96,7 @@ export function useMaiRuntime() {
   const [calendarBusy, setCalendarBusy] = useState(false)
   const [syncStatus, setSyncStatus] = useState<SyncStatus>({ phase: 'local', message: 'Salvo neste dispositivo' })
   const [undoCount, setUndoCount] = useState(0)
-  const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>('default')
+  const [notificationPermission, setNotificationPermission] = useState<NotificationPermission | 'unsupported'>('default')
   const [installPrompt, setInstallPrompt] = useState<InstallPromptEvent | null>(null)
   const history = useRef<MaiState[]>([])
   const importRef = useRef<HTMLInputElement>(null)
@@ -177,6 +177,7 @@ export function useMaiRuntime() {
   useEffect(() => {
     if (isNativeApp()) void nativePlugin('LocalNotifications')?.checkPermissions?.().then((result: { display?: string }) => setNotificationPermission(result?.display === 'granted' ? 'granted' : result?.display === 'denied' ? 'denied' : 'default')).catch(() => null)
     else if ('Notification' in window) setNotificationPermission(Notification.permission)
+    else setNotificationPermission('unsupported')
     const install = (event: Event) => { event.preventDefault(); setInstallPrompt(event as InstallPromptEvent) }
     window.addEventListener('beforeinstallprompt', install)
     const timer = window.setInterval(() => setToday(dateKey()), 60_000)
@@ -361,6 +362,7 @@ export function useMaiRuntime() {
       const granted = result?.display === 'granted'
       setNotificationPermission(granted ? 'granted' : 'denied')
       if (granted) commit(current => ({ ...current, configs: { ...current.configs, notificationsEnabled: true } }))
+      else alert('As notificações estão bloqueadas para o Bukid. Abra as Configurações do Android → Apps → Bukid → Notificações e libere.')
       return
     }
     const blocker = notificationBlocker()
@@ -426,7 +428,7 @@ export function useMaiRuntime() {
   return {
     refreshItems, toast, dismissToast: () => setToast(null), state, setState, ready, today, googleConnected, calendars, calendarDraft, setCalendarDraft, calendarBusy,
     syncStatus, undoCount, installPrompt, importRef, commit, undo, googleRpc, syncCalendar, openGoogle,
-    saveCalendars, disconnectGoogle, requestNotifications, testReminder, install, exportData, importData, logout, flushRemoteSync,
+    saveCalendars, disconnectGoogle, notificationPermission, requestNotifications, testReminder, install, exportData, importData, logout, flushRemoteSync,
   }
 }
 
