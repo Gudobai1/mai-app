@@ -231,11 +231,11 @@ export function DayTimeline({ state, day, today, commit, inspect, accept }: Prop
   const hours = Array.from({ length: lastHour - firstHour + 1 }, (_, index) => firstHour + index)
 
   const projectOf = (item: PlannerItem) => (state.projects as Record<string, any>[]).find(project => String(project.id) === String(item.raw.projeto_id || ''))
-  const timeControl = (item: PlannerItem) => (
+  const timeControl = (item: PlannerItem, label = false) => (
     movable(item) && item.kind !== 'event' && !item.time ? (
       pickFor === item.id
         ? <input type="time" className={styles.timeInput} aria-label={`Horário de ${item.title}`} autoFocus onBlur={() => setPickFor('')} onChange={event => { if (event.target.value) { schedule(item, event.target.value); setPickFor('') } }} />
-        : <button type="button" className={styles.timeButton} onClick={() => setPickFor(item.id)}>Horário</button>
+        : <button type="button" className={styles.timeChip} data-label={label || undefined} title="Definir horário" aria-label={`Definir horário de ${item.title}`} onClick={event => { event.stopPropagation(); setPickFor(item.id) }}><Icon name="schedule" size={14} filled={false} />{label ? 'Definir horário' : null}</button>
     ) : null
   )
 
@@ -252,9 +252,9 @@ export function DayTimeline({ state, day, today, commit, inspect, accept }: Prop
           <div className={todayStyles.taskMeta}>
             {item.time ? <span className={todayStyles.dateTag}><Icon name="schedule" size={14} filled={false} />{item.time}</span> : null}
             <span className={todayStyles.projLabel} style={{ color: String(project?.cor || 'var(--ds-line-strong)') }}>{String(project?.nome || 'Entrada')}<b>#</b></span>
+            {timeControl(item, true)}
           </div>
         </div>
-        {timeControl(item)}
       </div>
     )
   }
