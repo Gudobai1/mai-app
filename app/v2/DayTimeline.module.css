@@ -98,3 +98,14 @@
   .organize { position: relative; appearance: none; border: 0; background: var(--ds-accent-soft); color: var(--ds-accent); height: 40px; width: 40px; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
   .organize b { position: absolute; top: 2px; right: 0; min-width: 16px; height: 16px; padding: 0 4px; box-sizing: border-box; border-radius: 99px; background: var(--ds-accent); color: #fff; font-size: 10px; font-weight: var(--ds-fw-bold); display: grid; place-items: center; }
 }
+
+/* Computador largo: 3 partes — linha do tempo | tarefas | o resto do dia (compromissos, hábitos, finanças, metas). */
+.colTasks { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.colRest { min-width: 0; }
+@media (min-width: 1180px) {
+  .layout { grid-template-columns: minmax(340px, 1fr) minmax(0, 1fr) minmax(0, 0.85fr); gap: 36px; }
+  .side, .dockBody { display: contents; }
+  .colTasks, .colRest { align-self: start; }
+  .colTasks .hojeScope.hojeScope h3 { display: none; }
+  .colTasks .hojeScope.hojeScope h2, .colRest.hojeScope.hojeScope h2 { display: block; margin: 0; font-size: 14px; font-weight: var(--ds-fw-bold); }
+}

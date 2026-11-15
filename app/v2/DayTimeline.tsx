@@ -366,29 +366,36 @@ export function DayTimeline({ state, day, today, commit, inspect, accept }: Prop
         <aside className={styles.side} data-open={dockOpen || undefined} aria-label="Dia todo">
           {dockOpen ? <button type="button" className={styles.scrim} aria-label="Fechar" onClick={() => setDockOpen(false)} /> : null}
           <div className={styles.dockBody}>
-            <section className={`${styles.panel} ${todayStyles.page} ${styles.hojeScope}`}>
-              <h2>Dia todo</h2>
-              {items.length ? null : <small className={styles.empty}>Nada previsto para este dia.</small>}
-              {groupEvents.length ? <div className={styles.group}><h3>Compromissos</h3><AgendaStrip items={groupEvents} nowMinutes={isToday ? nowMin : null} isPassed={() => false} onOpen={open} bind={() => ({})} /></div> : null}
-              {groupTasks.length ? <div className={styles.group}><h3>Tarefas</h3><div className={todayStyles.items} role="list">{groupTasks.map(taskRow)}</div></div> : null}
-              {groupHabits.length ? <div className={styles.group}><h3>Hábitos</h3><div className={todayStyles.habitList} role="list">{groupHabits.map(habitRow)}</div></div> : null}
-              {groupFinance.length ? <div className={styles.group}><h3>Finanças</h3><div className={todayStyles.items} role="list">{groupFinance.map(financeRow)}</div></div> : null}
-              {groupGoals.length ? <div className={styles.group}><h3>Metas</h3><div className={todayStyles.items} role="list">{groupGoals.map(financeRow)}</div></div> : null}
-            </section>
-            {overdue.length ? (
-              <section className={`${styles.panel} ${styles.panelLate}`}>
-                <h2>Atrasadas</h2>
-                <div className={styles.looseList}>
-                  {overdue.map(task => (
-                    <div key={task.id} className={styles.looseItem}>
-                      <button type="button" className={styles.check} aria-label={`Concluir: ${task.title}`} onClick={() => commit(current => ({ ...current, tasks: current.tasks.map(row => (String(row.id) === task.id ? { ...row, concluida: true, concluida_em: new Date().toISOString() } : row)) }))} />
-                      <button type="button" className={styles.looseMain} onClick={() => inspect({ kind: 'task', sourceId: task.id, title: task.title, date: task.date, time: '', raw: task.raw })}>
-                        <span>{task.title}</span>
-                        <small className={styles.late}>Atrasada · {task.date.split('-').reverse().slice(0, 2).join('/')}</small>
-                      </button>
-                    </div>
-                  ))}
-                </div>
+            <div className={styles.colTasks}>
+              <section className={`${styles.panel} ${todayStyles.page} ${styles.hojeScope}`}>
+                <h2>Tarefas</h2>
+                {items.length ? null : <small className={styles.empty}>Nada previsto para este dia.</small>}
+                {groupTasks.length ? <div className={styles.group}><h3>Tarefas</h3><div className={todayStyles.items} role="list">{groupTasks.map(taskRow)}</div></div> : null}
+              </section>
+              {overdue.length ? (
+                <section className={`${styles.panel} ${styles.panelLate}`}>
+                  <h2>Atrasadas</h2>
+                  <div className={styles.looseList}>
+                    {overdue.map(task => (
+                      <div key={task.id} className={styles.looseItem}>
+                        <button type="button" className={styles.check} aria-label={`Concluir: ${task.title}`} onClick={() => commit(current => ({ ...current, tasks: current.tasks.map(row => (String(row.id) === task.id ? { ...row, concluida: true, concluida_em: new Date().toISOString() } : row)) }))} />
+                        <button type="button" className={styles.looseMain} onClick={() => inspect({ kind: 'task', sourceId: task.id, title: task.title, date: task.date, time: '', raw: task.raw })}>
+                          <span>{task.title}</span>
+                          <small className={styles.late}>Atrasada · {task.date.split('-').reverse().slice(0, 2).join('/')}</small>
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              ) : null}
+            </div>
+            {groupEvents.length || groupHabits.length || groupFinance.length || groupGoals.length ? (
+              <section className={`${styles.panel} ${todayStyles.page} ${styles.hojeScope} ${styles.colRest}`}>
+                <h2>Dia todo</h2>
+                {groupEvents.length ? <div className={styles.group}><h3>Compromissos</h3><AgendaStrip items={groupEvents} nowMinutes={isToday ? nowMin : null} isPassed={() => false} onOpen={open} bind={() => ({})} /></div> : null}
+                {groupHabits.length ? <div className={styles.group}><h3>Hábitos</h3><div className={todayStyles.habitList} role="list">{groupHabits.map(habitRow)}</div></div> : null}
+                {groupFinance.length ? <div className={styles.group}><h3>Finanças</h3><div className={todayStyles.items} role="list">{groupFinance.map(financeRow)}</div></div> : null}
+                {groupGoals.length ? <div className={styles.group}><h3>Metas</h3><div className={todayStyles.items} role="list">{groupGoals.map(financeRow)}</div></div> : null}
               </section>
             ) : null}
           </div>
