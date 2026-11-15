@@ -106,6 +106,10 @@
   .layout { grid-template-columns: minmax(340px, 1fr) minmax(0, 1fr) minmax(0, 0.85fr); gap: 36px; }
   .side, .dockBody { display: contents; }
   .colTasks, .colRest { align-self: start; }
-  .colTasks .hojeScope.hojeScope h3 { display: none; }
-  .colTasks .hojeScope.hojeScope h2, .colRest.hojeScope.hojeScope h2 { display: block; margin: 0; font-size: 14px; font-weight: var(--ds-fw-bold); }
 }
+
+/* "Definir horário": discreto, no mesmo tom da linha de baixo; só aparece forte ao passar o mouse. */
+.timeChip { appearance: none; display: inline-flex; align-items: center; gap: 4px; height: 24px; padding: 0 6px; border: 0; border-radius: 4px; background: transparent; color: var(--ds-muted); font: inherit; font-size: var(--ds-row-sub, 12.5px); cursor: pointer; flex-shrink: 0; opacity: 0.55; }
+.timeChip:hover, .timeChip:focus-visible { opacity: 1; background: var(--ds-surface-hover); color: var(--ds-text); }
+.timeChip:not([data-label]) { width: 28px; height: 28px; justify-content: center; padding: 0; }
+@media (hover: none) { .timeChip { opacity: 1; } }
