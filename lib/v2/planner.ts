@@ -70,6 +70,7 @@ function eventOccursOn(event: Record<string, any>, day: string) {
   return occursOn(event, day, 'data_inicio')
 }
 
+/** Regra única de "este hábito vale neste dia?": usada no Hoje (lista e linha do tempo), Em breve, detalhe e módulo Hábitos. */
 export function habitOccursOn(habit: Record<string, any>, day: string) {
   const start = String(habit.data_inicio || habit.criado_em || '').slice(0, 10)
   if (start && day < start) return false
@@ -79,9 +80,11 @@ export function habitOccursOn(habit: Record<string, any>, day: string) {
     const interval = Math.max(1, Number(rule.split(':')[1]) || 1)
     return diffDays(start, day) % interval === 0
   }
-  const selectedDays = Array.isArray(habit.dias_semana)
-    ? habit.dias_semana.map(Number).filter((value: number) => Number.isInteger(value) && value >= 0 && value <= 6)
-    : []
+  if (rule === 'diariamente') return true
+  const toDays = (list: unknown[]) => list.map(Number).filter((value: number) => Number.isInteger(value) && value >= 0 && value <= 6)
+  const selectedDays = rule.startsWith('semanal:')
+    ? toDays(rule.slice(8).split(','))
+    : toDays(Array.isArray(habit.dias_semana) ? habit.dias_semana : typeof habit.dias_semana === 'string' ? habit.dias_semana.split(',') : [])
   if (selectedDays.length) return selectedDays.includes(new Date(`${day}T12:00:00`).getDay())
   return true
 }

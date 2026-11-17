@@ -6,6 +6,7 @@ import { Icon } from '../../ds'
 import { HabitCard } from './HabitCard'
 import { UnitField } from './UnitField'
 import { abbreviateUnit } from '../../../lib/v2/units'
+import { habitOccursOn } from '../../../lib/v2/planner'
 import type { Row } from '../app-types'
 import type { InspectableItem } from '../ContextDrawer'
 import { DEFAULT_COLOR } from '../../../lib/v2/palette'
@@ -33,7 +34,6 @@ const dateKey = (value: unknown) => {
   return String(value || '').slice(0, 10)
 }
 const moveDate = (key: string, amount: number) => { const date = new Date(`${key}T12:00:00`); date.setDate(date.getDate() + amount); return dateKey(date) }
-const diffDays = (start: string, end: string) => Math.round((new Date(`${end}T12:00:00`).getTime() - new Date(`${start}T12:00:00`).getTime()) / 86_400_000)
 const failed = (entry?: Row) => entry?.falhou === true || String(entry?.status || '').toLowerCase() === 'falha'
 const longDate = (key: string) => new Date(`${key}T12:00:00`).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' }).replace('.', '')
 const WEEKDAYS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
@@ -50,15 +50,7 @@ function activeDays(habit: Row) {
   return nums(habit.dias_semana)
 }
 
-function eligible(habit: Row, day: string) {
-  const start = dateKey(habit.data_inicio || habit.criado_em)
-  if (start && day < start) return false
-  const every = interval(habit)
-  if (every) return !start || diffDays(start, day) % every === 0
-  if (String(habit.repeticao || '') === 'diariamente') return true
-  const days = activeDays(habit)
-  return !days.length || days.includes(new Date(`${day}T12:00:00`).getDay())
-}
+const eligible = (habit: Row, day: string) => habitOccursOn(habit, day)
 
 function frequencyLabel(habit: Row) {
   const every = interval(habit)

@@ -4,7 +4,7 @@ import { GoalCard } from '../goals/GoalCard'
 import { goalAmountText, goalColor, goalDone, goalDue, goalDueInfo, goalPaused, goalPct, toggleGoalInState, withSteps } from '../../../lib/v2/goals'
 import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { financeSummary } from '../../../lib/v2/finance-summary'
-import { addDays, eventColor, plannerItems, type PlannerItem } from '../../../lib/v2/planner'
+import { addDays, eventColor, habitOccursOn, plannerItems, type PlannerItem } from '../../../lib/v2/planner'
 import type { MaiState } from '../../../lib/v2/state'
 import { Button, Check, Icon, Disclosure, ModuleHeader } from '../../ds'
 import type { AppView, Row } from '../app-types'
@@ -95,19 +95,7 @@ function naturalDate(key: string, today: string) {
   return target.toLocaleDateString('pt-BR', { day: 'numeric', month: 'short', year: target.getFullYear() !== base.getFullYear() ? 'numeric' : undefined }).replace('.', '')
 }
 
-function habitEligible(habit: Row, day: string) {
-  const start = dateKey(habit.data_inicio || habit.criado_em)
-  if (start && day < start) return false
-  const match = String(habit.repeticao || '').match(/^intervalo:(\d+)$/)
-  if (match) {
-    if (!start) return true
-    const interval = Math.max(1, Number(match[1]) || 1)
-    const diff = Math.round((new Date(`${day}T12:00:00`).getTime() - new Date(`${start}T12:00:00`).getTime()) / 86_400_000)
-    return diff % interval === 0
-  }
-  const days = values(habit.dias_semana).map(Number).filter(value => Number.isInteger(value) && value >= 0 && value <= 6)
-  return !days.length || days.includes(new Date(`${day}T12:00:00`).getDay())
-}
+const habitEligible = (habit: Row, day: string) => habitOccursOn(habit, day)
 
 
 /* Links dentro da descrição ficam clicáveis (azul e sublinhado). */
