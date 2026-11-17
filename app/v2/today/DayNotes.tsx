@@ -169,9 +169,9 @@ export function DayNotes({ state, day, commit }: Props) {
     const node = selection.anchorNode
     if (node.nodeType !== 3 || (node.parentNode as HTMLElement | null)?.closest('li')) return
     const before = node.previousSibling
-    if (before && !(before.nodeType === 1 && ['BR', 'DIV', 'H2', 'H3', 'BLOCKQUOTE', 'P'].includes((before as HTMLElement).tagName))) return
+    if (before && !(before.nodeType === 1 && ['BR', 'DIV', 'H2', 'H3', 'P'].includes((before as HTMLElement).tagName))) return
     const text = (node as Text).data.slice(0, selection.anchorOffset)
-    const kind = /^[-*•]$/.test(text) ? 'ul' : /^\d+\.$/.test(text) ? 'ol' : /^\[\s?\]$/.test(text) ? 'box' : text === '#' ? 'h2' : text === '##' ? 'h3' : text === '>' ? 'quote' : ''
+    const kind = /^[-*•]$/.test(text) ? 'ul' : /^\d+\.$/.test(text) ? 'ol' : /^\[\s?\]$/.test(text) ? 'box' : text === '#' ? 'h2' : text === '##' ? 'h3' : ''
     if (!kind) return
     event.preventDefault()
     ;(node as Text).data = (node as Text).data.slice(selection.anchorOffset)
@@ -183,7 +183,7 @@ export function DayNotes({ state, day, commit }: Props) {
     if (kind === 'ul') run('insertUnorderedList')
     else if (kind === 'ol') run('insertOrderedList')
     else if (kind === 'box') toggleBox()
-    else block(kind === 'h2' ? 'h2' : kind === 'h3' ? 'h3' : 'blockquote')
+    else block(kind === 'h2' ? 'h2' : 'h3')
   }
 
   const onEditorClick = (event: React.MouseEvent<HTMLDivElement>) => {
@@ -242,20 +242,13 @@ export function DayNotes({ state, day, commit }: Props) {
     <div className={styles.notes}>
       <div className={styles.frame}>
         <div className={styles.toolbar} role="toolbar" aria-label="Formatar anotações">
-          <button type="button" className={styles.tool} title="Negrito" aria-label="Negrito" onMouseDown={keep} onClick={() => run('bold')}><b>B</b></button>
-          <button type="button" className={styles.tool} title="Itálico" aria-label="Itálico" onMouseDown={keep} onClick={() => run('italic')}><i>I</i></button>
-          <button type="button" className={styles.tool} title="Sublinhado" aria-label="Sublinhado" onMouseDown={keep} onClick={() => run('underline')}><u>S</u></button>
-          <button type="button" className={styles.tool} title="Tachado" aria-label="Tachado" onMouseDown={keep} onClick={() => run('strikeThrough')}><s>T</s></button>
-          <span className={styles.sep} aria-hidden />
           <button type="button" className={styles.tool} title="Título" aria-label="Título" onMouseDown={keep} onClick={() => block('h2')}>H1</button>
           <button type="button" className={styles.tool} title="Subtítulo" aria-label="Subtítulo" onMouseDown={keep} onClick={() => block('h3')}>H2</button>
+          <button type="button" className={styles.tool} title="Negrito" aria-label="Negrito" onMouseDown={keep} onClick={() => run('bold')}><b>B</b></button>
           <span className={styles.sep} aria-hidden />
-          <button type="button" className={styles.tool} title="Lista com marcadores" aria-label="Lista com marcadores" onMouseDown={keep} onClick={() => run('insertUnorderedList')}>•</button>
           <button type="button" className={styles.tool} title="Lista numerada" aria-label="Lista numerada" onMouseDown={keep} onClick={() => run('insertOrderedList')}>1.</button>
+          <button type="button" className={styles.tool} title="Lista com marcadores" aria-label="Lista com marcadores" onMouseDown={keep} onClick={() => run('insertUnorderedList')}>•</button>
           <button type="button" className={styles.tool} title="Caixa de seleção" aria-label="Caixa de seleção" onMouseDown={keep} onClick={toggleBox}>☐</button>
-          <button type="button" className={styles.tool} title="Citação" aria-label="Citação" onMouseDown={keep} onClick={() => block('blockquote')}>❝</button>
-          <span className={styles.sep} aria-hidden />
-          <button type="button" className={styles.tool} title="Limpar formatação" aria-label="Limpar formatação" onMouseDown={keep} onClick={() => run('removeFormat')}>Tx</button>
         </div>
         <div
           ref={editor}
