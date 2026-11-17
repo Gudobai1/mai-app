@@ -140,6 +140,52 @@ export function DayNotes({ state, day, commit }: Props) {
     sync()
   }
 
+  /** Bloco (filho direto do editor) onde está o cursor. */
+  const currentBlock = (): HTMLElement | null => {
+    const element = editor.current
+    const selection = window.getSelection()
+    if (!element || !selection || !selection.anchorNode || !element.contains(selection.anchorNode)) return null
+    let node: Node | null = selection.anchorNode
+    while (node && node.parentNode !== element) node = node.parentNode
+    return node && node.nodeType === 1 ? node as HTMLElement : null
+  }
+
+  /** Reconhece o que foi digitado no começo da linha: "- " lista, "1. " numerada, "[] " caixa, "# " título, "> " citação. */
+  const onKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    const selection = window.getSelection()
+    if (!selection || !selection.isCollapsed || !selection.anchorNode) return
+    if (event.key === 'Enter' && !event.shiftKey) {
+      const block = currentBlock()
+      if (block?.dataset.c) {
+        if (!(block.textContent || '').trim()) { event.preventDefault(); delete block.dataset.c; sync(); return }
+        window.setTimeout(() => {
+          const next = currentBlock()
+          if (next?.dataset.c) { next.dataset.c = '0'; sync() }
+        }, 0)
+      }
+      return
+    }
+    if (event.key !== ' ') return
+    const node = selection.anchorNode
+    if (node.nodeType !== 3 || (node.parentNode as HTMLElement | null)?.closest('li')) return
+    const before = node.previousSibling
+    if (before && !(before.nodeType === 1 && ['BR', 'DIV', 'H2', 'H3', 'BLOCKQUOTE', 'P'].includes((before as HTMLElement).tagName))) return
+    const text = (node as Text).data.slice(0, selection.anchorOffset)
+    const kind = /^[-*•]$/.test(text) ? 'ul' : /^\d+\.$/.test(text) ? 'ol' : /^\[\s?\]$/.test(text) ? 'box' : text === '#' ? 'h2' : text === '##' ? 'h3' : text === '>' ? 'quote' : ''
+    if (!kind) return
+    event.preventDefault()
+    ;(node as Text).data = (node as Text).data.slice(selection.anchorOffset)
+    const range = document.createRange()
+    range.setStart(node, 0)
+    range.collapse(true)
+    selection.removeAllRanges()
+    selection.addRange(range)
+    if (kind === 'ul') run('insertUnorderedList')
+    else if (kind === 'ol') run('insertOrderedList')
+    else if (kind === 'box') toggleBox()
+    else block(kind === 'h2' ? 'h2' : kind === 'h3' ? 'h3' : 'blockquote')
+  }
+
   const onEditorClick = (event: React.MouseEvent<HTMLDivElement>) => {
     const target = event.target as HTMLElement
     if (target.tagName === 'DIV' && target.dataset.c && event.nativeEvent.offsetX < 24) {
@@ -219,8 +265,9 @@ export function DayNotes({ state, day, commit }: Props) {
           role="textbox"
           aria-multiline="true"
           aria-label="Anotações do dia"
-          data-placeholder="Como quero meu dia?"
+          data-placeholder="Como quero meu dia? Digite - para lista, 1. para numerada, [] para caixa"
           onInput={sync}
+          onKeyDown={onKeyDown}
           onClick={onEditorClick}
           onBlur={() => { if (dirty.current) { write(html, day); dirty.current = false } }}
         />
