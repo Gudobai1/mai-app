@@ -23,6 +23,7 @@ import { showCompleted } from '../../../lib/v2/show-completed'
 import { ValueDialog } from '../habits/HabitsModern'
 import { abbreviateUnit } from '../../../lib/v2/units'
 import { AgendaStrip } from './AgendaStrip'
+import { DayNotes } from './DayNotes'
 import styles from './TodayModern.module.css'
 import { DayTimeline, OrganizeButton } from '../DayTimeline'
 
@@ -51,7 +52,7 @@ type Props = {
   onAddEvent?: () => void
 }
 
-const DEFAULT_ORDER = ['appointments', 'tasks', 'habits', 'goals', 'finance', 'notes'] as const
+const DEFAULT_ORDER = ['dayNotes', 'appointments', 'tasks', 'habits', 'goals', 'finance', 'notes'] as const
 type SectionId = typeof DEFAULT_ORDER[number]
 
 type TodayFilters = { project: string; priority: string }
@@ -157,7 +158,7 @@ export function TodayModern({ state, today, commit, navigate, inspect, options, 
   /* ---------------------------------------------------------- Preferências */
 
   const savedOrder = Array.isArray(state.configs.todayListOrder) ? state.configs.todayListOrder.map(String).filter((id): id is SectionId => DEFAULT_ORDER.includes(id as SectionId)) : []
-  const order: SectionId[] = [...savedOrder, ...DEFAULT_ORDER.filter(id => !savedOrder.includes(id))]
+  const order: SectionId[] = [...(savedOrder.includes('dayNotes') ? [] : ['dayNotes' as SectionId]), ...savedOrder, ...DEFAULT_ORDER.filter(id => id !== 'dayNotes' && !savedOrder.includes(id))]
   const hidden = new Set(Array.isArray(state.configs.todayListHidden) ? state.configs.todayListHidden.map(String) : [])
   const savedFilters: Partial<TodayFilters> = state.configs.todayFilters && typeof state.configs.todayFilters === 'object' ? (state.configs.todayFilters as Partial<TodayFilters>) : {}
   const filters: TodayFilters = { project: String(savedFilters.project || 'all'), priority: String(savedFilters.priority || 'all') }
@@ -794,6 +795,12 @@ export function TodayModern({ state, today, commit, navigate, inspect, options, 
   }
 
   const sections: Record<SectionId, ReactNode> = {
+    dayNotes: (
+      <section className={styles.block} aria-label="Anotações do dia">
+        {head('dayNotes', 'Anotações')}
+        {!collapsed.has('dayNotes') ? <DayNotes key={day} state={state} day={day} commit={commit} /> : null}
+      </section>
+    ),
     appointments: (
       <section className={styles.block} aria-label="Agenda">
         {head('appointments', 'Agenda', events.length ? plural(events.length, 'compromisso', 'compromissos') : undefined)}
@@ -973,7 +980,7 @@ export function TodayModern({ state, today, commit, navigate, inspect, options, 
   const taskCountLabel = plural(tasks.length, 'tarefa', 'tarefas')
 
   // Colunas do computador. No celular vira uma coluna só, na ordem salva.
-  const COLUMN: Record<SectionId, 'main' | 'side'> = { tasks: 'main', appointments: 'side', notes: 'side', habits: 'side', finance: 'side', goals: 'side' }
+  const COLUMN: Record<SectionId, 'main' | 'side'> = { tasks: 'main', dayNotes: 'side', appointments: 'side', notes: 'side', habits: 'side', finance: 'side', goals: 'side' }
   const visible = order.filter(id => !hidden.has(id) && !(id === 'goals' && !goals.length) && !(id === 'notes' && !notes.length))
   const column = (name: 'main' | 'side', extra?: ReactNode) => (
     <div className={`${styles.column} ${styles[`col_${name}`]}`}>
