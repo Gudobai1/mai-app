@@ -31,6 +31,12 @@ function clean(source: string): string {
     const tag = element.tagName.toLowerCase()
     const inner = Array.from(element.childNodes).map(walk).join('')
     if (tag === 'b' || tag === 'strong') return `<b>${inner}</b>`
+    if (tag === 'i' || tag === 'em') return `<i>${inner}</i>`
+    if (tag === 'u') return `<u>${inner}</u>`
+    if (tag === 's' || tag === 'strike' || tag === 'del') return `<s>${inner}</s>`
+    if (tag === 'h1' || tag === 'h2') return `<h2>${inner}</h2>`
+    if (tag === 'h3') return `<h3>${inner}</h3>`
+    if (tag === 'blockquote') return `<blockquote>${inner}</blockquote>`
     if (tag === 'ul' || tag === 'ol' || tag === 'li') return `<${tag}>${inner}</${tag}>`
     if (tag === 'br') return '<br>'
     if (tag === 'div' || tag === 'p') return element.dataset.c === '0' || element.dataset.c === '1' ? `<div data-c="${element.dataset.c}">${inner}</div>` : `<div>${inner}</div>`
@@ -102,9 +108,17 @@ export function DayNotes({ state, day, commit }: Props) {
     setHtml(clean(element.innerHTML))
   }
 
-  const run = (command: 'bold' | 'insertUnorderedList' | 'insertOrderedList') => {
+  const run = (command: 'bold' | 'italic' | 'underline' | 'strikeThrough' | 'insertUnorderedList' | 'insertOrderedList' | 'removeFormat') => {
     editor.current?.focus()
     document.execCommand(command)
+    sync()
+  }
+
+  /** Título, subtítulo e citação: clicar de novo volta a linha ao normal. */
+  const block = (tag: 'h2' | 'h3' | 'blockquote') => {
+    editor.current?.focus()
+    const current = String(document.queryCommandValue('formatBlock') || '').toLowerCase().replace(/[<>]/g, '')
+    document.execCommand('formatBlock', false, current === tag ? 'div' : tag)
     sync()
   }
 
@@ -178,26 +192,24 @@ export function DayNotes({ state, day, commit }: Props) {
     sync()
   }
 
-  const saveAsNote = () => {
-    if (isBlank(html)) return
-    const label = new Date(`${day}T12:00:00`).toLocaleDateString('pt-BR', { day: 'numeric', month: 'long' })
-    commit(current => ({
-      ...current,
-      notes: [{
-        id: `note-${crypto.randomUUID()}`, titulo: `Anotações de ${label}`, conteudo: html, ativo: true, arquivado: false, fixado: false, tamanho: 'normal', anexos: [], ordem: Date.now(), data: new Date().toISOString(),
-      } as unknown as (typeof current.notes)[number], ...current.notes],
-    }))
-  }
-
   return (
     <div className={styles.notes}>
       <div className={styles.frame}>
         <div className={styles.toolbar} role="toolbar" aria-label="Formatar anotações">
           <button type="button" className={styles.tool} title="Negrito" aria-label="Negrito" onMouseDown={keep} onClick={() => run('bold')}><b>B</b></button>
+          <button type="button" className={styles.tool} title="Itálico" aria-label="Itálico" onMouseDown={keep} onClick={() => run('italic')}><i>I</i></button>
+          <button type="button" className={styles.tool} title="Sublinhado" aria-label="Sublinhado" onMouseDown={keep} onClick={() => run('underline')}><u>S</u></button>
+          <button type="button" className={styles.tool} title="Tachado" aria-label="Tachado" onMouseDown={keep} onClick={() => run('strikeThrough')}><s>T</s></button>
+          <span className={styles.sep} aria-hidden />
+          <button type="button" className={styles.tool} title="Título" aria-label="Título" onMouseDown={keep} onClick={() => block('h2')}>H1</button>
+          <button type="button" className={styles.tool} title="Subtítulo" aria-label="Subtítulo" onMouseDown={keep} onClick={() => block('h3')}>H2</button>
           <span className={styles.sep} aria-hidden />
           <button type="button" className={styles.tool} title="Lista com marcadores" aria-label="Lista com marcadores" onMouseDown={keep} onClick={() => run('insertUnorderedList')}>•</button>
           <button type="button" className={styles.tool} title="Lista numerada" aria-label="Lista numerada" onMouseDown={keep} onClick={() => run('insertOrderedList')}>1.</button>
           <button type="button" className={styles.tool} title="Caixa de seleção" aria-label="Caixa de seleção" onMouseDown={keep} onClick={toggleBox}>☐</button>
+          <button type="button" className={styles.tool} title="Citação" aria-label="Citação" onMouseDown={keep} onClick={() => block('blockquote')}>❝</button>
+          <span className={styles.sep} aria-hidden />
+          <button type="button" className={styles.tool} title="Limpar formatação" aria-label="Limpar formatação" onMouseDown={keep} onClick={() => run('removeFormat')}>Tx</button>
         </div>
         <div
           ref={editor}
@@ -215,7 +227,6 @@ export function DayNotes({ state, day, commit }: Props) {
       </div>
       <div className={styles.actions}>
         {yesterday.length ? <button type="button" className={styles.link} onClick={bringYesterday}>Trazer {yesterday.length === 1 ? '1 pendência' : `${yesterday.length} pendências`} de ontem</button> : null}
-        {!isBlank(html) ? <button type="button" className={styles.link} onClick={saveAsNote}>Salvar em Notas</button> : null}
       </div>
       {pending.length ? (
         <div className={styles.pending} role="list" aria-label="Linhas que podem virar tarefa">
