@@ -24,9 +24,9 @@ const rows = (value: unknown): Row[] => Array.isArray(value) ? value as Row[] : 
 const dateKey = (value: unknown) => String(value || '').slice(0, 10)
 const paid = (value: unknown) => ['pago','paga','quitado','quitada','concluido','concluida','concluído','concluída'].includes(String(value || '').toLocaleLowerCase('pt-BR'))
 
-const TODAY_SECTIONS = ['appointments', 'tasks', 'habits', 'goals', 'finance', 'notes'] as const
+const TODAY_SECTIONS = ['dayNotes', 'appointments', 'tasks', 'habits', 'goals', 'finance', 'notes'] as const
 type TodaySectionId = typeof TODAY_SECTIONS[number]
-const TODAY_SECTION_LABELS: Record<TodaySectionId, string> = { appointments: 'Agenda', tasks: 'Tarefas', habits: 'Hábitos', goals: 'Metas', finance: 'Finanças', notes: 'Notas' }
+const TODAY_SECTION_LABELS: Record<TodaySectionId, string> = { dayNotes: 'Anotações do dia', appointments: 'Agenda', tasks: 'Tarefas', habits: 'Hábitos', goals: 'Metas', finance: 'Finanças', notes: 'Notas' }
 
 const GROUP_ORDER: Record<string, number> = { Layout: 1, 'Visualização': 1, 'Agrupar por': 2, 'Concluídos': 3, 'Eventos repetidos': 3, Filtros: 4, 'Recorrências': 4, 'Classificação': 5 }
 
@@ -117,7 +117,7 @@ export function AppTopBar({ state, today, view, taskScope, commit, onTaskScopeCh
   const patchControl = (patch:Row) => patchConfig('moduleControls', { ...moduleControls, [String(view)]:{ ...control, ...patch } })
   const setAreaTab = (area:string, tab:string) => patchConfig('areaTabs', { ...areaTabs, [area]:tab })
   const savedTodayOrder = Array.isArray(configs.todayListOrder) ? configs.todayListOrder.map(String).filter((id: string): id is TodaySectionId => TODAY_SECTIONS.includes(id as TodaySectionId)) : []
-  const todayOrder: TodaySectionId[] = [...savedTodayOrder, ...TODAY_SECTIONS.filter(id => !savedTodayOrder.includes(id))]
+  const todayOrder: TodaySectionId[] = [...(savedTodayOrder.includes('dayNotes') ? [] : ['dayNotes' as TodaySectionId]), ...savedTodayOrder, ...TODAY_SECTIONS.filter(id => id !== 'dayNotes' && !savedTodayOrder.includes(id))]
   const todayHidden = new Set<string>(Array.isArray(configs.todayListHidden) ? configs.todayListHidden.map(String) : [])
   const toggleTodaySection = (id: TodaySectionId) => {
     const next = new Set(todayHidden)
