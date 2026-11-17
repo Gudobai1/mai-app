@@ -161,6 +161,34 @@ export function DayNotes({ state, day, commit }: Props) {
 
   const keep = (event: React.MouseEvent) => event.preventDefault()
 
+  /** Caixas ainda abertas do dia anterior, para continuar hoje. */
+  const yesterday = useMemo(() => {
+    const date = new Date(`${day}T12:00:00`)
+    date.setDate(date.getDate() - 1)
+    const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+    return pendingBoxes(clean(String((state.configs.dayNotes as Record<string, string> | undefined)?.[key] || '')))
+  }, [day, state.configs.dayNotes])
+
+  const bringYesterday = () => {
+    const element = editor.current
+    if (!element || !yesterday.length) return
+    const have = new Set(pendingBoxes(clean(element.innerHTML)).map(item => item.title))
+    const add = yesterday.filter(item => !have.has(item.title))
+    element.insertAdjacentHTML('beforeend', add.map(item => `<div data-c="0">${escapeHtml(item.title)}</div>`).join(''))
+    sync()
+  }
+
+  const saveAsNote = () => {
+    if (isBlank(html)) return
+    const label = new Date(`${day}T12:00:00`).toLocaleDateString('pt-BR', { day: 'numeric', month: 'long' })
+    commit(current => ({
+      ...current,
+      notes: [{
+        id: `note-${crypto.randomUUID()}`, titulo: `Anotações de ${label}`, conteudo: html, ativo: true, arquivado: false, fixado: false, tamanho: 'normal', anexos: [], ordem: Date.now(), data: new Date().toISOString(),
+      } as unknown as (typeof current.notes)[number], ...current.notes],
+    }))
+  }
+
   return (
     <div className={styles.notes}>
       <div className={styles.frame}>
@@ -184,6 +212,10 @@ export function DayNotes({ state, day, commit }: Props) {
           onClick={onEditorClick}
           onBlur={() => { if (dirty.current) { write(html, day); dirty.current = false } }}
         />
+      </div>
+      <div className={styles.actions}>
+        {yesterday.length ? <button type="button" className={styles.link} onClick={bringYesterday}>Trazer {yesterday.length === 1 ? '1 pendência' : `${yesterday.length} pendências`} de ontem</button> : null}
+        {!isBlank(html) ? <button type="button" className={styles.link} onClick={saveAsNote}>Salvar em Notas</button> : null}
       </div>
       {pending.length ? (
         <div className={styles.pending} role="list" aria-label="Linhas que podem virar tarefa">
