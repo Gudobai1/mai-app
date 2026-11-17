@@ -1,7 +1,18 @@
 .notes { display: flex; flex-direction: column; gap: 8px; padding: 6px 0 4px; }
-.area { width: 100%; box-sizing: border-box; min-height: 96px; resize: none; padding: 10px 12px; border: 1px solid var(--ds-line); border-radius: var(--ds-radius-sm, 10px); background: transparent; color: var(--ds-text); font: inherit; font-size: var(--ds-row-title, 14.5px); line-height: 1.5; }
-.area::placeholder { color: var(--ds-muted); }
-.area:focus { outline: 2px solid var(--ds-accent); outline-offset: -2px; border-color: transparent; }
+.frame { border: 1px solid var(--ds-line); border-radius: var(--ds-radius-sm, 10px); overflow: hidden; }
+.frame:focus-within { border-color: var(--ds-accent); }
+.toolbar { display: flex; align-items: center; gap: 2px; padding: 4px 6px; border-bottom: 1px solid var(--ds-line); }
+.tool { appearance: none; border: 0; background: transparent; min-width: 28px; height: 26px; padding: 0 6px; border-radius: 6px; color: var(--ds-muted); font: inherit; font-size: 13px; cursor: pointer; }
+.tool:hover { background: var(--ds-surface-hover); color: var(--ds-text); }
+.sep { width: 1px; height: 14px; margin: 0 4px; background: var(--ds-line); }
+.editor { min-height: 96px; padding: 10px 12px; outline: none; color: var(--ds-text); font-size: var(--ds-row-title, 14.5px); line-height: 1.5; overflow-wrap: anywhere; }
+.editor:empty::before { content: attr(data-placeholder); color: var(--ds-muted); pointer-events: none; }
+.editor b { font-weight: 700; }
+.editor ul, .editor ol { margin: 0; padding-left: 22px; }
+.editor div[data-c] { position: relative; padding-left: 26px; }
+.editor div[data-c]::before { content: ''; position: absolute; left: 2px; top: 0.3em; width: 14px; height: 14px; box-sizing: border-box; border: 1.5px solid var(--ds-muted); border-radius: 4px; cursor: pointer; }
+.editor div[data-c='1'] { color: var(--ds-muted); text-decoration: line-through; }
+.editor div[data-c='1']::before { background: var(--ds-accent); border-color: var(--ds-accent); }
 .pending { display: flex; flex-direction: column; }
 .pendingRow { display: flex; align-items: center; gap: 12px; padding: 8px 2px; border-bottom: 1px solid var(--ds-line); }
 .pendingTitle { min-width: 0; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--ds-row-title, 14.5px); }
