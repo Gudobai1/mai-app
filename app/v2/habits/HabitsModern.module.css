@@ -223,3 +223,8 @@
 .footLinks { display: flex; justify-content: center; gap: 16px; padding: 0 20px 14px; }
 .footLinks button { appearance: none; border: 0; background: transparent; padding: 2px 0; color: var(--ds-muted); font: inherit; font-size: 12px; cursor: pointer; }
 .footLinks button:hover { color: var(--ds-text); text-decoration: underline; }
+
+.reportRow { display: grid; grid-template-columns: minmax(0, 1fr) minmax(80px, 160px) 44px; align-items: center; column-gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--ds-line); }
+.reportBar { display: block; height: 6px; border-radius: 3px; border: 1px solid var(--ds-line); overflow: hidden; }
+.reportBar b { display: block; height: 100%; background: var(--hc); }
+.reportPct { text-align: right; font-size: 13px; font-weight: 700; color: var(--hc); }

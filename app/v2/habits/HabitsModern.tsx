@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import type { MaiState } from '../../../lib/v2/state'
 import { Icon } from '../../ds'
 import { HabitCard } from './HabitCard'
+import { DotRing } from './DotRing'
 import { UnitField } from './UnitField'
 import { abbreviateUnit } from '../../../lib/v2/units'
 import { habitOccursOn } from '../../../lib/v2/planner'
@@ -98,6 +99,9 @@ export function HabitsModern({ state, today, commit, createRequest, inspect }: P
   // Situação vem do botão de ajustes único (AppTopBar → configs.moduleFilters.habits.status).
   const savedStatus = String(((state.configs.moduleFilters as Record<string, Record<string, unknown>> | undefined)?.habits || {}).status || 'all')
   const filter: Filter = savedStatus === 'today' || savedStatus === 'pending' || savedStatus === 'done' ? savedStatus : 'all'
+  const areaTabs = state.configs.areaTabs && typeof state.configs.areaTabs === 'object' ? state.configs.areaTabs as Record<string, string> : {}
+  const mode: 'today' | 'week' | 'report' = areaTabs.habits === 'week' || areaTabs.habits === 'report' ? areaTabs.habits : 'today'
+  const sortMode = String(((state.configs.moduleControls as Record<string, Record<string, unknown>> | undefined)?.habits || {}).sort || 'name')
   const [adding, setAdding] = useState(false)
   const [valueFor, setValueFor] = useState<{ habit: Row; day: string } | null>(null)
 
@@ -156,7 +160,32 @@ export function HabitsModern({ state, today, commit, createRequest, inspect }: P
     if (filter === 'pending') return due && level !== 'full'
     if (filter === 'done') return level === 'full'
     return true
+  }).sort((a, b) => {
+    if (sortMode === 'time') {
+      const ta = String(a.hora || '99:99'); const tb = String(b.hora || '99:99')
+      if (ta !== tb) return ta.localeCompare(tb)
+    } else if (sortMode === 'progress') {
+      const diff = progressOf(b, today) - progressOf(a, today)
+      if (diff) return diff
+    }
+    return String(a.nome || '').localeCompare(String(b.nome || ''), 'pt-BR')
   })
+
+  /** Relatório: últimos 30 dias, só nos dias em que o hábito valia. */
+  const report = visible.map(habit => {
+    let due = 0
+    let done = 0
+    for (let step = 0; step < 30; step += 1) {
+      const key = moveDate(today, -step)
+      if (!eligible(habit, key)) continue
+      due += 1
+      if (levelOf(habit, key) === 'full') done += 1
+    }
+    return { habit, due, done, pct: due ? Math.round((done / due) * 100) : 0, streak: streakOf(habit) }
+  })
+  const reportDue = report.reduce((sum, item) => sum + item.due, 0)
+  const reportDone = report.reduce((sum, item) => sum + item.done, 0)
+  const weekLabel = `${new Date(`${week[0]}T12:00:00`).toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' }).replace('.', '')} – ${new Date(`${week[6]}T12:00:00`).toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' }).replace('.', '')}`
 
   const counts = {
     all: habits.length,
@@ -168,12 +197,94 @@ export function HabitsModern({ state, today, commit, createRequest, inspect }: P
   return (
     <div className={styles.page}>
       <section className={styles.block} aria-label="Hábitos">
+        {mode === 'week' ? (
+          <div className={styles.bar}>
+            <span />
+            <div className={styles.weekNav}>
+              <button type="button" className={styles.navButton} aria-label="Semana anterior" onClick={() => setAnchor(moveDate(weekStart, -7))}><Icon name="chevron_left" size={20} filled={false} /></button>
+              <button type="button" className={styles.weekLabel} onClick={() => setAnchor(today)} title="Voltar para esta semana">{currentWeek ? 'Esta semana' : weekLabel}</button>
+              <button type="button" className={styles.navButton} aria-label="Próxima semana" onClick={() => setAnchor(moveDate(weekStart, 7))}><Icon name="chevron_right" size={20} filled={false} /></button>
+            </div>
+          </div>
+        ) : null}
         <div className={styles.head}>
-          <span className={styles.headTitle}>Hábitos</span>
+          <span className={styles.headTitle}>{mode === 'report' ? 'Relatório · 30 dias' : 'Hábitos'}</span>
           <span className={styles.headCount}>{visible.length}</span>
+          {mode === 'week' ? (
+            <span className={styles.headDays} style={{ gridColumn: 2 }}>
+              {week.map((key, index) => <span key={key} data-today={key === today || undefined}><small>{INITIALS[index]}</small><b>{Number(key.slice(8))}</b></span>)}
+            </span>
+          ) : null}
         </div>
 
-        {visible.length ? (
+        {mode === 'week' ? (
+          visible.length ? (
+            <div role="list">
+              {visible.map(habit => {
+                const color = String(habit.cor_hex || DEFAULT_COLOR)
+                const plain = !(target(habit) > 1 || habit.unidade)
+                return (
+                  <div key={String(habit.id)} role="listitem" className={styles.row} style={{ '--hc': color } as CSSProperties}>
+                    <button type="button" className={styles.body} onClick={() => inspect?.({ kind: 'habit', sourceId: String(habit.id), title: String(habit.nome || 'Hábito'), date: today, raw: habit })}>
+                      <span className={styles.title}>{String(habit.nome)}</span>
+                      <span className={styles.desc}>{frequencyLabel(habit)}</span>
+                    </button>
+                    <span className={styles.dots}>
+                      {week.map(key => {
+                        const level = levelOf(habit, key)
+                        const off = !eligible(habit, key) || key > today
+                        return (
+                          <button
+                            key={key}
+                            type="button"
+                            className={styles.dot}
+                            data-level={level || undefined}
+                            data-off={off || undefined}
+                            data-today={key === today || undefined}
+                            disabled={off}
+                            aria-label={`${String(habit.nome)} em ${longDate(key)}`}
+                            onClick={() => toggleDay(habit, key)}
+                            onContextMenu={event => { event.preventDefault(); if (!off) setValueFor({ habit, day: key }) }}
+                          >
+                            <DotRing pct={progressOf(habit, key)} value={amountOf(habit, key)} unit={abbreviateUnit(habit.unidade)} fail={level === 'fail'} empty={!level} today={key === today} plain={plain && level === 'full'} />
+                          </button>
+                        )
+                      })}
+                    </span>
+                    <span className={styles.streak} data-on={streakOf(habit) > 0 || undefined}>{streakOf(habit) > 0 ? streakOf(habit) : ''}</span>
+                    <QuickEdit habit={habit} today={today} commit={commit} />
+                  </div>
+                )
+              })}
+            </div>
+          ) : (
+            <div className={styles.empty}>{habits.length ? 'Nenhum hábito neste filtro.' : 'Nenhum hábito criado ainda.'}</div>
+          )
+        ) : mode === 'report' ? (
+          report.length ? (
+            <>
+              <div className={styles.metrics}>
+                <div><span>Cumprimento</span><strong style={{ color: 'var(--ds-text)' }}>{reportDue ? Math.round((reportDone / reportDue) * 100) : 0}%</strong></div>
+                <div><span>Dias feitos</span><strong style={{ color: 'var(--ds-text)' }}>{reportDone} de {reportDue}</strong></div>
+              </div>
+              <div role="list">
+                {report.map(item => (
+                  <div key={String(item.habit.id)} role="listitem" className={styles.reportRow} style={{ '--hc': String(item.habit.cor_hex || DEFAULT_COLOR) } as CSSProperties}>
+                    <button type="button" className={styles.body} onClick={() => inspect?.({ kind: 'habit', sourceId: String(item.habit.id), title: String(item.habit.nome || 'Hábito'), date: today, raw: item.habit })}>
+                      <span className={styles.title}>{String(item.habit.nome)}</span>
+                      <span className={styles.desc}>{item.done} de {item.due} dias · sequência {item.streak}</span>
+                    </button>
+                    <i className={styles.reportBar} aria-hidden><b style={{ width: `${item.pct}%` }} /></i>
+                    <strong className={styles.reportPct}>{item.pct}%</strong>
+                  </div>
+                ))}
+              </div>
+            </>
+          ) : (
+            <div className={styles.empty}>{habits.length ? 'Nenhum hábito neste filtro.' : 'Nenhum hábito criado ainda.'}</div>
+          )
+        ) : (
+        visible.length ? (
           <div role="list">
             {visible.map(habit => {
               const color = String(habit.cor_hex || DEFAULT_COLOR)
@@ -204,6 +315,7 @@ export function HabitsModern({ state, today, commit, createRequest, inspect }: P
           </div>
         ) : (
           <div className={styles.empty}>{habits.length ? 'Nenhum hábito neste filtro.' : 'Nenhum hábito criado ainda.'}</div>
+        )
         )}
 
         {adding ? (
